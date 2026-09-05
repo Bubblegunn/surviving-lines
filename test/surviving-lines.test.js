@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, foldIdentity, githubLogin, linkIdentities, renderIdentities } = await import(bin);
+const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -264,6 +264,13 @@ test("the table is padded by terminal columns, not code units", () => {
   assert.equal(displayWidth("张伟"), 4);
   assert.equal(displayWidth("김민준"), 6);
   assert.equal(displayWidth("田中太郎"), 8);
+  // The width table is the standard's, not a hand-written list: emoji are Wide in UAX #11 and
+  // the hand-written one called 8,645 assigned code points narrow that the standard calls wide.
+  assert.equal(displayWidth("🚀"), 2);
+  assert.equal(displayWidth("⚡"), 2);
+  assert.equal(displayWidth("⌚"), 2);
+  // Default-ignorable code points cost no column, which is what the bidi isolates are.
+  assert.equal(displayWidth("\u2068Ada\u2069"), 3);
 
   const authors = ["Ada Lovelace", "张伟", "김민준", "田中太郎", "José Álvarez".normalize("NFD")].map((author, i) => ({
     author,
@@ -281,6 +288,36 @@ test("the table is padded by terminal columns, not code units", () => {
   const rows = table.split("\n").filter((l) => /\d+\s+\d+\.\d%/.test(l) && !l.startsWith("ref "));
   assert.equal(rows.length, 5);
   const columns = rows.map((r) => displayWidth(r.slice(0, r.search(/\d/))));
+  assert.equal(new Set(columns).size, 1, `name fields differ in width: ${JSON.stringify(columns)}`);
+});
+
+test("a right-to-left name is isolated so the row does not reorder around it", () => {
+  // Without an isolate, an Arabic or Hebrew name sets the direction of the whole line: the name
+  // moves to the right edge, the numbers after it reverse, and each percent sign lands before its
+  // number. U+2068 and U+2069 are what UAX #9 provides for this, and they cost no column.
+  assert.equal(isolate("Ada Lovelace"), "Ada Lovelace");
+  assert.equal(isolate("محمد علي"), "\u2068محمد علي\u2069");
+  assert.equal(isolate("דוד כהן"), "\u2068דוד כהן\u2069");
+  assert.equal(isolate("\u2068already\u2069"), "\u2068already\u2069");
+  assert.equal(displayWidth(isolate("محمد")), displayWidth("محمد"));
+
+  const authors = [
+    { author: "محمد علي", mail: "a@example.com", lines: 10, lineShare: 0.5, commits: 1, commitShare: 0.5 },
+    { author: "Ada Lovelace", mail: "b@example.com", lines: 10, lineShare: 0.5, commits: 1, commitShare: 0.5 },
+  ];
+  const table = renderTable(
+    { ref: "HEAD", authors, sample: { filesSampled: 2, filesTotal: 2, every: 1, seed: "", linesAttributed: 20, linesInRef: 20 }, commitWindow: { commits: 2 }, blame: { flags: ["-w"] } },
+    10,
+  );
+  const rtl = table.split("\n").find((l) => l.includes("محمد"));
+  assert.ok(rtl, table);
+  assert.ok(rtl.startsWith("\u2068محمد علي\u2069"), JSON.stringify(rtl));
+  // The Latin row is untouched: only names carrying strong right-to-left characters are wrapped.
+  assert.ok(table.split("\n").some((l) => l.startsWith("Ada Lovelace ")), table);
+  const columns = table
+    .split("\n")
+    .filter((l) => /\d+\s+\d+\.\d%/.test(l) && !l.startsWith("ref "))
+    .map((r) => displayWidth(r.slice(0, r.search(/\d/))));
   assert.equal(new Set(columns).size, 1, `name fields differ in width: ${JSON.stringify(columns)}`);
 });
 
@@ -320,6 +357,18 @@ test("linkIdentities does not merge two people who share a generic local part", 
 test("foldIdentity makes a Turkish name match itself in any case", () => {
   assert.equal(foldIdentity("İSMAİL YILMAZ"), foldIdentity("İsmail Yılmaz"));
   assert.equal(foldIdentity("Jose\u0301"), foldIdentity("Jos\u00e9"));
+});
+
+test("foldIdentity folds the sharp s and fullwidth letters, which decide a count", () => {
+  // These are the only locale findings that can change a number rather than a column: before
+  // this, one person who signs "Weiß" and "WEISS" was two rows, and a name typed on a Japanese
+  // keyboard without leaving fullwidth mode never matched the same name typed in ASCII.
+  assert.equal(foldIdentity("Weiß"), foldIdentity("WEISS"));
+  assert.equal(foldIdentity("Straße"), foldIdentity("STRASSE"));
+  assert.equal(foldIdentity("\uff25\uff46\uff45"), foldIdentity("Efe"));
+  assert.equal(foldIdentity("\ufb01nn"), foldIdentity("finn"));
+  // Different people still differ: the fold must not collapse names that are not the same name.
+  assert.notEqual(foldIdentity("Weiss"), foldIdentity("Weis"));
 });
 
 test("renderIdentities prints mailmap lines and says nothing was found when nothing was", () => {

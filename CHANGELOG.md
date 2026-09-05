@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.7
+
+Two people who were counted as two are now counted as one. `Weiß` and `WEISS` never met, because JavaScript's `toLowerCase` is Unicode's simple case fold and leaves ß alone, while the full fold maps it to ss; the same name typed in fullwidth Latin letters, which is what a Japanese or Korean keyboard produces without switching modes, never matched the ASCII spelling either. Matching now folds both, along with the ﬁ ligature and the compatibility ideographs, and that changes counts rather than columns. The fold is still only for matching: the table prints what git holds.
+
+An Arabic or Hebrew author name no longer reorders the row it sits in. Names carrying strong right-to-left characters are wrapped in the U+2068 and U+2069 isolates that UAX #9 provides, which are invisible and cost no column; rows in other scripts are byte-for-byte what they were.
+
+Column widths now come from the Unicode Character Database instead of a hand-written list. The list this replaced disagreed with the standard on 8,645 assigned code points, calling most emoji one column wide, and on 231 in the other direction. `scripts/gen-width-table.mjs` regenerates the table against a newer Unicode release.
+
+`--identities` and `--help` now say what git can and cannot do with a `.mailmap` name: git matches those names ignoring case for ASCII letters only, verified on git 2.50.1, so a name mapped by name alone has to match the commit's own spelling of its accents and non-Latin letters. The README, in both languages, adds a section on names in every script and states the three choices that are deliberate: fixed `en-US` number formatting, the standard's width for text-presentation emoji, and mapping by address wherever possible.
+
 ## 0.1.6 (2026-09-05)
 
 A first measurement of the question this tool exists to ask, in [`research/`](research/): does an author's commit share predict their share of the surviving code? Twelve repositories, three seeds each, 2,748 author rows, with the harness and the raw table committed so the sample can grow and the analysis can be disagreed with. The same person tops both measures in 25 of 36 runs, so the claim that commit counts are worthless is not what this found and is not made; but among authors holding at least 5% of either measure the two shares differ by a median of 7.5 percentage points, and by ten points or more in a third of cases. The document states what twelve repositories cannot support, reports that the top survivor's share moves by up to 17.4 points across seeds at `--sample 5`, and notes that one repository's top committer is a bot, which this tool does not exclude.

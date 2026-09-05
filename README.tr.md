@@ -139,6 +139,52 @@ harf katlamasıyla yapılır.
 `git blame` ve `git shortlog` da okur, yani tek dosya bütün sayıları düzeltir. Araç hiçbir şey
 yazmaz ve iki kimliğin gerçekten aynı kişi olup olmadığını bilemez; kanıtı gösterir ve durur.
 
+## Her yazıdaki isimler
+
+Bir isim ASCII değildir ve bunu yanlış yapmanın iki ayrı sonucu olur. Biri hizalanmayan bir
+sütundur, can sıkıcıdır. Diğeri iki kez sayılan bir kişidir, yani yanlış bir sayıdır.
+
+Sayıyı değiştiren iki hata Unicode 17.0'a bakılarak düzeltildi:
+
+- `Weiß` ile `WEISS` tek kişidir. `toLowerCase` Unicode'un basit harf katlamasıdır ve ß'ye
+  dokunmaz, bu yüzden iki yazım hiç buluşmuyordu. Tam katlama ß'yi ss'ye eşler
+  ([CaseFolding.txt](https://www.unicode.org/Public/UCD/latest/ucd/CaseFolding.txt), durum `F`)
+  ve araç artık karşılaştırmadan önce aynısını yapıyor.
+- Tam genişlikli Latin harfleriyle yazılan bir isim, ki Japonca ya da Korece bir klavyede mod
+  değiştirmeden yazılan budur, ASCII ile yazılan aynı isimdir. Eşleştirme NFKC'ye normalleştirir,
+  böylece iki biçim buluşur; ﬁ bağlaması ve uyumluluk ideografları da öyle.
+
+Türkçe noktalı ve noktasız i ile ayrışık ve birleşik aksanlar zaten katlanıyordu. Katlama yalnız
+eşleştirme içindir; tabloda yazan her zaman git'in tuttuğu yazımdır.
+
+Görüntü işin diğer yarısı:
+
+- Arapça ya da İbranice bir isim, bütün satırı kendi etrafında ters çeviriyordu: isim sağ kenara
+  gidiyor, ardındaki dört sayı ters sıralanıyor ve her yüzde işareti kendi sayısının önüne
+  düşüyordu. Güçlü sağdan sola karakter taşıyan isimler artık U+2068 ve U+2069 ile sarılıyor;
+  [UAX #9](https://www.unicode.org/reports/tr9/) tam olarak bunun için bu yalıtıcıları tanımlar.
+  Görünmezler, hiçbir sütun yer kaplamazlar ve diğer yazılardaki satırlar bayt bayt eskisi gibi
+  kalır.
+- Sütun genişlikleri artık elle yazılmış bir listeden değil, Unicode Karakter Veritabanı'ndan
+  geliyor. Yerine geçtiği liste, standartla atanmış 8.645 kod noktasında ayrılıyordu ve emojinin
+  çoğunu tek sütun genişliğinde sayıyordu; ters yönde de 231 kod noktasında ayrılıyordu. Daha
+  yeni bir Unicode sürümüne göre tabloyu yeniden üretmek için
+  `node scripts/gen-width-table.mjs`.
+
+Üç şey bilerek böyle ve değişmeyecek:
+
+- Sayılar `en-US` biçiminde kalır, yani `12,345` kimde çalışırsa çalışsın on iki bindir. Binlik
+  ayıracı okuyucunun makinesine göre değişen bir rapor, başka bir yerde çalıştırılmış aynı
+  raporla karşılaştırılamaz; bu çıktının amacı da iki çalıştırmayı karşılaştırmaktır.
+- Metin sunumlu emoji tek sütun sayılır; standardın dediği budur, bazı terminaller ise
+  katılmaz. Her terminalde doğru olan tek bir cevap yok, o yüzden standardın kendi genişliği
+  kazanır.
+- `.mailmap` isimlerini bu araç değil git eşleştirir. git bu isimleri yalnız ASCII harfleri için
+  büyük küçük harf farkını yok sayarak karşılaştırır; git 2.50.1 üzerinde doğrulandı:
+  `josÉ Álvarez` yazılmış bir satır `JOSÉ ÁLVAREZ` imzalı bir commit ile eşleşiyor,
+  `josé álvarez` yazılmış olan eşleşmiyor. Mümkün olan her yerde adresle eşleyin; isimle
+  eşliyorsanız commit'lerdeki yazımın aynısını yazın.
+
 ## git shortlog ve git-fame ile karşılaştırma
 
 `git shortlog -sn` commit sayar; bu, aracın son iki sütununda yazdırdığı etkinlik sayısıdır,

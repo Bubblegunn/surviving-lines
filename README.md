@@ -204,6 +204,50 @@ name match itself and a decomposed accent match a precomposed one.
 Nothing is written, and the tool cannot know whether two identities are really one person. It
 shows the evidence and stops there.
 
+## Names in every script
+
+A name is not ASCII, and getting that wrong shows up in two different ways. One is a column that
+does not line up, which is annoying. The other is a person counted twice, which is a wrong number.
+
+Two of these were wrong until Unicode 17.0 settled them, and both changed counts rather than
+columns:
+
+- `Weiß` and `WEISS` are one person. `toLowerCase` is Unicode's simple case fold and leaves ß
+  alone, so the two spellings never met. The full fold maps ß to ss
+  ([CaseFolding.txt](https://www.unicode.org/Public/UCD/latest/ucd/CaseFolding.txt), status `F`),
+  and this tool now does the same before comparing.
+- A name typed in fullwidth Latin letters, which is what a Japanese or Korean keyboard produces
+  without switching modes, is the same name typed in ASCII. Matching normalises to NFKC, so the
+  two forms meet, together with the ﬁ ligature and the compatibility ideographs.
+
+Turkish dotted and dotless i, and decomposed against precomposed accents, were already folded.
+The fold is used for matching only. What the table prints is always the spelling git holds.
+
+Display is the other half:
+
+- An Arabic or Hebrew name used to reorder the whole row around itself: the name moved to the
+  right edge, the four numbers after it reversed, and each percent sign landed before its number.
+  Names carrying strong right-to-left characters are now wrapped in U+2068 and U+2069, the
+  isolates [UAX #9](https://www.unicode.org/reports/tr9/) provides for exactly this. They are
+  invisible, they cost no column, and rows in other scripts are byte-for-byte what they were.
+- Column widths come from the Unicode Character Database now, not from a hand-written list. The
+  list this replaced disagreed with the standard on 8,645 assigned code points, calling most
+  emoji one column wide, and on 231 in the other direction. Run
+  `node scripts/gen-width-table.mjs` to rebuild the table against a newer Unicode release.
+
+Three things are deliberate and are not going to change:
+
+- Numbers stay in the `en-US` format, so `12,345` is twelve thousand whoever runs it. A
+  report whose thousands separator follows the reader's machine cannot be compared with the same
+  report run somewhere else, and comparing two runs is what this output is for.
+- Emoji with text presentation count as one column, which is what the standard says and what
+  some terminals disagree with. There is no answer that is right in every terminal, so the
+  standard's own width wins.
+- The `.mailmap` names are matched by git, not by this tool. git compares those names ignoring
+  case for ASCII letters only, verified on git 2.50.1: an entry written `josÉ Álvarez` matches a
+  commit by `JOSÉ ÁLVAREZ`, and one written `josé álvarez` does not. Map by address wherever you
+  can, and if you map by name, spell it exactly as the commits spell it.
+
 ## Compared with git shortlog and git-fame
 
 `git shortlog -sn` counts commits, which is the activity number this tool prints in its last
