@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv } = await import(bin);
+const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -164,6 +164,33 @@ test("--csv prints one row per author with fractional shares and quotes commas",
     assert.match(lines[1], /^Ada,ada@example\.com,11,0\.5238,1,0\.3333$/);
     const quoted = renderCsv({ ...r, authors: [{ ...r.authors[0], author: 'Smith, "Ada"' }] }).split("\n")[1];
     assert.ok(quoted.startsWith('"Smith, ""Ada""",'));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("--markdown renders a Markdown table", async () => {
+  const dir = await fixtureRepo();
+  try {
+    assert.equal(parseArgs(["--markdown"]).markdown, true);
+    assert.throws(() => parseArgs(["--json", "--markdown"]), /mutually exclusive/);
+    assert.throws(() => parseArgs(["--csv", "--markdown"]), /mutually exclusive/);
+    const r = await analyse(parseArgs(["--cwd", dir]));
+    const markdown = renderMarkdown(r, 10);
+    assert.match(markdown, /ref HEAD.*files 3\/3 sampled \(1 in 1\).*21 of 21 lines attributed/);
+    assert.match(
+      markdown,
+      /\| author \| lines \| line share \| commits \| commit share \|/
+    );
+    assert.match(
+      markdown,
+      /\| --- \| ---: \| ---: \| ---: \| ---: \|/
+    );
+    assert.match(
+      markdown,
+      /\| Ada \| 11 \| 52\.4% \| 1 \| 33\.3% \|/
+    );
+    assert.match(markdown, /What this cannot show/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
