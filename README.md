@@ -135,7 +135,9 @@ basenames, so `--exclude '*.test.ts'` works at any depth.
 
 `--json` prints everything the table is built from, including the sample parameters, so
 a number can be quoted together with the exact command that produced it. `--csv` prints one
-row per author for spreadsheets. `--markdown` prints the same table as Markdown:
+row per author for spreadsheets. `--markdown`, contributed by
+[@shivam-070208](https://github.com/shivam-070208) in [#6](https://github.com/Bubblegunn/surviving-lines/pull/6),
+prints the same table as Markdown:
 
 ```sh
 npx surviving-lines --markdown --sample 5 --include '**/*.ts' --exclude '**/*.test.ts' --top 3
@@ -187,6 +189,14 @@ wrong one: on one codebase my blame share was higher than my commit share, on an
 it was lower, and both facts mattered more than either count. The method is written up
 in [How to show engineering ownership when the repositories are private](https://efe-genc-portfolio.vercel.app/writing/showing-ownership-private-repositories/);
 this is the script, cleaned up so it runs anywhere.
+
+## Thanks
+
+[@shivam-070208](https://github.com/shivam-070208) wrote `--markdown`
+([#6](https://github.com/Bubblegunn/surviving-lines/pull/6)), the first outside pull request to
+this repository, and shipped in 0.1.3. Reviewing it found something worth more than the feature:
+the only source file here held a literal NUL byte, so git had been calling it binary and no diff
+on it was readable, which is why the contributor could not see their own change on GitHub.
 
 ## Development
 
