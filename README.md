@@ -55,6 +55,48 @@ seed to draw a different sample and check that the shares hold.
 `--sample 1` (the default) blames every file. On a 60k-line TypeScript repository that
 is still well under a minute.
 
+## How the sample is chosen
+
+Every path is hashed, and the file is in the sample when the hash divides evenly by `n`:
+
+```
+h    = FNV-1a-32( seed + "\0" + path )      # 32-bit, over UTF-16 code units
+in   = (h mod n) == 0                        # --sample n; n = 1 keeps every file
+```
+
+The separator is a NUL byte, so a seed cannot collide with a path prefix. FNV-1a is
+integer arithmetic (`Math.imul`, unsigned shift), no randomness, no file contents, no
+timestamps, and git paths always use forward slashes, so the same command picks the same
+files on Node 20, 22 or 24 on any operating system. The expected sample is one file in
+`n`; the exact count depends on the paths, which is why the run prints `files 50/203
+sampled` rather than assuming 40.
+
+Worked example, [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki) at
+`1e6d54c` with `--sample 5 --include '**/*.ts' --exclude '**/*.test.ts'` (203 files after
+the filters):
+
+| path | FNV-1a of `"\0" + path` | mod 5 | in the sample |
+|---|---|---|---|
+| `evals/ledger/benchmark/benchmark.ts` | 1128513045 | 0 | yes |
+| `src/index.ts` | 1807104411 | 1 | no |
+
+With `--seed second` the first path hashes to 646834445, still 0 mod 5, and a different
+45 files are chosen overall. Three seeds on the same commit:
+
+| seed | files | lines attributed | Colin Francis | Brace Sproul |
+|---|---|---|---|---|
+| (none) | 50/203 | 14,722 of 59,049 | 52.4% | 22.5% |
+| `second` | 45/203 | 12,609 of 59,049 | 59.5% | 24.4% |
+| `third` | 47/203 | 13,071 of 59,049 | 56.1% | 22.5% |
+
+That spread, about seven points for the top author, is what a 1-in-5 sample of this
+repository is worth: the ranking and the gap to commit share (18.0% for both) hold on every
+seed, the second decimal does not. A share is of the sampled lines, not of the repository,
+and the sample is by file, so one large file can move it. When a single number matters,
+run `--sample 1`; when you quote a sampled one, quote `sample.every`, `sample.seed`,
+`filesSampled` and `linesAttributed` from `--json` next to it, which is what the first
+line of the table prints.
+
 ## What it counts
 
 - The `lines` column counts lines in the sampled files whose last change, as

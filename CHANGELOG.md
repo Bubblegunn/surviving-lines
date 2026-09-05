@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 (unreleased)
+
+README section on how the sample is chosen: the hash, the NUL separator, why it is deterministic across machines, a worked example on openwiki and what a 1-in-5 sample is worth across three seeds (#2).
+
 ## 0.1.2 (2026-09-05)
 
 `--csv` output; README comparison with git shortlog and git fame; Turkish README; contributing guide, issue templates, roadmap and a provenance release workflow.
