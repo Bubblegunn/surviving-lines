@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.7
+## 0.1.7 (2026-09-05)
 
 Two people who were counted as two are now counted as one. `Weiß` and `WEISS` never met, because JavaScript's `toLowerCase` is Unicode's simple case fold and leaves ß alone, while the full fold maps it to ss; the same name typed in fullwidth Latin letters, which is what a Japanese or Korean keyboard produces without switching modes, never matched the ASCII spelling either. Matching now folds both, along with the ﬁ ligature and the compatibility ideographs, and that changes counts rather than columns. The fold is still only for matching: the table prints what git holds.
 
