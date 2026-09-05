@@ -57,12 +57,12 @@ is still well under a minute.
 
 ## What it counts
 
-- **lines**: lines in the sampled files whose last change, as `git blame -w -M` sees it,
-  belongs to the author. `-w` ignores whitespace-only changes and `-M` follows lines
+- The `lines` column counts lines in the sampled files whose last change, as
+  `git blame -w -M` sees it, belongs to the author. `-w` ignores whitespace-only changes and `-M` follows lines
   moved within a file, so reformatting and relocation do not steal authorship. Add
   `--copies` for `-C`, which also follows lines copied from other files; it is slower.
-- **commits**: non-merge commits reachable from the ref, optionally inside a
-  `--since` / `--until` window. Scope the window to a person's tenure when comparing
+- The `commits` column counts non-merge commits reachable from the ref, optionally
+  inside a `--since` / `--until` window. Scope the window to a person's tenure when comparing
   people who joined at different times.
 - Binary files are skipped. Identities follow the repository's `.mailmap`; add one to
   merge an author's several addresses. When two rows share a name the table shows the

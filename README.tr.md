@@ -47,13 +47,13 @@ hâlâ bir dakikanın epey altındadır.
 
 ## Ne sayar
 
-- **lines**: örneklenen dosyalarda, `git blame -w -M`'nin gördüğü hâliyle son değişikliği
-  yazara ait olan satırlar. `-w` yalnızca boşluk değişikliklerini yok sayar, `-M` dosya
+- `lines` sütunu, örneklenen dosyalarda, `git blame -w -M`'nin gördüğü hâliyle son
+  değişikliği yazara ait olan satırları sayar. `-w` yalnızca boşluk değişikliklerini yok sayar, `-M` dosya
   içinde taşınan satırları izler; böylece yeniden biçimlendirme ve yer değiştirme yazarlığı
   çalmaz. Başka dosyalardan kopyalanan satırları da izleyen `-C` için `--copies` ekleyin; daha
   yavaştır.
-- **commits**: ref'ten erişilebilen merge dışı commit'ler, isteğe bağlı bir `--since` /
-  `--until` penceresi içinde. Farklı zamanlarda katılan kişileri karşılaştırırken pencereyi
+- `commits` sütunu, ref'ten erişilebilen merge dışı commit'leri sayar; isteğe bağlı bir
+  `--since` / `--until` penceresi içinde. Farklı zamanlarda katılan kişileri karşılaştırırken pencereyi
   kişinin görev süresine daraltın.
 - İkili dosyalar atlanır. Kimlikler deponun `.mailmap` dosyasını izler; bir yazarın birden
   çok adresini birleştirmek için bir tane ekleyin. İki satır aynı adı taşıyorsa tablo adresi
