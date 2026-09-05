@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.2 (unreleased)
+## 0.1.2 (2026-09-05)
 
 `--csv` output; README comparison with git shortlog and git fame; Turkish README; contributing guide, issue templates, roadmap and a provenance release workflow.
 
