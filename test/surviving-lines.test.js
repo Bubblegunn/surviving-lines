@@ -124,6 +124,21 @@ test("analyse attributes surviving lines, follows renames, skips binaries, and c
   }
 });
 
+test("clear errors outside a repository and for a missing ref", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "surviving-lines-norepo-"));
+  try {
+    await assert.rejects(analyse(parseArgs(["--cwd", dir])), /not inside a git repository/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+  const repo = await fixtureRepo();
+  try {
+    await assert.rejects(analyse(parseArgs(["--cwd", repo, "--ref", "no-such-branch"])), /does not resolve to a commit/);
+  } finally {
+    await rm(repo, { recursive: true, force: true });
+  }
+});
+
 test("sampling with --sample reports the sampled subset and never exceeds the total", async () => {
   const dir = await fixtureRepo();
   try {
