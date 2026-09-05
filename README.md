@@ -125,6 +125,7 @@ line of the table prints.
 --top <k>            rows to print (default: 10)
 --json               print JSON instead of a table
 --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
+--markdown           print a Markdown table
 --cwd <dir>          repository directory (default: current directory)
 ```
 
@@ -134,7 +135,15 @@ basenames, so `--exclude '*.test.ts'` works at any depth.
 
 `--json` prints everything the table is built from, including the sample parameters, so
 a number can be quoted together with the exact command that produced it. `--csv` prints one
-row per author for spreadsheets.
+row per author for spreadsheets. `--markdown` prints the same table as Markdown:
+
+```sh
+npx surviving-lines --markdown
+# ref HEAD  ·  files 3/3 sampled (1 in 1)  ·  21 of 21 lines attributed
+# | author | lines | line share | commits | commit share |
+# | --- | ---: | ---: | ---: | ---: |
+# | Ada | 11 | 52.4% | 1 | 33.3% |
+```
 
 ## Compared with git shortlog and git-fame
 
