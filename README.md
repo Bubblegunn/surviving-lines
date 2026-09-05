@@ -9,6 +9,7 @@ English | [Türkçe](README.tr.md)
   <img src="https://img.shields.io/bundlephobia/minzip/surviving-lines?style=flat-square&color=111111" alt="minzipped size">
   <img src="https://img.shields.io/github/stars/Bubblegunn/surviving-lines?style=flat-square&color=111111" alt="stars">
   <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT">
+  <a href="https://doi.org/10.5281/zenodo.22394614"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22394614-111111?style=flat-square" alt="DOI"></a>
 </p>
 
 Measure who wrote the code that is still alive in a git ref, next to who committed.
@@ -306,6 +307,18 @@ this is the script, cleaned up so it runs anywhere.
 this repository, and shipped in 0.1.3. Reviewing it found something worth more than the feature:
 the only source file here held a literal NUL byte, so git had been calling it binary and no diff
 on it was readable, which is why the contributor could not see their own change on GitHub.
+
+## Cite this
+
+Every release is archived on Zenodo with a DOI, so a paper or a report can point at the
+exact code it ran.
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22394614.svg)](https://doi.org/10.5281/zenodo.22394614)
+
+That is the **concept** DOI: it always resolves to the newest version. To cite the exact
+version you ran, open that page, pick the version in the sidebar, and use the DOI shown
+there. `CITATION.cff` in this repository carries the same identifier, so GitHub's "Cite this
+repository" button produces correct BibTeX and APA without any copying by hand.
 
 ## Development
 
