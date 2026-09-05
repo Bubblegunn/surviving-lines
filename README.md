@@ -126,6 +126,7 @@ line of the table prints.
 --json               print JSON instead of a table
 --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
 --markdown           print a Markdown table
+--identities         list addresses that look like one person, with .mailmap lines
 --cwd <dir>          repository directory (default: current directory)
 ```
 
@@ -155,6 +156,53 @@ git blame -w -M  ·  commits 339, merges excluded
 
 … 76 more authors
 ```
+
+## Who is one person
+
+Look at that table again. Colin Francis is in it twice, rows one and three, because he has
+committed from two addresses, and every count above splits him in half. This is the most common
+way these numbers go wrong, and it is invisible until someone points at it.
+
+`--identities` points at it:
+
+```sh
+npx surviving-lines --identities --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
+```
+
+```
+2 identities look split across more than one address.
+
+Colin Francis
+  keep 131073567+colifran@users.noreply.github.com  61 commits, 7,718 lines
+  map  colin.francis@langchain.dev  10 commits, 769 lines
+  because the same name, "Colin Francis", on two addresses
+
+zan22ye
+  keep iwillgotothemoon@163.com  2 commits, 43 lines
+  map  116149836+zan22ye@users.noreply.github.com  1 commit, 8 lines
+  because the same name, "zan22ye", on two addresses
+  because the GitHub login "zan22ye" also appears as the name on the other
+
+Add these to a .mailmap file at the repository root:
+
+Colin Francis <131073567+colifran@users.noreply.github.com> <colin.francis@langchain.dev>
+zan22ye <iwillgotothemoon@163.com> <116149836+zan22ye@users.noreply.github.com>
+```
+
+That is a real run on the same repository as the table above, at the same commit. Paste those
+lines into a `.mailmap` at the repository root and every one of these counts changes, along with
+`git log`, `git blame` and `git shortlog`, because they all read the same file. Most people who
+have committed from a laptop and a work machine are in their own history twice and have never
+been told.
+
+Three signals produce a suggestion: the same name on two addresses, the same address name on two
+domains, and a GitHub noreply address whose login appears as the name or the address on another
+row. Role addresses like `dev@` or `info@` are ignored, because sharing one proves nothing, and
+so are bot addresses. Names and addresses are compared with the case fold that makes a Turkish
+name match itself and a decomposed accent match a precomposed one.
+
+Nothing is written, and the tool cannot know whether two identities are really one person. It
+shows the evidence and stops there.
 
 ## Compared with git shortlog and git-fame
 

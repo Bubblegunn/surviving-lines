@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.5 (unreleased)
+
+`--identities` lists the addresses in a repository that look like one person and prints the `.mailmap` lines that merge them. Someone who has committed from a laptop and a work machine is in their own history twice, every count here splits them, and nothing says so. Three signals produce a suggestion: the same name on two addresses, the same address name on two domains, and a GitHub noreply address whose login appears as the name or the address on another row. Role addresses such as `dev@` and bot addresses are ignored. Comparison uses the case fold that makes a Turkish name match itself and a decomposed accent match a precomposed one. Nothing is written, and the tool cannot know whether two identities are one person, so it prints the evidence and stops. On langchain-ai/openwiki at `1e6d54c` it finds two, one of them the duplicate row already visible in this README's own example.
+
 ## 0.1.4 (2026-09-05)
 
 A repository whose paths are stored decomposed now produces a report instead of failing. Git precomposes command-line arguments on macOS, so a path read out of the tree and handed back to `git blame` came back as a different string and matched nothing, ending the run with `fatal: no such path café.ts in HEAD` and no output. Every call now pins `core.precomposeunicode=false`, so the path sent is the path git stored. A checkout authored on Linux carrying Korean, French, Turkish, Vietnamese, Portuguese or Spanish filenames was affected; ASCII repositories produce byte-identical output.

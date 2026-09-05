@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth } = await import(bin);
+const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, foldIdentity, githubLogin, linkIdentities, renderIdentities } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -282,4 +282,59 @@ test("the table is padded by terminal columns, not code units", () => {
   assert.equal(rows.length, 5);
   const columns = rows.map((r) => displayWidth(r.slice(0, r.search(/\d/))));
   assert.equal(new Set(columns).size, 1, `name fields differ in width: ${JSON.stringify(columns)}`);
+});
+
+test("linkIdentities groups one person's addresses and leaves separate people alone", () => {
+  const authors = [
+    { author: "Efe Genc", mail: "50203466+bubblegunn@users.noreply.github.com", lines: 100, commits: 9 },
+    { author: "Efe Genc", mail: "efegenc95@gmail.com", lines: 345, commits: 6 },
+    { author: "Ada Lovelace", mail: "ada@example.com", lines: 40, commits: 3 },
+    { author: "dependabot[bot]", mail: "49699333+dependabot[bot]@users.noreply.github.com", lines: 0, commits: 3 },
+  ];
+  const groups = linkIdentities(authors);
+  assert.equal(groups.length, 1, JSON.stringify(groups));
+  const g = groups[0];
+  assert.deepEqual(g.members.map((m) => m.mail).sort(), ["50203466+bubblegunn@users.noreply.github.com", "efegenc95@gmail.com"]);
+  // The address with the most commits is proposed as canonical, not the one with the most lines.
+  assert.equal(g.canonical.mail, "50203466+bubblegunn@users.noreply.github.com");
+  assert.ok(g.reasons.some((r) => /name/.test(r)), JSON.stringify(g.reasons));
+});
+
+test("linkIdentities matches a GitHub noreply address to the same login used elsewhere", () => {
+  const groups = linkIdentities([
+    { author: "S. Gupta", mail: "12345+shivam-070208@users.noreply.github.com", lines: 10, commits: 2 },
+    { author: "Shivam", mail: "shivam-070208@fastmail.com", lines: 5, commits: 1 },
+  ]);
+  assert.equal(groups.length, 1);
+  assert.ok(groups[0].reasons.some((r) => /login/.test(r)), JSON.stringify(groups[0].reasons));
+});
+
+test("linkIdentities does not merge two people who share a generic local part", () => {
+  const groups = linkIdentities([
+    { author: "Ada", mail: "dev@one.example", lines: 10, commits: 2 },
+    { author: "Bob", mail: "dev@two.example", lines: 10, commits: 2 },
+  ]);
+  assert.deepEqual(groups, []);
+});
+
+test("foldIdentity makes a Turkish name match itself in any case", () => {
+  assert.equal(foldIdentity("İSMAİL YILMAZ"), foldIdentity("İsmail Yılmaz"));
+  assert.equal(foldIdentity("Jose\u0301"), foldIdentity("Jos\u00e9"));
+});
+
+test("renderIdentities prints mailmap lines and says nothing was found when nothing was", () => {
+  const groups = linkIdentities([
+    { author: "Efe Genc", mail: "50203466+bubblegunn@users.noreply.github.com", lines: 100, commits: 9 },
+    { author: "Efe Genc", mail: "efegenc95@gmail.com", lines: 345, commits: 6 },
+  ]);
+  const out = renderIdentities(groups);
+  assert.match(out, /Efe Genc <50203466\+bubblegunn@users\.noreply\.github\.com> <efegenc95@gmail\.com>/);
+  assert.match(out, /only you\s+can tell/i);
+  assert.match(renderIdentities([]), /No split identities/);
+});
+
+test("--identities is exclusive with the other output formats", () => {
+  assert.equal(parseArgs(["--identities"]).identities, true);
+  assert.throws(() => parseArgs(["--json", "--identities"]), /mutually exclusive/);
+  assert.throws(() => parseArgs(["--markdown", "--identities"]), /mutually exclusive/);
 });

@@ -126,6 +126,19 @@ yüzden `--exclude '*.test.ts'` her derinlikte çalışır.
 onu üreten komutla birlikte alıntılanabilir. `--csv` elektronik tablolar için yazar başına bir
 satır verir.
 
+## Kim tek kişi
+
+Bir kişi dizüstünden ve iş makinesinden ayrı adreslerle commit attığında, buradaki bütün sayılar
+o kişiyi ikiye böler ve kimse fark etmez. `--identities` bunu gösterir: aynı ismin iki adreste
+görünmesi, aynı adres adının iki alan adında görünmesi ve bir GitHub noreply adresindeki
+kullanıcı adının başka bir satırda isim ya da adres olarak geçmesi. `dev@` gibi rol adresleri ve
+bot adresleri dışarıda bırakılır. Karşılaştırma, Türkçe bir ismin kendisiyle eşleşmesini sağlayan
+harf katlamasıyla yapılır.
+
+Çıktı, deponun köküne konacak bir `.mailmap` dosyasının satırlarını yazar. O dosyayı `git log`,
+`git blame` ve `git shortlog` da okur, yani tek dosya bütün sayıları düzeltir. Araç hiçbir şey
+yazmaz ve iki kimliğin gerçekten aynı kişi olup olmadığını bilemez; kanıtı gösterir ve durur.
+
 ## git shortlog ve git-fame ile karşılaştırma
 
 `git shortlog -sn` commit sayar; bu, aracın son iki sütununda yazdırdığı etkinlik sayısıdır,

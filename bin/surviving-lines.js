@@ -36,6 +36,7 @@ Measure who wrote the code that is still alive in a git ref.
   --json               print JSON instead of a table
   --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
   --markdown           print a Markdown table
+  --identities         list addresses that look like one person, with .mailmap lines
   --cwd <dir>          repository directory (default: current directory)
   -h, --help           this text
   --version            print the version
@@ -43,7 +44,7 @@ Measure who wrote the code that is still alive in a git ref.
 Paths after -- are passed to git as pathspecs. Identities follow the repository's .mailmap;
 add one to merge an author's several addresses.`;
 
-/** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, copies: boolean, jobs: number, top: number, json: boolean, csv: boolean, markdown: boolean, cwd: string, paths: string[] }} Options */
+/** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, copies: boolean, jobs: number, top: number, json: boolean, csv: boolean, markdown: boolean, identities: boolean, cwd: string, paths: string[] }} Options */
 
 /**
  * @param {string[]} argv
@@ -51,7 +52,7 @@ add one to merge an author's several addresses.`;
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], copies: false, jobs: 4, top: 10, json: false, csv: false, markdown: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], copies: false, jobs: 4, top: 10, json: false, csv: false, markdown: false, identities: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -73,14 +74,15 @@ export function parseArgs(argv) {
     else if (a === "--json") o.json = true;
     else if (a === "--csv") o.csv = true;
     else if (a === "--markdown") o.markdown = true;
+    else if (a === "--identities") o.identities = true;
     else if (a === "--cwd") o.cwd = next();
     else if (a === "-h" || a === "--help") { o.paths = ["--help"]; return o; }
     else if (a === "--version") { o.paths = ["--version"]; return o; }
     else throw new Error(`unknown option ${a} (see --help)`);
   }
-  const outputFormats = [o.json, o.csv, o.markdown].filter(Boolean);
+  const outputFormats = [o.json, o.csv, o.markdown, o.identities].filter(Boolean);
   if (outputFormats.length > 1) {
-    throw new Error("--json, --csv, and --markdown are mutually exclusive");
+    throw new Error("--json, --csv, --markdown and --identities are mutually exclusive");
   }
   return o;
 }
@@ -447,6 +449,160 @@ export function renderMarkdown(r, top) {
   return lines.join("\n");
 }
 
+/**
+ * Fold a name or address so the same person matches themselves. Turkish is the reason this is
+ * not `toLowerCase()`: uppercase dotted I lowercases to `i` plus a combining dot, and plain `I`
+ * lowercases to `i` rather than `ı`, so a Turkish name fails to match itself. A locale-aware
+ * fold cannot be applied globally without turning English "I" into "ı", so the four i forms
+ * collapse to one. Decomposed and precomposed spellings of the same accented name also meet here.
+ * @param {string} s
+ */
+export function foldIdentity(s) {
+  return s
+    .normalize("NFC")
+    .replace(/[İıIi]/g, "i")
+    .replace(/̇/g, "")
+    .toLowerCase()
+    .normalize("NFC")
+    .trim();
+}
+
+/** Local parts that belong to a role rather than a person, so sharing one proves nothing. */
+const GENERIC_LOCAL = new Set(["dev", "admin", "info", "me", "git", "hello", "mail", "noreply", "no-reply", "contact", "support", "team", "root", "user", "build", "ci", "bot", "test", "email", "work", "home"]);
+
+/** @param {string} mail */
+const isBotAddress = (mail) => /\[bot\]@|^(?:dependabot|renovate|github-actions|greenkeeper)\b/i.test(mail);
+
+/**
+ * The GitHub login inside a noreply address: `12345+login@users.noreply.github.com`, or the
+ * older `login@users.noreply.github.com`. Returns null for anything else.
+ * @param {string} mail
+ */
+export function githubLogin(mail) {
+  const m = /^(?:\d+\+)?([^@+]+)@users\.noreply\.github\.com$/i.exec(mail);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/** Compare identifiers ignoring the separators people vary: dots, dashes, underscores, spaces. */
+const loose = (/** @type {string} */ s) => foldIdentity(s).replace(/[\s._-]/g, "");
+
+/**
+ * Group addresses that look like one person, with the signal behind each grouping. This reads
+ * only what is already in the repository's own history, proposes and never writes, and cannot
+ * know whether two identities really are one person: it reports the evidence and stops.
+ * @param {{author: string, mail: string, lines: number, commits: number}[]} authors
+ */
+export function linkIdentities(authors) {
+  const people = authors.filter((a) => !isBotAddress(a.mail));
+  /** @type {Map<number, Set<number>>} */
+  const edges = new Map();
+  /** @type {Map<string, string[]>} */
+  const why = new Map();
+  const link = (/** @type {number} */ i, /** @type {number} */ j, /** @type {string} */ reason) => {
+    if (!edges.has(i)) edges.set(i, new Set());
+    if (!edges.has(j)) edges.set(j, new Set());
+    edges.get(i)?.add(j);
+    edges.get(j)?.add(i);
+    const key = i < j ? `${i}:${j}` : `${j}:${i}`;
+    const list = why.get(key) ?? [];
+    if (!list.includes(reason)) list.push(reason);
+    why.set(key, list);
+  };
+
+  for (let i = 0; i < people.length; i++) {
+    for (let j = i + 1; j < people.length; j++) {
+      const a = people[i];
+      const b = people[j];
+      if (a.author && b.author && foldIdentity(a.author) === foldIdentity(b.author)) {
+        link(i, j, `the same name, "${a.author}", on two addresses`);
+      }
+      const [la, lb] = [githubLogin(a.mail), githubLogin(b.mail)];
+      const localOf = (/** @type {string} */ m) => m.split("@")[0].replace(/^\d+\+/, "");
+      for (const [login, other] of [[la, b], [lb, a]]) {
+        if (!login) continue;
+        if (loose(login) === loose(localOf(other.mail)) || (other.author && loose(login) === loose(other.author))) {
+          link(i, j, `the GitHub login "${login}" also appears as ${loose(login) === loose(localOf(other.mail)) ? "the address" : "the name"} on the other`);
+        }
+      }
+      if (!la && !lb) {
+        const [pa, pb] = [localOf(a.mail), localOf(b.mail)];
+        if (pa === pb && pa.length >= 3 && !GENERIC_LOCAL.has(pa) && a.mail !== b.mail) {
+          link(i, j, `the same address name, "${pa}", on two domains`);
+        }
+      }
+    }
+  }
+
+  /** @type {number[][]} */
+  const groups = [];
+  const seen = new Set();
+  for (let i = 0; i < people.length; i++) {
+    if (seen.has(i) || !edges.has(i)) continue;
+    const stack = [i];
+    /** @type {number[]} */
+    const members = [];
+    while (stack.length) {
+      const n = stack.pop();
+      if (n === undefined || seen.has(n)) continue;
+      seen.add(n);
+      members.push(n);
+      for (const m of edges.get(n) ?? []) if (!seen.has(m)) stack.push(m);
+    }
+    if (members.length > 1) groups.push(members.sort((x, y) => x - y));
+  }
+
+  return groups.map((members) => {
+    const rows = members.map((i) => people[i]);
+    // The address someone commits from most often is the one to keep; lines are a weaker signal
+    // because one big import can outweigh years of work.
+    const canonical = [...rows].sort((x, y) => y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
+    /** @type {string[]} */
+    const reasons = [];
+    for (let a = 0; a < members.length; a++) {
+      for (let b = a + 1; b < members.length; b++) {
+        for (const r of why.get(`${members[a]}:${members[b]}`) ?? []) if (!reasons.includes(r)) reasons.push(r);
+      }
+    }
+    return { canonical, members: rows, reasons };
+  });
+}
+
+/**
+ * @param {ReturnType<typeof linkIdentities>} groups
+ */
+export function renderIdentities(groups) {
+  if (!groups.length) {
+    return [
+      "No split identities found.",
+      "",
+      "Every address in this repository looks like a different person. That is what you want,",
+      "and it is also what you see when a .mailmap has already merged them.",
+    ].join("\n");
+  }
+  const lines = [`${groups.length} identit${groups.length === 1 ? "y looks" : "ies look"} split across more than one address.`, ""];
+  for (const g of groups) {
+    lines.push(`${g.canonical.author || g.canonical.mail}`);
+    for (const m of g.members) {
+      const mark = m.mail === g.canonical.mail ? "keep" : "map ";
+      lines.push(`  ${mark} ${m.mail}  ${m.commits} commit${m.commits === 1 ? "" : "s"}, ${m.lines.toLocaleString("en-US")} line${m.lines === 1 ? "" : "s"}`);
+    }
+    for (const r of g.reasons) lines.push(`  because ${r}`);
+    lines.push("");
+  }
+  lines.push("Add these to a .mailmap file at the repository root:", "");
+  for (const g of groups) {
+    for (const m of g.members) {
+      if (m.mail === g.canonical.mail) continue;
+      lines.push(`${g.canonical.author} <${g.canonical.mail}> <${m.mail}>`);
+    }
+  }
+  lines.push("");
+  lines.push("These are guesses from names and addresses in this repository's own history; only you");
+  lines.push("can tell whether two of them are really one person. Nothing was written. git log, git");
+  lines.push("blame, git shortlog and this tool all read .mailmap, so one file fixes every count.");
+  return lines.join("\n");
+}
+
 async function main() {
   let o;
   try {
@@ -467,6 +623,8 @@ async function main() {
       output = renderCsv(r);
     } else if (o.markdown) {
       output = renderMarkdown(r, o.top);
+    } else if (o.identities) {
+      output = renderIdentities(linkIdentities(r.authors));
     } else {
       output = renderTable(r, o.top);
     }
