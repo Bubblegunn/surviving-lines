@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.5 (unreleased)
+## 0.1.5 (2026-09-05)
 
 `--identities` lists the addresses in a repository that look like one person and prints the `.mailmap` lines that merge them. Someone who has committed from a laptop and a work machine is in their own history twice, every count here splits them, and nothing says so. Three signals produce a suggestion: the same name on two addresses, the same address name on two domains, and a GitHub noreply address whose login appears as the name or the address on another row. Role addresses such as `dev@` and bot addresses are ignored. Comparison uses the case fold that makes a Turkish name match itself and a decomposed accent match a precomposed one. Nothing is written, and the tool cannot know whether two identities are one person, so it prints the evidence and stops. On langchain-ai/openwiki at `1e6d54c` it finds two, one of them the duplicate row already visible in this README's own example.
 
