@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown } = await import(bin);
+const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -252,4 +252,34 @@ test("--version prints the package version, which the release smoke test reads",
   const out = execFileSync(process.execPath, [binPath, "--version"], { encoding: "utf8" }).trim();
   const { version } = JSON.parse(await readFile(join(import.meta.dirname, "..", "package.json"), "utf8"));
   assert.equal(out, version);
+});
+
+test("the table is padded by terminal columns, not code units", () => {
+  // East Asian characters are drawn two columns wide and combining marks none at all, so
+  // padding by String.length pushed the numbers right for Chinese, Japanese and Korean names
+  // and pulled them left for a decomposed Latin one. No column in the table lined up.
+  assert.equal(displayWidth("Ada Lovelace"), 12);
+  assert.equal(displayWidth("José Álvarez".normalize("NFD")), 12);
+  assert.equal(displayWidth("José Álvarez".normalize("NFC")), 12);
+  assert.equal(displayWidth("张伟"), 4);
+  assert.equal(displayWidth("김민준"), 6);
+  assert.equal(displayWidth("田中太郎"), 8);
+
+  const authors = ["Ada Lovelace", "张伟", "김민준", "田中太郎", "José Álvarez".normalize("NFD")].map((author, i) => ({
+    author,
+    mail: `a${i}@example.com`,
+    lines: 10,
+    lineShare: 0.2,
+    commits: 1,
+    commitShare: 0.2,
+  }));
+  const table = renderTable(
+    { ref: "HEAD", authors, sample: { filesSampled: 5, filesTotal: 5, every: 1, seed: "", linesAttributed: 50, linesInRef: 50 }, commitWindow: { commits: 5 }, blame: { flags: ["-w", "-M"] } },
+    10,
+  );
+  // Every row must place its first digit in the same column, measured the way a terminal does.
+  const rows = table.split("\n").filter((l) => /\d+\s+\d+\.\d%/.test(l) && !l.startsWith("ref "));
+  assert.equal(rows.length, 5);
+  const columns = rows.map((r) => displayWidth(r.slice(0, r.search(/\d/))));
+  assert.equal(new Set(columns).size, 1, `name fields differ in width: ${JSON.stringify(columns)}`);
 });

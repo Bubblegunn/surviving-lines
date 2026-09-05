@@ -306,6 +306,55 @@ export async function analyse(o) {
 const pct = (x) => `${(x * 100).toFixed(1)}%`;
 
 /**
+ * Columns a string occupies in a terminal, which is not its length in UTF-16 code units.
+ *
+ * Ranges are the Wide and Fullwidth classes of Unicode Annex #11, East Asian Width, plus the
+ * emoji blocks that terminals draw double width. Combining marks occupy no column of their own,
+ * which is what a decomposed name such as "José" is made of. Padding by `String.length` pushed
+ * the numbers right for Chinese, Japanese and Korean names and pulled them left for decomposed
+ * Latin ones, so no column in the table lined up.
+ * @param {string} s
+ * @returns {number}
+ */
+export function displayWidth(s) {
+  let w = 0;
+  for (const ch of s) {
+    const c = ch.codePointAt(0) ?? 0;
+    if (/\p{Mn}|\p{Me}/u.test(ch)) continue;
+    w +=
+      (c >= 0x1100 && c <= 0x115f) ||
+      (c >= 0x2e80 && c <= 0x303e) ||
+      (c >= 0x3041 && c <= 0x33ff) ||
+      (c >= 0x3400 && c <= 0x4dbf) ||
+      (c >= 0x4e00 && c <= 0x9fff) ||
+      (c >= 0xa000 && c <= 0xa4cf) ||
+      (c >= 0xa960 && c <= 0xa97f) ||
+      (c >= 0xac00 && c <= 0xd7a3) ||
+      (c >= 0xf900 && c <= 0xfaff) ||
+      (c >= 0xfe10 && c <= 0xfe19) ||
+      (c >= 0xfe30 && c <= 0xfe6f) ||
+      (c >= 0xff00 && c <= 0xff60) ||
+      (c >= 0xffe0 && c <= 0xffe6) ||
+      (c >= 0x1f300 && c <= 0x1f64f) ||
+      (c >= 0x1f900 && c <= 0x1f9ff) ||
+      (c >= 0x20000 && c <= 0x3fffd)
+        ? 2
+        : 1;
+  }
+  return w;
+}
+
+/**
+ * Pad to a width measured in terminal columns rather than code units.
+ * @param {string} s
+ * @param {number} width
+ * @returns {string}
+ */
+function padEndDisplay(s, width) {
+  return s + " ".repeat(Math.max(0, width - displayWidth(s)));
+}
+
+/**
  * @param {Awaited<ReturnType<typeof analyse>>} r
  * @param {number} top
  */
@@ -320,12 +369,12 @@ export function renderTable(r, top) {
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string}} */ a) => ((nameCount.get(a.author) ?? 0) > 1 ? `${a.author} <${a.mail}>` : a.author);
   const rows = r.authors.slice(0, top);
-  const nameW = Math.max(6, ...rows.map((a) => label(a).length));
-  const head = `${"author".padEnd(nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"share".padStart(6)}`;
+  const nameW = Math.max(6, ...rows.map((a) => displayWidth(label(a))));
+  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"share".padStart(6)}`;
   lines.push(head);
-  lines.push("-".repeat(head.length));
+  lines.push("-".repeat(displayWidth(head)));
   for (const a of rows) {
-    lines.push(`${label(a).padEnd(nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}`);
+    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}`);
   }
   if (r.authors.length > top) lines.push(`… ${r.authors.length - top} more author${r.authors.length - top === 1 ? "" : "s"}`);
   lines.push("");
