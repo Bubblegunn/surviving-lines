@@ -195,6 +195,58 @@ test("--markdown renders a Markdown table", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+/**
+ * A repository whose paths are stored decomposed (NFD), which is what a checkout authored on
+ * Linux carries for Korean, French, Turkish, Vietnamese, Portuguese and Spanish names. macOS
+ * normalises filenames on the filesystem, so the entries are written straight into the index.
+ * @returns {Promise<string>}
+ */
+async function nfdRepo() {
+  const dir = await mkdtemp(join(tmpdir(), "surviving-lines-nfd-"));
+  const env = {
+    ...process.env,
+    GIT_AUTHOR_NAME: "Ada",
+    GIT_AUTHOR_EMAIL: "ada@example.com",
+    GIT_COMMITTER_NAME: "Ada",
+    GIT_COMMITTER_EMAIL: "ada@example.com",
+    GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z",
+    GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z",
+  };
+  const g = (/** @type {string[]} */ args, /** @type {Buffer|undefined} */ input) =>
+    execFileSync("git", args, { cwd: dir, env, input, encoding: "buffer" });
+  g(["init", "-q", "-b", "main"]);
+  const names = ["café.ts", "모듈.ts", "İstanbul.ts", "plain.ts"].map((n) => n.normalize("NFD"));
+  const entries = [];
+  for (const [i, name] of names.entries()) {
+    const body = Buffer.from(Array.from({ length: 10 }, (_, j) => `line ${j} of ${i}`).join("\n") + "\n");
+    const blob = String(g(["hash-object", "-w", "--stdin"], body)).trim();
+    entries.push(Buffer.concat([Buffer.from(`100644 ${blob}\t`), Buffer.from(name, "utf8"), Buffer.from("\n")]));
+  }
+  g(["update-index", "--add", "--index-info"], Buffer.concat(entries));
+  const tree = String(g(["write-tree"])).trim();
+  const commit = String(g(["commit-tree", tree, "-m", "init"])).trim();
+  g(["update-ref", "refs/heads/main", commit]);
+  g(["symbolic-ref", "HEAD", "refs/heads/main"]);
+  return dir;
+}
+
+test("a repository whose paths are decomposed still produces a report", async () => {
+  // git precomposes command-line arguments on macOS, so a path read from the tree and handed
+  // back to blame no longer matched it: "fatal: no such path café.ts in HEAD", and the run
+  // ended with no report at all.
+  const dir = await nfdRepo();
+  try {
+    const r = await analyse(parseArgs(["--cwd", dir]));
+    assert.equal(r.sample.filesTotal, 4);
+    assert.equal(r.sample.filesSampled, 4);
+    assert.equal(r.sample.linesAttributed, 40);
+    assert.equal(r.authors.length, 1);
+    assert.equal(r.authors[0]?.lines, 40);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("--version prints the package version, which the release smoke test reads", async () => {
   const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
   const out = execFileSync(process.execPath, [binPath, "--version"], { encoding: "utf8" }).trim();

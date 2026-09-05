@@ -167,11 +167,20 @@ export function countBlameLines(porcelain) {
 }
 
 /**
+ * Settings pinned on every call so the same repository answers the same way on any machine.
+ *
+ * `core.precomposeunicode` is true in every repository git creates on macOS, and it rewrites
+ * command-line arguments from decomposed to precomposed form. Paths here are read out of the
+ * tree and handed straight back to blame, so a stored decomposed path (what a checkout
+ * authored on Linux carries for Korean, French, Turkish, Vietnamese, Portuguese and Spanish
+ * names) came back as a different string and matched nothing: "fatal: no such path café.ts in
+ * HEAD", printed in a form that looks exactly like the file. Turning it off keeps the path we
+ * send identical to the path git stored. ASCII repositories are unaffected either way.
  * @param {string[]} args
  * @param {string} cwd
  */
 async function git(args, cwd) {
-  const { stdout } = await execFileP("git", args, { cwd, maxBuffer: 1024 * 1024 * 512, encoding: "utf8" });
+  const { stdout } = await execFileP("git", ["-c", "core.precomposeunicode=false", ...args], { cwd, maxBuffer: 1024 * 1024 * 512, encoding: "utf8" });
   return stdout;
 }
 
