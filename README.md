@@ -1,5 +1,7 @@
 # surviving-lines
 
+English | [Türkçe](README.tr.md)
+
 Measure who wrote the code that is still alive in a git ref, next to who committed.
 
 Commit counts measure activity. `git blame` measures what survived every later refactor.
@@ -71,6 +73,7 @@ is still well under a minute.
 --jobs <n>           parallel blame processes (default: 4)
 --top <k>            rows to print (default: 10)
 --json               print JSON instead of a table
+--csv                print CSV (author,mail,lines,line_share,commits,commit_share)
 --cwd <dir>          repository directory (default: current directory)
 ```
 
@@ -79,7 +82,19 @@ the blame and the commit count to those directories. A glob without a slash matc
 basenames, so `--exclude '*.test.ts'` works at any depth.
 
 `--json` prints everything the table is built from, including the sample parameters, so
-a number can be quoted together with the exact command that produced it.
+a number can be quoted together with the exact command that produced it. `--csv` prints one
+row per author for spreadsheets.
+
+## Compared with git shortlog and git-fame
+
+`git shortlog -sn` counts commits, which is the activity number this tool prints in its last
+two columns and nothing more. `git fame` (the Python tool) also blames every file and reports
+lines per author, and it is the closest relative; the differences are that surviving-lines
+samples files deterministically so a run on a large repository finishes in seconds and can be
+reproduced by someone else with the same seed, prints commit share next to line share so the
+gap is visible, follows `.mailmap` and disambiguates duplicate names, and has no dependencies.
+If you want per-file detail or survival over time, git fame or a custom `git log -L` is the
+better tool.
 
 ## What it cannot show
 

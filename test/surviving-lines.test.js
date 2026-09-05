@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable } = await import(bin);
+const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -147,6 +147,23 @@ test("sampling with --sample reports the sampled subset and never exceeds the to
     assert.equal(r.sample.every, 2);
     const again = await analyse(parseArgs(["--cwd", dir, "--sample", "2", "--seed", "x"]));
     assert.deepEqual(again.authors, r.authors);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("--csv prints one row per author with fractional shares and quotes commas", async () => {
+  const dir = await fixtureRepo();
+  try {
+    assert.equal(parseArgs(["--csv"]).csv, true);
+    const r = await analyse(parseArgs(["--cwd", dir]));
+    const csv = renderCsv(r);
+    const lines = csv.split("\n");
+    assert.equal(lines[0], "author,mail,lines,line_share,commits,commit_share");
+    assert.equal(lines.length, 3);
+    assert.match(lines[1], /^Ada,ada@example\.com,11,0\.5238,1,0\.3333$/);
+    const quoted = renderCsv({ ...r, authors: [{ ...r.authors[0], author: 'Smith, "Ada"' }] }).split("\n")[1];
+    assert.ok(quoted.startsWith('"Smith, ""Ada""",'));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
