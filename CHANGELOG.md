@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.3 (unreleased)
+## 0.1.3 (2026-09-05)
 
 `--markdown` prints the table as a Markdown table for pasting into issues and README files, mutually exclusive with `--json` and `--csv`, with pipes escaped in author labels. Contributed by @shivam-070208 (#6, closes #1).
 
