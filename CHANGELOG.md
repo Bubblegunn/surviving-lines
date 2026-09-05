@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 (unreleased)
+
+A first measurement of the question this tool exists to ask, in [`research/`](research/): does an author's commit share predict their share of the surviving code? Twelve repositories, three seeds each, 2,748 author rows, with the harness and the raw table committed so the sample can grow and the analysis can be disagreed with. The same person tops both measures in 25 of 36 runs, so the claim that commit counts are worthless is not what this found and is not made; but among authors holding at least 5% of either measure the two shares differ by a median of 7.5 percentage points, and by ten points or more in a third of cases. The document states what twelve repositories cannot support, reports that the top survivor's share moves by up to 17.4 points across seeds at `--sample 5`, and notes that one repository's top committer is a bot, which this tool does not exclude.
+
+The README now places the tool in the line-survival literature it sits beside rather than competing with: Spinellis, Louridas and Kechagia (PeerJ CS 7:e372, 2021) and Gurov (arXiv 2606.04993, 2026). Both measure lines; neither measures people.
+
+No behaviour changed.
+
 ## 0.1.5 (2026-09-05)
 
 `--identities` lists the addresses in a repository that look like one person and prints the `.mailmap` lines that merge them. Someone who has committed from a laptop and a work machine is in their own history twice, every count here splits them, and nothing says so. Three signals produce a suggestion: the same name on two addresses, the same address name on two domains, and a GitHub noreply address whose login appears as the name or the address on another row. Role addresses such as `dev@` and bot addresses are ignored. Comparison uses the case fold that makes a Turkish name match itself and a decomposed accent match a precomposed one. Nothing is written, and the tool cannot know whether two identities are one person, so it prints the evidence and stops. On langchain-ai/openwiki at `1e6d54c` it finds two, one of them the duplicate row already visible in this README's own example.

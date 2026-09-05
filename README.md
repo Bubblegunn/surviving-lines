@@ -229,6 +229,23 @@ The tool prints this under every table because the number is easy to misuse:
 
 Use it to answer "whose code is still here?", not "who is the best engineer?".
 
+## What is already known, and what this measures
+
+How long a line of code lives is well studied. Spinellis, Louridas and Kechagia tracked 3.3
+billion lifetime events across 89 repositories and put the median lifespan at about 2.4
+years, with young lines the most likely to die ([PeerJ CS 7:e372,
+2021](https://doi.org/10.7717/peerj-cs.372)); Gurov modelled 32.5 million line births in 120
+TypeScript repositories and found over half of all lines are never deleted ([arXiv
+2606.04993, 2026](https://arxiv.org/abs/2606.04993)).
+
+Both measure lines. Neither measures people, and whether an author's share of commits
+predicts their share of the surviving code appears to be unpublished. This tool prints both
+numbers side by side, so [`research/`](research/) contains a first measurement over twelve
+repositories: the same person tops both in 25 of 36 runs, while among substantial
+contributors the two shares differ by a median of 7.5 percentage points and by ten points or
+more in a third of cases. The sample is twelve repositories and the document says what that
+cannot support.
+
 ## Where it came from
 
 I needed to describe my own share of two private codebases in a way that another person
