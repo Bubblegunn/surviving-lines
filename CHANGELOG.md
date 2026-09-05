@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.6 (unreleased)
+## 0.1.6 (2026-09-05)
 
 A first measurement of the question this tool exists to ask, in [`research/`](research/): does an author's commit share predict their share of the surviving code? Twelve repositories, three seeds each, 2,748 author rows, with the harness and the raw table committed so the sample can grow and the analysis can be disagreed with. The same person tops both measures in 25 of 36 runs, so the claim that commit counts are worthless is not what this found and is not made; but among authors holding at least 5% of either measure the two shares differ by a median of 7.5 percentage points, and by ten points or more in a third of cases. The document states what twelve repositories cannot support, reports that the top survivor's share moves by up to 17.4 points across seeds at `--sample 5`, and notes that one repository's top committer is a bot, which this tool does not exclude.
 
