@@ -2,6 +2,15 @@
 
 English | [Türkçe](README.tr.md)
 
+<p>
+  <img src="https://img.shields.io/npm/v/surviving-lines?style=flat-square&color=111111&label=npm" alt="npm">
+  <img src="https://img.shields.io/npm/dm/surviving-lines?style=flat-square&color=111111" alt="npm downloads">
+  <img src="https://img.shields.io/github/actions/workflow/status/Bubblegunn/surviving-lines/ci.yml?style=flat-square&color=111111&label=ci" alt="ci">
+  <img src="https://img.shields.io/bundlephobia/minzip/surviving-lines?style=flat-square&color=111111" alt="minzipped size">
+  <img src="https://img.shields.io/github/stars/Bubblegunn/surviving-lines?style=flat-square&color=111111" alt="stars">
+  <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT">
+</p>
+
 Measure who wrote the code that is still alive in a git ref, next to who committed.
 
 Commit counts measure activity. `git blame` measures what survived every later refactor.
