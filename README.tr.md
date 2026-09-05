@@ -45,6 +45,47 @@ görmek için tuzu değiştirin.
 `--sample 1` (varsayılan) her dosyayı blame'ler. 60 bin satırlık bir TypeScript deposunda bu
 hâlâ bir dakikanın epey altındadır.
 
+## Örnek nasıl seçilir
+
+Her yol hash'lenir; hash `n`'e tam bölünüyorsa dosya örneğe girer:
+
+```
+h     = FNV-1a-32( tuz + "\0" + yol )       # 32 bit, UTF-16 kod birimleri üzerinde
+girer = (h mod n) == 0                       # --sample n; n = 1 her dosyayı tutar
+```
+
+Ayırıcı bir NUL baytıdır, bu yüzden bir tuz bir yol önekiyle çakışamaz. FNV-1a tam sayı
+aritmetiğidir (`Math.imul`, işaretsiz kaydırma); rastgelelik, dosya içeriği ve zaman damgası
+yoktur, git yolları her zaman ileri eğik çizgi kullanır. Bu yüzden aynı komut Node 20, 22
+veya 24'te, her işletim sisteminde aynı dosyaları seçer. Beklenen örnek `n` dosyada birdir;
+kesin sayı yollara bağlıdır, çıktının 40 varsaymak yerine `files 50/203 sampled` yazması
+bundandır.
+
+Çalışılmış örnek, [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki) `1e6d54c`,
+`--sample 5 --include '**/*.ts' --exclude '**/*.test.ts'` (filtrelerden sonra 203 dosya):
+
+| yol | `"\0" + yol` FNV-1a değeri | mod 5 | örnekte |
+|---|---|---|---|
+| `evals/ledger/benchmark/benchmark.ts` | 1128513045 | 0 | evet |
+| `src/index.ts` | 1807104411 | 1 | hayır |
+
+`--seed second` ile ilk yol 646834445'e hash'lenir, yine 0 mod 5; toplamda farklı 45 dosya
+seçilir. Aynı commit üzerinde üç tuz:
+
+| tuz | dosya | atfedilen satır | Colin Francis | Brace Sproul |
+|---|---|---|---|---|
+| (yok) | 50/203 | 59.049'un 14.722'si | %52,4 | %22,5 |
+| `second` | 45/203 | 59.049'un 12.609'u | %59,5 | %24,4 |
+| `third` | 47/203 | 59.049'un 13.071'i | %56,1 | %22,5 |
+
+En üstteki yazar için yaklaşık yedi puanlık bu yayılma, bu depoda 5'te 1 örneğin değeridir:
+sıralama ve commit payıyla arasındaki fark (ikisi için de %18,0) her tuzda tutar, ikinci
+ondalık tutmaz. Pay, deponun değil örneklenen satırların payıdır ve örnek dosya bazında
+seçildiği için tek bir büyük dosya payı oynatabilir. Tek bir sayı önemliyse `--sample 1`
+çalıştırın; örneklenmiş bir sayıyı alıntılarken `--json` çıktısındaki `sample.every`,
+`sample.seed`, `filesSampled` ve `linesAttributed` alanlarını yanına yazın; tablonun ilk
+satırı zaten bunları basar.
+
 ## Ne sayar
 
 - `lines` sütunu, örneklenen dosyalarda, `git blame -w -M`'nin gördüğü hâliyle son
