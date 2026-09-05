@@ -29,19 +29,19 @@ npx surviving-lines --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
 ref HEAD  ·  files 50/203 sampled (1 in 5)  ·  14,722 of 59,049 lines attributed
 git blame -w -M  ·  commits 339, merges excluded
 
-author            lines   share  commits   share
-------------------------------------------------
-Colin Francis     7,718   52.4%       61   18.0%
-Brace Sproul      3,314   22.5%       61   18.0%
-Greg Land           356    2.4%        9    2.7%
-…
+author                                                           lines   share  commits   share
+-----------------------------------------------------------------------------------------------
+Colin Francis <131073567+colifran@users.noreply.github.com>      7,718   52.4%       61   18.0%
+Brace Sproul                                                     3,314   22.5%       61   18.0%
+Colin Francis <colin.francis@langchain.dev>                        769    5.2%       10    2.9%
+… 76 more authors
 
 What this cannot show: quality of the lines, review work, design done in documents,
 or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.
 ```
 
 That run is [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki) at `1e6d54c`
-(4 September 2026) and took 0.3 seconds. Two authors with the same commit share hold
+(4 September 2026) and took 0.4 seconds. Two authors with the same commit share hold
 very different shares of the code that is still there.
 
 ## Why sample
@@ -138,11 +138,20 @@ a number can be quoted together with the exact command that produced it. `--csv`
 row per author for spreadsheets. `--markdown` prints the same table as Markdown:
 
 ```sh
-npx surviving-lines --markdown
-# ref HEAD  ·  files 3/3 sampled (1 in 1)  ·  21 of 21 lines attributed
-# | author | lines | line share | commits | commit share |
-# | --- | ---: | ---: | ---: | ---: |
-# | Ada | 11 | 52.4% | 1 | 33.3% |
+npx surviving-lines --markdown --sample 5 --include '**/*.ts' --exclude '**/*.test.ts' --top 3
+```
+
+```
+ref HEAD  ·  files 50/203 sampled (1 in 5)  ·  14,722 of 59,049 lines attributed
+git blame -w -M  ·  commits 339, merges excluded
+
+| author | lines | line share | commits | commit share |
+| --- | ---: | ---: | ---: | ---: |
+| Colin Francis <131073567+colifran@users.noreply.github.com> | 7,718 | 52.4% | 61 | 18.0% |
+| Brace Sproul | 3,314 | 22.5% | 61 | 18.0% |
+| Colin Francis <colin.francis@langchain.dev> | 769 | 5.2% | 10 | 2.9% |
+
+… 76 more authors
 ```
 
 ## Compared with git shortlog and git-fame

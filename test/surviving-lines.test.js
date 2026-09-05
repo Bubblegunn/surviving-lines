@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -194,4 +194,10 @@ test("--markdown renders a Markdown table", async () => {
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+test("--version prints the package version, which the release smoke test reads", async () => {
+  const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
+  const out = execFileSync(process.execPath, [binPath, "--version"], { encoding: "utf8" }).trim();
+  const { version } = JSON.parse(await readFile(join(import.meta.dirname, "..", "package.json"), "utf8"));
+  assert.equal(out, version);
 });
