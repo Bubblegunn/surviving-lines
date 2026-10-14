@@ -9,7 +9,7 @@ Commit sayısı etkinliği ölçer. `git blame` ise sonraki her yeniden düzenle
 blame payı commit payının üstünde olan biri başkalarının kodunu değiştiren kodu yazmıştır;
 altında olan biri ise değiştirilen kodu yazmıştır.
 
-Tek dosya, bağımlılık yok, Node 20 ya da üstü, git 2.15 ya da üstü, `git`'in okuyabildiği her depo.
+Tek dosya, bağımlılık yok, Node 22 ya da üstü, git 2.15 ya da üstü, `git`'in okuyabildiği her depo.
 
 ```
 npx surviving-lines --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
@@ -56,7 +56,7 @@ girer = (h mod n) == 0                       # --sample n; n = 1 her dosyayı tu
 
 Ayırıcı bir NUL baytıdır, bu yüzden bir tuz bir yol önekiyle çakışamaz. FNV-1a tam sayı
 aritmetiğidir (`Math.imul`, işaretsiz kaydırma); rastgelelik, dosya içeriği ve zaman damgası
-yoktur, git yolları her zaman ileri eğik çizgi kullanır. Bu yüzden aynı komut Node 20, 22
+yoktur, git yolları her zaman ileri eğik çizgi kullanır. Bu yüzden aynı komut Node 22
 veya 24'te, her işletim sisteminde aynı dosyaları seçer. Beklenen örnek `n` dosyada birdir;
 kesin sayı yollara bağlıdır, çıktının 40 varsaymak yerine `files 50/203 sampled` yazması
 bundandır.

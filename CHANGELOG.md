@@ -2,6 +2,11 @@
 
 ## 0.2.0 (unreleased)
 
+**Breaking: Node 22 or newer is required.** Node 20 reached end of life on 2026-04-30 and no longer
+receives security fixes. `engines.node` is now `>=22`, and CI tests Node 22 and 24. The floor moves
+because a runtime without security fixes is not one this package should keep promising to support,
+not because the code changed.
+
 **A shallow clone is refused.** In a `git clone --depth 1` the oldest fetched commit stands in for
 all history before it, so blame gave every line to the HEAD author and the run exited 0 looking like
 any other: on this repository, 6,069 of 6,069 lines and 1 of 1 commits to one person, against 5,973

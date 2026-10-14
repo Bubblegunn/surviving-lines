@@ -20,7 +20,7 @@ interesting part: an author whose blame share is above their commit share wrote 
 that replaced other people's; one whose blame share is below wrote code that was
 replaced.
 
-One file, no dependencies, Node 20 or newer, git 2.15 or newer, any repository `git` can read.
+One file, no dependencies, Node 22 or newer, git 2.15 or newer, any repository `git` can read.
 
 ```
 npx surviving-lines --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
@@ -68,7 +68,7 @@ in   = (h mod n) == 0                        # --sample n; n = 1 keeps every fil
 The separator is a NUL byte, so a seed cannot collide with a path prefix. FNV-1a is
 integer arithmetic (`Math.imul`, unsigned shift), no randomness, no file contents, no
 timestamps, and git paths always use forward slashes, so the same command picks the same
-files on Node 20, 22 or 24 on any operating system. The expected sample is one file in
+files on Node 22 or 24 on any operating system. The expected sample is one file in
 `n`; the exact count depends on the paths, which is why the run prints `files 50/203
 sampled` rather than assuming 40.
 
