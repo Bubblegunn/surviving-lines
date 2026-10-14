@@ -32,6 +32,11 @@ exit code 1 below that. The other features used are older by git's release notes
 --line-porcelain` 1.7.6, `git -c` 1.7.2, `core.precomposeunicode` 1.7.12). CI still runs only the git
 each runner image ships; 2.15 itself is not tested.
 
+CI measures test coverage of `bin/` with Node's built-in `--experimental-test-coverage`, no
+dependency, on one leg (`npm run coverage`), and fails below lines 98%, branches 82% and functions
+96%, the floor of the 98.48%, 82.80% and 96.43% measured when the thresholds were set. Skipping the
+`renderIdentities` test drops line coverage to 95.45% and fails the job.
+
 ## 0.1.8 (2026-10-14)
 
 **The release gate died on npm 12 and forbade the entry you are reading.** `npm pack --dry-run

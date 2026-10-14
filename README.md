@@ -345,6 +345,7 @@ repository" button produces correct BibTeX and APA without any copying by hand.
 ```
 npm test        # node:test, builds a throwaway repository with two authors, a rewrite, a rename and a binary
 npm run lint    # node --check
+npm run coverage  # the tests with Node's built-in coverage of bin/; CI fails below the thresholds in package.json
 ```
 
 MIT.
