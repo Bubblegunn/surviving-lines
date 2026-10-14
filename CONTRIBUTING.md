@@ -15,6 +15,18 @@ Node 20 or newer and git are required. Note that Node 20's test runner does not 
 
 To add an output format or an option: add it to `parseArgs` and `HELP` in `bin/surviving-lines.js`, implement it next to `renderTable`, and add a test in `test/surviving-lines.test.js` that runs against the fixture repository. Keep the file dependency-free.
 
+## The `--json` layout
+
+`--json` is read by scripts, so its layout is versioned. `schema/surviving-lines.schema.json` describes it,
+ships in the package, and `test/surviving-lines.test.js` checks a real run against it with no dependency.
+The test fails when a key the schema requires is missing and when the output has a key the schema does not
+list, so a change to the output is a change to the schema in the same pull request.
+
+- Adding a key: add it to the schema (and to `required` if it is always present). `schemaVersion` stays.
+- Removing or renaming a key, or changing its type: increase `SCHEMA_VERSION` in `bin/surviving-lines.js`
+  and the `const` under `schemaVersion` in the schema, and say so in the CHANGELOG. The release that ships
+  it is a minor version bump or higher, never a patch.
+
 ## Pull requests
 
 - One change per pull request, with a test that fails before and passes after.

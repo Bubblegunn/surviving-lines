@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Bubblegunn/surviving-lines/blob/main/schema/surviving-lines.schema.json",
+  "title": "surviving-lines --json output",
+  "description": "schemaVersion changes when a key is removed, renamed or changes type. Adding a key does not change it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "tool", "ref", "shallow", "sample", "commitWindow", "blame", "authors"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "const": "surviving-lines" },
+        "version": { "type": "string" }
+      }
+    },
+    "ref": { "type": "string", "description": "The revision as given on the command line." },
+    "shallow": { "type": "boolean", "description": "True only when --allow-shallow ran in a shallow clone." },
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["every", "seed", "filesTotal", "filesSampled", "linesInRef", "linesAttributed"],
+      "properties": {
+        "every": { "type": "integer", "minimum": 1 },
+        "seed": { "type": "string" },
+        "filesTotal": { "type": "integer", "minimum": 0 },
+        "filesSampled": { "type": "integer", "minimum": 0 },
+        "linesInRef": { "type": "integer", "minimum": 0 },
+        "linesAttributed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "commitWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["since", "until", "commits", "mergesExcluded"],
+      "properties": {
+        "since": { "type": ["string", "null"] },
+        "until": { "type": ["string", "null"] },
+        "commits": { "type": "integer", "minimum": 0 },
+        "mergesExcluded": { "type": "boolean" }
+      }
+    },
+    "blame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flags"],
+      "properties": {
+        "flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["author", "mail", "lines", "lineShare", "commits", "commitShare"],
+        "properties": {
+          "author": { "type": "string" },
+          "mail": { "type": "string", "description": "Lowercased, as .mailmap resolved it." },
+          "lines": { "type": "integer", "minimum": 0 },
+          "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+          "commits": { "type": "integer", "minimum": 0 },
+          "commitShare": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}

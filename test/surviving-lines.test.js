@@ -452,3 +452,98 @@ test("--allow-shallow runs anyway and marks every output format", async () => {
     await rm(shallow, { recursive: true, force: true });
   }
 });
+
+/**
+ * The part of JSON Schema that schema/surviving-lines.schema.json uses, checked by hand so the test
+ * needs no dependency: type, const, required, properties, additionalProperties false, items, minimum
+ * and maximum. Returns every violation with its path; an empty list means the value conforms.
+ * @param {any} schema
+ * @param {any} value
+ * @param {string} [path]
+ * @returns {string[]}
+ */
+function schemaErrors(schema, value, path = "$") {
+  /** @type {string[]} */
+  const errors = [];
+  const typeOf = (/** @type {any} */ v) => (v === null ? "null" : Array.isArray(v) ? "array" : Number.isInteger(v) ? "integer" : typeof v);
+  if (schema.type) {
+    const types = [].concat(schema.type);
+    const actual = typeOf(value);
+    if (!types.includes(actual) && !(actual === "integer" && types.includes("number"))) {
+      return [`${path}: expected ${types.join(" or ")}, got ${actual}`];
+    }
+  }
+  if ("const" in schema && value !== schema.const) errors.push(`${path}: expected ${JSON.stringify(schema.const)}, got ${JSON.stringify(value)}`);
+  if (typeof value === "number") {
+    if (schema.minimum !== undefined && value < schema.minimum) errors.push(`${path}: ${value} < ${schema.minimum}`);
+    if (schema.maximum !== undefined && value > schema.maximum) errors.push(`${path}: ${value} > ${schema.maximum}`);
+  }
+  if (typeOf(value) === "object") {
+    for (const key of schema.required ?? []) if (!(key in value)) errors.push(`${path}: missing key ${key}`);
+    for (const [key, v] of Object.entries(value)) {
+      if (schema.properties?.[key]) errors.push(...schemaErrors(schema.properties[key], v, `${path}.${key}`));
+      else if (schema.additionalProperties === false) errors.push(`${path}: key ${key} is not in the schema`);
+    }
+  }
+  if (Array.isArray(value) && schema.items) value.forEach((v, i) => errors.push(...schemaErrors(schema.items, v, `${path}[${i}]`)));
+  return errors;
+}
+
+test("--json carries schemaVersion and the tool version, and matches the published schema", async () => {
+  const root = join(import.meta.dirname, "..");
+  const schema = JSON.parse(await readFile(join(root, "schema", "surviving-lines.schema.json"), "utf8"));
+  const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+  // The schema ships with the package; a schema that is not in the tarball helps nobody.
+  assert.ok(pkg.files.includes("schema"), "package.json files must include schema");
+
+  const dir = await fixtureRepo();
+  try {
+    const run = spawnSync(process.execPath, [join(root, "bin", "surviving-lines.js"), "--cwd", dir, "--json", "--since", "2026-02-01"], { encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    const out = JSON.parse(run.stdout);
+    assert.equal(out.schemaVersion, schema.properties.schemaVersion.const);
+    assert.deepEqual(out.tool, { name: "surviving-lines", version: pkg.version });
+    assert.deepEqual(schemaErrors(schema, out), []);
+    assert.ok(out.authors.length > 0, "no author rows, so the row schema was not exercised");
+
+    // Every key the schema requires is checked: removing any one of them must be reported. This is
+    // what fails when the tool stops emitting a key that consumers read.
+    /** @type {[any, any, string][]} */
+    const objects = [[schema, out, "$"]];
+    for (const [s, v] of objects) {
+      for (const key of s.required ?? []) {
+        const copy = structuredClone(out);
+        const parent = v === out ? copy : path(copy, objectPath(out, v));
+        delete parent[key];
+        assert.ok(schemaErrors(schema, copy).some((e) => e.includes(`missing key ${key}`)), `removing ${key} was not reported`);
+        if (s.properties?.[key]?.type === "object") objects.push([s.properties[key], v[key], key]);
+      }
+    }
+    for (const key of schema.properties.authors.items.required) {
+      const copy = structuredClone(out);
+      delete copy.authors[0][key];
+      assert.ok(schemaErrors(schema, copy).some((e) => e.includes(`missing key ${key}`)), `removing authors[0].${key} was not reported`);
+    }
+    // A key added to the output without a line in the schema is reported too, so the schema cannot fall behind.
+    assert.ok(schemaErrors(schema, { ...out, extra: 1 }).some((e) => e.includes("extra")));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+/** @param {any} root @param {any} target @returns {string[]} */
+function objectPath(root, target) {
+  for (const [k, v] of Object.entries(root)) {
+    if (v === target) return [k];
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      const sub = objectPath(v, target);
+      if (sub.length) return [k, ...sub];
+    }
+  }
+  return [];
+}
+
+/** @param {any} root @param {string[]} keys */
+function path(root, keys) {
+  return keys.reduce((o, k) => o[k], root);
+}

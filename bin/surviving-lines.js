@@ -19,6 +19,26 @@ import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
 
+/**
+ * The version of the `--json` layout, described by schema/surviving-lines.schema.json. It changes
+ * when a key is removed, renamed or changes type, so a consumer can refuse a layout it does not know
+ * instead of reading a missing key as zero. Adding a key does not change it.
+ */
+export const SCHEMA_VERSION = 1;
+
+/** The package version, read from the package.json this file ships with. */
+function toolVersion() {
+  return JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
+}
+
+/**
+ * The `--json` document: the analysis, preceded by what produced it.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderJson(r) {
+  return JSON.stringify({ schemaVersion: SCHEMA_VERSION, tool: { name: "surviving-lines", version: toolVersion() }, ...r }, null, 2);
+}
+
 const HELP = `usage: surviving-lines [options] [-- <path>...]
 
 Measure who wrote the code that is still alive in a git ref.
@@ -710,13 +730,13 @@ async function main() {
     process.exit(2);
   }
   if (o.paths[0] === "--help") { console.log(HELP); return; }
-  if (o.paths[0] === "--version") { console.log(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version); return; }
+  if (o.paths[0] === "--version") { console.log(toolVersion()); return; }
   try {
     const r = await analyse(o);
     let output;
 
     if (o.json) {
-      output = JSON.stringify(r, null, 2);
+      output = renderJson(r);
     } else if (o.csv) {
       // CSV has no header line beyond the column names, which parsers read; the mark goes to stderr.
       if (r.shallow) console.error(`surviving-lines: ${SHALLOW_MARK}`);

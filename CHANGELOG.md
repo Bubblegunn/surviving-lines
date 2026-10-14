@@ -12,6 +12,13 @@ first line of the table, the Markdown and `--identities`, `"shallow": true` in `
 on stderr for `--csv`, whose only header is the column names that parsers read. `--json` now always
 carries `shallow`, `false` in a full clone.
 
+**`--json` says which layout it is.** Every `--json` document now starts with `schemaVersion` (1)
+and `tool: { name, version }`, and `schema/surviving-lines.schema.json` describes the layout and
+ships in the package. A script that reads the output can refuse a layout it does not know instead of
+reading a renamed key as missing. A test checks a real run against the schema without a dependency
+and fails when a required key is missing or an unlisted key appears; CONTRIBUTING says that removing
+or renaming a key raises `schemaVersion` and needs at least a minor release.
+
 ## 0.1.8 (2026-10-14)
 
 **The release gate died on npm 12 and forbade the entry you are reading.** `npm pack --dry-run

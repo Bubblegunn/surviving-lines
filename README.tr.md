@@ -132,7 +132,9 @@ commit sayımını o dizinlere daraltır. Eğik çizgi içermeyen bir glob dosya
 yüzden `--exclude '*.test.ts'` her derinlikte çalışır.
 
 `--json` tablonun kurulduğu her şeyi, örnekleme parametreleri dahil, yazdırır; böylece bir sayı
-onu üreten komutla birlikte alıntılanabilir. `--csv` elektronik tablolar için yazar başına bir
+onu üreten komutla birlikte alıntılanabilir. Çıktı `schemaVersion` ve `tool: { name, version }`
+ile başlar; yapısı pakette gelen [`schema/surviving-lines.schema.json`](schema/surviving-lines.schema.json)
+dosyasında tarif edilir ve bir anahtar silindiğinde, adı ya da türü değiştiğinde `schemaVersion` artar. `--csv` elektronik tablolar için yazar başına bir
 satır verir.
 
 ## Kim tek kişi

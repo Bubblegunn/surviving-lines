@@ -146,7 +146,10 @@ the blame and the commit count to those directories. A glob without a slash matc
 basenames, so `--exclude '*.test.ts'` works at any depth.
 
 `--json` prints everything the table is built from, including the sample parameters, so
-a number can be quoted together with the exact command that produced it. `--csv` prints one
+a number can be quoted together with the exact command that produced it. It starts with
+`schemaVersion` and `tool: { name, version }`; the layout is described by
+[`schema/surviving-lines.schema.json`](schema/surviving-lines.schema.json), which ships in the
+package, and `schemaVersion` changes whenever a key is removed, renamed or changes type. `--csv` prints one
 row per author for spreadsheets. `--markdown`, contributed by
 [@shivam-070208](https://github.com/shivam-070208) in [#6](https://github.com/Bubblegunn/surviving-lines/pull/6),
 prints the same table as Markdown:
