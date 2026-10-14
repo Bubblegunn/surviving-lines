@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2 (unreleased)
+
+**An empty sample is an error, not a result.** `--sample 100000 --seed x` on a repository of 46 files sampled
+none and printed a table of 0.0% shares with exit code 0, so a script could not tell it from a real answer;
+`--include` patterns that matched nothing did the same. Both now stop with a message on stderr naming the
+sample rate and seed, or the patterns, and exit 1, and `--help` lists the exit codes. Written by
+[@Enard52](https://github.com/Enard52) ([#40](https://github.com/Bubblegunn/surviving-lines/pull/40), closes
+[#28](https://github.com/Bubblegunn/surviving-lines/issues/28)); each of the two checks has a test that fails
+without it.
+
 ## 0.2.1 (2026-10-14)
 
 **`--markdown` escapes backslashes in names and addresses.** Only `|` was escaped, so a name

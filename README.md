@@ -110,6 +110,9 @@ line of the table prints.
 - Binary files are skipped. Identities follow the repository's `.mailmap`; add one to
   merge an author's several addresses. When two rows share a name the table shows the
   address so they are not confused.
+- A sample that contains no file, or `--include` patterns that match nothing, stop with exit code 1
+  and say which, rather than printing a table of 0.0% shares. Contributed by
+  [@Enard52](https://github.com/Enard52) ([#40](https://github.com/Bubblegunn/surviving-lines/pull/40)).
 - A shallow clone is refused with exit code 1 and a message naming `git fetch --unshallow`.
   In a shallow clone the oldest fetched commit stands in for all history before it, so blame
   gives every older line to that commit's author: on a `git clone --depth 1` of this
