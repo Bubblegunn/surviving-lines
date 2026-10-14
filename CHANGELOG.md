@@ -19,6 +19,14 @@ reading a renamed key as missing. A test checks a real run against the schema wi
 and fails when a required key is missing or an unlisted key appears; CONTRIBUTING says that removing
 or renaming a key raises `schemaVersion` and needs at least a minor release.
 
+**git 2.15 or newer is required, and an older one is told so.** The shallow-clone check uses
+`git rev-parse --is-shallow-repository`, which arrived in git 2.15.0, and a git that does not know a
+`rev-parse` flag prints it back and exits 0, so an older git would have read every shallow clone as a
+full one. The run now starts with `git --version` and stops with `git 2.15 or newer is required` and
+exit code 1 below that. The other features used are older by git's release notes (`blame
+--line-porcelain` 1.7.6, `git -c` 1.7.2, `core.precomposeunicode` 1.7.12). CI still runs only the git
+each runner image ships; 2.15 itself is not tested.
+
 ## 0.1.8 (2026-10-14)
 
 **The release gate died on npm 12 and forbade the entry you are reading.** `npm pack --dry-run

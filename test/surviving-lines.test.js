@@ -1,14 +1,14 @@
 // @ts-check
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile, mkdir, rm, readFile } from "node:fs/promises";
+import { mkdtemp, writeFile, mkdir, rm, readFile, chmod } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities } = await import(bin);
+const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities, gitVersionProblem, MIN_GIT } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -547,3 +547,41 @@ function objectPath(root, target) {
 function path(root, keys) {
   return keys.reduce((o, k) => o[k], root);
 }
+
+test("gitVersionProblem names the minimum and passes anything at or above it", () => {
+  assert.deepEqual(MIN_GIT, [2, 15]);
+  assert.match(gitVersionProblem("git version 2.14.6") ?? "", /^git 2\.15 or newer is required \(found 2\.14\.6\)/);
+  assert.match(gitVersionProblem("git version 1.9.5") ?? "", /git 2\.15 or newer is required/);
+  assert.equal(gitVersionProblem("git version 2.15.0"), null);
+  assert.equal(gitVersionProblem("git version 2.50.1 (Apple Git-155)"), null);
+  assert.equal(gitVersionProblem("git version 2.45.1.windows.1"), null);
+  assert.equal(gitVersionProblem("git version 3.0.0"), null);
+  // A version string this cannot read is not a reason to refuse: the check only blocks a git it knows is too old.
+  assert.equal(gitVersionProblem("something else"), null);
+});
+
+test("an old git on PATH stops the run with the minimum version", { skip: process.platform === "win32" ? "a shell-script git cannot stand in for git.exe on Windows" : false }, async () => {
+  const realGit = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
+  const fakeBin = await mkdtemp(join(tmpdir(), "surviving-lines-fakegit-"));
+  const repo = await fixtureRepo();
+  const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
+  const withGit = async (/** @type {string} */ version) => {
+    const script = `#!/bin/sh\nif [ "$1" = "--version" ]; then echo "git version ${version}"; exit 0; fi\nexec "${realGit}" "$@"\n`;
+    await writeFile(join(fakeBin, "git"), script);
+    await chmod(join(fakeBin, "git"), 0o755);
+    return spawnSync(process.execPath, [binPath, "--cwd", repo], { encoding: "utf8", env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH}` } });
+  };
+  try {
+    const old = await withGit("2.14.6");
+    assert.notEqual(old.status, 0);
+    assert.match(old.stderr, /git 2\.15 or newer is required/);
+    assert.equal(old.stdout, "");
+    // The same fake, reporting the minimum, runs: the refusal comes from the version and nothing else.
+    const ok = await withGit("2.15.0");
+    assert.equal(ok.status, 0, ok.stderr);
+    assert.match(ok.stdout, /files 3\/3 sampled/);
+  } finally {
+    await rm(fakeBin, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true });
+  }
+});

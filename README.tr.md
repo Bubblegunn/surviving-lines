@@ -9,7 +9,7 @@ Commit sayısı etkinliği ölçer. `git blame` ise sonraki her yeniden düzenle
 blame payı commit payının üstünde olan biri başkalarının kodunu değiştiren kodu yazmıştır;
 altında olan biri ise değiştirilen kodu yazmıştır.
 
-Tek dosya, bağımlılık yok, Node 20 ya da üstü, `git`'in okuyabildiği her depo.
+Tek dosya, bağımlılık yok, Node 20 ya da üstü, git 2.15 ya da üstü, `git`'in okuyabildiği her depo.
 
 ```
 npx surviving-lines --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
@@ -107,6 +107,13 @@ satırı zaten bunları basar.
   `fetch-depth: 0` verilmedikçe tek commit çeker. `--allow-shallow` yine de çalıştırır ve çıktıyı
   işaretler: tablonun, Markdown'ın ve `--identities`'in ilk satırında `shallow clone`, `--json`
   içinde `"shallow": true`, `--csv` için stderr'de bir satır.
+- git 2.15 ya da üstü gerekir; daha eski bir git, `git 2.15 or newer is required` mesajı ve
+  çıkış kodu 1 ile durdurulur. Sınırı sığ klon kontrolü koyar: `git rev-parse
+  --is-shallow-repository` 2.15.0'da geldi ve git tanımadığı bir `rev-parse` bayrağını geri
+  basıp 0 ile çıkar (2.50.1'de uydurma bir bayrakla denendi); yani eski bir git her sığ klonu
+  tam klon sanardı. Kullanılan diğer özellikler git sürüm notlarına göre daha eskidir:
+  `blame --line-porcelain` 1.7.6, `git -c` 1.7.2, `core.precomposeunicode` 1.7.12. CI yalnızca
+  her çalıştırıcı imajının getirdiği git'i kullanır, yani 2.15'in kendisi test edilmez.
 
 ## Seçenekler
 

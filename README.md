@@ -20,7 +20,7 @@ interesting part: an author whose blame share is above their commit share wrote 
 that replaced other people's; one whose blame share is below wrote code that was
 replaced.
 
-One file, no dependencies, Node 20 or newer, any repository `git` can read.
+One file, no dependencies, Node 20 or newer, git 2.15 or newer, any repository `git` can read.
 
 ```
 npx surviving-lines --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
@@ -119,6 +119,13 @@ line of the table prints.
   the output: `shallow clone` on the first line of the table, the Markdown and
   `--identities`, `"shallow": true` in `--json`, and a line on stderr for `--csv`, whose only
   header is the column names.
+- git 2.15 or newer is required, and an older git stops the run with `git 2.15 or newer is
+  required` and exit code 1. The shallow-clone check sets that floor: `git rev-parse
+  --is-shallow-repository` arrived in 2.15.0, and a git that does not know a `rev-parse` flag
+  prints it back and exits 0 (checked on 2.50.1 with a made-up flag), so an older git would
+  read every shallow clone as a full one. The other features used are older, by git's release
+  notes: `blame --line-porcelain` 1.7.6, `git -c` 1.7.2, `core.precomposeunicode` 1.7.12. CI
+  runs only the git each runner image ships, so 2.15 itself is not tested.
 
 ## Options
 

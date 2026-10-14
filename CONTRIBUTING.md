@@ -9,7 +9,7 @@ npm ci
 npm test        # node:test; builds a throwaway repository with two authors, a rewrite, a rename and a binary
 ```
 
-Node 20 or newer and git are required. Note that Node 20's test runner does not expand glob patterns, so test files are named explicitly in `package.json`.
+Node 20 or newer and git are required; the tool itself needs git 2.15 or newer (`MIN_GIT` in `bin/surviving-lines.js` says why). A change that uses a newer git feature raises `MIN_GIT` and the README line that states it, citing the git release note that introduced the feature. Note that Node 20's test runner does not expand glob patterns, so test files are named explicitly in `package.json`.
 
 ## Adding to the tool
 

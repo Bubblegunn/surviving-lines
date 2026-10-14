@@ -215,6 +215,28 @@ async function git(args, cwd) {
 }
 
 /**
+ * The oldest git this runs correctly on. The newest flag in use sets it: `git rev-parse
+ * --is-shallow-repository`, added in git 2.15.0 (Documentation/RelNotes/2.15.0.adoc). An older git
+ * does not fail on that flag, it echoes it back, so a shallow clone would read as a full one and
+ * produce the wrong numbers this check exists to stop. The other flags are older: `blame
+ * --line-porcelain` came in 1.7.6, `-c name=value` in 1.7.2, `core.precomposeunicode` in 1.7.12.
+ */
+export const MIN_GIT = [2, 15];
+
+/**
+ * The refusal for a git older than MIN_GIT, or null when this version is fine or cannot be read.
+ * @param {string} versionOutput what `git --version` printed
+ * @returns {string | null}
+ */
+export function gitVersionProblem(versionOutput) {
+  const m = /git version (\d+)\.(\d+)(?:\.(\d+))?/.exec(versionOutput);
+  if (!m) return null;
+  const [major, minor] = [Number(m[1]), Number(m[2])];
+  if (major > MIN_GIT[0] || (major === MIN_GIT[0] && minor >= MIN_GIT[1])) return null;
+  return `git ${MIN_GIT.join(".")} or newer is required (found ${m[1]}.${m[2]}${m[3] === undefined ? "" : `.${m[3]}`})`;
+}
+
+/**
  * The empty tree's id for this repository's hash algorithm, without touching /dev/null (Windows).
  * @param {string} cwd
  * @returns {Promise<string>}
@@ -256,6 +278,14 @@ async function listTextFiles(o) {
  * @param {Options} o
  */
 export async function analyse(o) {
+  let versionOutput;
+  try {
+    ({ stdout: versionOutput } = await execFileP("git", ["--version"], { encoding: "utf8" }));
+  } catch {
+    throw new Error(`git ${MIN_GIT.join(".")} or newer is required, and no git was found on PATH`);
+  }
+  const tooOld = gitVersionProblem(versionOutput);
+  if (tooOld) throw new Error(tooOld);
   try {
     await git(["rev-parse", "--is-inside-work-tree"], o.cwd);
   } catch {
