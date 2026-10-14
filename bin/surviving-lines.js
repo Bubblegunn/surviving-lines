@@ -545,8 +545,9 @@ export function renderMarkdown(r, top) {
   const nameCount = new Map();
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string}} */ a) => {
-    const author = a.author.replace(/\|/g, "\\|");
-    const mail = a.mail.replace(/\|/g, "\\|");
+    // Backslashes first: escaping only the pipe turns `\|` into `\\|`, a literal backslash and a cell separator.
+    const author = a.author.replace(/[\\|]/g, "\\$&");
+    const mail = a.mail.replace(/[\\|]/g, "\\$&");
     return (nameCount.get(a.author) ?? 0) > 1 ? `${author} <${mail}>` : author;
   };
   const rows = r.authors.slice(0, top);

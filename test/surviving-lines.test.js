@@ -195,6 +195,27 @@ test("--markdown renders a Markdown table", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+test("--markdown escapes backslashes before pipes, so a name cannot add a table cell", async () => {
+  const dir = await fixtureRepo();
+  try {
+    const r = await analyse(parseArgs(["--cwd", dir]));
+    // A name containing `\|`: escaping only the pipe turns it into `\\|`, which Markdown reads
+    // as an escaped backslash followed by a cell separator. The mail column is reached by giving
+    // two authors the same name.
+    const a = { ...r.authors[0], author: "Ada\\|x", mail: "ada\\|@example.com" };
+    const b = { ...r.authors[1], author: "Ada\\|x" };
+    const rows = renderMarkdown({ ...r, authors: [a, b] }, 10)
+      .split("\n")
+      .filter((l) => l.startsWith("| Ada"));
+    assert.equal(rows.length, 2);
+    // A cell separator is a pipe preceded by an even number of backslashes.
+    const separators = (/** @type {string} */ l) => (l.match(/(?<!\\)(?:\\\\)*\|/g) ?? []).length;
+    for (const row of rows) assert.equal(separators(row), 6, row);
+    assert.ok(rows[0].startsWith("| Ada\\\\\\|x <ada\\\\\\|@example.com> |"), rows[0]);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 /**
  * A repository whose paths are stored decomposed (NFD), which is what a checkout authored on
  * Linux carries for Korean, French, Turkish, Vietnamese, Portuguese and Spanish names. macOS

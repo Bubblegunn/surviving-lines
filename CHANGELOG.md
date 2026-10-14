@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 (unreleased)
+
+**`--markdown` escapes backslashes in names and addresses.** Only `|` was escaped, so a name
+containing `\|` came out as `\\|`, which Markdown reads as an escaped backslash followed by a cell
+separator, and the row gained a column. Backslashes are now escaped before pipes. Output for names
+without a backslash is unchanged: the `--markdown` table for this repository is byte-identical
+before and after.
+
 ## 0.2.0 (2026-10-14)
 
 **Breaking: Node 22 or newer is required.** Node 20 reached end of life on 2026-04-30 and no longer
