@@ -152,6 +152,22 @@ test("sampling with --sample reports the sampled subset and never exceeds the to
   }
 });
 
+test("empty sample and empty include reject with clear error", async () => {
+  const dir = await fixtureRepo();
+  try {
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--sample", "100000", "--seed", "x"])),
+      /no files sampled.*--sample 100000.*--seed "x"/
+    );
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--include", "no-such-pattern-*.xyz"])),
+      /no files matched include pattern/
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("--csv prints one row per author with fractional shares and quotes commas", async () => {
   const dir = await fixtureRepo();
   try {

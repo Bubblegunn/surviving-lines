@@ -69,7 +69,12 @@ match the commit's spelling of its accents and non-Latin letters exactly.
 
 A shallow clone (git clone --depth, and the default checkout in most CI systems) is refused:
 blame gives every line older than the cut to the commit at the cut, so the numbers are wrong.
-Run git fetch --unshallow first, or pass --allow-shallow to get the marked, wrong numbers.`;
+Run git fetch --unshallow first, or pass --allow-shallow to get the marked, wrong numbers.
+
+Exit status:
+  0   success
+  1   error (invalid ref, shallow clone, or no files sampled)
+  2   command-line option error`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, copies: boolean, jobs: number, top: number, json: boolean, csv: boolean, markdown: boolean, identities: boolean, allowShallow: boolean, cwd: string, paths: string[] }} Options */
 
@@ -313,7 +318,17 @@ export async function analyse(o) {
   const excludeBare = o.exclude.map((g) => !g.includes("/"));
 
   const all = (await listTextFiles(o)).filter((f) => selected(f.path, includeRe, excludeRe, includeBare, excludeBare));
+  if (all.length === 0) {
+    if (o.include.length) {
+      throw new Error(`no files matched include pattern${o.include.length > 1 ? "s" : ""}: ${o.include.join(", ")}`);
+    }
+    throw new Error(`no files found in ${o.cwd} at ref "${o.ref}"`);
+  }
+
   const sampled = all.filter((f) => inSample(f.path, o.sample, o.seed));
+  if (sampled.length === 0) {
+    throw new Error(`no files sampled from ${all.length} files with --sample ${o.sample}${o.seed ? ` and --seed "${o.seed}"` : ""}`);
+  }
 
   /** @type {Map<string, { name: string, lines: number, commits: number }>} */
   const authors = new Map();
