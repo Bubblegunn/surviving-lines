@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, writeFile, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
@@ -386,4 +386,69 @@ test("--identities is exclusive with the other output formats", () => {
   assert.equal(parseArgs(["--identities"]).identities, true);
   assert.throws(() => parseArgs(["--json", "--identities"]), /mutually exclusive/);
   assert.throws(() => parseArgs(["--markdown", "--identities"]), /mutually exclusive/);
+});
+
+/**
+ * A depth-1 clone of the fixture: one commit, so every surviving line blames to the HEAD author.
+ * `file://` is needed, because git ignores --depth for a plain local path.
+ * @param {string} source
+ */
+async function shallowClone(source) {
+  const dir = await mkdtemp(join(tmpdir(), "surviving-lines-shallow-"));
+  execFileSync("git", ["clone", "-q", "--depth", "1", pathToFileURL(source).href, dir]);
+  return dir;
+}
+
+test("a shallow clone is refused, because every line would blame to the HEAD author", async () => {
+  const full = await fixtureRepo();
+  const shallow = await shallowClone(full);
+  const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
+  try {
+    await assert.rejects(analyse(parseArgs(["--cwd", shallow])), /shallow clone[\s\S]*git fetch --unshallow/);
+    const run = spawnSync(process.execPath, [binPath, "--cwd", shallow], { encoding: "utf8" });
+    assert.notEqual(run.status, 0);
+    assert.match(run.stderr, /git fetch --unshallow/);
+    assert.equal(run.stdout, "");
+
+    // The full repository is not shallow and is not refused.
+    const r = await analyse(parseArgs(["--cwd", full]));
+    assert.equal(r.shallow, false);
+    assert.doesNotMatch(renderTable(r, 10).split("\n")[0], /shallow/);
+  } finally {
+    await rm(full, { recursive: true, force: true });
+    await rm(shallow, { recursive: true, force: true });
+  }
+});
+
+test("--allow-shallow runs anyway and marks every output format", async () => {
+  const full = await fixtureRepo();
+  const shallow = await shallowClone(full);
+  const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
+  try {
+    assert.equal(parseArgs(["--allow-shallow"]).allowShallow, true);
+    const r = await analyse(parseArgs(["--cwd", shallow, "--allow-shallow"]));
+    assert.equal(r.shallow, true);
+    assert.match(renderTable(r, 10).split("\n")[0], /shallow clone/);
+    assert.match(renderMarkdown(r, 10).split("\n")[0], /shallow clone/);
+
+    const run = (/** @type {string[]} */ extra) => spawnSync(process.execPath, [binPath, "--cwd", shallow, "--allow-shallow", ...extra], { encoding: "utf8" });
+    const table = run([]);
+    assert.equal(table.status, 0, table.stderr);
+    assert.match(table.stdout.split("\n")[0], /shallow clone/);
+    const json = run(["--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    assert.equal(JSON.parse(json.stdout).shallow, true);
+    const md = run(["--markdown"]);
+    assert.match(md.stdout.split("\n")[0], /shallow clone/);
+    const ids = run(["--identities"]);
+    assert.match(ids.stdout.split("\n")[0], /shallow clone/);
+    // CSV has no header line of its own beyond the column names, which parsers read, so the
+    // mark goes to stderr and the CSV stays parseable.
+    const csv = run(["--csv"]);
+    assert.equal(csv.stdout.split("\n")[0], "author,mail,lines,line_share,commits,commit_share");
+    assert.match(csv.stderr, /shallow clone/);
+  } finally {
+    await rm(full, { recursive: true, force: true });
+    await rm(shallow, { recursive: true, force: true });
+  }
 });

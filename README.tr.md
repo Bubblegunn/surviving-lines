@@ -99,6 +99,14 @@ satırı zaten bunları basar.
 - İkili dosyalar atlanır. Kimlikler deponun `.mailmap` dosyasını izler; bir yazarın birden
   çok adresini birleştirmek için bir tane ekleyin. İki satır aynı adı taşıyorsa tablo adresi
   gösterir, karışmasınlar diye.
+- Sığ bir klon (shallow clone) çıkış kodu 1 ve `git fetch --unshallow` komutunu adlandıran bir
+  mesajla reddedilir. Sığ klonda alınan en eski commit kendinden önceki bütün geçmişin yerine
+  geçer, bu yüzden blame daha eski her satırı o commit'in yazarına verir: bu deponun
+  `git clone --depth 1` kopyasında HEAD yazarı 6.069 satırın 6.069'unu ve 1 commit'in 1'ini
+  aldı; tam klonda 5.973 satır ve 48 commit'in 41'i (2026-10-14'te ölçüldü). `actions/checkout`
+  `fetch-depth: 0` verilmedikçe tek commit çeker. `--allow-shallow` yine de çalıştırır ve çıktıyı
+  işaretler: tablonun, Markdown'ın ve `--identities`'in ilk satırında `shallow clone`, `--json`
+  içinde `"shallow": true`, `--csv` için stderr'de bir satır.
 
 ## Seçenekler
 
@@ -115,6 +123,7 @@ satırı zaten bunları basar.
 --top <k>            rows to print (default: 10)
 --json               print JSON instead of a table
 --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
+--allow-shallow      run in a shallow clone anyway; every output is marked "shallow clone"
 --cwd <dir>          repository directory (default: current directory)
 ```
 

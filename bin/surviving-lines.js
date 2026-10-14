@@ -37,6 +37,7 @@ Measure who wrote the code that is still alive in a git ref.
   --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
   --markdown           print a Markdown table
   --identities         list addresses that look like one person, with .mailmap lines
+  --allow-shallow      run in a shallow clone anyway; every output is marked "shallow clone"
   --cwd <dir>          repository directory (default: current directory)
   -h, --help           this text
   --version            print the version
@@ -44,9 +45,13 @@ Measure who wrote the code that is still alive in a git ref.
 Paths after -- are passed to git as pathspecs. Identities follow the repository's .mailmap;
 add one to merge an author's several addresses. Map by address where you can: git compares
 .mailmap names ignoring case for ASCII letters only, so a name mapped by name alone has to
-match the commit's spelling of its accents and non-Latin letters exactly.`;
+match the commit's spelling of its accents and non-Latin letters exactly.
 
-/** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, copies: boolean, jobs: number, top: number, json: boolean, csv: boolean, markdown: boolean, identities: boolean, cwd: string, paths: string[] }} Options */
+A shallow clone (git clone --depth, and the default checkout in most CI systems) is refused:
+blame gives every line older than the cut to the commit at the cut, so the numbers are wrong.
+Run git fetch --unshallow first, or pass --allow-shallow to get the marked, wrong numbers.`;
+
+/** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, copies: boolean, jobs: number, top: number, json: boolean, csv: boolean, markdown: boolean, identities: boolean, allowShallow: boolean, cwd: string, paths: string[] }} Options */
 
 /**
  * @param {string[]} argv
@@ -54,7 +59,7 @@ match the commit's spelling of its accents and non-Latin letters exactly.`;
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], copies: false, jobs: 4, top: 10, json: false, csv: false, markdown: false, identities: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], copies: false, jobs: 4, top: 10, json: false, csv: false, markdown: false, identities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -77,6 +82,7 @@ export function parseArgs(argv) {
     else if (a === "--csv") o.csv = true;
     else if (a === "--markdown") o.markdown = true;
     else if (a === "--identities") o.identities = true;
+    else if (a === "--allow-shallow") o.allowShallow = true;
     else if (a === "--cwd") o.cwd = next();
     else if (a === "-h" || a === "--help") { o.paths = ["--help"]; return o; }
     else if (a === "--version") { o.paths = ["--version"]; return o; }
@@ -240,6 +246,17 @@ export async function analyse(o) {
   } catch {
     throw new Error(`ref "${o.ref}" does not resolve to a commit in ${o.cwd}`);
   }
+  // In a shallow clone the oldest fetched commit stands in for all of history before it, so blame
+  // gives every older line to that commit's author. A depth-1 clone reports 100% for whoever made
+  // HEAD and looks like a normal run, which is what a default CI checkout is.
+  const shallow = (await git(["rev-parse", "--is-shallow-repository"], o.cwd)).trim() === "true";
+  if (shallow && !o.allowShallow) {
+    throw new Error(
+      `${o.cwd} is a shallow clone, so git blame would give every line older than the cut to the commit at the cut.\n` +
+        "Fetch the full history with: git fetch --unshallow\n" +
+        "(in GitHub Actions, set fetch-depth: 0 on actions/checkout), or pass --allow-shallow to run anyway.",
+    );
+  }
   const includeRe = o.include.map(globToRegExp);
   const excludeRe = o.exclude.map(globToRegExp);
   const includeBare = o.include.map((g) => !g.includes("/"));
@@ -299,6 +316,7 @@ export async function analyse(o) {
 
   return {
     ref: o.ref,
+    shallow,
     sample: { every: o.sample, seed: o.seed, filesTotal: all.length, filesSampled: sampled.length, linesInRef: all.reduce((s, f) => s + f.lines, 0), linesAttributed: attributed },
     commitWindow: { since: o.since ?? null, until: o.until ?? null, commits, mergesExcluded: true },
     blame: { flags: blameArgs.slice(2) },
@@ -409,14 +427,25 @@ function padEndDisplay(s, width) {
   return s + " ".repeat(Math.max(0, width - displayWidth(s)));
 }
 
+/** What a run in a shallow clone is marked with, on the first line of every output. */
+export const SHALLOW_MARK = "shallow clone, history before the cut is blamed on the cut";
+
+/**
+ * The first line of the table and the Markdown output: what was sampled, and whether it can be trusted.
+ * @param {Pick<Awaited<ReturnType<typeof analyse>>, "ref" | "sample"> & { shallow?: boolean }} r
+ */
+function headerLine(r) {
+  const s = r.sample;
+  return `ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed${r.shallow ? `  ·  ${SHALLOW_MARK}` : ""}`;
+}
+
 /**
  * @param {Awaited<ReturnType<typeof analyse>>} r
  * @param {number} top
  */
 export function renderTable(r, top) {
   const lines = [];
-  const s = r.sample;
-  lines.push(`ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed`);
+  lines.push(headerLine(r));
   const w = r.commitWindow;
   lines.push(`git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded`);
   lines.push("");
@@ -455,10 +484,7 @@ export function renderCsv(r) {
  */
 export function renderMarkdown(r, top) {
   const lines = [];
-  const s = r.sample;
-  lines.push(
-    `ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed`
-  );
+  lines.push(headerLine(r));
   const w = r.commitWindow;
   lines.push(
     `git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded`
@@ -692,11 +718,14 @@ async function main() {
     if (o.json) {
       output = JSON.stringify(r, null, 2);
     } else if (o.csv) {
+      // CSV has no header line beyond the column names, which parsers read; the mark goes to stderr.
+      if (r.shallow) console.error(`surviving-lines: ${SHALLOW_MARK}`);
       output = renderCsv(r);
     } else if (o.markdown) {
       output = renderMarkdown(r, o.top);
     } else if (o.identities) {
       output = renderIdentities(linkIdentities(r.authors));
+      if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
     } else {
       output = renderTable(r, o.top);
     }

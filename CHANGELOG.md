@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 (unreleased)
+
+**A shallow clone is refused.** In a `git clone --depth 1` the oldest fetched commit stands in for
+all history before it, so blame gave every line to the HEAD author and the run exited 0 looking like
+any other: on this repository, 6,069 of 6,069 lines and 1 of 1 commits to one person, against 5,973
+lines and 41 of 48 commits on a full clone. `actions/checkout` fetches one commit by default, so a CI
+run was the likeliest place to get this. The run now exits 1 with a message naming
+`git fetch --unshallow`. `--allow-shallow` runs anyway and marks the output: `shallow clone` on the
+first line of the table, the Markdown and `--identities`, `"shallow": true` in `--json`, and a line
+on stderr for `--csv`, whose only header is the column names that parsers read. `--json` now always
+carries `shallow`, `false` in a full clone.
+
 ## 0.1.8 (2026-10-14)
 
 **The release gate died on npm 12 and forbade the entry you are reading.** `npm pack --dry-run

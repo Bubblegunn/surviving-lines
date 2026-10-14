@@ -110,6 +110,15 @@ line of the table prints.
 - Binary files are skipped. Identities follow the repository's `.mailmap`; add one to
   merge an author's several addresses. When two rows share a name the table shows the
   address so they are not confused.
+- A shallow clone is refused with exit code 1 and a message naming `git fetch --unshallow`.
+  In a shallow clone the oldest fetched commit stands in for all history before it, so blame
+  gives every older line to that commit's author: on a `git clone --depth 1` of this
+  repository the HEAD author held 6,069 of 6,069 lines and 1 of 1 commits, against 5,973
+  lines and 41 of 48 commits on a full clone (measured on 2026-10-14). `actions/checkout`
+  fetches one commit unless `fetch-depth: 0` is set. `--allow-shallow` runs anyway and marks
+  the output: `shallow clone` on the first line of the table, the Markdown and
+  `--identities`, `"shallow": true` in `--json`, and a line on stderr for `--csv`, whose only
+  header is the column names.
 
 ## Options
 
@@ -128,6 +137,7 @@ line of the table prints.
 --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
 --markdown           print a Markdown table
 --identities         list addresses that look like one person, with .mailmap lines
+--allow-shallow      run in a shallow clone anyway; every output is marked "shallow clone"
 --cwd <dir>          repository directory (default: current directory)
 ```
 
