@@ -622,3 +622,57 @@ test("an old git on PATH stops the run with the minimum version", { skip: proces
     await rm(repo, { recursive: true, force: true });
   }
 });
+
+test("interactive run shows progress on stderr while blaming, and --quiet suppresses it", async () => {
+  const dir = await fixtureRepo();
+  try {
+    // 1. With isTTY: true on stderr, progress is written and updated in place
+    /** @type {string[]} */
+    const writes = [];
+    const mockStderr = {
+      isTTY: true,
+      write(/** @type {string} */ chunk) {
+        writes.push(String(chunk));
+        return true;
+      },
+    };
+    await analyse({ ...parseArgs(["--cwd", dir]), stderr: /** @type {any} */ (mockStderr) });
+    assert.ok(writes.length > 0, "progress should be written when stderr.isTTY is true");
+    assert.equal(writes[writes.length - 1], "\n", "finishes with a newline");
+    assert.deepEqual(writes, [
+      "\rblamed 1/3 files",
+      "\rblamed 2/3 files",
+      "\rblamed 3/3 files",
+      "\n",
+    ]);
+
+    // 2. With isTTY: false, nothing is written to stderr
+    writes.length = 0;
+    mockStderr.isTTY = false;
+    await analyse({ ...parseArgs(["--cwd", dir]), stderr: /** @type {any} */ (mockStderr) });
+    assert.equal(writes.length, 0, "nothing should be written when isTTY is false");
+
+    // 3. With --quiet / -q, nothing is written even when isTTY is true
+    mockStderr.isTTY = true;
+    writes.length = 0;
+    await analyse({ ...parseArgs(["--cwd", dir, "--quiet"]), stderr: /** @type {any} */ (mockStderr) });
+    assert.equal(writes.length, 0, "--quiet suppresses progress");
+
+    writes.length = 0;
+    await analyse({ ...parseArgs(["--cwd", dir, "-q"]), stderr: /** @type {any} */ (mockStderr) });
+    assert.equal(writes.length, 0, "-q suppresses progress");
+
+    // 4. Test that --json stdout is identical with and without progress / --quiet
+    const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
+    const jsonNormal = spawnSync(process.execPath, [binPath, "--cwd", dir, "--json"], { encoding: "utf8" });
+    const jsonQuiet = spawnSync(process.execPath, [binPath, "--cwd", dir, "--json", "--quiet"], { encoding: "utf8" });
+    assert.equal(jsonNormal.status, 0, jsonNormal.stderr);
+    assert.equal(jsonQuiet.status, 0, jsonQuiet.stderr);
+    assert.equal(jsonNormal.stdout, jsonQuiet.stdout, "--json stdout must be identical with and without --quiet");
+    // Non-interactive run writes nothing to stderr
+    assert.equal(jsonNormal.stderr, "", "piped/non-TTY stderr should be empty");
+    assert.equal(jsonQuiet.stderr, "", "quiet stderr should be empty");
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
