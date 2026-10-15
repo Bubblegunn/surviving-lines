@@ -8,7 +8,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities, gitVersionProblem, MIN_GIT } = await import(bin);
+const { parseArgs, renderJson, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities, gitVersionProblem, MIN_GIT } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -661,6 +661,13 @@ test("interactive run shows progress on stderr while blaming, and --quiet suppre
     writes.length = 0;
     await analyse({ ...parseArgs(["--cwd", dir, "-q"]), stderr: /** @type {any} */ (mockStderr) });
     assert.equal(writes.length, 0, "-q suppresses progress");
+
+    // The result is the same whether progress was written or not.
+    writes.length = 0;
+    const withProgress = await analyse({ ...parseArgs(["--cwd", dir]), stderr: /** @type {any} */ (mockStderr) });
+    assert.ok(writes.length > 0, "the progress path ran");
+    const withoutProgress = await analyse({ ...parseArgs(["--cwd", dir, "--quiet"]), stderr: /** @type {any} */ (mockStderr) });
+    assert.equal(renderJson(withProgress), renderJson(withoutProgress));
 
     // 4. Test that --json stdout is identical with and without progress / --quiet
     const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");

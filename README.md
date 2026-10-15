@@ -159,6 +159,10 @@ line of the table prints.
 --cwd <dir>          repository directory (default: current directory)
 ```
 
+While blaming, an interactive run shows `blamed k/n files` on stderr, updated in place. Nothing is
+written when stderr is not a terminal, or with `--quiet`, so piped `--json` and `--csv` output stays
+clean. Contributed by [@Enard52](https://github.com/Enard52) ([#42](https://github.com/Bubblegunn/surviving-lines/pull/42)).
+
 Paths after `--` are passed to git as pathspecs, so `-- src packages/core` restricts both
 the blame and the commit count to those directories. A glob without a slash matches
 basenames, so `--exclude '*.test.ts'` works at any depth.

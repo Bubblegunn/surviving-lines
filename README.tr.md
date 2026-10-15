@@ -135,6 +135,7 @@ satırı zaten bunları basar.
 --copies             pass -C to git blame as well as -w -M (slower, follows copies)
 --jobs <n>           parallel blame processes (default: 4)
 --top <k>            rows to print (default: 10)
+-q, --quiet          suppress progress output on stderr
 --json               print JSON instead of a table
 --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
 --allow-shallow      run in a shallow clone anyway; every output is marked "shallow clone"
