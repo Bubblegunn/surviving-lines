@@ -233,6 +233,47 @@ test("empty sample and empty include reject with clear error", async () => {
   }
 });
 
+test("an --exclude or a pathspec that empties the run names itself instead of the repository", async () => {
+  // The fixture holds three text files at HEAD. Both runs below remove them with the caller's own
+  // filter, so "no files found in <cwd> at ref" is a wrong statement about the repository and sends
+  // the reader to check the ref rather than the command line.
+  const dir = await fixtureRepo();
+  const binPath = join(import.meta.dirname, "..", "bin", "surviving-lines.js");
+  try {
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--", "no-such-dir"])),
+      /no files matched the pathspec after --: no-such-dir/,
+    );
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--", "no-such-dir", "also-missing"])),
+      /no files matched the pathspecs after --: no-such-dir, also-missing/,
+    );
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--exclude", "*.js"])),
+      /every one of the 3 files at ref "HEAD" was excluded by --exclude \*\.js/,
+    );
+
+    // One real pathspec among the missing ones: the run is not empty, so nothing new is reported.
+    const stillRuns = await analyse(parseArgs(["--cwd", dir, "--", "src/c.js", "no-such-dir"]));
+    assert.equal(stillRuns.sample.filesTotal, 1);
+
+    // The message reaches a script through exit 1 and an empty stdout, the same as the other
+    // empty-run checks, and never as a table of 0.0% shares.
+    const run = spawnSync(process.execPath, [binPath, "--cwd", dir, "--exclude", "*.js"], { encoding: "utf8" });
+    assert.equal(run.status, 1, run.stdout);
+    assert.equal(run.stdout, "");
+    assert.match(run.stderr, /was excluded by --exclude/);
+
+    // An --include still owns its own message, which is unchanged.
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--include", "no-such-pattern-*.xyz"])),
+      /no files matched include pattern/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("--csv prints one row per author with fractional shares and quotes commas", async () => {
   const dir = await fixtureRepo();
   try {

@@ -321,10 +321,20 @@ export async function analyse(o) {
   const includeBare = o.include.map((g) => !g.includes("/"));
   const excludeBare = o.exclude.map((g) => !g.includes("/"));
 
-  const all = (await listTextFiles(o)).filter((f) => selected(f.path, includeRe, excludeRe, includeBare, excludeBare));
+  const listed = await listTextFiles(o);
+  const all = listed.filter((f) => selected(f.path, includeRe, excludeRe, includeBare, excludeBare));
   if (all.length === 0) {
     if (o.include.length) {
       throw new Error(`no files matched include pattern${o.include.length > 1 ? "s" : ""}: ${o.include.join(", ")}`);
+    }
+    // Nothing here is the repository's fault: it holds files at this ref, and the caller's own
+    // pathspec or --exclude emptied the run. "no files found" reads as an empty repository, or as
+    // the wrong ref, which sends someone checking the ref instead of checking the command.
+    if (listed.length === 0 && o.paths.length) {
+      throw new Error(`no files matched the pathspec${o.paths.length > 1 ? "s" : ""} after --: ${o.paths.join(", ")}`);
+    }
+    if (listed.length > 0 && o.exclude.length) {
+      throw new Error(`every one of the ${listed.length} file${listed.length === 1 ? "" : "s"} at ref "${o.ref}" was excluded by --exclude ${o.exclude.join(", ")}`);
     }
     throw new Error(`no files found in ${o.cwd} at ref "${o.ref}"`);
   }
