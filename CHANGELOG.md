@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3 (unreleased)
+
+**Run it as `git surviving-lines`.** Global installation now exposes `git-surviving-lines` as a second name for the existing CLI. The tarball smoke test checks both names with `--help` and `--version`, and fails when a declared bin target is missing. Contributed by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan) (issue [#29](https://github.com/Bubblegunn/surviving-lines/issues/29)).
+
 ## 0.2.2 (2026-10-14)
 
 **An empty sample is an error, not a result.** `--sample 100000 --seed x` on a repository of 46 files sampled

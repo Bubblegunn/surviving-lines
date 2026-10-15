@@ -26,6 +26,13 @@ One file, no dependencies, Node 22 or newer, git 2.15 or newer, any repository `
 npx surviving-lines --sample 5 --include '**/*.ts' --exclude '**/*.test.ts'
 ```
 
+Install globally to use it through Git as well:
+
+```
+npm install --global surviving-lines
+git surviving-lines --version
+```
+
 ```
 ref HEAD  ·  files 50/203 sampled (1 in 5)  ·  14,722 of 59,049 lines attributed
 git blame -w -M  ·  commits 339, merges excluded
@@ -331,6 +338,8 @@ this is the script, cleaned up so it runs anywhere.
 this repository, and shipped in 0.1.3. Reviewing it found something worth more than the feature:
 the only source file here held a literal NUL byte, so git had been calling it binary and no diff
 on it was readable, which is why the contributor could not see their own change on GitHub.
+
+[@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan) added the `git surviving-lines` subcommand alias (issue [#29](https://github.com/Bubblegunn/surviving-lines/issues/29)).
 
 ## Cite this
 
