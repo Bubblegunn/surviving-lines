@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4
+
+**An empty run names the filter that emptied it.** A pathspec after `--` that matches nothing now stops with
+`no files matched the pathspec after --: <paths>`, and an `--exclude` that removes every file with
+`every one of the <n> files at ref "<ref>" was excluded by --exclude <patterns>`. Both used to print
+`no files found in <cwd> at ref "<ref>"`, which describes an ordinary repository as an empty one. Exit code 1 and
+an empty stdout are unchanged, and so is the `--include` message from #40. Contributed by
+[@Enard52](https://github.com/Enard52) ([#45](https://github.com/Bubblegunn/surviving-lines/pull/45)).
+
+**Turkish README.** The options block lists `--markdown` and `--identities`, and the notes list the empty-run
+exits. Both were missing; @Enard52 pointed this out in #45.
+
 ## 0.2.3 (2026-10-15)
 
 **Run it as `git surviving-lines`.** Global installation now exposes `git-surviving-lines` as a second name for the existing CLI. The tarball smoke test checks both names with `--help` and `--version`, and fails when a declared bin target is missing. Contributed by [@Aaqibhafeezkhan](https://github.com/Aaqibhafeezkhan) (issue [#29](https://github.com/Bubblegunn/surviving-lines/issues/29)).

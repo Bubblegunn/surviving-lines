@@ -253,6 +253,17 @@ test("an --exclude or a pathspec that empties the run names itself instead of th
       /every one of the 3 files at ref "HEAD" was excluded by --exclude \*\.js/,
     );
 
+    // A pathspec that matches files, emptied by --exclude: the exclude is named, not the pathspec,
+    // and the count is the pathspec's listing. One file reads "the only file", not "1 files".
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--exclude", "*.js", "--", "src"])),
+      /every one of the 3 files at ref "HEAD" was excluded by --exclude \*\.js/,
+    );
+    await assert.rejects(
+      analyse(parseArgs(["--cwd", dir, "--exclude", "*.js", "--", "src/c.js"])),
+      /the only file at ref "HEAD" was excluded by --exclude \*\.js/,
+    );
+
     // One real pathspec among the missing ones: the run is not empty, so nothing new is reported.
     const stillRuns = await analyse(parseArgs(["--cwd", dir, "--", "src/c.js", "no-such-dir"]));
     assert.equal(stillRuns.sample.filesTotal, 1);

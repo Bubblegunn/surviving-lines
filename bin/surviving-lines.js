@@ -334,7 +334,8 @@ export async function analyse(o) {
       throw new Error(`no files matched the pathspec${o.paths.length > 1 ? "s" : ""} after --: ${o.paths.join(", ")}`);
     }
     if (listed.length > 0 && o.exclude.length) {
-      throw new Error(`every one of the ${listed.length} file${listed.length === 1 ? "" : "s"} at ref "${o.ref}" was excluded by --exclude ${o.exclude.join(", ")}`);
+      const which = listed.length === 1 ? "the only file" : `every one of the ${listed.length} files`;
+      throw new Error(`${which} at ref "${o.ref}" was excluded by --exclude ${o.exclude.join(", ")}`);
     }
     throw new Error(`no files found in ${o.cwd} at ref "${o.ref}"`);
   }

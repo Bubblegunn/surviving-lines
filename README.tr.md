@@ -106,6 +106,12 @@ satırı zaten bunları basar.
 - İkili dosyalar atlanır. Kimlikler deponun `.mailmap` dosyasını izler; bir yazarın birden
   çok adresini birleştirmek için bir tane ekleyin. İki satır aynı adı taşıyorsa tablo adresi
   gösterir, karışmasınlar diye.
+- Dosya içermeyen bir örneklem ya da filtrelerin boşalttığı bir çalıştırma, %0,0 paylardan oluşan
+  bir tablo basmak yerine çıkış kodu 1 ile durur ve sebebini söyler: hiçbir dosyayla eşleşmeyen
+  `--include` desenleri ([#40](https://github.com/Bubblegunn/surviving-lines/pull/40)), `--`
+  sonrasında hiçbir dosyayla eşleşmeyen pathspec'ler ya da her dosyayı çıkaran bir `--exclude`
+  ([#45](https://github.com/Bubblegunn/surviving-lines/pull/45)). Katkı:
+  [@Enard52](https://github.com/Enard52).
 - Sığ bir klon (shallow clone) çıkış kodu 1 ve `git fetch --unshallow` komutunu adlandıran bir
   mesajla reddedilir. Sığ klonda alınan en eski commit kendinden önceki bütün geçmişin yerine
   geçer, bu yüzden blame daha eski her satırı o commit'in yazarına verir: bu deponun
@@ -139,6 +145,8 @@ satırı zaten bunları basar.
 -q, --quiet          suppress progress output on stderr
 --json               print JSON instead of a table
 --csv                print CSV (author,mail,lines,line_share,commits,commit_share)
+--markdown           print a Markdown table
+--identities         list addresses that look like one person, with .mailmap lines
 --allow-shallow      run in a shallow clone anyway; every output is marked "shallow clone"
 --cwd <dir>          repository directory (default: current directory)
 ```

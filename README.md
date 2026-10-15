@@ -122,7 +122,8 @@ line of the table prints.
   [@Enard52](https://github.com/Enard52) ([#40](https://github.com/Bubblegunn/surviving-lines/pull/40)).
 - An `--exclude` that removes every file, and pathspecs after `--` that match nothing, stop with exit
   code 1 too and name the filter that emptied the run. They used to say `no files found in <cwd> at
-  ref "HEAD"`, which reports an ordinary repository as an empty one.
+  ref "HEAD"`, which reports an ordinary repository as an empty one. Contributed by
+  [@Enard52](https://github.com/Enard52) ([#45](https://github.com/Bubblegunn/surviving-lines/pull/45)).
 - A shallow clone is refused with exit code 1 and a message naming `git fetch --unshallow`.
   In a shallow clone the oldest fetched commit stands in for all history before it, so blame
   gives every older line to that commit's author: on a `git clone --depth 1` of this
