@@ -822,3 +822,43 @@ Written and committed after the product work of round 7 (`4b65d05`, 331 tests pa
 **Budget.** The logged `total_cost_usd` of every `claude -p` call (runs, grading, subagents) is in `surviving-lines-r7-cost.tsv`. No new batch of runs or grading starts once 36 USD is logged; the results so far are then written, with what is missing named. The hard maximum is 40 USD.
 
 **Claim scope.** A "first" claim is written only for the tasks, models, runs and date that completed, on the SDK path, naming the rivals in the comparison and the scan candidates that were not run.
+
+### Results, round 7 and final gate
+
+Run on 2026-10-22 under the "Round 7 and final gate measurement protocol" above (frozen in `512788b` before any run). Ours ran from a `git archive` of `4b65d05`, model `claude-sonnet-5-5`, every call on the Agent SDK path (no cell reused from an earlier round), six arms, 3 runs per task: held-out C1 to C5 (90 runs) and the 11 public tasks (99 runs for ours' five rivals plus 33 for ours; 189 runs). All arms of a cell were graded together in a shuffled order, three votes per cell, a model judging every outcome criterion. The hooks and mcpServers guard passed on every competitor run. Ours loaded and ran its skill in 48 of 48 runs. Published: `bench/head-to-head/results/round7-claude-sonnet-5-5/` (tables, per-criterion votes, label maps, held-out task list). Logged `claude -p` cost: 31.20 USD of the 36 USD stop line (40 USD maximum).
+
+**Held-out C1 to C5** (mean criteria passed, runs in brackets):
+| Task | Criteria | ours | pp | ppi | hist | bf | base |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C1 | 5 | 3.00 (3/3/3) | 0.67 (0/1/1) | 2.67 (5/3/0) | 2.33 (3/2/2) | 2.00 (1/3/2) | 3.00 (5/2/2) |
+| C2 | 5 | 4.00 (4/4/4) | 2.00 (2/2/2) | 3.00 (3/3/3) | 3.00 (3/3/3) | 3.67 (4/4/3) | 3.33 (3/4/3) |
+| C3 | 5 | 1.33 (1/2/1) | 0.67 (0/1/1) | 0.67 (0/1/1) | 0.67 (0/1/1) | 0.67 (0/1/1) | 0.33 (0/0/1) |
+| C4 | 5 | 3.67 (3/5/3) | 3.00 (3/3/3) | 2.33 (2/3/2) | 1.00 (1/1/1) | 1.67 (2/2/1) | 2.00 (2/1/3) |
+| C5 | 5 | 3.00 (3/3/3) | 2.00 (2/2/2) | 2.00 (2/2/2) | 2.00 (2/2/2) | 2.00 (2/2/2) | 2.00 (2/2/2) |
+| Total | 25 | 15.00 | 8.33 | 10.67 | 9.00 | 10.00 | 10.67 |
+
+Rule A passes: ours lost 10.00 of 25; the best rival (project-pilot, better of pp and ppi per task, 11.33) lost 13.67, so the limit is 10.93. **Rule B fails on C1**: ours 3.00 ties `base` 3.00 (below the maximum of 5, so the tie is a loss under the frozen rule). C2 to C5 are strictly above every rival.
+
+**Public tasks** (mean criteria passed, runs in brackets; `err=1` means one criterion had fewer than two valid votes and was left out):
+| Task | Criteria | ours | pp | ppi | hist | bf | base |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| T1 | 4 | 3.67 (3/4/4) | 3.67 (3/4/4) | 1.67 (1/2/2) | 3.00 (2/3/4) | 3.00 (1/4/4) | 4.00 (4/4/4) |
+| T2 | 4 | 4.00 (4/4/4) | 2.67 (3/3/2) | 3.33 (3/3/4) | 1.00 (1/1/1) | 2.00 (2/2/2) | 3.67 (4/4/3) |
+| T3 | 5 | 5.00 (5/5/5) | 4.33 (5/4/4) | - | 4.00 (5/3/4) | 4.33 (5/5/3) | 4.33 (4/5/4) |
+| T4 | 5 | 5.00 (5/5/5) | 3.00 (3/3/3) | 3.33 (3/2/5) | 3.00 (3/3/3) | 2.67 (3/4/1) | 3.00 (3/3/3) |
+| T1i | 4 | 4.00 (4/4/4) | 4.00 (4/4/4) | 2.00 (2/2/2) err=1 | 3.33 (4/3/3) | 3.67 (4/4/3) err=1 | 4.00 (4/4/4) |
+| T4i | 5 | 5.00 (5/5/5) | 3.00 (3/3/3) | 4.00 (4/4/4) | 3.00 (3/3/3) | 3.00 (3/3/3) | 2.67 (3/2/3) |
+| E1 | 5 | 5.00 (5/5/5) | 3.33 (4/3/3) | 3.33 (5/3/2) | 4.33 (4/5/4) | 2.33 (2/2/3) | 3.67 (3/4/4) |
+| E2k | 5 | 5.00 (5/5/5) | 4.00 (4/4/4) | 4.00 (4/4/4) | 4.00 (4/3/5) | 3.67 (4/3/4) | 4.00 (4/4/4) |
+| E3 | 4 | 3.67 (3/4/4) | 2.67 (3/2/3) | - | 2.67 (2/3/3) | 3.00 (3/3/3) | 2.67 (2/3/3) |
+| E4h | 5 | 5.00 (5/5/5) | 4.00 (5/4/3) | - | 4.33 (5/3/5) | 5.00 (5/5/5) | 4.33 (3/5/5) |
+| E5 | 5 | 4.33 (4/5/4) | 5.00 (5/5/5) | 4.00 (5/5/2) | 5.00 (5/5/5) | 5.00 (5/5/5) | 4.33 (3/5/5) |
+| Total | 51 | 49.67 | 39.67 | 25.67 | 37.67 | 37.67 | 40.67 |
+
+Rule A passes: ours lost 1.33 of 51; the best rival (project-pilot better-of 41.67; base 40.67) lost 9.33, so the limit is 7.47. **Rule B fails on T1** (ours 3.67; `base` 4.00 and pp 3.67) **and on E5** (ours 4.33; pp, hist and bf 5.00, base 4.33).
+
+**The gate failed on Rule B in both sets**, by the rules frozen before the run. F9 (Haiku, Opus) and the F6 audit were not run: the protocol runs them only after both sets pass. Ours has the highest total in both sets (held-out 15.00 of 25 against 11.33 for the best rival; public 49.67 of 51 against 41.67). No "first" claim is made for per-task superiority.
+
+Departures, stated plainly: the public set was graded by a model on every outcome criterion for six arms together, not by the round 4 and 5 script checks on four arms, so the public numbers are not comparable to rounds 4 and 5 (CLI path, script checks, reused rival cells). Per-cell differences of one criterion (T1, E5, C1) are within the grader noise seen in earlier rounds; the rule has no tolerance. The held-out set was written before the diagnostic runs and was not read by the controller; the product changes of this round (R7-1 to R7-4) were driven by the seen sets (N1 to N4, H1 to H3) only. The tie on C1 and the E5 and T1 misses were not investigated.
+
+**Single result sentence (scope included).** On 2026-10-22, on the Claude Agent SDK path with `claude-sonnet-5-5`, with 3 runs per cell and a model grader, surviving-lines at `4b65d05` had the highest total of six arms (itself, project-pilot with and without its command, mcp-git-historian, k41n/busfactor, plain Claude) on 5 new held-out tasks (15.00 of 25 against 11.33 for the best rival) and on 11 public tasks (49.67 of 51 against 41.67), but it did not win every task (held-out C1 tied with plain Claude; public T1 and E5 were not strictly above every rival), so the preregistered gate failed and F9 and F6 were not run.
