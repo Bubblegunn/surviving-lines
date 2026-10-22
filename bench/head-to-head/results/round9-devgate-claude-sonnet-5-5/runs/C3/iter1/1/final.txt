@@ -1,0 +1,42 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "Rust code (*.rs) authorship share by surviving lines, top authors, dedupe identities"}
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$SL" ] && node "$SL" --include '*.rs' --merge-identities
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r9/dev-C/runs/C3-ours-1/repo; git show --stat c584a1d | tail -15; node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js --include '*.rs' --merge-identities --ignore-rev c584a1d --top 5 | head -14
+FINAL ANSWER:
+Yes, it is mostly one person. Andrew Gallant holds 2,838 of the 3,710 surviving Rust lines (76.5%) and made 128 of 191 commits (67.0%).
+
+**Top authors by surviving lines (`*.rs`, 9 files):**
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,838 | 76.5% |
+| Inès Moreau (3 addresses) | 217 | 5.8% |
+| Sebastian Thiel | 74 | 2.0% |
+| Ashley | 68 | 1.8% |
+| Aron Griffis | 59 | 1.6% |
+
+31 more authors hold 6.7% together. The largest of them is Garrett Berg at 0.9%.
+
+**Bus factor:**
+- Bus factor is 1 for the whole repository's Rust code. It is the smallest number of authors whose surviving lines reach 50%. Gallant alone is past that.
+- Reaching 80% takes 2 authors, Gallant plus Moreau.
+
+**Caveats:**
+- **Merged identities:** The table counts Inès Moreau's three addresses as one person. Two of the three addresses carry lines, 120 and 97. The merge is a guess from names and addresses, and nothing was written to `.mailmap`. Unmerged, no single address of hers goes above 120 lines (3.2%).
+- **Possible duplicate, not merged:** Ashley (68 lines) and Ashley Mannix (4 lines) may be the same person. The evidence is weak, so use the unmerged figures. Merged, it would be 72 lines (1.9%).
+- **Already counted as one:** Niv Kaminer also appears as nivkner, and Alisha also appears as Alisha Aneja. Each pair shares one email address.
+- **Left out:**
+  - `src/ucd_tables.rs` (647 lines) is dropped as generated code.
+  - One bot (9 lines, 1 commit) is excluded.
+- **Reformat check:**
+  - The check found no commits to set aside automatically.
+  - One candidate, `c584a1d` "style: switch to rustfmt" by Gallant, touches 9 files. The tool counts 189 surviving lines from it.
+  - I re-ran with it ignored. Gallant drops to 76.3% (2,830 lines), and the rest of the ranking is unchanged apart from Aron Griffis rising to 63 lines. The conclusion holds either way.
+- **Copy detection:** Figures use `git blame -w -M -C`. Without copy detection, Gallant would hold 80.6% (2,989 lines). Niv Kaminer would drop from 1.2% to 0.4%.
+- **Not measured:** These figures show whose code is still here. They say nothing about quality, review work, or design.
+META cost=0.065084 ms=22701 turns=5

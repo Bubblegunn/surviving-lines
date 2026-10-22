@@ -1,0 +1,103 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+How concentrated is ownership of the code in src/? I want the bus factor based on who wrote the lines that are still there, not on commit counts.
+
+CRITERIA:
+1. Andrew Gallant owns about 77% of live lines (accept 74.5% to 79.5%), and the answer gives the bus factor as 1 (one person holds more than half). FAIL if his share is below 70% or above 83%, or if the bus factor is stated as 2 or more.
+2. Everyone else together holds about 23% (accept 20.5% to 25.5%); the second-ranked person is Ola Berg with about 3.4% as ONE entry (accept 2.4% to 4.4%), not two. FAIL if Ola Berg is split into two entries without saying they are one person, or if someone else is ranked second.
+3. Kaito Mori (only converted src/error.rs line endings) is credited with at most 0.5%, and src/error.rs remains mostly Andrew Gallant's (about 65%, accept 55% to 75%). FAIL if Kaito Mori has 3% or more.
+4. The generated src/errno_table.rs (Niko Alvarez) is excluded: Niko Alvarez holds at most 0.5% and the total is about 3,320 lines (accept 3,150 to 3,500), not about 4,200. Jun Park (code deleted again) holds 0%. FAIL if Niko Alvarez has 1% or more, or Jun Park is credited.
+5. The answer states what it left out or merged: at least two of (a) ignored whitespace or line-ending-only changes, (b) excluded the generated table, (c) merged the Ola Berg identities. FAIL if fewer than two are stated, or if commit counts are used as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD f9f947c74bb99e41581e34bd789dc1aade9badf9
+scope: src/
+files counted: 7  excluded: 1
+  excluded src/errno_table.rs: generated (header says so)
+ignore-revs (0):
+live lines in scope: 3322
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 3322
+RANKING (share of human live lines)
+ 1. Andrew Gallant: 2554 lines, 76.88%
+ 2. Ola Berg: 113 lines, 3.40%
+ 3. Sebastian Thiel: 74 lines, 2.23%
+ 4. Ashley: 68 lines, 2.05%
+ 5. Aron Griffis: 59 lines, 1.78%
+ 6. Niv Kaminer: 45 lines, 1.35%
+ 7. mcharsley: 45 lines, 1.35%
+ 8. Marvin Löbel: 41 lines, 1.23%
+ 9. Martin Sehnoutka: 38 lines, 1.14%
+10. Yufeng Wang: 36 lines, 1.08%
+11. Garrett Berg: 34 lines, 1.02%
+12. Jonathan Soo: 32 lines, 0.96%
+13. Jos van den Oever: 22 lines, 0.66%
+14. Thayne McCombs: 22 lines, 0.66%
+15. Lukas Kalbertodt: 21 lines, 0.63%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Ola Berg: Ola Berg <<email redacted>>=58; ola.berg <<email redacted>>=55
+  Niv Kaminer: Niv Kaminer <<email redacted>>=30; nivkner <<email redacted>>=15
+people needed to cover >=50% of human live lines: 1; >=80%: 2
+FACT Andrew Gallant: 2554 lines = 76.88%
+FACT Ola Berg: 113 lines = 3.40%
+FACT Kaito Mori: 0 lines = 0.00%
+FACT Niko Alvarez: 0 lines = 0.00%
+FACT Jun Park: 0 lines = 0.00%
+FACT ola.berg identity (same person as Ola Berg): 113 lines = 3.40%
+FACT file src/error.rs: 262 lines, top author Andrew Gallant 65%
+FACT file src/util.rs: 100 lines, top author ola.berg 55%
+FACT everyone except the top author: 768 lines = 23.12%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node $S -- src; echo ======; node $S --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; git show --stat c584a1d | tail -15; echo ---; node $S --merge-identities -- src | head -22; echo ---; node $S --ignore-rev c584a1d -- src | head -14
+FINAL ANSWER:
+Ownership in `src/` is very concentrated. The bus factor is **1**.
+
+The bus factor here is the smallest number of authors whose surviving lines together reach 50% of the lines counted. It comes from `git blame -w -M -C` at HEAD over 7 files and 3,322 lines. It measures how concentrated the surviving code is, not who understands it.
+
+**Bus factor**
+- At the 50% threshold, it is 1 for `src/`. Andrew Gallant alone holds 2,554 lines (76.9%).
+- To reach 80% takes 2 authors.
+
+**Who holds the lines**
+
+| Author | Lines | Share | Commits | Commit share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,554 | 76.9% | 55 | 51.9% |
+| Ola Berg | 113 | 3.4% | 2 | 1.9% |
+| Sebastian Thiel | 74 | 2.2% | 1 | 0.9% |
+| Ashley | 68 | 2.0% | 1 | 0.9% |
+| Aron Griffis | 59 | 1.8% | 1 | 0.9% |
+| Niv Kaminer | 45 | 1.4% | 2 | 1.9% |
+| mcharsley | 45 | 1.4% | 1 | 0.9% |
+| Marvin Löbel | 41 | 1.2% | 1 | 0.9% |
+| Martin Sehnoutka | 38 | 1.1% | 1 | 0.9% |
+| Yufeng Wang | 36 | 1.1% | 3 | 2.8% |
+| Garrett Berg | 34 | 1.0% | 1 | 0.9% |
+
+27 more authors hold 6.5% together. The largest of them is Jonathan Soo at 1.0%.
+
+Gallant holds 76.9% of the lines but made 51.9% of the commits. The share of surviving lines is higher than the share of commits.
+
+**What was left out or checked**
+- **Generated file:** `src/errno_table.rs` (883 lines) is left out of every number because it is generated.
+- **Reformat commit:** `c584a1d` "style: switch to rustfmt" (Andrew Gallant, 2020) rewrote 243 lines across 9 files. The tool did not set it aside automatically. I checked it by re-running with it ignored. Gallant then holds 2,547 lines (76.7%) instead of 2,554 (76.9%), so it changes nothing material. The 75 commits holding surviving lines were checked for mechanical rewrites, and none were set aside.
+- **Copy detection:** the figures use `-w -M -C`. Without `-C`, Gallant would hold 2,705 lines (81.4%). Garrett Berg would drop to 0 lines (from 34), and Niv Kaminer to 15 lines (from 45).
+- **Same address, several names:** the tool already counts these as one person each.
+  - Ola Berg and `ola.berg` (113 lines).
+  - Niv Kaminer and `nivkner` (45 lines).
+  - Alisha and Alisha Aneja (9 lines).
+- **Possible same person (guess):** Ashley (68 lines) and Ashley Mannix (4 lines) may be one person. The evidence is weak, so I kept them separate. If they are one person, that is 72 lines (2.2%). This is only a guess from names and addresses. You would need to confirm it.
+- **Not written:** I made no `.mailmap` changes, since you only asked a question.
+
+**What these numbers don't show**
+They say nothing about the quality of the lines, review work, or design done outside the code. Code that was deleted on purpose counts for nobody.

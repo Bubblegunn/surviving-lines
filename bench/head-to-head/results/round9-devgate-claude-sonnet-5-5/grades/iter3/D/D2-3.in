@@ -1,0 +1,113 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I'm taking over reviewing PRs for this flag library. Which people wrote the Go code that is still alive in it, and how concentrated is that: would losing one or two people be a problem?
+
+CRITERIA:
+1. Top owner is Eric Paris with 16.7% of live Go lines (accept 14.2% to 19.2%); the next two are Alex Ogier (10.1%) and Noah Dietz (10.1%), and the top three together hold about 37% (accept 34% to 40%). FAIL if the top person is not Eric Paris, or the top-three total is outside 34% to 40%.
+2. Sam Okafor is credited with at most 0.5% of the Go code. The answer must not count vendor/ or zz_generated_flags.go (without them about 12,200 live lines; with them about 14,000), and dependabot[bot] is not listed as an owner of Go code. FAIL if Sam Okafor has 1% or more, or if a bot is ranked as an author.
+3. Identity duplicates are merged: "bogem" and Albert Nigmatzianov (same e-mail) are one entry with about 1.8% (accept 1.3% to 2.3%). FAIL if "bogem" appears as a separate ranked person.
+4. Lena Voss (author of the squash-merged PR) is credited with about 1.2% (accept 0.7% to 1.7%), while Ravi Menon and Yuki Sato, who only appear in Co-authored-by trailers, get at most 0.2% each (or the answer says trailers cannot be attributed to lines). FAIL if Lena is missing or above 2.5%, or if either co-author is credited with 0.5% or more.
+5. Concentration: the answer states that ownership is spread out, with no one above 20% and about five people (accept 4 to 6) needed to reach half of the live lines. FAIL if it says one person owns a majority or says one or two people cover half or more.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD 6bf5b04a62e172bd6e088f63040decead3db89ad
+scope: *.go
+files counted: 75  excluded: 3
+  excluded vendor/golang.org/x/sys/unix/syscall_linux.go: vendored third-party code
+  excluded vendor/golang.org/x/term/term.go: vendored third-party code
+  excluded zz_generated_flags.go: generated (header says so)
+ignore-revs (1):
+  6bf5b04a62e1 Sam Okafor | refactor: replace interface{} with any (gofmt -r 'interface{} -> any', no functional change)
+live lines in scope: 12194
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 12194
+RANKING (share of human live lines)
+ 1. Eric Paris: 2041 lines, 16.74%
+ 2. Alex Ogier: 1237 lines, 10.14%
+ 3. Noah Dietz: 1232 lines, 10.10%
+ 4. Jonathan Reyna: 1047 lines, 8.59%
+ 5. Tamal Saha: 626 lines, 5.13%
+ 6. Riobard: 538 lines, 4.41%
+ 7. therealmitchconnors: 522 lines, 4.28%
+ 8. Georges Varouchas: 454 lines, 3.72%
+ 9. rpothier: 385 lines, 3.16%
+10. wu8685: 384 lines, 3.15%
+11. Alex Besogonov: 305 lines, 2.50%
+12. Roman Volosatovs: 303 lines, 2.48%
+13. Ethan P.: 295 lines, 2.42%
+14. Eugene Agafonov: 229 lines, 1.88%
+15. Albert Nigmatzianov: 215 lines, 1.76%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Albert Nigmatzianov: Albert Nigmatzianov <<email redacted>>=167; bogem <<email redacted>>=48
+  Charlie R.C: xilabao <<email redacted>>=128; Charlie R.C <<email redacted>>=19
+people needed to cover >=50% of human live lines: 5; >=80%: 15
+FACT Sam Okafor: 0 human lines = 0.00%
+FACT Lena Voss: 143 human lines = 1.17%
+FACT Ravi Menon: 0 human lines = 0.00%
+FACT Yuki Sato: 0 human lines = 0.00%
+FACT dependabot: 0 human lines = 0.00%
+FACT top-3 share: 36.99%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL --include '*.go' --merge-identities; echo ======; $SL --include '*.go'; echo =====; $SL --identities; ls -a | grep -i mailmap
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> "$@"; }; sl --include '*.go' --merge-identities; echo ======; sl --include '*.go'; echo =====; sl --identities; ls -a | grep -i mailmap
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> "$@"; }; sl --include '*.go' | sed -n 1,30p; echo '-----ids'; sl --identities | head -20; ls -a | grep -i mailmap; echo '-----show'; git show --stat --format='%h %an %s' 6bf5b04 | tail -8; echo '-----ignore'; sl --include '*.go' --merge-identities --ignore-rev 6bf5b04 | sed -n 1,12p; echo '-----dir'; sl --include '*.go' --merge-identities --group-by dir | head -40
+FINAL ANSWER:
+**Short answer:** the Go code is spread across many people, but about half of it sits with five people. Losing one or two would not be a crisis. Losing the right five would be.
+
+**Scope:** 75 Go files, 10,587 non-blank lines (12,194 with blank lines), counted with `git blame -w -M -C` at HEAD. Shares are of surviving lines.
+
+| Author | Lines | Share | Commits (share) | Last commit |
+|---|---|---|---|---|
+| Eric Paris | 1,781 | 16.8% | 46 (18.1%) | 2018-10 |
+| Noah Dietz | 1,080 | 10.2% | 2 (0.8%) | 2018-11 |
+| Alex Ogier | 1,074 | 10.1% | 33 (13.0%) | 2015-02 |
+| Jonathan Reyna | 916 | 8.7% | 1 (0.4%) | 2017-01 |
+| Tamal Saha | 553 | 5.2% | 2 (0.8%) | 2018-08 |
+| Mitch Connors (also `therealmitchconnors`) | 451 | 4.3% | 5 (2.0%) | 2019-09 |
+| Riobard | 405 | 3.8% | 1 (0.4%) | 2014-03 |
+| Georges Varouchas | 383 | 3.6% | 4 (1.6%) | 2025-06 |
+| rpothier | 336 | 3.2% | 1 (0.4%) | 2020-10 |
+| wu8685 | 329 | 3.1% | 2 (0.8%) | 2016-09 |
+| Alex Besogonov | 270 | 2.6% | 1 (0.4%) | 2019-08 |
+| Roman Volosatovs | 266 | 2.5% | 1 (0.4%) | 2018-02 |
+| Ethan P. | 260 | 2.5% | 4 (1.6%) | 2025-04 |
+| Eugene Agafonov | 183 | 1.7% | 1 (0.4%) | 2018-03 |
+| Albert Nigmatzianov (also `bogem`) | 182 | 1.7% | 27 (10.6%) | 2017-05 |
+| Filipe Brandenburger | 146 | 1.4% | 5 (2.0%) | 2015-01 |
+| Maximilian Frank | 146 | 1.4% | 3 (1.2%) | 2025-07 |
+| Charlie R.C (also `xilabao`) | 137 | 1.3% | 2 (0.8%) | 2017-05 |
+| Lena Voss | 122 | 1.2% | 1 (0.4%) | 2026-03 |
+| Hu Jun | 118 | 1.1% | 2 (0.8%) | 2025-05 |
+
+69 more authors hold 13.7% together. The largest of them is Alec Thomas at 1.0%.
+
+**Concentration**
+- **Bus factor:** the bus factor is 5. That is the smallest number of authors whose surviving lines reach 50% of the lines counted. Eric Paris, Noah Dietz, Alex Ogier, Jonathan Reyna and Tamal Saha together hold 51.0% of 10,587 lines, across the whole repository. Reaching 80% takes 16 authors.
+- **Top two:** Eric Paris and Noah Dietz together hold 27.0%.
+- **Activity:** most of the top five have not committed since 2015–2018. The recent committers (2025–26) are Georges Varouchas, Ethan P., Maximilian Frank, Lena Voss and Hu Jun. Each holds 1–4%.
+- **Where the risk is:** the risk is knowledge, not line count. Most of the code is old, and its authors are probably not around to review it. Noah Dietz and Jonathan Reyna hold 19% from 3 commits.
+- **Lines vs commits:** Noah Dietz, Jonathan Reyna and Tamal Saha each hold far more lines than commits suggest. I did not look at their commits individually.
+- **Not the code authors:** Albert Nigmatzianov has 10.6% of commits but only 1.7% of lines. Many of their changes were later replaced.
+
+**What the figures include and leave out**
+- **Duplicate names:** the tool counted three people once each because one address appears under two names. They are Mitch Connors / `therealmitchconnors`, Albert Nigmatzianov / `bogem` and Charlie R.C / `xilabao`. The shared address is the only evidence, so this is a guess. I did not write a `.mailmap`, since you only asked a question. There is none in the repo.
+- **Dropped files:** 3 files, 1,576 lines, are left out of every number. They are vendored code (`vendor`, 1,088 lines) and the generated `zz_generated_flags.go` (488 lines).
+- **Bots:** `dependabot[bot]` is excluded. It has 0 surviving lines.
+- **Reformat commits:** none were detected or ignored.
+- **Mechanical rewrites:** I checked for them. None were set aside, but three look mechanical and were kept.
+  - `6bf5b04` is the `interface{}` to `any` rewrite by Sam Okafor. It changed 39 files and 49 lines. Without it, Eric Paris would have 1,802 lines (17.0%) and Noah Dietz 1,084 (10.2%). Jonathan Reyna would have 919 and Tamal Saha 555.
+  - `d16d05e` is a change by `bogem` that replaces `fmt` with `strconv`. It has 28 surviving lines.
+  - `92abf19` is another `bogem` change, "Optimize fmt statements". It has 1 surviving line.
+- **Copy detection:** the figures use `-C`. It moved 519 lines in 16 files to another author. Alex Ogier has 10.1% (1,074 lines) with copy detection and 7.1% (749 lines) without. Riobard has 3.8% (405 lines) with it and 6.8% (722 lines) without. Some of the code that looks old may have been moved or copied from elsewhere.
+
+**Limits of these numbers:** they show whose lines survive, not who understands the code today or who did the reviewing. They say nothing about the quality of the lines. Deleted code counts for nobody.
+
+**For your reviews:** check `--reviewers <path>` for each area you review. Treat the five recent committers as the people who know the current code. Treat the five oldest owners as history.

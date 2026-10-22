@@ -1,0 +1,54 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo exists; node "$S" -- src; echo ======; node "$S" --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; git show --stat c584a1d | tail -15; echo '--- ignore-rev'; node "$S" --ignore-rev c584a1d --top 3 -- src | sed -n 1,12p; echo '--- merge'; node "$S" --merge-identities --top 3 -- src | sed -n 1,25p
+FINAL ANSWER:
+Ownership of `src/` is highly concentrated. **Andrew Gallant holds 2,219 of 2,941 surviving lines (75.5%)**, so the bus factor is 1.
+
+**Basis:** surviving lines at HEAD, from `git blame -w -M -C`. The count covers 7 files, 2,941 non-blank lines (3,322 with blank lines), and 106 non-merge commits.
+
+**Bus factor**
+- **Bus factor (50% of lines):** 1. This is the smallest number of authors whose surviving lines reach 50%. The scope is `src/` only.
+- **To reach 80%:** 3 authors. The scope is the same.
+
+**Top authors by surviving lines** (the tool printed 12 rows)
+
+| Author | Lines | Share | Commits (share) |
+|---|---|---|---|
+| Andrew Gallant | 2,219 | 75.5% | 55 (51.9%) |
+| Ola Berg | 97 | 3.3% | 2 (1.9%) |
+| Sebastian Thiel | 66 | 2.2% | 1 (0.9%) |
+| Ashley | 65 | 2.2% | 1 (0.9%) |
+| Aron Griffis | 56 | 1.9% | 1 (0.9%) |
+| Niv Kaminer | 43 | 1.5% | 2 (1.9%) |
+| mcharsley | 43 | 1.5% | 1 (0.9%) |
+| Marvin Löbel | 39 | 1.3% | 1 (0.9%) |
+| Martin Sehnoutka | 38 | 1.3% | 1 (0.9%) |
+| Yufeng Wang | 36 | 1.2% | 3 (2.8%) |
+| Garrett Berg | 33 | 1.1% | 1 (0.9%) |
+| Jonathan Soo | 32 | 1.1% | 1 (0.9%) |
+
+26 more authors hold 5.9% together. The largest of them is Thayne McCombs at 0.7%.
+
+Gallant's line share is higher than his commit share (51.9%). The next person has 3.3%, so the rest of the code is spread thinly across many one-time contributors.
+
+**What was left out or checked**
+- **Dropped file:** `src/errno_table.rs` (883 lines) is generated, so it is left out of every number. Including it would credit whoever committed it.
+- **Reformat commit:** `c584a1d` "style: switch to rustfmt" (Gallant, 122 surviving lines) looks mechanical. I checked it with `git show --stat`: it touched 9 files, mostly in `src/`. I re-ran with it ignored, which gives Gallant 2,212 lines (75.2%). The bus factor is still 1.
+- **Mechanical rewrite check:** 75 commits holding surviving lines were examined and none were set aside automatically. `c584a1d` is the only other candidate. I did not set it aside in the main figures, and the 75.2% figure above is the version without it.
+- **Copy detection:** the figures use `-w -M -C`. Without `-C`, Gallant would have 2,365 lines (80.4%), so copy detection moves 146 lines away from him. It also credits Garrett Berg with 33 lines (0.0% without) and Niv Kaminer with 43 lines (0.5% without, 14 lines). Either way the bus factor is 1.
+- **Bots:** none were reported.
+- **`.mailmap`:** I did not write one, and the tool found no merges from it. Nothing in the numbers is merged.
+
+**Duplicate identities (guesses from names and addresses, not proof)**
+- Three people appear under two names with one address. They are counted as one person already: Ola Berg (also `ola.berg`, 97 lines), Niv Kaminer (also `nivkner`, 43 lines) and Alisha Aneja (also `Alisha`, 9 lines).
+- Weak suggestion: Ashley (`<email redacted>`, 65 lines) and Ashley Mannix (`<email redacted>`, 4 lines). I used the unmerged figures. Merged, they would be 69 lines (2.3%). This changes nothing about the bus factor.
+
+**Limits:** these figures show whose lines survive, not who understands the code. They also don't capture review or design work, or code that was deleted on purpose.
+META cost=0.080041 ms=41499 turns=6

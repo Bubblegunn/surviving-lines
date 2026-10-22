@@ -1,0 +1,62 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go' --merge-identities; echo ======; $SL --include '*.go'; echo =====; $SL --identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; [ -f <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js ] || echo MISSING; sl --include '*.go' --merge-identities; echo ======; sl --include '*.go'; echo =====; sl --identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; git show --stat --format='%h %an %s' 6bf5b04 | tail -15; echo ---; sl --identities; echo ---; sl --include '*.go' --ignore-rev 6bf5b04 --top 8
+FINAL ANSWER:
+**Short answer:** the Go code is spread out. Losing one or two people would not be a problem on its own. The real risk is that the biggest owners have been inactive for years, so the review knowledge is held by people who are probably gone.
+
+**Scope:** `*.go` at HEAD, 75 files, 10,587 non-blank lines (12,194 with blank lines). Copy detection is `git blame -w -M -C`.
+
+**Who holds the surviving lines (top 20 rows from the table):**
+
+| Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| Eric Paris | 1,781 | 16.8% | 46 (18.1%) | 2018-10 |
+| Noah Dietz | 1,080 | 10.2% | 2 (0.8%) | 2018-11 |
+| Alex Ogier | 1,074 | 10.1% | 33 (13.0%) | 2015-02 |
+| Jonathan Reyna | 916 | 8.7% | 1 (0.4%) | 2017-01 |
+| Tamal Saha | 553 | 5.2% | 2 (0.8%) | 2018-08 |
+| therealmitchconnors (also "Mitch Connors") | 451 | 4.3% | 5 (2.0%) | 2019-09 |
+| Riobard | 405 | 3.8% | 1 (0.4%) | 2014-03 |
+| Georges Varouchas | 383 | 3.6% | 4 (1.6%) | 2025-06 |
+| rpothier | 336 | 3.2% | 1 (0.4%) | 2020-10 |
+| wu8685 | 329 | 3.1% | 2 (0.8%) | 2016-09 |
+| Alex Besogonov | 270 | 2.6% | 1 (0.4%) | 2019-08 |
+| Roman Volosatovs | 266 | 2.5% | 1 (0.4%) | 2018-02 |
+| Ethan P. | 260 | 2.5% | 4 (1.6%) | 2025-04 |
+| Eugene Agafonov | 183 | 1.7% | 1 (0.4%) | 2018-03 |
+| Albert Nigmatzianov (also "bogem") | 182 | 1.7% | 27 (10.6%) | 2017-05 |
+| Filipe Brandenburger | 146 | 1.4% | 5 (2.0%) | 2015-01 |
+| Maximilian Frank | 146 | 1.4% | 3 (1.2%) | 2025-07 |
+| Charlie R.C (also "xilabao") | 137 | 1.3% | 2 (0.8%) | 2017-05 |
+| Lena Voss | 122 | 1.2% | 1 (0.4%) | 2026-03 |
+| Hu Jun | 118 | 1.1% | 2 (0.8%) | 2025-05 |
+
+69 more authors hold 13.7% together. The largest of them is Alec Thomas at 1.0%.
+
+**Concentration:**
+- **Bus factor:** it is 5, meaning the smallest number of authors whose surviving lines reach 50% of the lines counted. Eric Paris, Noah Dietz, Alex Ogier and two more together hold 51.0%. Reaching 80% takes 16 authors. Both figures cover all Go files in the repo.
+- **No single point of failure:** the top person holds 16.8%. Losing the top two removes about 27%.
+- **Activity:** the five people with 50% have not committed since 2015–2018. Active contributors (2025–2026) are Georges Varouchas (3.6%), Ethan P., Maximilian Frank, Lena Voss and Hu Jun, with about 9.8% of the lines between them. Surviving lines do not show who still understands the code, so for review you will mostly rely on people who own little of it.
+- **Commits vs lines:** Noah Dietz has 10.2% of the lines from 2 commits. Albert Nigmatzianov is the opposite, with 10.6% of the commits but 1.7% of the lines.
+
+**What was left out or adjusted:**
+- **Dropped files:** 3 files and 1,576 lines are not in any number. They are vendored code (2 files, 1,088 lines) and the generated `zz_generated_flags.go` (488 lines).
+- **Bots:** `dependabot[bot]` is excluded and has 0 surviving lines.
+- **Same-address identities:** three people appear under two names with one email, and the table counts each as one person. They are Mitch Connors / therealmitchconnors, Albert Nigmatzianov / bogem, and Charlie R.C / xilabao. This comes from names and addresses, so it is a guess. I did not write a `.mailmap`.
+- **Mechanical rewrites:** I checked for them and set none aside automatically. Three commits look mechanical and were kept in the table:
+  - `6bf5b04`, the `interface{}` to `any` rewrite by Sam Okafor, touched 39 files with 49 lines changed.
+  - `d16d05e` by bogem, 28 lines.
+  - `92abf19` by bogem, 1 line.
+
+  I re-ran with `6bf5b04` ignored. Those 49 lines went back to earlier authors, for example Eric Paris moves to 1,802 (17.0%). The bus factor stays 5, and reaching 80% drops to 15.
+- **Copy detection:** it moved 519 lines in 16 files to other authors. With copy detection Alex Ogier has 1,074 lines (10.1%) and without it 749 (7.1%). Riobard has 405 (3.8%) with it and 722 (6.8%) without.
+
+**Limits:** these numbers show whose lines survive, not code quality, review work, design discussions or deleted code.
+META cost=0.09612190000000001 ms=52203 turns=6

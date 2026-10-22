@@ -1,0 +1,107 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who should review a change to the parser in src/Parser? Show me who wrote the code that is still there, as a share per person.
+
+CRITERIA:
+1. Graham Campbell is ONE person with about 83% of live lines (accept 80% to 86.5%) and is ranked first. FAIL if he is reported at or below 60%, or split into several entries (his several addresses are one person).
+2. Fatima Zahra owns about 7.9% (accept 5.9% to 9.9%): her branch was merged by a merge commit, which does not take her lines. FAIL if she is missing, or below 4%.
+3. Dmitri Volkov owns about 7.3% (accept 5.3% to 9.3%): his comment-stripping code was reverted and then re-landed by him. FAIL if he is missing or below 4%, or if his lines are credited to Graham Campbell.
+4. Marta Kowalska (pure rename of Regex.php) and "StyleCI Bot" hold at most 0.5% each and the bot is not ranked as an owner; Regex.php lines are credited to the original authors. FAIL if Marta Kowalska is above 1%, or if StyleCI Bot appears as a ranked author.
+5. The answer states what it left out or merged: at least two of (a) style-only commits (StyleCI) ignored, (b) rename followed or the moved file credited to its original authors, (c) Graham Campbell's several e-mail addresses merged. FAIL if fewer than two are stated, or if commit counts are used as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD 4b0375e948774b11b3c84e9fe32096ec9d7ec6c1
+scope: src/Parser/
+files counted: 10  excluded: 0
+ignore-revs (13):
+  1b0fd5cb8c83 Graham Campbell | Merge pull request #298 from GrahamCampbell/analysis-XZ7VYD
+  4b0375e94877 StyleCI Bot | Apply fixes from StyleCI
+  4ee9bf81b048 Graham Campbell | Apply fixes from StyleCI (#431)
+  5c2a7fed445d Graham Campbell | Apply fixes from StyleCI (#413)
+  61f8fdbb2c54 Graham Campbell | Apply fixes from StyleCI
+  7738fec1fc5c Graham Campbell | Apply fixes from StyleCI (#396)
+  7e6837db20eb Graham Campbell | Apply fixes from StyleCI (#451)
+  8c62ccf22b12 Graham Campbell | Apply fixes from StyleCI (#388)
+  b27970d73c7a Graham Campbell | Apply fixes from StyleCI (#440)
+  bf58b9c61ba3 Graham Campbell | Apply fixes from StyleCI (#317)
+  c9c1a808fb1b Graham Campbell | Apply fixes from StyleCI (#428)
+  cacfbe3147dc Graham Campbell | Apply fixes from StyleCI (#2)
+  e9a7fac9600a Graham Campbell | Apply fixes from StyleCI (#422)
+live lines in scope: 961
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 961
+RANKING (share of human live lines)
+ 1. Graham Campbell: 801 lines, 83.35%
+ 2. Fatima Zahra: 76 lines, 7.91%
+ 3. Dmitri Volkov: 70 lines, 7.28%
+ 4. Vance Lucas: 10 lines, 1.04%
+ 5. JT Smith: 2 lines, 0.21%
+ 6. Jonas Staudenmeir: 2 lines, 0.21%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Graham Campbell: Graham Campbell <<email redacted>>=488; Graham Campbell <<email redacted>>=304; Graham Campbell <<email redacted>>=9
+people needed to cover >=50% of human live lines: 1; >=80%: 1
+FACT Graham Campbell: 801 lines = 83.35%
+FACT Vance Lucas: 10 lines = 1.04%
+FACT Fatima Zahra: 76 lines = 7.91%
+FACT Dmitri Volkov: 70 lines = 7.28%
+FACT Marta Kowalska: 0 lines = 0.00%
+FACT StyleCI: 0 lines = 0.00%
+FACT file src/Parser/CommentStripper.php: 70 lines, top author Dmitri Volkov 100%
+FACT file src/Parser/Entry.php: 59 lines, top author Graham Campbell 98%
+FACT file src/Parser/EntryParser.php: 299 lines, top author Graham Campbell 73%
+FACT file src/Parser/EscapeDecoder.php: 76 lines, top author Fatima Zahra 100%
+FACT file src/Parser/Lexer.php: 58 lines, top author Graham Campbell 93%
+FACT file src/Parser/Lines.php: 127 lines, top author Graham Campbell 64%
+FACT file src/Parser/Parser.php: 53 lines, top author Graham Campbell 62%
+FACT file src/Parser/ParserInterface.php: 19 lines, top author Graham Campbell 100%
+FACT file src/Parser/Regex.php: 112 lines, top author Graham Campbell 54%
+FACT file src/Parser/Value.php: 88 lines, top author Graham Campbell 70%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL --reviewers src/Parser; echo ======; $SL --reviewers src/Parser --merge-identities; echo =====; ls .mailmap 2>&1
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node $S --reviewers src/Parser; echo ======; node $S --reviewers src/Parser --merge-identities; echo =====; ls .mailmap 2>&1
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node $S --merge-identities --top 20 -- src/Parser; ls .mailmap 2>&1
+FINAL ANSWER:
+**Suggested reviewers for `src/Parser`, ranked by surviving lines:**
+
+1. **Graham Campbell**: 710 lines (84.8%). Last commit 2026-02-27, active.
+2. **Fatima Zahra**: 61 lines (7.3%). Last commit 2026-01-22, active.
+3. **Dmitri Volkov**: 54 lines (6.5%). Last commit 2026-03-10, active.
+
+**Share per person** (837 non-blank lines counted; 961 with blank lines; 10 of 10 files):
+
+| Person | Lines | Share |
+|---|---|---|
+| Graham Campbell (3 addresses) | 710 | 84.8% |
+| Fatima Zahra | 61 | 7.3% |
+| Dmitri Volkov | 54 | 6.5% |
+| Vance Lucas | 8 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+| Marta Kowalska | 0 | 0.0% |
+
+**Identity merge (a guess).** The tool counted Graham Campbell as one person because the name is the same across three addresses. This comes from names and addresses only, so it is unconfirmed. I did not write a `.mailmap`, and the repository has none.
+- Unmerged figures:
+  - `<email redacted>`: 436 lines (52.1%).
+  - `<email redacted>`: 265 lines (31.7%).
+  - `<email redacted>`: 9 lines (1.1%).
+- The `alt-three.com` address has no commits since 2020-07-14. The other two addresses are active.
+
+**Bus factor** (line-based: the fewest authors whose surviving lines reach 50%), for `src/Parser` only:
+- Merged: 1 author reaches 50%, and 1 author reaches 80%.
+- Unmerged: 1 author reaches 50% (`alt-three.com` alone holds 52.1%), and 2 authors reach 80%.
+
+**Left out and checked:**
+- **Bots:** StyleCI Bot (11 lines, 1 commit) is excluded and gets no credit.
+- **Mechanical rewrites:** I checked 47 commits and set aside none.
+- **Copy detection:** the figures use `git blame -w -M -C`. Without `-C`, Graham Campbell has 718 lines (85.8%) and Vance Lucas has 0. Counting by address, `alt-three.com` has 508 lines (60.7%) without it, against 436 with it.
+- **Moved code:** 418 of the 848 lines (49.3%) were written elsewhere and moved here. The sources are `src/Parser.php`, `src/Regex/Regex.php` and `src/Lines.php`. Credit goes to the authors of those lines, not to whoever moved them.
+
+**Caveats:** surviving lines don't measure code quality, review work or design discussion. Deleted code counts for nobody. Ask Graham Campbell first. Fatima Zahra and Dmitri Volkov have recent commits and can be second reviewers.

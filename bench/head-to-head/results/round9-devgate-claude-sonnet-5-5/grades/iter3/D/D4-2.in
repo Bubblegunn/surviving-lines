@@ -1,0 +1,106 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+How concentrated is ownership of the code in src/? I want the bus factor based on who wrote the lines that are still there, not on commit counts.
+
+CRITERIA:
+1. Andrew Gallant owns about 77% of live lines (accept 74.5% to 79.5%), and the answer gives the bus factor as 1 (one person holds more than half). FAIL if his share is below 70% or above 83%, or if the bus factor is stated as 2 or more.
+2. Everyone else together holds about 23% (accept 20.5% to 25.5%); the second-ranked person is Ola Berg with about 3.4% as ONE entry (accept 2.4% to 4.4%), not two. FAIL if Ola Berg is split into two entries without saying they are one person, or if someone else is ranked second.
+3. Kaito Mori (only converted src/error.rs line endings) is credited with at most 0.5%, and src/error.rs remains mostly Andrew Gallant's (about 65%, accept 55% to 75%). FAIL if Kaito Mori has 3% or more.
+4. The generated src/errno_table.rs (Niko Alvarez) is excluded: Niko Alvarez holds at most 0.5% and the total is about 3,320 lines (accept 3,150 to 3,500), not about 4,200. Jun Park (code deleted again) holds 0%. FAIL if Niko Alvarez has 1% or more, or Jun Park is credited.
+5. The answer states what it left out or merged: at least two of (a) ignored whitespace or line-ending-only changes, (b) excluded the generated table, (c) merged the Ola Berg identities. FAIL if fewer than two are stated, or if commit counts are used as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD f9f947c74bb99e41581e34bd789dc1aade9badf9
+scope: src/
+files counted: 7  excluded: 1
+  excluded src/errno_table.rs: generated (header says so)
+ignore-revs (0):
+live lines in scope: 3322
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 3322
+RANKING (share of human live lines)
+ 1. Andrew Gallant: 2554 lines, 76.88%
+ 2. Ola Berg: 113 lines, 3.40%
+ 3. Sebastian Thiel: 74 lines, 2.23%
+ 4. Ashley: 68 lines, 2.05%
+ 5. Aron Griffis: 59 lines, 1.78%
+ 6. Niv Kaminer: 45 lines, 1.35%
+ 7. mcharsley: 45 lines, 1.35%
+ 8. Marvin Löbel: 41 lines, 1.23%
+ 9. Martin Sehnoutka: 38 lines, 1.14%
+10. Yufeng Wang: 36 lines, 1.08%
+11. Garrett Berg: 34 lines, 1.02%
+12. Jonathan Soo: 32 lines, 0.96%
+13. Jos van den Oever: 22 lines, 0.66%
+14. Thayne McCombs: 22 lines, 0.66%
+15. Lukas Kalbertodt: 21 lines, 0.63%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Ola Berg: Ola Berg <<email redacted>>=58; ola.berg <<email redacted>>=55
+  Niv Kaminer: Niv Kaminer <<email redacted>>=30; nivkner <<email redacted>>=15
+people needed to cover >=50% of human live lines: 1; >=80%: 2
+FACT Andrew Gallant: 2554 lines = 76.88%
+FACT Ola Berg: 113 lines = 3.40%
+FACT Kaito Mori: 0 lines = 0.00%
+FACT Niko Alvarez: 0 lines = 0.00%
+FACT Jun Park: 0 lines = 0.00%
+FACT ola.berg identity (same person as Ola Berg): 113 lines = 3.40%
+FACT file src/error.rs: 262 lines, top author Andrew Gallant 65%
+FACT file src/util.rs: 100 lines, top author ola.berg 55%
+FACT everyone except the top author: 768 lines = 23.12%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; [ -f "$S" ] && echo exists; node "$S" -- src; echo ======; node "$S" --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; git show --stat c584a1d | head -20; echo '--- ignore-rev'; node "$S" --ignore-rev c584a1d -- src | head -8; echo '--- merge'; node "$S" --merge-identities -- src | head -30
+FINAL ANSWER:
+**The bus factor for `src/` is 1.** Andrew Gallant alone holds 75.5% of the surviving lines.
+
+Bus factor here means the smallest number of authors whose surviving lines add up to 50% of the lines counted. Reaching 80% takes 3 authors. Both numbers cover `src/` only.
+
+**Scope:** The figures come from `git blame -w -M -C` at HEAD, over 7 files. That is 2,941 non-blank lines (3,322 with blank lines). Shares count non-blank lines.
+
+| Author | Lines | Share | Commits | Commit share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,219 | 75.5% | 55 | 51.9% |
+| Ola Berg | 97 | 3.3% | 2 | 1.9% |
+| Sebastian Thiel | 66 | 2.2% | 1 | 0.9% |
+| Ashley | 65 | 2.2% | 1 | 0.9% |
+| Aron Griffis | 56 | 1.9% | 1 | 0.9% |
+| Niv Kaminer | 43 | 1.5% | 2 | 1.9% |
+| mcharsley | 43 | 1.5% | 1 | 0.9% |
+| Marvin Löbel | 39 | 1.3% | 1 | 0.9% |
+| Martin Sehnoutka | 38 | 1.3% | 1 | 0.9% |
+| Yufeng Wang | 36 | 1.2% | 3 | 2.8% |
+| Garrett Berg | 33 | 1.1% | 1 | 0.9% |
+| Jonathan Soo | 32 | 1.1% | 1 | 0.9% |
+
+26 more authors hold 5.9% together. The largest of them is Thayne McCombs at 0.7%.
+
+**What was left out or adjusted**
+- **Generated file:** `src/errno_table.rs` (883 lines) is excluded from every number. Counting it would credit whoever committed it.
+- **Rustfmt commit:** The tool flagged c584a1d ("style: switch to rustfmt", Andrew Gallant, 122 surviving lines) as possibly mechanical but did not set it aside.
+  - I checked it with `git show --stat`. It touches 9 files, 243 insertions and 260 deletions.
+  - Ignoring it, Andrew Gallant drops to 2,212 lines (75.2%). The conclusion does not change.
+  - That is the only mechanical-rewrite candidate. The tool examined 75 commits and set aside none on its own.
+- **Copy detection:** The figures use `-w -M -C`. Without copy detection (`-w -M` only), Andrew Gallant rises to 2,365 lines (80.4%). Copy detection moved 146 lines in 3 files to other authors.
+  - Garrett Berg has 33 lines (1.1%) with it and 0 without.
+  - Niv Kaminer has 43 lines (1.5%) with it and 14 (0.5%) without.
+- **Same person under several names:** The tool counted these as one person because they share an address.
+  - Ola Berg also appears as ola.berg (97 lines).
+  - Niv Kaminer also appears as nivkner (43 lines).
+  - Alisha Aneja also appears as Alisha (9 lines).
+  - I wrote no `.mailmap` file, and none of these changes the top of the table.
+- **Possible duplicate, weak:** Ashley (65 lines) and Ashley Mannix (4 lines) may be one person. I'm using the unmerged figures. Merged, it would be 69 lines (2.3%), and that is only a guess. It would not change the ranking.
+- **Other suspected groups:** The prompt hint listed 4 suspected same-person groups and showed 2. I did not check the other two. They are guesses from names and addresses. Igor Gnatenko, with 3 commits under two addresses, is one of them.
+- **Merged run:** I ran `--merge-identities`. It printed the same table as the default run.
+
+**Caveats:** Surviving lines measure how much current code each person wrote. They say nothing about code quality, review work, design, or who understands the code. Code that was deleted on purpose counts for nobody.
+
+Everyone else holds at most 3.3% each. The code under `src/` depends almost entirely on one maintainer, and the 3-author figure for 80% only reflects how thin the rest of the ownership is.

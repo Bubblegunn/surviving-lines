@@ -1,0 +1,71 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo ok; node "$S" --group-by dir --merge-identities --suggest-codeowners 2>&1 | head -150
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --merge-identities -- lib 2>&1 | head -60; echo =====; node "$S" --merge-identities -- test 2>&1 | head -60
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --reviewers lib 2>&1 | head -30; echo ----; node "$S" --reviewers test 2>&1 | head -30; echo ----; node "$S" -- test 2>&1 | sed -n 1,20p
+FINAL ANSWER:
+**Short answer:** José Valim wrote most of the surviving code in both `lib/` and `test/`, but their last commit was 2015-01-27. They are inactive, so ask someone else. For review today, ask Kaito Mori for `lib/`, and Kaito Mori or Carlos Antonio da Silva for `test/`.
+
+Counting method: `git blame -w -M -C` at HEAD, with whitespace-only changes ignored and `.git-blame-ignore-revs` honoured. These are the surviving non-blank lines.
+
+**lib/** (1,248 non-blank lines, 1,496 with blank lines)
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| José Valim (2 addresses) | 758 | 60.7% | 2015-01-27, inactive |
+| Kaito Mori | 220 | 17.6% | 2026-10-10, active |
+| Rafael Mendonça França (3 addresses) | 46 | 3.7% | 2022-03-25, inactive |
+| Carlos Antonio da Silva | 42 | 3.4% | 2026-04-06, active |
+| Vestimir Markov | 42 | 3.4% | 2016-03-08, inactive |
+| Jan De Poorter | 31 | 2.5% | 2010-03-16 |
+| Lucas Mazza | 26 | 2.1% | 2016-08-15 |
+
+The other 32 authors hold the remaining 10.6%.
+
+**test/** (1,534 non-blank lines, 1,853 with blank lines)
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| José Valim (2 addresses) | 870 | 56.7% | 2015-01-27, inactive |
+| Rafael Mendonça França (3 addresses) | 171 | 11.1% | 2022-03-25, inactive |
+| Kaito Mori | 137 | 8.9% | 2026-10-10, active |
+| Carlos Antonio da Silva | 103 | 6.7% | 2026-10-10, active |
+| Lucas Mazza | 56 | 3.7% | 2016-08-15 |
+| Jan De Poorter | 54 | 3.5% | 2010-03-16 |
+| Nando Vieira | 34 | 2.2% | 2014-05-21 |
+
+The other 15 authors hold the remaining 7.0%.
+
+**Is `test/` owned by the same people?** Partly.
+- José Valim leads both directories, with 60.7% of `lib/` and 56.7% of `test/`.
+- Kaito Mori is second in `lib/` (17.6%) and third in `test/` (8.9%).
+- Rafael Mendonça França (11.1%) and Carlos Antonio da Silva (6.7%) hold more in `test/` than in `lib/` (3.7% and 3.4%).
+- Among active people, Kaito Mori and Carlos Antonio da Silva appear in both.
+
+**Bus factor** is the smallest number of authors whose surviving lines reach 50%.
+- `lib/`: 1 (José Valim alone has 60.7%). It takes 3 authors to reach 80%.
+- `test/`: 1 (José Valim alone has 56.7%). It takes 5 authors to reach 80%.
+
+**Caveats**
+- **José Valim:** `<email redacted>` and `<email redacted>` are counted as one person, which is a guess from names and addresses. Separately, they hold 282 and 476 lines in `lib/`, and 298 and 572 in `test/`. Without the merge, the largest single address in `lib/` is the plataformatec one at 38.1%. In `test/` it is the same address at 37.3%.
+- **Rafael Mendonça França:** the three addresses are merged the same way, and this is also a guess. In `lib/`, 46 lines is the merged figure.
+- **Kaito Mori:** `.mailmap` already merges `kmori <<email redacted>>` into Kaito Mori. This adds 20 lines and is already in the numbers.
+- **Excluded from the numbers:**
+  - Bots: Weblate and github-actions[bot], 81 lines. Their lines are not credited to anyone.
+  - `Gemfile.lock`: a lockfile, 174 lines, dropped.
+  - Placeholder identities: none were reported.
+- **Moved or copied code:**
+  - In `lib/`, 9.1% of lines were written in other paths. The largest sources are the generator templates under `lib/generators/`.
+  - In `test/`, 79.1% were written elsewhere. The largest sources are `respond_with_test.rb`, `flash_responder_test.rb` and `http_cache_responder_test.rb`.
+  - Credit goes to the original authors, not to whoever moved the code.
+- **Copy detection:** the figures use `-w -M -C`. Without copy detection, Lucas Mazza has 6.6% of `test/` instead of 3.7%. José Valim's `test/` share moves from 37.3% to 35.8% for the plataformatec address alone.
+- **Mechanical rewrites:** I checked. Nothing was set aside, and the one commit already ignored through `.git-blame-ignore-revs` stays ignored. The check examined 90 commits for `lib/` and 74 for `test/`.
+- **Limits of these numbers:** they show whose lines survive. They don't measure review work, design, or lines deleted on purpose.
+
+I did not write anything to `.mailmap`.
+META cost=0.08930830000000001 ms=30885 turns=6

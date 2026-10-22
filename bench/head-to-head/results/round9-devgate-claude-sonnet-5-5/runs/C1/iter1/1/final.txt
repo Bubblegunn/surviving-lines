@@ -1,0 +1,52 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go' --merge-identities; echo ----; $SL --include '*.go'; echo ----; $SL --identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --include '*.go' --merge-identities; echo ----; sl --include '*.go'; echo ----; sl --identities
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r9/dev-C/runs/C1-ours-1/repo; git log --author='Lindqvist' --format='%h %ad %an <%ae> %s' --date=short --stat | head -30; echo ---; git log --author='Noah Dietz' --format='%h %ad %s' --shortstat; git log --author='Jonathan Reyna' --format='%h %ad %s' --shortstat
+FINAL ANSWER:
+Eric Paris holds the most surviving Go lines, at 15.2%. Counting only `*.go` files, the top five are:
+
+| # | Person | Surviving lines | Share | Commits | Last commit |
+|---|---|---|---|---|---|
+| 1 | Eric Paris | 2,194 | 15.2% | 46 | 2018-10-24 |
+| 2 | Noah Dietz | 1,240 | 8.6% | 2 | 2018-11-07 |
+| 3 | Alex Ogier | 1,214 | 8.4% | 33 | 2015-02-15 |
+| 4 | Jonathan Reyna | 1,062 | 7.4% | 1 | 2017-01-25 |
+| 5 | Marcus Lindqvist | 1,020 | 7.1% | 3 | 2026-10-21 |
+
+- **Marcus Lindqvist merge:** the 1,020 lines are three addresses counted as one person. The unmerged rows are `<email redacted>` with 634 lines (4.4%), `mlindqvist@corp.example` with 322 (2.2%), and a GitHub noreply address with 64. He is fifth either way.
+- **Why the merge is a guess:** the tool judged it strong. The name and GitHub login match across the addresses. It comes from names and addresses only, so please confirm it. I did not write `.mailmap`.
+- **Recent code:** his commits are two days old. They add the shell completion code, in `shellcomp.go` and `shellcomp_test.go`.
+- **Other duplicate identities:** Tomas Aschan, who has 66 lines (0.5%), appears under two addresses. Four more people appear under two names on one address: bogem (also Albert Nigmatzianov), Mitch Connors, xilabao (also Charlie R.C) and caie. Merging them doesn't change the top five.
+
+**Scope of the numbers**
+- **Counted:** 14,434 of 14,511 Go lines across 77 files, using `git blame -w -M -C`. There are 301 non-merge commits.
+- **Left out:**
+  - 802 lines of vendored code in one file.
+  - One bot identity, with 77 lines.
+- **Rewrites:** the tool set aside no mechanical rewrites. It flagged four candidates and kept them all, including `d43be5f` (`go fix`, 38 lines) and `d16d05e` (strconv change, 20 lines). None of them affects the top five.
+- **Large line shares from few commits:** Noah Dietz, Jonathan Reyna and Marcus Lindqvist each hold a big share from one to three commits. I checked, and these are real feature additions:
+  - Noah Dietz: the float and int slice flag types, about 600 lines each.
+  - Jonathan Reyna: the bool and uint slice flag types, about 1,000 lines.
+  - Marcus Lindqvist: `shellcomp.go`, about 440 lines, and its tests, about 320.
+- **Copy detection:** the figures use `-C`. Without it, Alex Ogier drops to 5.9% (844 lines). Riobard, who isn't in the top five, goes the other way, from 3.8% to 6.4%.
+- **Bus factor:** 6 authors together hold 50.8% of the lines in the whole Go codebase. It takes 19 authors to reach 80%. Merging the duplicate identities gives that count. The unmerged counts are 7 and 20.
+- **Tail:** 88 more authors hold 17.3% together. The largest is Sebastiaan van Stijn at 0.9%.
+
+**For picking co-maintainers**
+- Surviving lines show whose code is left. They don't show review work, design, or who is active.
+- The top four haven't committed since 2015–2018. Marcus Lindqvist is the only top-five author active now.
+- Among people with lines who committed recently:
+
+| Person | Lines | Share | Last commit |
+|---|---|---|---|
+| Georges Varouchas | 450 | 3.1% | 2025-06 |
+| Brandon Richardson | 340 | 2.4% | 2025-11 |
+| Reuven Harrison | 145 | 1.0% | 2026-05 |
+| Maximilian Frank | 172 | 1.2% | 2025-07 |
+META cost=0.0928148 ms=35176 turns=6

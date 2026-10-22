@@ -1,0 +1,56 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo exists; node "$S" -- src; echo ======; node "$S" --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; git show --stat c584a1d | head -20; echo '--- ignore-rev'; node "$S" --ignore-rev c584a1d -- src | head -8; echo '--- merge'; node "$S" --merge-identities -- src | head -30
+FINAL ANSWER:
+**The bus factor for `src/` is 1.** Andrew Gallant alone holds 75.5% of the surviving lines.
+
+Bus factor here means the smallest number of authors whose surviving lines add up to 50% of the lines counted. Reaching 80% takes 3 authors. Both numbers cover `src/` only.
+
+**Scope:** The figures come from `git blame -w -M -C` at HEAD, over 7 files. That is 2,941 non-blank lines (3,322 with blank lines). Shares count non-blank lines.
+
+| Author | Lines | Share | Commits | Commit share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,219 | 75.5% | 55 | 51.9% |
+| Ola Berg | 97 | 3.3% | 2 | 1.9% |
+| Sebastian Thiel | 66 | 2.2% | 1 | 0.9% |
+| Ashley | 65 | 2.2% | 1 | 0.9% |
+| Aron Griffis | 56 | 1.9% | 1 | 0.9% |
+| Niv Kaminer | 43 | 1.5% | 2 | 1.9% |
+| mcharsley | 43 | 1.5% | 1 | 0.9% |
+| Marvin Löbel | 39 | 1.3% | 1 | 0.9% |
+| Martin Sehnoutka | 38 | 1.3% | 1 | 0.9% |
+| Yufeng Wang | 36 | 1.2% | 3 | 2.8% |
+| Garrett Berg | 33 | 1.1% | 1 | 0.9% |
+| Jonathan Soo | 32 | 1.1% | 1 | 0.9% |
+
+26 more authors hold 5.9% together. The largest of them is Thayne McCombs at 0.7%.
+
+**What was left out or adjusted**
+- **Generated file:** `src/errno_table.rs` (883 lines) is excluded from every number. Counting it would credit whoever committed it.
+- **Rustfmt commit:** The tool flagged c584a1d ("style: switch to rustfmt", Andrew Gallant, 122 surviving lines) as possibly mechanical but did not set it aside.
+  - I checked it with `git show --stat`. It touches 9 files, 243 insertions and 260 deletions.
+  - Ignoring it, Andrew Gallant drops to 2,212 lines (75.2%). The conclusion does not change.
+  - That is the only mechanical-rewrite candidate. The tool examined 75 commits and set aside none on its own.
+- **Copy detection:** The figures use `-w -M -C`. Without copy detection (`-w -M` only), Andrew Gallant rises to 2,365 lines (80.4%). Copy detection moved 146 lines in 3 files to other authors.
+  - Garrett Berg has 33 lines (1.1%) with it and 0 without.
+  - Niv Kaminer has 43 lines (1.5%) with it and 14 (0.5%) without.
+- **Same person under several names:** The tool counted these as one person because they share an address.
+  - Ola Berg also appears as ola.berg (97 lines).
+  - Niv Kaminer also appears as nivkner (43 lines).
+  - Alisha Aneja also appears as Alisha (9 lines).
+  - I wrote no `.mailmap` file, and none of these changes the top of the table.
+- **Possible duplicate, weak:** Ashley (65 lines) and Ashley Mannix (4 lines) may be one person. I'm using the unmerged figures. Merged, it would be 69 lines (2.3%), and that is only a guess. It would not change the ranking.
+- **Other suspected groups:** The prompt hint listed 4 suspected same-person groups and showed 2. I did not check the other two. They are guesses from names and addresses. Igor Gnatenko, with 3 commits under two addresses, is one of them.
+- **Merged run:** I ran `--merge-identities`. It printed the same table as the default run.
+
+**Caveats:** Surviving lines measure how much current code each person wrote. They say nothing about code quality, review work, design, or who understands the code. Code that was deleted on purpose counts for nobody.
+
+Everyone else holds at most 3.3% each. The code under `src/` depends almost entirely on one maintainer, and the 3-author figure for 80% only reflects how thin the rest of the ownership is.
+META cost=0.0801235 ms=41958 turns=6

@@ -1,0 +1,125 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I need a reviewer for a change to src/itsdangerous/signer.py and timed.py. Who really wrote the code that's still in the package (not who committed most or last), and who should I ask?
+
+CRITERIA:
+1. Package level: David Lord 69.2% (accepted 66%-72%), Tomás Ibarra 11.2% (accepted 8%-14%), Armin Ronacher 10.8% (accepted 8%-14%), credited by AUTHOR. FAIL: David Lord above 75% or Tomás Ibarra under 8% or absent (credit given to the committer instead of the author), or Armin Ronacher outside 8%-14%.
+2. signer.py: David Lord 60.9% and Tomás Ibarra 25.1% (each within 4 points), Tomás second. timed.py: David Lord 60.8%, Tomás Ibarra 20.8% (within 4 points), Armin Ronacher 12.5% (within 4 points). FAIL: Tomás Ibarra under 16% in signer.py or under 14% in timed.py, or not ranked second for signer.py.
+3. Lars Veen (module rename and import edits only) is not credited as an owner of the urlsafe module or the package: absent or under 1%. FAIL: Lars Veen is credited 2% or more, or named as the person to ask about the urlsafe/url_safe code.
+4. No bot (pre-commit-ci[bot], dependabot) is named as an owner or reviewer, and the answer says bot/formatter commits were ignored or that no bot lines remain. FAIL: any bot appears in the ranking with 1% or more, or the answer credits the quote-style rewrite lines to a bot.
+5. Gustavo Reyes (added then lost a module, 0 lines alive) is not listed as an owner or reviewer, and the answer names David Lord as the primary reviewer and Tomás Ibarra for the rotation helpers in signer.py/timed.py. FAIL: Gustavo Reyes is listed with any share or recommended, or David Lord is not named first.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD ffeab7f11b227b4a92dc226cf85b361a9bfc5b1c
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (33):
+  ffeab7f11b pre-commit-ci[bot]: [pre-commit.ci] auto fixes from pre-commit.com hooks
+  4bf8d6fd80 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  afe72f9c29 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  5bb67722a5 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  c1c530b601 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  a3ad6e46bd pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  7678d9e903 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  a38e573e8b pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  aa642e9ef4 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  c02c0a59d9 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  f46ab60a4e pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  0bf007418a pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  ... 21 more
+generated files dropped: none
+vendored files dropped (lines): 0 []
+
+== src/itsdangerous (package): counted lines 1071, bot lines 0 (0.0% of counted), unattributed 0, denominator 1071
+  1. David Lord: 741 lines, 69.2%
+  2. Tomás Ibarra: 120 lines, 11.2%
+  3. Armin Ronacher: 116 lines, 10.8%
+  4. Daverball: 48 lines, 4.5%
+  5. Hsiaoming Yang: 13 lines, 1.2%
+  6. Arnout van Meer: 8 lines, 0.7%
+  7. Thomas Waldmann: 8 lines, 0.7%
+  8. Alan Hamlett: 4 lines, 0.4%
+  people with >=1%: 5; rows to reach 80%: 2
+
+== signer.py: counted lines 279, bot lines 0 (0.0% of counted), unattributed 0, denominator 279
+  1. David Lord: 170 lines, 60.9%
+  2. Tomás Ibarra: 70 lines, 25.1%
+  3. Armin Ronacher: 18 lines, 6.5%
+  4. Hsiaoming Yang: 10 lines, 3.6%
+  5. Arnout van Meer: 8 lines, 2.9%
+  6. Thomas Waldmann: 2 lines, 0.7%
+  7. Markus Unterwaditzer: 1 lines, 0.4%
+  people with >=1%: 5; rows to reach 80%: 2
+
+== timed.py: counted lines 240, bot lines 0 (0.0% of counted), unattributed 0, denominator 240
+  1. David Lord: 146 lines, 60.8%
+  2. Tomás Ibarra: 50 lines, 20.8%
+  3. Armin Ronacher: 30 lines, 12.5%
+  4. Alan Hamlett: 4 lines, 1.7%
+  5. Zach Hugnou: 4 lines, 1.7%
+  6. Daverball: 2 lines, 0.8%
+  7. Dirk Müller: 2 lines, 0.8%
+  8. Thomas Waldmann: 2 lines, 0.8%
+  people with >=1%: 5; rows to reach 80%: 2
+
+bot lines alive (whole scope): none
+identities merged (whole scope):
+raw commit counts by author name (non-merge, whole history), top 6: [('David Lord', 159), ('Armin Ronacher', 79), ('dependabot[bot]', 53), ('dependabot-preview[bot]', 48), ('pre-commit-ci[bot]', 33), ('Thomas Waldmann', 9)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>" ] && echo yes; command -v <tool>
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL --reviewers src/itsdangerous/signer.py; echo ======; $SL --reviewers src/itsdangerous/timed.py; echo ======; $SL --merge-identities --reviewers src/itsdangerous/signer.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node $S --reviewers src/itsdangerous/signer.py; echo ======; node $S --reviewers src/itsdangerous/timed.py; echo ======; node $S --merge-identities --reviewers src/itsdangerous/signer.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node $S --reviewers src/itsdangerous/timed.py; echo '------'; node $S --merge-identities --reviewers src/itsdangerous/signer.py | head -20; echo '------'; node $S --merge-identities --reviewers src/itsdangerous/timed.py | head -20
+ - Bash: git log --author="Ibarra" --stat --format='%h %an %ad %s' | head -20
+FINAL ANSWER:
+**Ask David Lord first. Tomás Ibarra is the second reviewer.**
+
+Both files are counted by `git blame -w -M -C`, so each line goes to whoever last changed it. Whitespace changes and moves within a file don't change ownership.
+
+**`signer.py`**: 358 of 366 lines attributed
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| David Lord | 212 | 59.2% | 2024-04-16, inactive |
+| Tomás Ibarra | 100 | 27.9% | 2025-07-01, active |
+| Armin Ronacher | 19 | 5.3% | 2018-10-26, inactive |
+| Hsiaoming Yang | 13 | 3.6% | 2019-09-24, inactive |
+| Arnout van Meer | 11 | 3.1% | none, inactive |
+
+Two more authors hold the remaining lines.
+
+**`timed.py`**: 295 of 300 lines attributed
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| David Lord | 172 | 58.3% | 2025-05-28, active |
+| Tomás Ibarra | 72 | 24.4% | 2025-07-02, active |
+| Armin Ronacher | 37 | 12.5% | 2018-10-27, inactive |
+| Zach Hugnou | 5 | 1.7% | 2019-05-31, inactive |
+| Alan Hamlett | 3 | 1.0% | 2022-03-08, inactive |
+
+Three more authors hold the remaining lines.
+
+- **David Lord:** he holds the most surviving lines in both files. His last commit to `signer.py` was in April 2024, which is more than a year before the tool's reference date of 2025-07-08. That makes him marked "inactive" for `signer.py` only. He is active on `timed.py`.
+- **Tomás Ibarra:** he has two commits, one per file. They are `93695fd` (signer: add key rotation helpers, +100 lines) and `56dba8d` (timed: add rotation helpers, +72 lines). Both are new code, not a mechanical rewrite. He wrote the rotation helpers, so he is a good reviewer if your change touches them.
+- **Armin Ronacher:** he is the third owner (5.3% of `signer.py`, 12.5% of `timed.py`). His last commit was in 2018, so he is probably not reachable.
+
+**Bus factor:** this is the smallest number of authors whose surviving lines reach 50% of the lines counted. It is 1 for both files, because David Lord alone holds about 59% and 58%. Reaching 80% takes 2 authors in each file. The scope is each single file, not the whole repository.
+
+**What the tool left out or checked**
+- It excluded one bot identity (8 lines in `signer.py`, 5 in `timed.py`).
+- It checked for mechanical rewrites in 26 commits and set aside none, so no reformat commit changed the numbers.
+- Copy detection (`-C`) credits 32 lines in `signer.py` and 31 in `timed.py` to other authors. These lines were moved or copied from `itsdangerous.py` and `__init__.py`, so the credit goes to their original writers. The tool named only these shifts as large:
+  - **`signer.py`:** David Lord's share is 59.2% (212 lines) with copy detection and 68.2% (244 lines) without. Armin Ronacher's is 5.3% (19 lines) with and 0.3% (1 line) without. Arnout van Meer's is 3.1% (11 lines) with and 0% without.
+  - **`timed.py`:** David Lord's share is 58.3% (172 lines) with and 68.8% (203 lines) without. Armin Ronacher's is 12.5% (37 lines) with and 2.7% (8 lines) without.
+- The tool reported no duplicate identities, and I did not check for `.mailmap` entries separately.
+
+These numbers show whose code is still there. They don't show review quality or who understands the design.

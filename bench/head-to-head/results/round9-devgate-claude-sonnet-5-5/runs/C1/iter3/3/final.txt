@@ -1,0 +1,41 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go' --merge-identities; echo ------; $SL --include '*.go'
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node $S --include '*.go' --merge-identities; echo ------; node $S --include '*.go'
+ - Bash: git log --stat --format='%h %an <%ae> %ad %s' --date=short -i --author=lindqvist | head -40; git show --stat --format='%h %an %s' d43be5f | tail -3
+FINAL ANSWER:
+Top five by surviving Go lines, from `git blame -w -M -C` on HEAD:
+
+| # | Person | Surviving lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 1,913 | 15.2% |
+| 2 | Noah Dietz | 1,092 | 8.7% |
+| 3 | Alex Ogier | 1,053 | 8.4% |
+| 4 | Jonathan Reyna | 941 | 7.5% |
+| 5 | Marcus Lindqvist | 891 | 7.1% |
+
+**Scope.** The count covers `*.go` files only: 12,559 non-blank lines (14,511 with blank lines) in 77 files. Percentages are of the 12,559 non-blank lines.
+
+**Left out:**
+- One vendored file (802 lines) and one bot, `github-actions[bot]` (77 lines, not credited to anyone).
+- Commit d43be5f ("go fix ./... (interface{} -> any)", Dana Whitfield). It rewrote 38 lines across 37 files, and I set it aside so those lines go back to their earlier authors. Dana Whitfield would hold up to 38 more lines if it were counted.
+- A mechanical-rewrite check examined 225 commits. Three more commits look mechanical and I kept them: d16d05e and 92abf19 (bogem, 16 and 1 lines) and 6404d82 (Tomas Aschan, 3 lines). None affects the top five.
+
+**Identity guesses.** These are guesses from names and addresses. I did not write a `.mailmap`.
+- **Marcus Lindqvist** appears under three addresses, with 546, 281 and 64 lines. The merged figure is 891 lines (7.1%). Unmerged, the largest single address has 546 lines (4.3%). They are 5th either way, ahead of Tamal Saha (524 lines, 4.2%). The tool rates this evidence as strong.
+- The tool also lists Tomas Aschan (two addresses, 56 lines in total) as a possible duplicate. He is not in the top five.
+- Four other people appear under two names on one address, and the tool counts each as one person. They are Mitch Connors (also `therealmitchconnors`), Charlie R.C (also `xilabao`), Albert Nigmatzianov (also `bogem`) and one more the tool did not name.
+
+**Caveats before you pick:**
+- **Marcus Lindqvist's lines are recent and from one afternoon.** All 891 lines come from three commits on 2026-10-21 (shell completion helpers, fish support, tests). Their line share is about 7 times their commit share. They are real code but have not been in the repo long.
+- **Four of the five have not committed in years.** Last commits were Eric Paris 2018-10, Noah Dietz 2018-11, Alex Ogier 2015-02 and Jonathan Reyna 2017-01. Activity does not change the ranking, but it matters for picking co-maintainers.
+- **Copy detection moves some lines.** The figures use `-w -M -C`. Without `-C`, Alex Ogier drops from 8.4% (1,053 lines) to 6.0% (747 lines). Riobard goes from 3.3% to 5.7% and Sebastiaan van Stijn from 1.0% to 2.5%. The top five is unchanged either way.
+- **Commit counts tell a different story.** Eric Paris and Alex Ogier have many commits (46 and 33). Noah Dietz and Jonathan Reyna wrote large chunks in 2 and 1 commits. Albert Nigmatzianov has 27 commits but only 164 surviving lines (1.3%), so is not in the top five by lines.
+- **Ownership is concentrated but spread out.** The bus factor by surviving lines is 6, with the merge applied: 6 authors hold 51.1% of the lines. Without the merge it is 7. To reach 80% of the lines takes 19 authors (21 without the merge). Both figures are for the whole repo's Go files. After the top 22 rows shown by the tool, 87 more authors hold 16.4% together. The largest of them is Hu Jun at 0.9%.
+- **Surviving lines don't measure review, design or quality.** They show whose code is still here, not who would be a good maintainer.
+META cost=0.0840579 ms=29422 turns=6

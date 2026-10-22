@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js"; $SL --merge-identities; echo ======; $SL
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --merge-identities; echo ======; node "$S"
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --include '*.go' --merge-identities --top 8; echo; echo UNMERGED; node "$S" --include '*.go' --top 8; git show --stat d43be5f | tail -5
+FINAL ANSWER:
+**Top five by surviving Go lines** (`*.go` files at HEAD, `git blame -w -M -C`, 12,559 non-blank lines counted, 14,511 with blank lines):
+
+| # | Person | Surviving lines | Share | Commits (share) |
+|---|---|---|---|---|
+| 1 | Eric Paris | 1,913 | 15.2% | 46 (15.3%) |
+| 2 | Noah Dietz | 1,092 | 8.7% | 2 (0.7%) |
+| 3 | Alex Ogier | 1,053 | 8.4% | 33 (11.0%) |
+| 4 | Jonathan Reyna | 941 | 7.5% | 1 (0.3%) |
+| 5 | Marcus Lindqvist (3 addresses) | 891 | 7.1% | 3 (1.0%) |
+
+Next are Tamal Saha (524 lines, 4.2%), Mitch Connors (429 lines, 3.4%) and Riobard (412 lines, 3.3%). 101 more authors hold the rest.
+
+**Marcus Lindqvist:** the tool counts three addresses as one person. It rates the evidence as strong, but it is a guess from names and addresses until you confirm it.
+- With the three addresses merged, Marcus has 891 lines (7.1%). Unmerged, the largest address (`<email redacted>`) has 546 lines (4.3%).
+- The other two addresses have 281 and 64 lines.
+- Unmerged, Marcus would rank 6th, behind Tamal Saha.
+- I wrote nothing to `.mailmap`.
+
+**Things to weigh before choosing:**
+- **Activity:** the last commit in the all-files run, which the `.go` run did not print:
+  - Marcus: 2026-10-21.
+  - Eric Paris: 2018-10-24.
+  - Alex Ogier: 2015-02-15.
+  - Noah Dietz: 2018-11-07.
+  - Jonathan Reyna: 2017-01-25.
+  - Marcus is the only top-five author with recent activity. The other four have not committed in years.
+- **Commit share vs line share:** Noah Dietz (2 commits), Jonathan Reyna (1 commit) and Marcus (3 commits) each hold their lines through very few commits. Each is probably a large one-off contribution.
+- **Copy detection:** the figures use `-w -M -C`. Alex Ogier's share depends on it: 8.4% (1,053 lines) with `-C`, 6.0% (747 lines) without. Riobard goes from 3.3% to 5.7% the other way, but is outside the top five.
+- **Bus factor:** 6 authors hold 50% of the surviving lines, and 19 are needed to reach 80%. Both numbers are for the whole repository's Go files, with Marcus's addresses merged. Unmerged, they are 7 and 21. This measures how concentrated the surviving code is, not who understands it.
+
+**What the numbers leave out:**
+- 802 vendored lines (`vendor/`), left out of every number.
+- `github-actions[bot]`: 77 lines, not credited to anyone.
+- The mechanical rewrite `d43be5f` ("go fix ./... (interface{} -> any)", 38 lines in 37 files) was set aside. Its lines went back to the people who wrote them earlier.
+- Three other commits look mechanical but were kept: `d16d05e` (16 lines), `6404d82` (3 lines) and `92abf19` (1 line). They are too small to change the ranking.
+
+**Other duplicate names:** one address appears under several names for Mitch Connors (also `therealmitchconnors`), Albert Nigmatzianov (also `bogem`) and Charlie R.C (also `xilabao`). The tool counts each pair as one person. Tomas Aschan also appears under two addresses, with 56 lines. None of these affect the top five.
+
+Surviving lines show whose code is still here. They do not show review work, design, or code that was deleted on purpose. Use them to pick people to ask, not to rank maintainers.
+META cost=0.0831078 ms=28729 turns=6

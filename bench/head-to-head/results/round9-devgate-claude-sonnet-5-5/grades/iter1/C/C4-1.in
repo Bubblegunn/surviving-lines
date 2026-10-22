@@ -1,0 +1,96 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who should I ask about the code under lib/ in this repo, and is test/ owned by the same people? Rough shares of the lines still alive please.
+
+CRITERIA:
+1. lib/: José Valim 60.7% (accepted 57.7%-63.7%) and Kaito Mori 17.6% (accepted 14.6%-20.6%) as ONE person (kmori merged via .mailmap, Valim's two emails merged). FAIL: kmori listed separately, Kaito Mori outside 14.6%-20.6%, or Valim outside 57.7%-63.7%.
+2. test/: José Valim 56.7% (within 3 points), Rafael Mendonça França 11.1% (within 3 points, three emails merged) and Kaito Mori 8.9% (within 3 points); Carlos Antonio da Silva (6.7%) ranks below Rafael and Kaito. FAIL: Valim or Rafael or Kaito outside tolerance, or Carlos ranked above Rafael.
+3. The answer says José Valim leads both lib/ and test/, but the next owner differs: Kaito Mori second in lib/, Rafael Mendonça França second in test/. FAIL: it says the two directories have identical ownership, puts Rafael second in lib/, or puts Kaito second in test/.
+4. Weblate (about 80 translation lines, 6.1% of lib/) is not named as an owner or as someone to ask; the answer says translation/robot lines were excluded or flagged. FAIL: Weblate is listed as an owner or contact without being flagged as automated.
+5. The answer states it merged duplicate identities (kmori/Kaito or the repeated José/Rafael emails) AND that the mass rubocop string rewrite was looked through, so Kaito Mori is not credited with the rewritten lines of other authors. FAIL: neither is mentioned, or Kaito Mori is above 21% of lib/.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD e934c25ca782ac1dc105288858ced662eb4246f0
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (1):
+  46fafb7b3f Kaito Mori: Apply rubocop -A (Style/StringLiterals)
+generated files dropped: none
+vendored files dropped (lines): 0 []
+
+== lib/: counted lines 1329, bot lines 81 (6.1% of counted), unattributed 0, denominator 1248
+  1. José Valim: 758 lines, 60.7%
+  2. Kaito Mori: 220 lines, 17.6%
+  3. Rafael Mendonça França: 46 lines, 3.7%
+  4. Carlos Antonio da Silva: 42 lines, 3.4%
+  5. Vestimir Markov: 42 lines, 3.4%
+  6. Jan De Poorter: 31 lines, 2.5%
+  7. Lucas Mazza: 26 lines, 2.1%
+  8. Damir Svrtan: 14 lines, 1.1%
+  people with >=1%: 9; rows to reach 80%: 3
+
+== test/: counted lines 1534, bot lines 0 (0.0% of counted), unattributed 0, denominator 1534
+  1. José Valim: 870 lines, 56.7%
+  2. Rafael Mendonça França: 171 lines, 11.1%
+  3. Kaito Mori: 137 lines, 8.9%
+  4. Carlos Antonio da Silva: 103 lines, 6.7%
+  5. Lucas Mazza: 56 lines, 3.7%
+  6. Jan De Poorter: 54 lines, 3.5%
+  7. Nando Vieira: 34 lines, 2.2%
+  8. Vasiliy Ermolovich: 20 lines, 1.3%
+  people with >=1%: 9; rows to reach 80%: 4
+
+bot lines alive (whole scope): {'Weblate': 80, 'github-actions[bot]': 1}
+identities merged (whole scope):
+  José Valim: José Valim <<email redacted>>; José Valim <<email redacted>>
+  Rafael Mendonça França: Rafael Mendonça França <<email redacted>>; Rafael Mendonça França <<email redacted>>; Rafael Mendonça França <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Carlos Antonio da Silva', 105), ('José Valim', 86), ('Rafael Mendonça França', 59), ('Lucas Mazza', 19), ('Yury Velikanau', 14), ('Nando Vieira', 7)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; [ -f "$S" ] && echo ok; git rev-parse --is-shallow-repository; node "$S" --group-by dir --merge-identities -- lib test 2>&1 | head -150
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node "$S" --group-by dir -- lib test 2>&1 | grep -E "^(test|lib)|José|Rafael|bus"; cat .git-blame-ignore-revs | grep -v '^#'; cat .mailmap
+FINAL ANSWER:
+Ask **José Valim** about `lib/`, and about `test/` too. The two directories have the same owners, in nearly the same proportions. Both figures count lines that still exist, using `git blame -w -M -C` at HEAD.
+
+**lib/** (1,495 lines, 17 files)
+- José Valim: 848 lines, 56.7%. This counts his two addresses as one person, which is a guess from names and addresses. Unmerged, `plataformatec.com.br` holds 520 lines (34.8%) and `gmail.com` holds 328 lines (21.9%).
+- Kaito Mori: 255 lines, 17.1%.
+- Weblate: 80 lines, 5.4%. These are translation files, so ask a person instead.
+- Rafael Mendonça França: 57 lines, 3.8%, counting his addresses as one.
+- Vestimir Markov: 51 lines, 3.4%.
+- Carlos Antonio da Silva: 46 lines, 3.1%.
+- 20 more authors hold the remainder.
+
+**test/** (1,853 lines, 22 files)
+- José Valim: 1,065 lines, 57.5%. Unmerged, that is 685 lines (37.0%) and 380 lines (20.5%).
+- Rafael Mendonça França: 181 lines, 9.8%, counting his addresses as one. Unmerged, his `gmail.com` address alone holds 173 lines (9.3%).
+- Kaito Mori: 160 lines, 8.6%.
+- Carlos Antonio da Silva: 119 lines, 6.4%.
+- Lucas Mazza: 83 lines, 4.5%.
+- Jan De Poorter: 68 lines, 3.7%.
+- 12 more authors hold the remainder.
+
+**Bus factor**
+- For both directories, the bus factor is 1 when José's addresses count as one person. It is the smallest number of authors whose surviving lines reach 50% of the lines counted.
+- If his two addresses count as two people, the bus factor is 2 for both `lib/` and `test/`.
+- The bus factor measures how concentrated the remaining code is. It does not measure who understands it.
+- For a second reviewer on `lib/`, Kaito Mori is the next best choice. For `test/`, it is Rafael Mendonça França.
+
+**What the numbers rest on**
+- **Identity merge:** the merge of José's two addresses and of Rafael's addresses is a guess. I did not write it to `.mailmap`. The existing `.mailmap` has one line, merging Kaito Mori's `kmori` address (20 lines), and it is already in the numbers.
+- **Reformat commit:** commit `46fafb7` (the rubocop string-quote rewrite) is left out through `.git-blame-ignore-revs`.
+- **Mechanical rewrites:** I checked 129 commits that hold surviving lines. I set none aside, and none other looks mechanical.
+- **Bots:** one bot identity is excluded (1 line).
+- **Copy detection:** the figures use `-C`. It moved 58 lines in 6 files, which changes no share for the people named above by more than 2 points.
+- **Other limits:** the figures cannot show review work or design work. They also cannot show code that was deleted on purpose.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>

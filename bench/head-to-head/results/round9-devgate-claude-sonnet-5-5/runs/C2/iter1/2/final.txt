@@ -1,0 +1,56 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js"; [ -f <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js ] && echo ok; git rev-parse --is-shallow-repository; $SL --reviewers src/itsdangerous/signer.py; echo ======; $SL --reviewers src/itsdangerous/timed.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node $S --reviewers src/itsdangerous/signer.py; echo ======; node $S --reviewers src/itsdangerous/timed.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node $S --reviewers src/itsdangerous/timed.py; echo "exit $?"; git show --stat --format='%h %an %ad %s' $(git log -1 --format=%h --author="Ibarra") | head
+FINAL ANSWER:
+**Ask David Lord first. Tomás Ibarra is the second reviewer.**
+
+Counts are surviving lines from `git blame -w -M -C` at HEAD, taken per file with surviving-lines `--reviewers`.
+
+**signer.py** (358 of 366 lines attributed)
+| Author | Lines | Share | Last commit | Marker |
+|---|---|---|---|---|
+| David Lord | 212 | 59.2% | 2024-04-16 | inactive |
+| Tomás Ibarra | 100 | 27.9% | 2025-07-01 | active |
+| Armin Ronacher | 19 | 5.3% | 2018-10-26 | inactive |
+
+Hsiaoming Yang (13 lines, 3.6%) and Arnout van Meer (11 lines, 3.1%) follow, plus 2 more authors.
+
+**timed.py** (295 of 300 lines attributed)
+| Author | Lines | Share | Last commit | Marker |
+|---|---|---|---|---|
+| David Lord | 172 | 58.3% | 2025-05-28 | active |
+| Tomás Ibarra | 72 | 24.4% | 2025-07-02 | active |
+| Armin Ronacher | 37 | 12.5% | 2018-10-27 | inactive |
+
+Zach Hugnou (5 lines, 1.7%) and Alan Hamlett (3 lines, 1.0%) follow, plus 3 more authors.
+
+- **David Lord** holds the most surviving lines in both files. The tool marks them inactive on signer.py (last commit 2024-04-16) and active on timed.py (2025-05-28). The marker is information only, so I did not use it to change the order. Ask them first.
+- **Tomás Ibarra** holds 100 and 72 lines from one commit each. The timed.py commit is `56dba8d`, "timed: add rotation helpers for timestamp signer" (72 lines added). Their last commit is 2025-07-01 or 2025-07-02, so they are active. Their code is the most recent.
+- **Armin Ronacher** wrote 19 lines in signer.py and 37 in timed.py. Their last commit is from 2018, so they are inactive. They are the third name the tool suggests, but I would not ask them.
+
+**Bus factor:** it is 1 on both files. "Bus factor" here means the fewest authors whose surviving lines reach 50% of the lines counted. David Lord alone holds 59.2% and 58.3%. To reach 80% takes 2 authors in each file. Both numbers cover only these two files, not the whole repository.
+
+**What the figures include and leave out**
+- **Copy detection:** both files use `-w -M -C`. About 9–11% of the lines were moved or copied here from `itsdangerous.py` and `src/itsdangerous/__init__.py`. Credit goes to the people who wrote them, not to whoever moved them. This matters for David Lord and Armin Ronacher:
+
+  | Author | File | With `-C` | Without `-C` |
+  |---|---|---|---|
+  | David Lord | signer.py | 212 lines (59.2%) | 244 lines (68.2%) |
+  | David Lord | timed.py | 172 lines (58.3%) | 203 lines (68.8%) |
+  | Armin Ronacher | signer.py | 19 lines (5.3%) | 1 line (0.3%) |
+  | Armin Ronacher | timed.py | 37 lines (12.5%) | 8 lines (2.7%) |
+
+  Without `-C`, Lord's share rises to 68–69% and Ronacher's drops to 0.3% and 2.7%.
+- **Mechanical rewrites:** I checked 26 commits that hold surviving lines in each file. None were set aside, and none looked like a formatter or codemod.
+- **Bots:** one bot is excluded from both files (8 lines in signer.py, 5 in timed.py).
+- **Duplicate identities:** the tool printed no identity hint, so no one is counted under two names. I did not run a merge and did not write a `.mailmap`.
+
+These counts show whose code is still here. They do not show who understands it best, and review or design work leaves no lines.
+META cost=0.07509819999999999 ms=24908 turns=6

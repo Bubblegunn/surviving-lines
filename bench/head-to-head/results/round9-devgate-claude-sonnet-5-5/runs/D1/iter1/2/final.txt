@@ -1,0 +1,47 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" --merge-identities -- cJSON.c cJSON.h
+ - Bash: cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' 413c6d1 | head; for s in f831aef c71cd6c 9adc6e7 31e53a1 c88d045; do git show --stat --format='%h %an %s' $s | head -4; done; node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js --top 6 -- cJSON.c cJSON.h | sed -n 4,12p
+FINAL ANSWER:
+Max Bruckner wrote about three quarters of the code in `cJSON.c` and `cJSON.h` that is still there. I counted lines still alive at HEAD with `git blame -w -M -C`, using the default copy detection. The count covers 3,596 of 3,601 lines in both files.
+
+| # | Author | Surviving lines | Share | Commits | Commit share |
+|---|---|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.1% | 313 | 64.5% |
+| 2 | Kevin Branigan | 149 | 4.1% | 2 | 0.4% |
+| 3 | tomasi (2 addresses, merged) | 142 | 3.9% | 2 | 0.4% |
+| 4 | Alan Wang (2 addresses, merged) | 131 | 3.6% | 29 | 6.0% |
+| 5 | Dave Gamble | 111 | 3.1% | 67 | 13.8% |
+| 6 | Mike Jerris | 76 | 2.1% | 2 | 0.4% |
+| 7 | PeterAlfredLee | 32 | 0.9% | 2 | 0.4% |
+| 8 | caglarivriz | 31 | 0.9% | 1 | 0.2% |
+| 9 | Nicolas Badoux | 29 | 0.8% | 5 | 1.0% |
+| 10 | Zach Hindes | 23 | 0.6% | 1 | 0.2% |
+
+47 more authors hold 4.8% together. The largest of them is miaoerduo at 0.6%.
+
+**Bus factor:** this is line-based, over both files together. One author (Max Bruckner) holds 50% of the surviving lines. Three authors are needed to reach 80%.
+
+**Identities**
+- **Alan Wang:** `.mailmap` already maps Alanscut to Alan Wang, which adds 94 lines to the numbers above. The same `<email redacted>` address also appears as "Alan_scut", which accounts for 129 lines. The in-memory merge also folds in `<email redacted>` (2 lines), giving 131. Unmerged, Alan Wang is 129 lines (3.6%).
+- **tomasi:** the 142 lines are a guess from names and addresses, not confirmed. Unmerged, it is 74 lines (2.1%) from `<email redacted>` and 68 lines from `tibarra@corp.example`.
+- **Same address, several names:** PeterAlfredLee is also "Lee", and Stephan is also "Stephan Gatzka". Both are already counted as one person, and the tool lists one more case.
+- I wrote nothing to `.mailmap`.
+
+**Left out**
+- **Bots:** 1 identity (5 lines, 1 commit).
+- **Reformat commit ignored:** `413c6d1` (Priya Nair, clang-format over both files). It touched 2,303 lines in `cJSON.c` and `cJSON.h`. `.git-blame-ignore-revs` lists it, so the figures leave it out. Without that, the reformat commit would take lines from the people who wrote them.
+- **Mechanical rewrites:** I checked for them. The tool set aside none beyond that one commit. It flagged 59 more commits as possibly mechanical and kept them all. I ran `git show --stat` on the five largest, all by Max Bruckner:
+  - `f831aef`, `c71cd6c`, `9adc6e7`, `31e53a1` and `c88d045`.
+  - Each is titled "reformatting: <function>", but each adds far more lines than it removes (for example +140/−53 and +271/−107). That is real code change, not whitespace.
+  - I did not inspect the other 54, so that check is partial.
+
+**Gap between line share and commit share:** Kevin Branigan, tomasi and Mike Jerris each have many times more line share than commit share. Their lines come from 1–2 commits each. Dave Gamble is the opposite: 67 commits but only 3.1% of the lines, so most of his code has since been rewritten.
+
+These figures show whose lines survive. They say nothing about code quality, review work, design, or code that was deliberately deleted.
+META cost=0.0763399 ms=24810 turns=5

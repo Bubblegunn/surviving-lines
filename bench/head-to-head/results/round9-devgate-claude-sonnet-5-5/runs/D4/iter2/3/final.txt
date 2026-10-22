@@ -1,0 +1,43 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src; echo ======; $SL --identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node $S -- src; echo ======; node $S --merge-identities -- src; echo ======; node $S --identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; git show --stat c584a1d | tail -15; echo '--- ignore-rev'; node $S --ignore-rev c584a1d -- src | head -14; echo '--- merge'; node $S --merge-identities -- src | head -14; echo '--- identities'; node $S --identities
+FINAL ANSWER:
+**Bus factor for `src/` is 1.** Andrew Gallant holds 2,219 of the 2,941 surviving lines (75.5%).
+
+Bus factor here means the smallest number of authors whose surviving lines together reach 50% of the lines counted. Reaching 80% takes 3 authors. Both numbers are for `src/` only. Lines come from `git blame -w -M -C` at HEAD, across 7 files with all 2,941 lines attributed.
+
+| author | lines | share | commits | commit share | last commit |
+|---|---|---|---|---|---|
+| Andrew Gallant | 2,219 | 75.5% | 55 | 51.9% | 2026-04-09 |
+| Ola Berg | 97 | 3.3% | 2 | 1.9% | 2026-03-12 |
+| Sebastian Thiel | 66 | 2.2% | 1 | 0.9% | 2023-09-05 |
+| Ashley | 65 | 2.2% | 1 | 0.9% | 2017-07-18 |
+| Aron Griffis | 56 | 1.9% | 1 | 0.9% | 2018-08-22 |
+| Niv Kaminer | 43 | 1.5% | 2 | 1.9% | 2017-10-01 |
+| mcharsley | 43 | 1.5% | 1 | 0.9% | 2017-05-09 |
+| Marvin Löbel | 39 | 1.3% | 1 | 0.9% | 2021-03-02 |
+| Martin Sehnoutka | 38 | 1.3% | 1 | 0.9% | 2017-06-16 |
+| Yufeng Wang | 36 | 1.2% | 3 | 2.8% | 2017-06-28 |
+| Garrett Berg | 33 | 1.1% | 1 | 0.9% | 2018-01-30 |
+| Jonathan Soo | 32 | 1.1% | 1 | 0.9% | 2017-06-29 |
+
+26 more authors hold 5.9% together. The largest of them is Thayne McCombs at 0.7%.
+
+**What the numbers leave out or adjust:**
+- **Dropped file:** `src/errno_table.rs` (883 lines) is generated and is not counted anywhere.
+- **Mechanical rewrites:** The tool checked 75 commits and set none aside. It flagged `c584a1d` ("style: switch to rustfmt", Andrew Gallant, 2020) as possibly mechanical. I inspected it and it is a pure rustfmt reformat, so I re-ran without it. Andrew Gallant drops to 2,212 lines (75.2%), so the conclusion is unchanged.
+- **Copy detection:** The figures use `-w -M -C`. Copy detection moved 146 lines in 3 files to other authors. Without it Andrew Gallant would hold 2,365 lines (80.4%), Garrett Berg 0, and Niv Kaminer 14 lines instead of 43.
+- **Same address under two names:** These people are already counted once each, with no `.mailmap` involved. Ola Berg also appears as `ola.berg`, Niv Kaminer as `nivkner`, and Alisha Aneja as `Alisha` (9 lines).
+- **Possible same person (weak, unconfirmed):** "Ashley" (65 lines) and Ashley Mannix (4 lines) may be one person. I'm leading with the unmerged figures. Merged they would hold 69 lines (2.3%), which does not change the ranking.
+- **Igor Gnatenko:** Two addresses, same name, strongly suggested as one person. He has 0 surviving lines in `src/`, so it does not affect these numbers.
+- **`.mailmap`:** I didn't write one, since you only asked a question. The suggested lines are in `surviving-lines --identities`.
+
+Surviving lines show whose code is still here, not who understands it. Review, design work and deleted code leave no lines behind. They also say nothing about code quality.
+META cost=0.08112459999999999 ms=39441 turns=6

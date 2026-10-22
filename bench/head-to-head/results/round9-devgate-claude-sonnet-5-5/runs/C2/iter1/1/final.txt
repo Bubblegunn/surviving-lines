@@ -1,0 +1,57 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" ] && echo yes; command -v surviving-lines
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --reviewers src/itsdangerous/signer.py; echo ======; $SL --reviewers src/itsdangerous/timed.py; echo ======; $SL --merge-identities --reviewers src/itsdangerous/signer.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node $S --reviewers src/itsdangerous/signer.py; echo ======; node $S --reviewers src/itsdangerous/timed.py; echo ======; node $S --merge-identities --reviewers src/itsdangerous/signer.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node $S --reviewers src/itsdangerous/timed.py; echo '------'; node $S --merge-identities --reviewers src/itsdangerous/signer.py | head -20; echo '------'; node $S --merge-identities --reviewers src/itsdangerous/timed.py | head -20
+ - Bash: git log --author="Ibarra" --stat --format='%h %an %ad %s' | head -20
+FINAL ANSWER:
+**Ask David Lord first. Tomás Ibarra is the second reviewer.**
+
+Both files are counted by `git blame -w -M -C`, so each line goes to whoever last changed it. Whitespace changes and moves within a file don't change ownership.
+
+**`signer.py`**: 358 of 366 lines attributed
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| David Lord | 212 | 59.2% | 2024-04-16, inactive |
+| Tomás Ibarra | 100 | 27.9% | 2025-07-01, active |
+| Armin Ronacher | 19 | 5.3% | 2018-10-26, inactive |
+| Hsiaoming Yang | 13 | 3.6% | 2019-09-24, inactive |
+| Arnout van Meer | 11 | 3.1% | none, inactive |
+
+Two more authors hold the remaining lines.
+
+**`timed.py`**: 295 of 300 lines attributed
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| David Lord | 172 | 58.3% | 2025-05-28, active |
+| Tomás Ibarra | 72 | 24.4% | 2025-07-02, active |
+| Armin Ronacher | 37 | 12.5% | 2018-10-27, inactive |
+| Zach Hugnou | 5 | 1.7% | 2019-05-31, inactive |
+| Alan Hamlett | 3 | 1.0% | 2022-03-08, inactive |
+
+Three more authors hold the remaining lines.
+
+- **David Lord:** he holds the most surviving lines in both files. His last commit to `signer.py` was in April 2024, which is more than a year before the tool's reference date of 2025-07-08. That makes him marked "inactive" for `signer.py` only. He is active on `timed.py`.
+- **Tomás Ibarra:** he has two commits, one per file. They are `93695fd` (signer: add key rotation helpers, +100 lines) and `56dba8d` (timed: add rotation helpers, +72 lines). Both are new code, not a mechanical rewrite. He wrote the rotation helpers, so he is a good reviewer if your change touches them.
+- **Armin Ronacher:** he is the third owner (5.3% of `signer.py`, 12.5% of `timed.py`). His last commit was in 2018, so he is probably not reachable.
+
+**Bus factor:** this is the smallest number of authors whose surviving lines reach 50% of the lines counted. It is 1 for both files, because David Lord alone holds about 59% and 58%. Reaching 80% takes 2 authors in each file. The scope is each single file, not the whole repository.
+
+**What the tool left out or checked**
+- It excluded one bot identity (8 lines in `signer.py`, 5 in `timed.py`).
+- It checked for mechanical rewrites in 26 commits and set aside none, so no reformat commit changed the numbers.
+- Copy detection (`-C`) credits 32 lines in `signer.py` and 31 in `timed.py` to other authors. These lines were moved or copied from `itsdangerous.py` and `__init__.py`, so the credit goes to their original writers. The tool named only these shifts as large:
+  - **`signer.py`:** David Lord's share is 59.2% (212 lines) with copy detection and 68.2% (244 lines) without. Armin Ronacher's is 5.3% (19 lines) with and 0.3% (1 line) without. Arnout van Meer's is 3.1% (11 lines) with and 0% without.
+  - **`timed.py`:** David Lord's share is 58.3% (172 lines) with and 68.8% (203 lines) without. Armin Ronacher's is 12.5% (37 lines) with and 2.7% (8 lines) without.
+- The tool reported no duplicate identities, and I did not check for `.mailmap` entries separately.
+
+These numbers show whose code is still there. They don't show review quality or who understands the design.
+META cost=0.089841 ms=34545 turns=8

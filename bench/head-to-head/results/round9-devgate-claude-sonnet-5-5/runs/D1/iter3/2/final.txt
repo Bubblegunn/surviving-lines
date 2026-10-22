@@ -1,0 +1,70 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include 'cJSON.c' --include 'cJSON.h' --merge-identities; echo ------; $SL --include 'cJSON.c' --include 'cJSON.h'
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo exists; node "$S" --include 'cJSON.c' --include 'cJSON.h' --merge-identities; echo ------; node "$S" --include 'cJSON.c' --include 'cJSON.h'
+ - Bash: cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' 413c6d1 | head; git show --stat --format='%h %an %s' f831aef | head
+FINAL ANSWER:
+Max Bruckner wrote about three quarters of the code that is still in `cJSON.c` and `cJSON.h`. Everyone else holds 4% or less.
+
+I counted surviving lines with `git blame -w -M -C` at HEAD on both files. That is 3,062 non-blank lines, or 3,601 with blank lines.
+
+| # | Author | Surviving lines | Share | Commits (share) | Last commit |
+|---|---|---|---|---|---|
+| 1 | Max Bruckner | 2,339 | 76.4% | 636 (66.5%) | 2026-03-12 |
+| 2 | Alan Wang (merged, see below) | 122 | 4.0% | 67 (7.0%) | 2025-09-09 |
+| 3 | tomasi / Tomás Ibarra (merged, see below) | 116 | 3.8% | 2 (0.2%) | 2026-02-17 |
+| 4 | Kevin Branigan | 91 | 3.0% | 7 (0.7%) | 2015-10-05 |
+| 5 | Dave Gamble | 75 | 2.4% | 84 (8.8%) | 2016-05-29 |
+| 6 | Mike Jerris | 67 | 2.2% | 2 (0.2%) | 2017-02-27 |
+| 7 | PeterAlfredLee | 30 | 1.0% | 4 (0.4%) | 2025-09-05 |
+| 8 | caglarivriz | 25 | 0.8% | 1 (0.1%) | 2020-04-02 |
+| 9 | Nicolas Badoux | 24 | 0.8% | 8 (0.8%) | 2024-08-30 |
+| 10 | Zach Hindes | 20 | 0.7% | 4 (0.4%) | 2018-09-17 |
+
+88 more authors hold 5.0% together. The largest of them is miaoerduo at 0.6%.
+
+**Commit counts versus surviving lines**
+- Dave Gamble has 8.8% of the commits but only 2.4% of the lines.
+- Mike Jerris and tomasi have 0.2% of the commits each but 2.2% and 3.8% of the lines.
+
+**Bus factor**
+- Computed on lines across these two files, one author (Max Bruckner) holds over 50%.
+- Two authors reach 80%.
+
+**Merged identities (guesses)**
+- Counted as one person each:
+  - **Alan Wang:** `<email redacted>` has 121 lines and `<email redacted>` has 1 line. The first address also appears as `Alan_scut`.
+  - **tomasi:** `<email redacted>` has 61 lines and `tibarra@corp.example` has 55 lines.
+- The merge rests on names and addresses only. Unmerged, tomasi shows as 61 and 55 lines, 2.0% and 1.8%. Only you can confirm they are the same person.
+- The repo's `.mailmap` already merges `Alanscut <<email redacted>>` into Alan Wang (90 lines). That is already in every number above.
+- The tool also flags `Lee` as `PeterAlfredLee`, and `Stephan Gatzka` as `Stephan`. These share an address and are counted as one person.
+- A weak possible match, Randy / Andy / Sayan Bandyopadhyay, holds 0 lines, so it doesn't change anything.
+- I did not write anything to `.mailmap`.
+
+**What was left out**
+- **Reformat commit:** `413c6d1` ("style: run clang-format over cJSON.c and cJSON.h") is in `.git-blame-ignore-revs` and was ignored. It touched 4,494 lines in `cJSON.c` and 112 in `cJSON.h`. Without that exclusion, its author would show up as owning most of both files.
+- **Bot:** `github-actions[bot]` is excluded, with 5 lines and 1 commit. Its lines are not credited to anyone.
+- **Generated or vendored files:** the two files were selected directly, so nothing was dropped.
+
+**Mechanical rewrites**
+- The tool examined 307 commits that hold surviving lines. It set aside none, and the one it ignored is `413c6d1` above.
+- 58 more look mechanical and were kept, so the check is partial. The five largest are all Max Bruckner's:
+  - `f831aef` (57 surviving lines)
+  - `c71cd6c` (37)
+  - `9adc6e7` (35)
+  - `31e53a1` (28)
+  - `c88d045` (26)
+- I inspected `f831aef`. It adds 28 lines and removes 1, so it is a real function change, not a pure reformat. I did not inspect the others.
+- Max Bruckner's share is high regardless. The 58 commits would need to be mostly whitespace-only to change the ranking.
+
+**Copy detection:** `-w -M -C`, the default. The tool flagged no author as moving more than 2 points because of it.
+
+**What the numbers can't show**
+- Line counts say nothing about code quality, review, design work or code that was deleted on purpose.
+- They show whose code is still here, not who is the better engineer.
+META cost=0.0858406 ms=44252 turns=6

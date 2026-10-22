@@ -1,0 +1,38 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go' --merge-identities; echo ------; $SL --include '*.go'
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f $S ] && node $S --include '*.go' --merge-identities; echo ------; node $S --include '*.go'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r9/dev-C/runs/C1-ours-3/repo; for a in "Marcus Lindqvist" "Noah Dietz" "Jonathan Reyna"; do echo "=== $a"; git log -3 --stat --format='%h %ad %s' --date=short --author="$a" | head -30; done
+FINAL ANSWER:
+Top five by surviving Go lines, counted with `git blame -w -M -C` at HEAD:
+
+| # | Person | Surviving lines | Share | Commits | Last commit |
+|---|---|---|---|---|---|
+| 1 | Eric Paris | 2,194 | 15.2% | 46 (15.3%) | 2018-10-24 |
+| 2 | Noah Dietz | 1,240 | 8.6% | 2 (0.7%) | 2018-11-07 |
+| 3 | Alex Ogier | 1,214 | 8.4% | 33 (11.0%) | 2015-02-15 |
+| 4 | Jonathan Reyna | 1,062 | 7.4% | 1 (0.3%) | 2017-01-25 |
+| 5 | Marcus Lindqvist | 1,020 | 7.1% | 3 (1.0%) | 2026-10-21 |
+
+The five together hold about 46.7% of the lines.
+
+**Marcus Lindqvist (guess):** The tool found three addresses for this name: <email redacted> (634 lines), mlindqvist@corp.example (322) and a GitHub noreply address (64). The evidence is strong, but it comes only from names and addresses, so please confirm they are one person. If they are separate, the largest single address is 634 lines (4.4%). That is still fifth, just ahead of Tamal Saha (596, 4.1%). I did not write a `.mailmap`, because you only asked a question.
+
+**Why some line shares are high:**
+- **Noah Dietz, Jonathan Reyna and Marcus Lindqvist:** I checked their commits because their line share is far above their commit share. Each wrote whole new files: Noah the int/float slice flag types, Jonathan the bool/uint/ip slice types, and Marcus the shell completion code and tests, committed two days ago. None of these is a mass rewrite or reformat.
+- **Activity:** Eric Paris and Alex Ogier are the only top-five people who also have many commits. Only Marcus has committed in the last few years.
+
+**What the numbers leave out:**
+- **Scope:** Go files only (77 files, 14,434 lines attributed). One vendored file (802 lines) is dropped, and one bot identity (77 lines) is excluded.
+- **Copy detection:** The figures use `-w -M -C`. Alex Ogier's share is 5.9% (844 lines) without copy detection, versus 8.4% with it. Riobard (outside the top five) moves from 3.8% to 6.4%.
+- **Mechanical rewrites:** I checked for them and set aside none. Four commits look mechanical but were kept. The largest is d43be5f, the `go fix` interface{}-to-any change, with 38 surviving lines. The others hold 24 lines combined, so none changes the ranking.
+- **Bus factor:** 6 authors hold 50.8% of the lines, and 19 authors are needed to reach 80%. Both are computed over all Go lines in the repository, with Marcus Lindqvist's addresses merged. Without the merge, the figures are 7 and 20.
+- **What this can't show:** Surviving lines say whose code is still here. They don't show review work, design, code quality or who understands the code today.
+
+**For picking co-maintainers:** Among the top five, only Marcus Lindqvist has committed recently. Eric Paris, Noah Dietz, Alex Ogier and Jonathan Reyna last committed in 2015–2018. Further down the list, Georges Varouchas (450 lines, 3.1%, 2025-06), Brandon Richardson (340, 2.4%, 2025-11) and Ethan P. (287, 2.0%, 2025-04) are more recent contributors. I can run `--reviewers` on a specific path if you want ownership for one part of the code.
+META cost=0.0873101 ms=46727 turns=6

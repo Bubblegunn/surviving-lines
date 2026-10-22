@@ -1,0 +1,50 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo ok; node "$S"; echo ======; node "$S" --merge-identities --reviewers src/itsdangerous/signer.py; echo ======; node "$S" --merge-identities --reviewers src/itsdangerous/timed.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; for f in signer.py timed.py; do echo "--- $f"; node "$S" --merge-identities --reviewers src/itsdangerous/$f; done; echo "--- both"; node "$S" --merge-identities --reviewers src/itsdangerous/signer.py src/itsdangerous/timed.py 2>&1 | head -5
+FINAL ANSWER:
+**Ask David Lord first, and Tomás Ibarra second.** Both files are mostly David's, and Tomás is the most recent substantial contributor to each.
+
+Figures are surviving lines at HEAD from `git blame -w -M -C`. I excluded `uv.lock` and the pre-commit-ci reformat commit `ffeab7f`.
+
+**signer.py** (271 non-blank lines, 366 with blank lines)
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| David Lord | 162 | 59.8% | 2024-04-16 (inactive) |
+| Tomás Ibarra | 70 | 25.8% | 2025-07-01 (active) |
+| Armin Ronacher | 18 | 6.6% | 2018-10-26 (inactive) |
+
+**timed.py** (235 non-blank lines, 300 with blank lines)
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| David Lord | 142 | 60.4% | 2025-05-28 (active) |
+| Tomás Ibarra | 50 | 21.3% | 2025-07-02 (active) |
+| Armin Ronacher | 30 | 12.8% | 2018-10-27 (inactive) |
+
+- **Remaining authors:** A few other authors hold small amounts of these two files. In signer.py they are Hsiaoming Yang (3.7%) and Arnout van Meer (3.0%), plus 2 more. In timed.py they are Zach Hugnou (1.7%) and Alan Hamlett (1.3%), plus 3 more.
+- **Armin Ronacher:** He wrote the original code, and some of his lines moved into these files from `itsdangerous.py` and `__init__.py`. He has been inactive since 2018, so he is probably not a practical reviewer.
+- **David Lord:** The "inactive" marker for David on signer.py only means no commit to that file in the last year. He is active in the repo, with commits through 2025-07-07, and owns timed.py with an active marker.
+- **Tomás Ibarra:** Tomás has only 1 commit in each file, and those commits account for his surviving lines. This works for review, but they are not a long-standing maintainer.
+
+**Whole package** (2,650 non-blank lines, 3,371 with blank lines; 49 files)
+- David Lord holds 2,037 lines (76.9%).
+- Armin Ronacher holds 197 (7.4%).
+- Adam Englander holds 185 (7.0%) from a single commit.
+- Tomás Ibarra holds 120 (4.5%).
+- Daverball holds 48 (1.8%).
+- 34 more authors hold 0.5% together; the largest is Lars Veen at 0.2%.
+- The package bus factor is 1: David alone holds 76.9%. It takes 2 authors to reach 80%. Bus factor here means the smallest number of authors whose surviving lines reach 50% of the lines counted.
+
+**Caveats**
+- **Copy detection:** The figures use `-w -M -C`. Without copy detection, David's share of signer.py is 70.1% and Armin's is 0.4%. In timed.py, David is at 70.6% and Armin at 3.4%. Armin's credit comes from code moved between files, so I credited the original authors.
+- **Reformat commit:** `ffeab7f` only changed whitespace and quotes, so I left it out. Including it would move David from 76.9% to 76.7% in the package.
+- **Mechanical rewrites:** I checked for them and set aside only `ffeab7f`. In the two files I examined 26 and 24 commits, and none looked mechanical.
+- **Bots:** dependabot, dependabot-preview and pre-commit-ci are excluded and get no credit. They hold 0 package lines and 8 and 5 lines in signer.py and timed.py.
+- **Identities:** The tool found no duplicate identities, and there is no `.mailmap` in play.
+- **Limits:** Line counts show who wrote what survives. They don't show design work, review, or code quality.
+META cost=0.07319550000000001 ms=22037 turns=5

@@ -1,0 +1,43 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; [ -f <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js ] && $SL --merge-identities --bus-factor-threshold 50 -- src; echo ======; $SL -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --merge-identities -- src; echo ======; node "$S" -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; git show --stat --format='%h %an %s' c584a1d | tail -8; node "$S" --merge-identities --ignore-rev c584a1d -- src | sed -n 1,18p
+FINAL ANSWER:
+Ownership of `src/` is highly concentrated. **The bus factor is 1.** Andrew Gallant alone holds 76.9% of the surviving lines.
+
+**What was measured:** `git blame -w -M -C` at HEAD, over all 7 files in `src/`, with 3,322 lines attributed. The bus factor here means the smallest number of authors whose surviving lines together reach 50% of the lines counted. To reach 80% takes 2 authors. Both figures cover `src/` only.
+
+| Author | Lines | Share | Commits | Share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,554 | 76.9% | 55 | 51.9% |
+| Ola Berg | 113 | 3.4% | 2 | 1.9% |
+| Sebastian Thiel | 74 | 2.2% | 1 | 0.9% |
+| Ashley | 68 | 2.0% | 1 | 0.9% |
+| Aron Griffis | 59 | 1.8% | 1 | 0.9% |
+| Niv Kaminer | 45 | 1.4% | 2 | 1.9% |
+| mcharsley | 45 | 1.4% | 1 | 0.9% |
+| Marvin Löbel | 41 | 1.2% | 1 | 0.9% |
+| Martin Sehnoutka | 38 | 1.1% | 1 | 0.9% |
+| Yufeng Wang | 36 | 1.1% | 3 | 2.8% |
+| Garrett Berg | 34 | 1.0% | 1 | 0.9% |
+
+27 more authors hold 6.5% together. The largest of them is Jonathan Soo at 1.0%.
+
+**Left out of the numbers:**
+- `src/errno_table.rs` (883 generated lines) is excluded. Counting it would inflate whoever committed it.
+- Bots, if any, are excluded.
+
+**Checks:**
+- **Mechanical rewrites:** I checked 75 commits and the tool set aside none automatically. It flagged `c584a1d` ("style: switch to rustfmt", Andrew Gallant, 122 surviving lines). `git show --stat` confirms a mostly mechanical change: 9 files, 243 insertions and 260 deletions. I re-ran with it ignored. Gallant moves to 76.7% (2,547 lines), and the other shares move by less than 0.2 points. The conclusion does not change. The table above keeps this commit.
+- **Copy detection:** The figures use `-C`. Without copy detection, Gallant would hold 81.4% (2,705 lines). Garrett Berg would drop from 34 lines to 0, and Niv Kaminer from 45 to 15.
+- **Identities:** Nothing was merged, because no `.mailmap` merges applied. Three people appear under two names on one address: Ola Berg (also `ola.berg`), Niv Kaminer (also `nivkner`), and Alisha (also Alisha Aneja, 9 lines). Their lines are already counted as one person each.
+- **Possible duplicate (weak guess):** Ashley (68 lines) and Ashley Mannix (4 lines) may be the same person. I kept them separate. Merged, they would hold 72 lines (2.2%). It does not change the ranking.
+
+**Limits:** These counts show whose lines survive. They say nothing about code quality, review work, design, or code that was deleted on purpose. They also do not show who understands the code.
+META cost=0.073363 ms=22709 turns=6

@@ -1034,3 +1034,15 @@ Rules for iteration 2:
 - **R9-14** A merged row is named by the most complete personal name in the group (two or more alphabetic words, for example "Albert Nigmatzianov") before a one-word handle; within the same kind the address with the most commits still decides (R8-5 unchanged otherwise). The address list of the person still names every address.
 
 Run the development gate again (iteration 3) after these changes before any new held-out measurement.
+
+## Round 9 development gate
+
+The development gate of round 9 (best-rival specification, step 6) was run three times with ours only on the already-seen sets D and C. It failed in every iteration, so no scored round was run and held-out set e was never opened. These numbers do not enter any score table and show no pass. Ours was graded alone, the best rival numbers are the published numbers of rounds 8 (D) and 7 (C), so the comparison is indicative, not a controlled head-to-head.
+
+| Iteration (product) | Set D, ours of 25 | D tasks passing the rule | Set C, ours of 25 | C tasks passing the rule |
+| --- | --- | --- | --- | --- |
+| 1 (`09e09d9`) | 19.00 | 4 of 5 | 12.33 | 1 of 5 |
+| 2 (`c689450`) | 16.33 | 2 of 5 | 24.33 | 5 of 5 |
+| 3 (`7c78c82`) | 15.33 | 2 of 5 | 23.33 | 5 of 5 |
+
+Best published rival total: 13.33 (D), 12.33 (C). Rule: ours strictly above the best other arm on every task, or at the ceiling together with it. Set D keeps tying at D2 (4.33) and D4 (2.00) below the ceiling. Per-task tables, bootstrap intervals, grader parse failures (several err criteria), cost (about 17.6 USD logged) and the list of everything that went wrong: `bench/head-to-head/results/round9-devgate-claude-sonnet-5-5/SUMMARY.md`.

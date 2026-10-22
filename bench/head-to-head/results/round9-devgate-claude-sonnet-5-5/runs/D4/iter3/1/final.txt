@@ -1,0 +1,47 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl -- src; echo ======; sl --merge-identities -- src
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; git show --stat c584a1d | head -20; echo; sl --merge-identities -- src | head -25; echo; sl --ignore-rev c584a1d -- src | head -22
+FINAL ANSWER:
+**Bus factor for `src/` is 1.** Andrew Gallant alone holds 75.5% of the surviving lines. Reaching 80% of the lines takes 3 authors.
+
+This is line-based: the bus factor is the smallest number of authors whose surviving lines together reach 50% of the lines counted. The scope is `src/` only, at HEAD. Lines come from `git blame -w -M -C`, and the figures include copy detection.
+
+**Size:** 2,941 non-blank lines (3,322 with blank lines) across 7 files, 106 non-merge commits. The shares count non-blank lines.
+
+| Author | Lines | Share | Commits | Commit share | Last commit |
+|---|---|---|---|---|---|
+| Andrew Gallant | 2,219 | 75.5% | 55 | 51.9% | 2026-04-09 |
+| Ola Berg | 97 | 3.3% | 2 | 1.9% | 2026-03-12 |
+| Sebastian Thiel | 66 | 2.2% | 1 | 0.9% | 2023-09-05 |
+| Ashley | 65 | 2.2% | 1 | 0.9% | 2017-07-18 |
+| Aron Griffis | 56 | 1.9% | 1 | 0.9% | 2018-08-22 |
+| Niv Kaminer | 43 | 1.5% | 2 | 1.9% | 2017-10-01 |
+| mcharsley | 43 | 1.5% | 1 | 0.9% | 2017-05-09 |
+| Marvin Löbel | 39 | 1.3% | 1 | 0.9% | 2021-03-02 |
+| Martin Sehnoutka | 38 | 1.3% | 1 | 0.9% | 2017-06-16 |
+| Yufeng Wang | 36 | 1.2% | 3 | 2.8% | 2017-06-28 |
+| Garrett Berg | 33 | 1.1% | 1 | 0.9% | 2018-01-30 |
+| Jonathan Soo | 32 | 1.1% | 1 | 0.9% | 2017-06-29 |
+
+26 more authors hold 5.9% together. The largest of them is Thayne McCombs at 0.7%.
+
+**What was left out or adjusted**
+- **Generated file dropped:** `src/errno_table.rs` (883 lines) is excluded from every number as generated code. `--keep-generated` would count it.
+- **Rustfmt commit:** `c584a1d` ("style: switch to rustfmt", Andrew Gallant, 2020-01-11) touched 8 files in `src/` or the other paths it changed. The tool checked it for mechanical rewrites but did not set it aside, because 122 of its lines survive. I re-ran with it ignored, and the result barely changes: Andrew Gallant 2,212 lines (75.2%), still bus factor 1 and 3 authors to reach 80%. Aron Griffis rises from 56 to 60 lines. The tool examined 75 commits for mechanical rewrites and set none aside, so that check was complete for the 75 commits with surviving lines.
+- **Copy detection:** with `-w -M -C`, Andrew Gallant has 75.5% (2,219 lines). With `-w -M` only, he has 80.4% (2,365 lines). Copy detection moved 146 lines in 3 files to other authors. It credits Garrett Berg with 33 lines (0 without it) and Niv Kaminer with 43 lines (14 without it). Treat those two rows as the least certain.
+
+**Same person under several names**
+- **Merged by `.mailmap`:** none, because no `.mailmap` entries apply to these numbers.
+- **One address, several names, counted as one:** Ola Berg also appears as `ola.berg` (97 lines), Niv Kaminer also appears as `nivkner` (43 lines), and Alisha Aneja also appears as Alisha (9 lines). The table already shows these as one person each.
+- **Possible same person, weak, not merged:** Ashley (65 lines) and Ashley Mannix (4 lines), which would be 69 lines or 2.3% together. This is a guess from names and addresses, so I used the unmerged figures. Merging them would not change the ranking or the bus factor.
+- **Suspected groups from the hook:** it also flagged Igor Gnatenko with two addresses. That is also a guess. I did not write anything to `.mailmap`, since you only asked a question.
+
+**Limits:** these numbers show whose lines survive. They don't show code quality, review work, design done outside the code, or code that was deleted on purpose. A bus factor of 1 means the code is concentrated, not that nobody else understands it.
+META cost=0.081109 ms=38452 turns=6

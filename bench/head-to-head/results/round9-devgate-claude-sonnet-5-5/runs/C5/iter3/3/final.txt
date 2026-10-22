@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --merge-identities -- src/Parser; echo ======; $SL --reviewers src/Parser/Lexer.php; echo ======; $SL --history src/Parser/Lexer.php; echo =====; $SL --merge-identities --bus-factor-threshold 80 -- src/Parser | tail -8
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities -- src/Parser; echo ======; sl --reviewers src/Parser/Lexer.php; echo ======; sl --history src/Parser/Lexer.php
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/Parser/Lexer.php; echo '------'; sl --history src/Parser/Lexer.php; echo '------'; sl --merge-identities --reviewers src/Parser
+FINAL ANSWER:
+**Short answer:** Graham Campbell is the person to ask about `Lexer.php` and the escape handling. They hold all of `Lexer.php` (48 of 48 lines) and about two-thirds of `src/Parser`.
+
+## src/Parser: whose code is still alive
+
+These figures are from `git blame -w -M -C`, with Graham's three addresses counted as one person. The count covers 1,006 non-blank lines (1,187 with blank lines) in 10 files at HEAD.
+
+| Author | Lines | Share | Commits (share) | Last commit |
+|---|---|---|---|---|
+| Graham Campbell (3 addresses) | 673 | 66.9% | 33 (82.5%) | 2026-08-26 |
+| Aiko Tanaka | 171 | 17.0% | 3 (7.5%) | 2026-08-26 |
+| root `<root@localhost>` | 96 | 9.5% | 1 | 2026-08-26 |
+| Your Name `<<email redacted>>` | 56 | 5.6% | 1 | 2026-08-26 |
+| Vance Lucas | 8 | 0.8% | 0 | 2015-10-28 |
+| Jonas Staudenmeir | 1 | 0.1% | 1 | 2024-07-20 |
+| JT Smith | 1 | 0.1% | 1 | 2022-10-15 |
+
+- **Placeholder identities:** `root` and `Your Name` hold 152 lines (15.1%) that cannot be attributed to a person. Don't ask either of them.
+- **Bus factor:** By surviving lines over all of `src/Parser`, the bus factor is 1. Graham alone passes 50%. Reaching 80% takes 2 authors.
+- **Graham's three addresses:** `<email redacted>` (333 lines, 33.1%), `<email redacted>` (338 lines, 33.6%) and `<email redacted>` (2 lines, 0.2%). The merge is a guess from names and addresses, not confirmed. I wrote nothing to `.mailmap`.
+- **Vance Lucas:** Their 8 lines trace back to copy detection. Without `-C` they have 0, so they probably did not write code in this directory.
+- **Moved code:** 318 of 1,007 lines (31.6%) were moved or copied in from other paths, mainly `src/Parser.php`, `src/Value.php` and `src/Lines.php`. Credit goes to whoever wrote them originally, not to whoever moved them.
+
+## Lexer.php and the escape handling
+
+Graham Campbell holds 48 of 48 lines (100%) in `Lexer.php`, which is 48 non-blank lines (58 with blank lines).
+
+- **By address:** Counted separately, `<email redacted>` holds 44 lines (91.7%) and last committed in 2020, so that address is inactive. The noreply address holds 4 lines (8.3%) and last committed on 2026-08-24, so that address is active. `<email redacted>` holds 0 lines.
+- **Evidence for one person:** The same name appears under all three addresses, which is strong evidence they are one person. Only you can confirm that.
+- **Who to ask:** Graham wrote the file in 2020 and is still committing to it.
+- **Moved lines:** 15 lines (31.3%) came from `src/Loader/Lines.php`, `src/Lines.php` and `src/Loader/Value.php`. For the escape logic, also look at those files.
+- **Escape handling elsewhere:** I did not check who wrote the escape code in the other Parser files. `git log` messages like "feature/escapes" suggest Aiko Tanaka may have worked on it. Check that before you rely on it.
+
+## Scope notes for the audit
+
+- **Left out:** `src/Parser/Unicode/CharTable.php` (431 lines) is generated, so it is excluded from every number above. It is probably worth auditing separately.
+- **Bots:** StyleCI Bot (1 line, 1 commit) is excluded and gets no credit.
+- **Mechanical rewrites:** The tool checked 48 commits and set aside none. No reformat commit was detected.
+- **Copy detection:** The figures use `-w -M -C`. For Graham, `-C` moves the count from 681 lines (67.7%) without it to 673 (66.9%) with it. For Vance Lucas it moves 0 to 8 lines.
+- **What the numbers show:** They show whose code survives, not code quality or review work.
+META cost=0.0861017 ms=28240 turns=6

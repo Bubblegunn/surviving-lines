@@ -1,0 +1,55 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL -- src/Parser; echo ======; $SL --merge-identities -- src/Parser; echo ======; $SL --reviewers src/Parser/Lexer.php; echo ======; $SL --history src/Parser/Lexer.php; echo =====; ls src/Parser; grep -rn -il escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl -- src/Parser; echo ======; sl --merge-identities -- src/Parser; echo ======; sl --reviewers src/Parser/Lexer.php; echo ======; sl --history src/Parser/Lexer.php; echo =====; ls src/Parser; grep -rn -il escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/Parser/Lexer.php; echo '-----'; sl --history src/Parser/Lexer.php; echo '-----'; ls src/Parser; grep -rn -il escape src/Parser; echo '-----'; sl --reviewers src/Parser/Escape* 2>&1 | head -30; git log --oneline -5 -- src/Parser/Lexer.php
+ - Bash: node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js --merge-identities -- src/Parser | head -25; git log --format='%h %an %ad %s' --date=short -3 -- src/Parser/Escape.php; git log --format='%h %an %s' --author=root --author='Your Name' -- src/Parser | head
+FINAL ANSWER:
+**Short answer:** ask Graham Campbell about `Lexer.php`. Ask Aiko Tanaka about the escape handling in `Escape.php`.
+
+## `src/Parser` overall
+These are surviving lines (`git blame -w -M -C`) across 10 files and 1,187 lines.
+
+| Author | Lines | Share | Commits (share) | Last commit |
+|---|---|---|---|---|
+| Graham Campbell (3 addresses, counted as one) | 782 | 65.9% | 33 (80.5%) | 2026-08-26 |
+| Aiko Tanaka | 206 | 17.4% | 3 (7.3%) | 2026-08-26 |
+| root | 117 | 9.9% | 1 (2.4%) | 2026-08-26 |
+| Your Name | 69 | 5.8% | 1 (2.4%) | 2026-08-26 |
+| Vance Lucas | 10 | 0.8% | 0 | 2015-10-28 |
+| StyleCI Bot | 1 | 0.1% | 1 | 2026-08-26 |
+| Jonas Staudenmeir | 1 | 0.1% | 1 | 2024-07-20 |
+| JT Smith | 1 | 0.1% | 1 | 2022-10-15 |
+
+- **Merged identity.** I merged three addresses into one person, Graham Campbell. This is a guess from names and addresses, and nothing was written to `.mailmap`. Unmerged, the rows are:
+  - `<email redacted>`: 403 lines (34.0%)
+  - `<email redacted>`: 377 lines (31.8%)
+  - `<email redacted>`: 2 lines (0.2%)
+- **`root` and `Your Name`.** These look like default git identities. From `git log`, `root` made the commit "fix" (7007c6e) and `Your Name` made "compat shims" (b39e8d9). They are probably the same person who made the Aiko-era changes, but I can't tell who that is from the history.
+- **Bus factor.** The bus factor is 1 for the whole of `src/Parser`: Graham alone holds 65.9% of the surviving lines. It takes 2 authors to reach 80%. The bus factor here is the smallest number of authors whose surviving lines together reach 50%.
+
+## What the numbers leave out
+- **Dropped file.** `src/Parser/Unicode/CharTable.php` (431 lines) is generated, so I left it out of every number. If you audit that file, its generator and inputs matter more than its author.
+- **Reformat and rewrite commits.** I checked for mechanical rewrites across 48 commits and set none aside. There was no reformat commit to ignore.
+- **Copy detection.** The figures use `-w -M -C`. Copy detection moved 80 lines to other authors. Without it, Graham's merged share is 66.7% (792 lines) instead of 65.9% (782). Vance Lucas's 10 lines exist only because of copy detection, so those lines were copied in from elsewhere.
+
+## `Lexer.php`
+It has 58 lines, and all of them are Graham Campbell's, counting the same three addresses as one person:
+- `<email redacted>`: 52 lines (89.7%), last commit 2020-06-07, inactive.
+- `<email redacted>`: 6 lines (10.3%), last commit 2026-08-24, active.
+- `<email redacted>`: 0 lines.
+
+Graham made the first commit on 2020-06-07. About 20 of the 58 lines (34.5%) were written elsewhere and moved here, mostly from `src/Loader/Lines.php`, `src/Value.php` and `src/Loader/Value.php`. Graham wrote those too, but you may want to read those source files for context.
+
+## Escape handling
+`src/Parser/Escape.php` is 206 lines, all by Aiko Tanaka (100%), in 2 commits ("Add escape sequence handling" and "Escape: more sequences", both 2026-08-26). Aiko is active, but Aiko has only one day of history in this repo. `EntryParser.php` also references escapes, and Graham holds most of that file.
+
+For an audit, the escape code is also the newest code and has a single author. It is the part that most needs independent review.
+
+These counts show whose code survives. They say nothing about quality or about who understands the code best.
+META cost=0.0909557 ms=36685 turns=7

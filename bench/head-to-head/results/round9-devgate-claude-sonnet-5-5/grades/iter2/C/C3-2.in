@@ -1,0 +1,93 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+How concentrated is authorship of the Rust code in this repo? Is it basically one person, and who are the next few by share of the lines that still exist?
+
+CRITERIA:
+1. Andrew Gallant is the dominant author with 75.4% of surviving non-generated lines (accepted 72%-79%); the answer says authorship is essentially one person / about three quarters. FAIL: his share is under 72% or over 79%, or the answer calls him the sole author or 90%+.
+2. Inès Moreau is second with 5.7% (accepted 3.7%-7.7%) as ONE person (identities Inès/Ines/ines are merged). FAIL: she appears as separate entries, is not second, or her share is above 9% (credit taken for the CRLF re-save of util.rs, dent.rs, error.rs).
+3. Sam Okoro (generated src/ucd_tables.rs, about 650 lines, plus a reverted prototype) is not credited: absent or under 1%, and the answer says the generated file was excluded or that the reverted code is gone. FAIL: Sam Okoro is in the top three or credited 2% or more.
+4. At least two of Sebastian Thiel (2.0%), Ashley (2.0%) and Aron Griffis (1.7%) are named as the next contributors, each within 1.5 points. FAIL: fewer than two of them are named, or the next names include a bot or Sam Okoro.
+5. The answer's concentration statement is consistent: top two together about 81% (accepted 77%-85%); the github-actions[bot] SPDX lines (9 lines, 0.3%) are not presented as a contributor with 1% or more. FAIL: top-two combined outside 77%-85%, or the bot is ranked with 1% or more.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD a45246eecaf4764ed26890f488806a23d5f7a39d
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (0):
+generated files dropped: {'src/ucd_tables.rs': 647}
+vendored files dropped (lines): 0 []
+
+== all *.rs: counted lines 3312, bot lines 9 (0.3% of counted), unattributed 0, denominator 3303
+  1. Andrew Gallant: 2489 lines, 75.4%
+  2. Inès Moreau: 189 lines, 5.7%
+  3. Sebastian Thiel: 66 lines, 2.0%
+  4. Ashley: 65 lines, 2.0%
+  5. Aron Griffis: 56 lines, 1.7%
+  6. mcharsley: 43 lines, 1.3%
+  7. Marvin Löbel: 39 lines, 1.2%
+  8. Martin Sehnoutka: 38 lines, 1.2%
+  people with >=1%: 9; rows to reach 80%: 2
+
+== src/lib.rs: counted lines 1119, bot lines 1 (0.1% of counted), unattributed 0, denominator 1118
+  1. Andrew Gallant: 725 lines, 64.8%
+  2. Aron Griffis: 43 lines, 3.8%
+  3. mcharsley: 43 lines, 3.8%
+  4. Martin Sehnoutka: 38 lines, 3.4%
+  5. Ashley: 36 lines, 3.2%
+  6. Jonathan Soo: 29 lines, 2.6%
+  7. Marvin Löbel: 27 lines, 2.4%
+  8. Jos van den Oever: 21 lines, 1.9%
+  people with >=1%: 14; rows to reach 80%: 6
+
+bot lines alive (whole scope): {'github-actions[bot]': 9}
+identities merged (whole scope):
+  Inès Moreau: Ines Moreau <ines.moreau@university.example>; Inès Moreau <ines@moreau.example>
+raw commit counts by author name (non-merge, whole history), top 6: [('Andrew Gallant', 128), ('Michal Budzynski', 5), ('opilarium', 4), ('Jérémie Lawson', 4), ('Igor Gnatenko', 3), ('Yufeng Wang', 3)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>" ] && node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>" --include '*.rs' --merge-identities
+ - Bash: git show --stat c584a1d | head -20; node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> --include '*.rs' --ignore-rev c584a1d --merge-identities | head -16
+FINAL ANSWER:
+Yes, it is mostly one person: Andrew Gallant holds **2,489 of 3,303 surviving Rust lines (75.4%)** and made 128 of 191 commits (67.0%). The figures come from `git blame -w -M -C` on HEAD, `*.rs` files only (9 files).
+
+**Top authors by surviving lines**
+
+| # | Author | Lines | Share | Commits |
+|---|---|---|---|---|
+| 1 | Andrew Gallant | 2,489 | 75.4% | 128 (67.0%) |
+| 2 | Inès Moreau (3 addresses) | 189 | 5.7% | 3 (1.6%) |
+| 3 | Sebastian Thiel | 66 | 2.0% | 1 |
+| 4 | Ashley | 65 | 2.0% | 2 |
+| 5 | Aron Griffis | 56 | 1.7% | 1 |
+| 6 | Niv Kaminer | 43 | 1.3% | 2 |
+| 6 | mcharsley | 43 | 1.3% | 1 |
+| 8 | Marvin Löbel | 39 | 1.2% | 1 |
+| 9 | Martin Sehnoutka | 38 | 1.2% | 1 |
+| 10 | Yufeng Wang | 36 | 1.1% | 3 |
+
+31 more authors hold 7.2% together. The largest of them is Garrett Berg at 1.0%.
+
+**Bus factor**
+- For the whole Rust code, 1 author (Gallant) reaches 50% of the surviving lines. This is a line-based measure, not a measure of who understands the code.
+- 2 authors reach 80%.
+
+**Caveats**
+- **Inès Moreau merge.** Inès Moreau's row merges three addresses (105 + 84 + 0 lines). I counted them as one person because the names and addresses look alike. That is a guess, and nothing was written to `.mailmap`. Unmerged, the largest address holds 105 lines (about 3.2%), so Inès would drop to second or third place.
+- **Other identity notes.**
+  - Niv Kaminer and nivkner share one address, so they are counted as one person.
+  - Alisha and Alisha Aneja also share an address (9 lines).
+  - Ashley (65 lines) and Ashley Mannix (4 lines) may be the same person. That is only a weak suggestion, so I left them separate.
+  - Igor Gnatenko's addresses hold 0 lines.
+- **Excluded from the numbers.**
+  - `src/ucd_tables.rs` was dropped as a generated file (647 lines).
+  - The `github-actions[bot]` identity was excluded (9 lines, 1 commit), and its lines are not credited to anyone.
+- **Formatting commit.** Mechanical rewrites were checked and none was set aside automatically. One candidate was flagged: `c584a1d` "style: switch to rustfmt" by Gallant, which touched 9 files with 243 insertions and 260 deletions. I re-ran without it. Gallant drops to 2,481 lines (75.1%), and the ranking and conclusion stay the same. Aron Griffis moves from 56 to 60 lines. The table above includes that commit.
+- **Copy detection.** I used `-C`. It moved 146 lines in 3 files away from their original authors. Without it, Gallant would hold 2,635 lines (79.8%), Garrett Berg 0 lines (33 with it), and Ashley 36 lines (65 with it).
+- **What these numbers can't show.** They say nothing about line quality, review work or design work. Code that was deleted on purpose counts for nobody.

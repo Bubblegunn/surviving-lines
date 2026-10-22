@@ -1,0 +1,75 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+We're picking co-maintainers for pflag. Who actually wrote the Go code that's still in the repo today? Give me the top five people with a rough share of the surviving lines.
+
+CRITERIA:
+1. Marcus Lindqvist appears as ONE person with 7.1% of surviving lines (accepted 5.1%-9.1%), i.e. identities <email redacted>, mlindqvist@corp.example and mlindqvist (noreply) are merged. FAIL: he appears as two or more separate entries, is missing from the top five, or his share is outside 5.1%-9.1%.
+2. The top five are exactly Eric Paris (15.2%, accepted 13.2%-17.2%, ranked first), Noah Dietz (8.7%), Alex Ogier (8.4%), Jonathan Reyna (7.5%) and Marcus Lindqvist, with each share within 2 percentage points. FAIL: any other person is in the top five, Eric Paris is not first, or a listed share is more than 2 points off.
+3. Dana Whitfield (author of the mechanical `go fix` rewrite) holds no credit: absent from the ranking or under 0.5%, and the answer says that rewrite/formatting commits were looked through or ignored. FAIL: Dana is credited 1% or more, or the answer does not mention that mechanical rewrites were handled.
+4. Priya Raman's vendored code (vendor/github.com/example/ansi, about 800 lines) is excluded and the answer says vendored/third-party code was left out. FAIL: Priya Raman is in the top five or credited over 1%, or vendor code is counted without being flagged.
+5. The github-actions[bot] license-header lines (about 77 lines, 0.6%) are not presented as a contributor in the top five and the answer discloses that bot lines were excluded or flagged (or that they are under 1%). FAIL: the bot is ranked or credited as an owner with 1% or more, or the answer lists no exclusion or merge at all.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD d43be5f5f1711d2a1434283cf57e2384e47082a5
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (3):
+  d43be5f5f1 Dana Whitfield: all: go fix ./... (interface{} -> any)
+  de240239d6 Reuven Harrison: flag_test: gofmt + use ioutil.Discard for Go 1.12 compatibility
+  8e39cc44d9 therealmitchconnors: gofmt
+generated files dropped: none
+vendored files dropped (lines): 802 ['vendor/github.com/example/ansi/ansi.go']
+
+== whole repo, *.go outside vendor/: counted lines 12636, bot lines 77 (0.6% of counted), unattributed 0, denominator 12559
+  1. Eric Paris: 1913 lines, 15.2%
+  2. Noah Dietz: 1092 lines, 8.7%
+  3. Alex Ogier: 1053 lines, 8.4%
+  4. Jonathan Reyna: 941 lines, 7.5%
+  5. Marcus Lindqvist: 891 lines, 7.1%
+  6. Tamal Saha: 524 lines, 4.2%
+  7. therealmitchconnors: 429 lines, 3.4%
+  8. Riobard: 412 lines, 3.3%
+  people with >=1%: 22; rows to reach 80%: 20
+
+bot lines alive (whole scope): {'github-actions[bot]': 77}
+identities merged (whole scope):
+  Marcus Lindqvist: Marcus Lindqvist <<email redacted>>; Marcus Lindqvist <mlindqvist@corp.example>; mlindqvist <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Eric Paris', 46), ('Alex Ogier', 33), ('Albert Nigmatzianov', 21), ('Tomas Aschan', 13), ('Sebastiaan van Stijn', 13), ('Shirong Lu', 6)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL --merge-identities --include '*.go' 2>&1 | head -80
+ - Bash: node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> --merge-identities --include '*.go' 2>&1 | head -80
+FINAL ANSWER:
+Surviving Go lines at HEAD, counted with `git blame -w -M -C`. The top five by lines:
+
+| # | Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|---|
+| 1 | Eric Paris | 1,913 | 15.2% | 46 (15.3%) | 2018-10-24 |
+| 2 | Noah Dietz | 1,092 | 8.7% | 2 (0.7%) | 2018-11-07 |
+| 3 | Alex Ogier | 1,053 | 8.4% | 33 (11.0%) | 2015-02-15 |
+| 4 | Jonathan Reyna | 941 | 7.5% | 1 (0.3%) | 2017-01-25 |
+| 5 | Marcus Lindqvist (3 addresses) | 891 | 7.1% | 3 (1.0%) | 2026-10-21 |
+
+The five together hold about 47% of 12,559 attributed lines.
+
+**Caveats for picking maintainers**
+- **Marcus Lindqvist's row is a guess.** I merged three addresses by name and address pattern only, and nothing was written to `.mailmap`. Unmerged, the addresses hold 546, 281 and 64 lines (4.3%, 2.2%, 0.5%). The top-five order doesn't change, but the 7.1% figure depends on the guess. Please confirm they are one person.
+- **Only Marcus is recently active.** The other four last committed in 2015–2018. Noah Dietz and Jonathan Reyna have 1–2 commits each, so their lines come from a few large changes.
+- **Copy detection moves some shares.** Without `-C`, Alex Ogier drops from 8.4% (1,053 lines) to 6.0% (747 lines). Riobard rises from 3.3% to 5.7% (708 lines), which would put Riobard roughly level with Ogier. With the default `-C`, Riobard has 412 lines (3.3%).
+- **Next in line:** Tamal Saha (524 lines, 4.2%), then Mitch Connors (429 lines, 3.4%, last commit 2019). Mitch Connors appears as `therealmitchconnors` and is counted once because both names share one address.
+- **Tail and concentration:** 87 more authors hold 16.4% together; the largest is Hu Jun at 0.9%. The line-based bus factor is 6, meaning six authors reach 50% of the lines. Reaching 80% takes 19 authors. Both are for the whole repository's Go code.
+
+**What was left out**
+- **Vendored code:** 1 file with 802 lines is excluded from every number.
+- **Bots:** `github-actions[bot]` (77 lines, 1 commit) is excluded and gets no credit.
+- **Mechanical rewrites checked:** I set aside `d43be5f`, the `go fix ./...` commit by Dana Whitfield that rewrote `interface{}` to `any` (38 surviving lines), and those lines went back to the earlier authors. I kept three commits that look mechanical but are small: `d16d05e` (bogem, 16 lines), `6404d82` (Tomas Aschan, 3 lines) and `92abf19` (bogem, 1 line).
+- **Other duplicate names:** bogem (164 lines) is the same address as Albert Nigmatzianov. Charlie R.C (177 lines) is the same address as xilabao. These are not in the top five either way.
+
+Line counts show whose code survived. They don't show review work, design or code that was deleted on purpose.

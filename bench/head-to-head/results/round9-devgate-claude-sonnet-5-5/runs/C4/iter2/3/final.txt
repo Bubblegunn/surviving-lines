@@ -1,0 +1,57 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo ok; node "$S" --group-by dir --merge-identities 2>&1 | head -150
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; for p in lib test; do node "$S" --merge-identities --bus-factor-threshold 80 -- $p 2>&1 | grep -E "bus factor|more authors"; done; node "$S" --merge-identities --reviewers lib 2>&1 | grep -E "suggested|active"
+FINAL ANSWER:
+**lib/** (1,248 surviving lines, 17 files)
+
+| Person | Lines | Share | Last commit |
+|---|---|---|---|
+| José Valim (2 addresses) | 758 | 60.7% | 2015-01-27, inactive |
+| Kaito Mori | 220 | 17.6% | 2026-10-10, active |
+| Rafael Mendonça França (4 addresses) | 46 | 3.7% | 2026-08-27, active |
+| Carlos Antonio da Silva | 42 | 3.4% | 2026-04-06, active |
+| Vestimir Markov | 42 | 3.4% | 2016-03-08, inactive |
+
+- The table shows only the top five. 18 more authors hold the rest, and none holds more than 2.5%.
+- **Who to ask:** José Valim holds the most lines but has not committed in over a year. Kaito Mori is the active person with the most `lib/` lines. Rafael Mendonça França and Carlos Antonio da Silva are the next active owners.
+
+**test/** (1,534 lines, 22 files)
+
+| Person | Lines | Share |
+|---|---|---|
+| José Valim (2 addresses) | 870 | 56.7% |
+| Rafael Mendonça França (3 addresses) | 171 | 11.1% |
+| Kaito Mori | 137 | 8.9% |
+| Carlos Antonio da Silva | 103 | 6.7% |
+| Lucas Mazza | 56 | 3.7% |
+
+- The table shows only the top five. Jan De Poorter holds 3.5%, and the other authors in the table hold less.
+- **Same owners?** Mostly. José Valim leads both directories with 56.7% of `test/` and 60.7% of `lib/`. The rest differs. Rafael Mendonça França is second in `test/` (11.1%) but holds only 3.7% of `lib/`. Kaito Mori holds 17.6% of `lib/` but 8.9% of `test/`. Lucas Mazza has 3.7% of `test/` and 2.1% of `lib/`.
+
+**Bus factor** is the smallest number of authors whose surviving lines together reach the threshold. Both figures use that line-based definition.
+
+| Scope | To reach 50% | To reach 80% |
+|---|---|---|
+| `lib/` | 1 (José Valim alone) | 3 (José Valim, Kaito Mori, Rafael Mendonça França) |
+| `test/` | 1 (José Valim alone) | 4 |
+
+**Method and caveats**
+- **Duplicate identities:** I merged same-person addresses in memory only, so nothing was written to disk. The merge is a guess from names and addresses.
+  - José Valim is two addresses, `<email redacted>` and `<email redacted>`.
+  - Rafael Mendonça França is three addresses in `test/` and four in `lib/`.
+  - If you leave the merge out, José Valim's lines split across his two addresses (634 and 1,070 repo-wide).
+  - `.mailmap` already merges `kmori <<email redacted>>` into Kaito Mori. That adds 20 lines and is already in the numbers.
+- **Left out of the numbers:**
+  - `Gemfile.lock` (a lockfile, 174 lines).
+  - Weblate and github-actions[bot] (81 lines, which are credited to nobody).
+  - The commit that `.git-blame-ignore-revs` lists. This is probably the recent rubocop string-quote reformat, `46fafb7`. I did not confirm that.
+- **Mechanical rewrites:** The tool checked 222 commits and set none aside as mechanical.
+- **Copy detection:** The figures use `git blame -w -M -C`. Copy detection moved 89 lines to other authors. The largest shift was Lucas Mazza, repo-wide: 3.3% with it and 4.7% without.
+- **What the counts cannot show:** Line counts show who wrote the code that is still here. They don't show who understands it, review work, or the quality of the code.
+META cost=0.072547 ms=27972 turns=5

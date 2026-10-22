@@ -1,0 +1,76 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js"
+ - Bash: SL='<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; node "$SL" --include '*.go' --merge-identities; echo ======; node "$SL" --include '*.go' --merge-identities --ignore-rev 6bf5b04 | head -30; echo ======; git show --stat 6bf5b04 | tail -15
+ - Bash: SL='<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; node "$SL" --include '*.go' --merge-identities --ignore-rev 6bf5b04 | head -28; echo ---; git show --stat 6bf5b04 | tail -15
+ - Bash: for a in "Noah Dietz" "Jonathan Reyna" "Tamal Saha"; do echo "== $a"; git log --author="$a" --shortstat --format='%h %s' | grep -v '^$' | head -6; done
+FINAL ANSWER:
+**Short answer:** the live Go code is spread across many people, and losing one or two of them would not hurt much by line count. The bigger risk is that the top owners have not committed in years. Check whether any of them can still be reached before you rely on them as reviewers.
+
+These figures are for Go files only (75 files, 12,194 lines, from `git blame -w -M -C`). Share is share of surviving lines.
+
+| Author | Lines | Share | Commits (share) | Last commit |
+|---|---|---|---|---|
+| Eric Paris | 2,020 | 16.6% | 46 (18.1%) | 2018-10 |
+| Alex Ogier | 1,237 | 10.1% | 33 (13.0%) | 2015-02 |
+| Noah Dietz | 1,228 | 10.1% | 2 (0.8%) | 2018-11 |
+| Jonathan Reyna | 1,044 | 8.6% | 1 (0.4%) | 2017-01 |
+| Tamal Saha | 624 | 5.1% | 2 (0.8%) | 2018-08 |
+| Riobard | 538 | 4.4% | 1 (0.4%) | 2014-03 |
+| therealmitchconnors | 522 | 4.3% | 5 (2.0%) | 2019-09 |
+| Georges Varouchas | 454 | 3.7% | 4 (1.6%) | 2025-06 |
+| rpothier | 384 | 3.1% | 1 (0.4%) | 2020-10 |
+| wu8685 | 383 | 3.1% | 2 (0.8%) | 2016-09 |
+| Alex Besogonov | 304 | 2.5% | 1 (0.4%) | 2019-08 |
+| Roman Volosatovs | 302 | 2.5% | 1 (0.4%) | 2018-02 |
+| Ethan P. | 295 | 2.4% | 4 (1.6%) | 2025-04 |
+| Eugene Agafonov | 228 | 1.9% | 1 (0.4%) | 2018-03 |
+| bogem | 215 | 1.8% | 27 (10.6%) | 2017-05 |
+| Maximilian Frank | 172 | 1.4% | 3 (1.2%) | 2025-07 |
+| Filipe Brandenburger | 168 | 1.4% | 5 (2.0%) | 2015-01 |
+| xilabao | 147 | 1.2% | 2 (0.8%) | 2017-05 |
+| Hu Jun | 136 | 1.1% | 2 (0.8%) | 2025-05 |
+| Lena Voss | 133 | 1.1% | 1 (0.4%) | 2026-03 |
+
+69 more authors hold 13.6% together. The largest is Gorka Lerchundi Osa at 0.9%.
+
+**Concentration**
+- **Bus factor is 5.** That is the smallest number of authors whose surviving lines reach 50% of the lines counted. Eric Paris, Alex Ogier, Noah Dietz and two more together hold 50.5%. Reaching 80% takes 15 authors. Both figures are for the whole Go codebase.
+- **Top two:** Eric Paris and Alex Ogier hold 26.7% together. Losing both leaves about three quarters of the code with other people.
+- **Last commits:** the top seven owners last committed between 2014 and 2019. The only authors with commits in 2025–26 are Georges Varouchas, Ethan P., Maximilian Frank, Hu Jun and Lena Voss, who hold 1.1–3.7% each. I can't tell from git whether the older authors are reachable.
+
+**Commits and lines don't match for some authors**
+- Noah Dietz, Jonathan Reyna and Tamal Saha have large line shares from very few commits. I checked their history. Each is a feature drop, not a reformat:
+  - Noah's int/float slice types are about 600 lines each.
+  - Jonathan's `BoolSlice` and `UintSlice` is about 1,000 lines.
+  - Tamal's map-valued flags are about 600 lines.
+- bogem has the opposite pattern: 27 commits but only 1.8% of lines.
+
+**What the figures leave out or adjust**
+- **Dropped files:** 3 files and 1,576 lines are left out. They are generated code (`zz_generated_flags.go`, 488 lines) and vendored code (2 files, 1,088 lines).
+- **Bots:** one bot identity is excluded, with 0 lines in the Go view.
+- **Reformat commits:** none were detected or set aside.
+- **Mechanical rewrites:** the tool checked 191 commits and set aside none. It flagged three that look mechanical and kept them in the numbers:
+  - `6bf5b04` (Sam Okafor, the `interface{}` → `any` change, 49 lines across 39 files).
+  - `d16d05e` (bogem, 32 lines).
+  - `92abf19` (bogem, 1 line).
+- **Effect of `6bf5b04`:** I re-ran without it. No share moves by more than 0.2 points (Eric Paris goes from 16.6% to 16.7%, Noah Dietz stays at 10.1%). The bus factor stays 5 (50.7%).
+- **Copy detection:** the figures use `-w -M -C`, and 618 lines in 16 files were credited to another author because of it. Three people move by more than 2 points:
+  - Alex Ogier: 10.1% with copy detection, 6.9% without.
+  - Riobard: 4.4% with, 7.6% without.
+  - Sebastiaan van Stijn: 0.1% with, 1.8% without.
+- **Duplicate identities:** the tool counts these as one person each because they share an address. This is a guess from names and addresses, not confirmed:
+  - therealmitchconnors and Mitch Connors (522 lines)
+  - bogem and Albert Nigmatzianov (215 lines)
+  - xilabao and Charlie R.C (147 lines)
+
+  I did not write a `.mailmap`, since you only asked a question. Tell me if you want one.
+
+This measures surviving lines only. It doesn't measure code quality, review work or design discussion. A high share doesn't mean someone understands the code today.
+META cost=0.11691279999999998 ms=45781 turns=8

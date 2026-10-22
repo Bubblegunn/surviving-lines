@@ -13,7 +13,7 @@ test("scrub.py self-test passes (addresses, keys and tokens, local paths, gzip c
   assert.match(py([join(bench, "scrub.py"), "--self-test"], root), /scrub self-test OK/);
 });
 
-for (const round of ["round7-claude-sonnet-5-5", "round8-claude-sonnet-5-5"]) {
+for (const round of ["round7-claude-sonnet-5-5", "round8-claude-sonnet-5-5", "round9-devgate-claude-sonnet-5-5"]) {
   const dir = join(bench, "results", round);
   test(`${round}: SUMMARY.md equals score.py output, redaction check passes, SHA256SUMS lists every file`, () => {
     assert.ok(existsSync(join(dir, "SUMMARY.md")));

@@ -1,0 +1,57 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --merge-identities; echo ------; $SL; echo -----; $SL --identities; cat .mailmap 2>/dev/null
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities; echo ------; sl; echo -----; sl --identities; cat .mailmap 2>/dev/null
+ - Bash: for a in "Noah Dietz" "Jonathan Reyna" "Marcus Lindqvist"; do echo "=== $a"; git log -3 --stat --format='%h %ad %an <%ae> %s' --date=short --author="$a" | head -30; done
+FINAL ANSWER:
+Top five by surviving lines at HEAD, ranked by lines and not by commits:
+
+| # | Author | Surviving lines | Share | Commits | Last commit |
+|---|---|---|---|---|---|
+| 1 | Eric Paris | 2,386 | 15.8% | 46 (15.3%) | 2018-10-24 |
+| 2 | Alex Ogier | 1,384 | 9.2% | 33 (11.0%) | 2015-02-15 |
+| 3 | Noah Dietz | 1,240 | 8.2% | 2 (0.7%) | 2018-11-07 |
+| 4 | Jonathan Reyna | 1,064 | 7.0% | 1 (0.3%) | 2017-01-25 |
+| 5 | Marcus Lindqvist | 1,020 | 6.8% | 3 (1.0%) | 2026-10-21 |
+
+These five hold about 47% of the 15,099 attributed lines. 88 more authors hold 18.2% together, and the largest of them is Shirong Lu at 1.0%.
+
+**Co-maintainer notes**
+- **Only Marcus Lindqvist is recent.** The other four last committed in 2015–2018. Marcus's 3 commits are from 2026-10-21, two days ago: `3ee6902` added `shellcomp.go` and `07c50c7` added its tests. Their line count comes from one new feature, not long history.
+- **Noah Dietz and Jonathan Reyna have few commits but many lines.** I checked with `git log --stat`. Noah's lines are the int32/int64 and float32/float64 slice types from 2018. Jonathan's are the bool, uint and ip slice types from 2017. Both are real feature code, not reformats.
+- **Eric Paris is the only top-five author whose commit share is close to their line share.** Albert Nigmatzianov has 9.0% of commits but only 1.4% of lines (217).
+
+**Identity merge (a guess, not confirmed)**
+- Marcus's 1,020 lines combine three addresses: `<email redacted>` (634 lines), `mlindqvist@corp.example` (322) and the `<email redacted>` address (64). The evidence is the same name on several addresses and a matching GitHub login. This is a strong match, so I lead with the merged figure.
+- Unmerged, his largest address has 634 lines (4.2%). That is still fifth, ahead of Tamal Saha at 596.
+- The other four are unaffected.
+- Other suspected duplicates:
+  - Tomas Aschan has 68 lines across two addresses.
+  - One address appears under two names for Mitch Connors/therealmitchconnors (503 lines), Albert Nigmatzianov/bogem (217), Charlie R.C/xilabao (188), and caie/wellitonscheer.
+  - These are counted as one person in the table above.
+- I did not write `.mailmap`, since you only asked a question. The proposed lines are in `--identities` output if you want them saved.
+
+**What the numbers leave out or depend on**
+- **Method:** `git blame -w -M -C` over 91 of 91 files, with 301 non-merge commits.
+- **Dropped files:** 804 lines of vendored code in `vendor`, plus `go.sum` (0 lines), are left out of every number.
+- **Bots:** one bot identity (77 lines, 1 commit) is excluded.
+- **Mechanical rewrites:** I checked 257 commits and set aside none. Six look mechanical and I kept them in the counts:
+  - `d43be5f` go fix, 38 lines
+  - `fd456b3` README snippets, 34 lines
+  - `d16d05e` strconv, 20 lines
+  - `5494e14` README badges, 14 lines
+  - `6404d82` lint fixes, 3 lines
+  - one more, which the tool does not name
+  
+  These are small and none touch the top five materially.
+- **Copy detection:** it moved 774 lines to other authors. Alex Ogier is 9.2% with it and 6.8% (1,014 lines) without. He is second with it and third without. That is the only change in the top five.
+- **Bus factor:** 6 authors together hold 50.9% of the surviving lines, and 20 authors reach 80%. Both numbers are for the whole repository and are line-based.
+- **What lines can't show:** line counts say nothing about code quality, review, design work or code deleted on purpose.
+
+Surviving lines show who wrote the code that remains, not who understands it or is still active. For co-maintainers I'd pair this with who is currently reviewing and merging PRs. I can run `--reviewers` on specific paths if you want a per-area view.
+META cost=0.09330469999999999 ms=37824 turns=6

@@ -1,0 +1,93 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I need to change how the cache store proxies work under lib/rack/attack/store_proxy. Who should I ask about that code, and who should review my PR?
+
+CRITERIA:
+1. The top owner is hakanensari with about 21% of the live lines (accept 18% to 24.5%), ranked first; Divya Rao (about 17%) and Gonzalo Rodriguez (about 17%) follow, each within 14% to 20.5%. FAIL if anyone else is ranked first, or if hakanensari is below 17%.
+2. Authors are credited, not the committer: Hye-jin Park has about 9% (accept 6.5% to 11.5%) and Divya Rao about 17%, although Gonzalo Rodriguez committed their patches. Gonzalo Rodriguez (merged with "Gonzalo" and his noreply address) is at most 21%. FAIL if Hye-jin Park is below 5%, or if Gonzalo Rodriguez is above 28%.
+3. Moved code keeps its author: Mei Tanaka (extracted methods into dalli_accessors.rb) has at most 6%, and the methods in dalli_accessors.rb are credited mostly (about 56%) to hakanensari. FAIL if Mei Tanaka is above 8%.
+4. github-actions[bot] (the rubocop autocorrect commit) is not ranked and holds at most 1%; Jaroslav Novak (added then deleted NullProxy) holds 0%. FAIL if the bot is ranked as an owner, or Jaroslav Novak is credited with 1% or more.
+5. The answer states its basis: shares are of live lines in the store_proxy directory (total 346, accept 320 to 375 lines), and it says it discounted the bot style rewrite and the deleted code. FAIL if the total line count is outside the range, or if neither exclusion is mentioned.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD ad22651043d2d8867174bbcd9a440a4928ada30a
+scope: lib/rack/attack/store_proxy/
+files counted: 7  excluded: 0
+ignore-revs (1):
+  ad22651043d2 github-actions[bot] | [bot] rubocop -A autocorrect (Style/StringLiterals, Style/HashSyntax)
+live lines in scope: 346
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 346
+RANKING (share of human live lines)
+ 1. hakanensari: 74 lines, 21.39%
+ 2. Divya Rao: 60 lines, 17.34%
+ 3. Gonzalo Rodriguez: 60 lines, 17.34%
+ 4. Hye-jin Park: 31 lines, 8.96%
+ 5. Brad Lindsay: 25 lines, 7.23%
+ 6. fatkodima: 24 lines, 6.94%
+ 7. Jonathan del Strother: 19 lines, 5.49%
+ 8. Brian Kephart: 16 lines, 4.62%
+ 9. Mei Tanaka: 12 lines, 3.47%
+10. Santiago Bartesaghi: 6 lines, 1.73%
+11. Ryan Laughlin: 5 lines, 1.45%
+12. madlep: 4 lines, 1.16%
+13. thomas morgan: 4 lines, 1.16%
+14. Alexey Zapparov: 3 lines, 0.87%
+15. Alexey Vasiliev: 1 lines, 0.29%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Jonathan del Strother: Jonathan del Strother <<email redacted>>=16; Jonathan del Strother <<email redacted>>=3
+people needed to cover >=50% of human live lines: 3; >=80%: 7
+FACT Gonzalo: 60 lines = 17.34%
+FACT Hye-jin Park: 31 lines = 8.96%
+FACT Divya Rao: 60 lines = 17.34%
+FACT Mei Tanaka: 12 lines = 3.47%
+FACT Jaroslav Novak: 0 lines = 0.00%
+FACT github-actions: 0 lines = 0.00%
+FACT fatkodima: 24 lines = 6.94%
+FACT file lib/rack/attack/store_proxy/dalli_accessors.rb: 41 lines, top author hakanensari 56%
+FACT file lib/rack/attack/store_proxy/dalli_proxy.rb: 49 lines, top author hakanensari 73%
+FACT file lib/rack/attack/store_proxy/mem_cache_store_proxy.rb: 25 lines, top author Jonathan del Strother 64%
+FACT file lib/rack/attack/store_proxy/memory_store_proxy.rb: 60 lines, top author Divya Rao 100%
+FACT file lib/rack/attack/store_proxy/redis_cache_store_proxy.rb: 49 lines, top author Brian Kephart 31%
+FACT file lib/rack/attack/store_proxy/redis_proxy.rb: 95 lines, top author Brad Lindsay 26%
+FACT file lib/rack/attack/store_proxy/redis_store_proxy.rb: 27 lines, top author hakanensari 56%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL --reviewers lib/rack/attack/store_proxy --merge-identities; echo ------; $SL --history lib/rack/attack/store_proxy --merge-identities; echo -----; $SL --identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> "$@"; }; sl --reviewers lib/rack/attack/store_proxy --merge-identities; echo ------; sl --history lib/rack/attack/store_proxy --merge-identities; echo -----; sl --identities
+FINAL ANSWER:
+**Who to ask and who to review** (`lib/rack/attack/store_proxy`, 7 files, 276 non-blank lines attributed, 346 with blank lines, as of 2026-04-14)
+
+Ranked by surviving lines (`git blame -w -M -C`):
+
+| Person | Lines | Share | Last commit | Status |
+|---|---|---|---|---|
+| hakanensari | 63 | 22.8% | 2014-04-15 | inactive |
+| Gonzalo Rodriguez | 50 | 18.1% | 2026-03-09 | active |
+| Divya Rao | 40 | 14.5% | 2026-01-28 | active |
+| Hye-jin Park | 27 | 9.8% | 2026-02-20 | active |
+| Brad Lindsay | 19 | 6.9% | 2018-02-06 | inactive |
+
+18 more authors hold the rest. The table output hid the tail percentage, so I can't give it.
+
+**Recommendation**
+- **Ask Gonzalo Rodriguez.** They have the most commits here (24), the most recent commit (2026-03-09), and 18.1% of the lines. They also did the recent proxy work: the Dalli accessors and the Redis ttl.
+- **Reviewers:** Gonzalo Rodriguez and Divya Rao. Both are in the top three by lines and active. Hye-jin Park is a good third, since they are active and hold 9.8%.
+- **hakanensari** has the most lines, but they wrote them in one 2014 commit and have been inactive since. They are a poor choice for review. The line ranking still lists them first.
+
+**Caveats**
+- **Bus factor:** 3 by lines, scoped to this directory. It is the smallest number of authors holding at least 50% of the lines. hakanensari, Gonzalo Rodriguez and Divya Rao hold 55.4%. Reaching 80% takes 7 authors.
+- **Copy detection:** the figures use `-w -M -C`. 28 lines in 3 files moved to another author because of it. hakanensari has 63 lines with it and 46 without. Gonzalo Rodriguez has 50 with and 43 without. Mei Tanaka has 10 with and 38 without, so they hold more here than the table shows. Without copy detection they would rank second at 13.8%.
+- **Moved lines:** 33 of 290 lines (11.4%) were written in other paths and moved or copied here. The credit goes to the people who wrote them.
+- **Bots:** github-actions[bot] is excluded. It has 14 lines and 1 commit, and its lines are not credited.
+- **Mechanical rewrites:** I checked and set aside none. One more looks mechanical and I did not set it aside: `20d6682` "style: fix Lint/HandleExceptions rubocop" by Gonzalo Rodriguez, 2 surviving lines. It is too small to change the ranking.
+- **Duplicate names:** Gonzalo Rodriguez `<<email redacted>>` also appears as "Gonzalo", and the 50 lines above already count both. madlep `<<email redacted>>` also appears as "Julian Doherty (madlep)", with 3 lines here.
+- **Identity merges are guesses.** The tool suggests Jonathan del Strother's two addresses are one person (13 and 3 lines, 16 total). The same applies to Gonzalo Rodriguez's GitHub noreply addresses in the whole-repository view. These come from names and addresses only. I did not write a `.mailmap`, since you only asked a question. The tool printed the suggested lines if you want them.
+- **What line counts miss:** they say nothing about code quality, review, or design discussions. Code deleted on purpose counts for nobody.

@@ -1,0 +1,63 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --merge-identities -- src/Parser; echo ======; $SL --reviewers src/Parser/Lexer.php --merge-identities; echo ======; $SL --history src/Parser/Lexer.php --merge-identities
+ - Bash: sl(){ node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" "$@"; }; ls src/Parser | head -30; sl --merge-identities -- src/Parser; echo "######"; sl --reviewers src/Parser/Lexer.php; echo "######"; sl --history src/Parser/Lexer.php
+ - Bash: sl(){ node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" "$@"; }; sl --reviewers src/Parser/Escape.php | head -12; echo "######"; sl -- src/Parser | sed -n 1,16p; echo "####"; git log --oneline --author="Aiko" -- src/Parser | head; git show --stat --format='%h %an %s' $(git log --format=%h --author="Your Name" -1 -- src/Parser) | head -8
+FINAL ANSWER:
+Short answer: Graham Campbell wrote most of the surviving code in `src/Parser`. Aiko Tanaka is the person to ask about escape handling. For `Lexer.php`, ask Graham Campbell.
+
+**Who wrote the surviving code in `src/Parser`**
+
+The counts are surviving lines (`git blame -w -M -C`) at HEAD. 1,006 lines were attributed across 10 files. The three Graham Campbell addresses are counted as one person in the merged row (the identity merge is explained below).
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell (3 addresses, merged) | 673 | 66.9% |
+| Aiko Tanaka | 171 | 17.0% |
+| root `<root@localhost>` (placeholder) | 96 | 9.5% |
+| Your Name `<<email redacted>>` (placeholder) | 56 | 5.6% |
+| Vance Lucas | 8 | 0.8% |
+| Jonas Staudenmeir | 1 | 0.1% |
+| JT Smith | 1 | 0.1% |
+
+- **Graham Campbell, merged:** the unmerged rows are:
+  - `<email redacted>`: 338 lines (33.6%)
+  - `<email redacted>`: 333 lines (33.1%)
+  - `<email redacted>`: 2 lines (0.2%)
+- **The merge is a guess.** It rests on matching names and addresses, and nothing is written to `.mailmap`. Please confirm it is one person. Unmerged, no single address holds more than 33.6%.
+- **Placeholder identities:** `root` and `Your Name` hold 152 lines (15.1%) that can't be attributed to a person, so don't ask them. The "Your Name" lines are from `b39e8d9` ("compat shims"), which added `Compat.php` (69 lines). Whoever made that commit can still be found in `git log`, but only from the commit itself, not from the author name.
+- **Bus factor (line-based):** 1 for the whole of `src/Parser`, counting the merged Graham Campbell. Unmerged, it is 2. To reach 80% of lines you need 2 authors merged, or 3 unmerged.
+
+**What was left out or checked**
+- `src/Parser/Unicode/CharTable.php` (431 lines) was dropped as a generated file.
+- StyleCI Bot (1 line, 1 commit) is excluded, and its line is not credited to anyone.
+- I checked for mechanical rewrites in 48 commits. None was set aside, so no reformat commit changed the numbers.
+- Copy detection (`-C`) moved 72 lines in 3 files. Without it Graham Campbell would have 681 lines (67.7%). The 8 lines attributed to Vance Lucas exist only because of copy detection; with `-w -M` alone they go to 0.
+
+**Who to ask about `Lexer.php`**
+
+Graham Campbell wrote all 48 lines. Those lines are split across addresses:
+- `<email redacted>`: 44 lines (91.7%), last commit 2020-06-07
+- `<email redacted>`: 4 lines (8.3%), last commit 2026-08-24
+- `<email redacted>`: 0 lines
+
+The noreply address is the active one. If it is the same person (the strong-evidence guess above), they have touched the file this year. Check this with whoever knows Graham Campbell before you rely on it.
+
+15 of the 48 lines (31.3%) were moved or copied into `Lexer.php` from other paths: `src/Loader/Lines.php`, `src/Lines.php` and `src/Loader/Value.php`. Credit for those lines goes to whoever wrote them originally. Graham Campbell is still the author of record for them.
+
+**Who to ask about escape handling**
+
+Aiko Tanaka wrote 100% of `src/Parser/Escape.php` (171 lines, 2 commits, last commit 2026-08-26, active). The commit `4b9b803` "Add escape sequence handling" is theirs. Aiko Tanaka is the only person in the history of that file.
+
+If the escape handling inside `Lexer.php` itself matters for your audit, ask Graham Campbell for the lexer side and Aiko Tanaka for `Escape.php`. I only counted lines, so I didn't check how the two files call each other.
+
+**Caveats**
+- Surviving lines show whose code is still here. They do not show who understands it, who reviewed it, or code quality.
+- Aiko Tanaka's code is recent: the last commit is 2026-08-26 and there are only 3 commits in `src/Parser`. It has had less time in use than Graham Campbell's older code, which matters for a security audit.
+- Aiko Tanaka is also a single point of failure for `Escape.php`, with a bus factor of 1 for that file.
+META cost=0.0845406 ms=29618 turns=6

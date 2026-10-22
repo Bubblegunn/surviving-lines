@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --merge-identities -- src/Parser; echo =====; $SL --reviewers src/Parser/Lexer.php --merge-identities; echo =====; $SL --history src/Parser/Lexer.php --merge-identities; echo ====; $SL --merge-identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities -- src/Parser; echo =====; sl --reviewers src/Parser/Lexer.php --merge-identities; echo =====; sl --history src/Parser/Lexer.php --merge-identities; echo =====; sl --merge-identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/Parser/Lexer.php --merge-identities; echo '-----'; sl --history src/Parser/Lexer.php --merge-identities; echo '-----'; sl --merge-identities | head -30
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; ls src/Parser; grep -rniE "escape" src/Parser -l; sl --group-by dir:3 --merge-identities -- src/Parser | head -40; git log --format='%h %an %ad %s' --date=short -i --grep=escape -- src/Parser | head; sl --reviewers src/Parser/Escapes.php --merge-identities 2>&1 | head -12
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/Parser/Escape.php --merge-identities 2>&1 | head -14; git log --format='%h %an <%ae> %ad %s' --date=short -- src/Parser/Escape.php; git status --short | head -3; ls .mailmap 2>&1
+FINAL ANSWER:
+**Short answer:** ask Graham Campbell about `Lexer.php`. Ask Aiko Tanaka about escape handling. Aiko's escape code is in `Escape.php`, not in `Lexer.php`.
+
+## Surviving lines in `src/Parser`
+Figures are from `git blame -w -M -C` at HEAD. They cover 10 files and 1,006 attributed lines, with 40 non-merge commits.
+
+| Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| Graham Campbell (3 addresses) | 673 | 66.9% | 33 (82.5%) | 2026-08-26 |
+| Aiko Tanaka | 171 | 17.0% | 3 (7.5%) | 2026-08-26 |
+| root (placeholder) | 96 | 9.5% | 1 | 2026-08-26 |
+| Your Name (placeholder) | 56 | 5.6% | 1 | 2026-08-26 |
+| Vance Lucas | 8 | 0.8% | 0 | 2015-10-28 |
+| Jonas Staudenmeir | 1 | 0.1% | 1 | 2024-07-20 |
+| JT Smith | 1 | 0.1% | 1 | 2022-10-15 |
+
+- **Bus factor:** 1 for `src/Parser` as a whole. The unit is surviving lines: Graham alone holds 66.9%, and 2 authors reach 80%. This only measures how concentrated the remaining code is. It does not measure who understands it.
+- **Placeholder identities:** `root <root@localhost>` and `Your Name <<email redacted>>` hold 152 lines (15.1%). Nobody can be attributed those lines, so they are not people to ask. Those lines are worth a closer look in the audit, because nobody can say who wrote them.
+- **Left out:** `src/Parser/Unicode/CharTable.php` is excluded as generated (431 lines). The StyleCI bot (1 line) is excluded and gets no credit.
+- **Merged identities:** these merges are a guess from names and addresses, and I have not confirmed them. I merged three Graham Campbell addresses in memory only. They are `<email redacted>` (333 lines), `<email redacted>` (338 lines) and `<email redacted>` (2 lines). I wrote no `.mailmap`, because no `.mailmap` exists in the repo and you only asked a question.
+- **Copy detection:** the figures use `-w -M -C`. Without copy detection, Graham has 67.7% (681 lines). Vance Lucas goes from 0.8% (8 lines) to 0 lines.
+- **Mechanical rewrites:** I checked 48 commits and set aside none. No reformat commit was found.
+
+## `Lexer.php`
+- Graham Campbell holds 48 of 48 lines (100%) and has made 7 commits. The first was on 2020-06-07 and the last on 2026-08-24. He is marked active.
+- No one else has changed the file.
+- 15 of the 48 lines (31.3%) were moved or copied in from other paths: `src/Loader/Lines.php`, `src/Lines.php` and `src/Loader/Value.php`. The credit goes to whoever wrote them there, not to whoever moved them. The tool did not name those original authors. For questions about that older code, check blame on those source paths.
+- The bus factor for this file is 1, with the same unit (surviving lines).
+
+## Escape handling
+- `src/Parser/Escape.php` is 171 lines, and Aiko Tanaka holds all of them (100%). Aiko made 2 commits to it: `4b9b803` "Add escape sequence handling" and `09f7c5c` "Escape: more sequences". Both are dated 2026-08-26, and Aiko is active.
+- The commit author name appears with different capitalisation (`aiko tanaka` and `Aiko Tanaka`). The tool counts them as one person.
+- Aiko's work came in through PR #1, `feature/escapes`, which Graham merged in `bddb175`. Graham reviewed and merged it, but he holds none of the lines in `Escape.php`.
+- `EntryParser.php` also mentions escapes. I did not break down its ownership separately. Within `src/Parser`, Graham holds the lines outside Aiko's file.
+
+## Caveats for the audit
+- Aiko's 171 lines are all from one day (2026-08-26) and 3 commits, and they are the newest code in the directory. They have had little time to be reviewed or used.
+- The tool counts surviving lines only. It cannot show review work, design discussions, quality, or code that was deleted on purpose.
+META cost=0.1000818 ms=52539 turns=8

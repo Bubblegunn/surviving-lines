@@ -1,0 +1,38 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go'; echo ------; $SL --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; [ -f $S ] && echo exists; node $S --include '*.go'; echo ------; node $S --include '*.go' --merge-identities
+ - Bash: git log --author=Lindqvist --format='%h %ad %an <%ae> %s' --date=short --stat | head -40
+FINAL ANSWER:
+Eric Paris, Noah Dietz, Alex Ogier, Jonathan Reyna and Marcus Lindqvist hold the most surviving Go lines. I counted with `git blame -w -M -C` on `*.go` files at HEAD: 12,559 lines in 77 files.
+
+| # | Person | Surviving lines | Share | Last commit |
+|---|---|---|---|---|
+| 1 | Eric Paris | 1,913 | 15.2% | 2018-10-24 |
+| 2 | Noah Dietz | 1,092 | 8.7% | 2018-11-07 |
+| 3 | Alex Ogier | 1,053 | 8.4% | 2015-02-15 |
+| 4 | Jonathan Reyna | 941 | 7.5% | 2017-01-25 |
+| 5 | Marcus Lindqvist | 891 | 7.1% | 2026-10-21 |
+
+- **Marcus Lindqvist is three addresses counted as one.** The addresses are `<email redacted>` (546 lines), `mlindqvist@corp.example` (281) and a GitHub noreply address (64). The tool rated this a strong match, but it is a guess from names and addresses until you confirm it. Unmerged, the largest address has 546 lines (4.3%), which would put Marcus sixth behind Tamal Saha (524 lines, 4.2%) only if you count that address alone. I did not write a `.mailmap`, because you only asked a question.
+- **Marcus's commits are new code, not a mass edit.** Their line share is about 7 times their commit share, so I checked. The two commits I inspected add `shellcomp.go` (442 lines) and `shellcomp_test.go` (322 lines). I did not inspect the third commit, which adds 64 surviving lines.
+- **Four of the five have not committed in years.** Paris and Dietz last committed in 2018, Reyna in 2017 and Ogier in 2015. Marcus is the only one active now, and all three of their commits are from 2026-10-21. Survivorship shows whose code remains. It does not show who is available or who understands the design.
+- **Other candidates just below the top five:** Tamal Saha (4.2%), Mitch Connors (3.4%), Riobard (3.3%) and Georges Varouchas (3.0%). Georges last committed in 2025-06 and Mitch in 2019-09.
+- **The code is spread out.** The bus factor is 6 once Marcus's addresses are merged, or 7 unmerged. That is the smallest number of authors whose surviving lines reach 50% of the lines counted, over the whole Go code. Reaching 80% takes 19 authors, or 21 unmerged. 87 more authors hold 16.4% together, and the largest of them is Hu Jun at 0.9%.
+
+**What was left out or adjusted:**
+- **Vendored code:** one vendored file (802 lines) is excluded from every number.
+- **Bot:** `github-actions[bot]` is excluded, with 77 lines not credited to anyone.
+- **Mechanical rewrite:** commit `d43be5f` ("go fix ./... (interface{} -> any)", by Dana Whitfield, 38 lines) was set aside. Its lines went back to the earlier authors.
+- **Other mechanical-looking commits, kept:** `d16d05e` (bogem, 16 lines), `6404d82` (Tomas Aschan, 3 lines) and `92abf19` (bogem, 1 line). These are small and do not change the top five. The mechanical-rewrite check examined 225 commits that hold surviving lines.
+- **Same address under two names, counted as one:** therealmitchconnors is also Mitch Connors, Charlie R.C is also xilabao, and bogem is also Albert Nigmatzianov. The tool reported a fourth case without naming it.
+- **Tomas Aschan:** the tool suggests his two addresses are one person. He holds 56 lines (0.4%), so it does not affect the ranking.
+- **Copy detection:** the figures use `-w -M -C`. It moved 622 lines to other authors. It matters for Alex Ogier, who has 8.4% with it and 6.0% without, which would put him below Reyna and Marcus. It also matters for Riobard, who has 3.3% with it and 5.7% without.
+
+These numbers do not measure code quality, review work, design discussion or deleted code.
+META cost=0.08478770000000001 ms=30740 turns=6

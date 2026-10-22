@@ -1,0 +1,93 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+We're picking co-maintainers for pflag. Who actually wrote the Go code that's still in the repo today? Give me the top five people with a rough share of the surviving lines.
+
+CRITERIA:
+1. Marcus Lindqvist appears as ONE person with 7.1% of surviving lines (accepted 5.1%-9.1%), i.e. identities <email redacted>, mlindqvist@corp.example and mlindqvist (noreply) are merged. FAIL: he appears as two or more separate entries, is missing from the top five, or his share is outside 5.1%-9.1%.
+2. The top five are exactly Eric Paris (15.2%, accepted 13.2%-17.2%, ranked first), Noah Dietz (8.7%), Alex Ogier (8.4%), Jonathan Reyna (7.5%) and Marcus Lindqvist, with each share within 2 percentage points. FAIL: any other person is in the top five, Eric Paris is not first, or a listed share is more than 2 points off.
+3. Dana Whitfield (author of the mechanical `go fix` rewrite) holds no credit: absent from the ranking or under 0.5%, and the answer says that rewrite/formatting commits were looked through or ignored. FAIL: Dana is credited 1% or more, or the answer does not mention that mechanical rewrites were handled.
+4. Priya Raman's vendored code (vendor/github.com/example/ansi, about 800 lines) is excluded and the answer says vendored/third-party code was left out. FAIL: Priya Raman is in the top five or credited over 1%, or vendor code is counted without being flagged.
+5. The github-actions[bot] license-header lines (about 77 lines, 0.6%) are not presented as a contributor in the top five and the answer discloses that bot lines were excluded or flagged (or that they are under 1%). FAIL: the bot is ranked or credited as an owner with 1% or more, or the answer lists no exclusion or merge at all.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD d43be5f5f1711d2a1434283cf57e2384e47082a5
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (3):
+  d43be5f5f1 Dana Whitfield: all: go fix ./... (interface{} -> any)
+  de240239d6 Reuven Harrison: flag_test: gofmt + use ioutil.Discard for Go 1.12 compatibility
+  8e39cc44d9 therealmitchconnors: gofmt
+generated files dropped: none
+vendored files dropped (lines): 802 ['vendor/github.com/example/ansi/ansi.go']
+
+== whole repo, *.go outside vendor/: counted lines 12636, bot lines 77 (0.6% of counted), unattributed 0, denominator 12559
+  1. Eric Paris: 1913 lines, 15.2%
+  2. Noah Dietz: 1092 lines, 8.7%
+  3. Alex Ogier: 1053 lines, 8.4%
+  4. Jonathan Reyna: 941 lines, 7.5%
+  5. Marcus Lindqvist: 891 lines, 7.1%
+  6. Tamal Saha: 524 lines, 4.2%
+  7. therealmitchconnors: 429 lines, 3.4%
+  8. Riobard: 412 lines, 3.3%
+  people with >=1%: 22; rows to reach 80%: 20
+
+bot lines alive (whole scope): {'github-actions[bot]': 77}
+identities merged (whole scope):
+  Marcus Lindqvist: Marcus Lindqvist <<email redacted>>; Marcus Lindqvist <mlindqvist@corp.example>; mlindqvist <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Eric Paris', 46), ('Alex Ogier', 33), ('Albert Nigmatzianov', 21), ('Tomas Aschan', 13), ('Sebastiaan van Stijn', 13), ('Shirong Lu', 6)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>"; $SL --include '*.go'; echo ======; $SL --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node "$S" --include '*.go'; echo ======; node "$S" --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node "$S" --include '*.go' --merge-identities | head -20; git show --stat --format='%h %an %ad %s' $(git log --author='Marcus Lindqvist' --format=%h | head -2) | head -20
+FINAL ANSWER:
+Top five by surviving lines of Go code (`git blame -w -M -C`, `*.go` files, 12,559 non-blank lines; 14,511 with blank lines):
+
+| # | Author | Lines | Share | Last commit |
+|---|---|---|---|---|
+| 1 | Eric Paris | 1,913 | 15.2% | 2018-10-24 |
+| 2 | Noah Dietz | 1,092 | 8.7% | 2018-11-07 |
+| 3 | Alex Ogier | 1,053 | 8.4% | 2015-02-15 |
+| 4 | Jonathan Reyna | 941 | 7.5% | 2017-01-25 |
+| 5 | Marcus Lindqvist | 891 (3 addresses) | 7.1% | 2026-10-21 |
+
+**Marcus Lindqvist.**
+- Strong evidence says three addresses belong to one person. I counted them as one, which gives 891 lines (7.1%).
+- Unmerged, the rows are 546 lines (4.3%) for `<email redacted>` and 281 lines (2.2%) for `mlindqvist@corp.example`. The third address is not listed separately.
+- Unmerged, Marcus would rank below Tamal Saha (524 lines, 4.2%) and still be in the top five at 4.3%. Merged, Marcus is 5th. The merge is a guess from names and addresses until you confirm it, and I did not write a `.mailmap`.
+- Marcus's code is 3 commits from 2026-10-21: shell completion helpers and tests (`shellcomp.go`, `shellcomp_test.go`). That is a new addition, not long-standing core code.
+
+**Who is still active.**
+- Of the top four, the latest commit is 2018-11-07 (Noah Dietz) and the earliest is 2015-02-15 (Alex Ogier).
+- The people with recent commits and meaningful surviving code are Marcus Lindqvist (2026-10), Brandon Richardson (2.5%, 2025-11) and Georges Varouchas (3.0%, 2025-06).
+- Sebastiaan van Stijn has 1.0% of the lines but 13 commits (4.3%), with the last on 2025-12-18.
+- Alex Ogier has 33 commits (11.0%) and 8.4% of the lines.
+- Albert Nigmatzianov has 27 commits (9.0%, counting the `bogem` name) and 1.3% of the lines.
+- Line counts rank who wrote the surviving code. They don't show who is available or who reviews well.
+
+**Bus factor.** The bus factor is 7: 7 authors together hold 51.7% of the surviving lines. It takes 21 authors to reach 80%. Both numbers are for the whole repository's Go code. 89 more authors hold 16.9% together; the largest is Hu Jun at 0.9%.
+
+**What the figures leave out or adjust**
+- **Dropped:** one vendored file (802 lines) is left out of every number.
+- **Bots:** `github-actions[bot]` (77 lines, 1 commit) is excluded and gets no credit.
+- **Mechanical rewrite:** `d43be5f` "all: go fix ./... (interface{} -> any)" is set aside. It touched 38 surviving lines, and those lines go back to the earlier authors.
+- **Mechanical commits kept:** three more commits look mechanical and were not set aside: `d16d05e` (16 lines, bogem), `6404d82` (3 lines, Tomas Aschan) and `92abf19` (1 line, bogem). The effect is small.
+- **Copy detection:** the figures use `-w -M -C`. Copy detection moved 622 lines in 65 files to other authors.
+  - Alex Ogier: 8.4% (1,053 lines) with copy detection, 6.0% (747) without. He is 3rd with it and would be 5th without it.
+  - Riobard: 3.3% (412) with, 5.7% (708) without.
+  - Sebastiaan van Stijn: 1.0% (129) with, 2.5% (308) without.
+- **Other duplicates:** these are not in the top five.
+  - Mitch Connors and therealmitchconnors share an address (429 lines).
+  - Charlie R.C and xilabao share an address (177 lines).
+  - Albert Nigmatzianov and bogem share an address (164 lines).
+  - Tomas Aschan may be counted twice (56 lines, 0.4% merged).
+- **Not shown:** the numbers say nothing about code quality, review work, design work or code that was deliberately deleted.
+
+**Suggestion.** The top four by lines last committed between 2015 and 2018, so check whether they are reachable before you pick on lines alone. If you want recent contributors, consider Marcus Lindqvist, Brandon Richardson and Georges Varouchas alongside them. Before you rely on the Marcus ranking, confirm that the three addresses are one person. If you want, I can write the suggested `.mailmap` lines under a "confirm before relying" comment.

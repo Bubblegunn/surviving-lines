@@ -1,0 +1,101 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who actually wrote the code in cJSON.c and cJSON.h that's still in this repo today? I want a ranked list with percentages, because commit counts only tell me who was busy.
+
+CRITERIA:
+1. Top owner is Max Bruckner with 75% of live lines (accept 72.5% to 77.5%) and he is ranked first. FAIL if anyone else is first, or his share is below 70% or above 80%.
+2. The two Tomás Ibarra identities (tibarra@corp.example and "tomasi", <email redacted>) appear as ONE person with about 4.0% (accept 3.0% to 5.0%), inside the top five (Max Bruckner, Kevin Branigan 4.1%, Tomás Ibarra 4.0%, Alan Wang 3.6%, Dave Gamble 3.1%; order among positions 2 to 5 may differ by a place or two). FAIL if the two identities are listed as separate people at about 2% each without saying they are the same person, or if either identity is missing from the share.
+3. Alan Wang and Alanscut are one entry with about 3.6% (accept 2.6% to 4.6%). FAIL if "Alanscut" appears as a separate person with its own share.
+4. Priya Nair (author of the formatting commit and of the reverted MergePatchLite) is credited with at most 0.5% (absent is correct), and github-actions[bot] is not ranked as an owner of the code. FAIL if Priya is above 1%, or if the bot appears as a ranked author.
+5. The answer says what it left out or merged: it must state that it ignored or looked through the formatting/whitespace commit, that it merged identities (at least the Tomás Ibarra pair), and that bot-authored lines (about 5 lines) are excluded or reported separately. FAIL if any of these three statements is missing, or if the answer presents commit counts as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD a36179526b43a4793d30898fc90ec0911270a0a1
+scope: cJSON.c cJSON.h
+files counted: 2  excluded: 0
+ignore-revs (1):
+  413c6d155eb4 Priya Nair | style: run clang-format over cJSON.c and cJSON.h (2-space indent)
+live lines in scope: 3601
+bot-authored live lines (not ranked): 5 github-actions[bot]=5
+human live lines (denominator for shares): 3596
+RANKING (share of human live lines)
+ 1. Max Bruckner: 2699 lines, 75.06%
+ 2. Kevin Branigan: 149 lines, 4.14%
+ 3. Tomás Ibarra: 142 lines, 3.95%
+ 4. Alan Wang: 131 lines, 3.64%
+ 5. Dave Gamble: 111 lines, 3.09%
+ 6. Mike Jerris: 76 lines, 2.11%
+ 7. PeterAlfredLee: 32 lines, 0.89%
+ 8. caglarivriz: 31 lines, 0.86%
+ 9. Nicolas Badoux: 29 lines, 0.81%
+10. Zach Hindes: 23 lines, 0.64%
+11. miaoerduo: 22 lines, 0.61%
+12. Jiri Zouhar: 13 lines, 0.36%
+13. Sang-Heon Jeon: 13 lines, 0.36%
+14. Pawel Winogrodzki: 11 lines, 0.31%
+15. Kyle Chisholm: 9 lines, 0.25%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Tomás Ibarra: tomasi <<email redacted>>=74; Tomás Ibarra <tibarra@corp.example>=68
+  Alan Wang: Alan Wang <<email redacted>>=129; Alan Wang <<email redacted>>=2
+  PeterAlfredLee: PeterAlfredLee <<email redacted>>=31; Lee <<email redacted>>=1
+people needed to cover >=50% of human live lines: 1; >=80%: 3
+FACT Ibarra: 142 lines = 3.95%
+FACT Priya: 0 lines = 0.00%
+FACT Alan Wang: 131 lines = 3.64%
+FACT Max Bruckner: 2699 lines = 75.06%
+FACT Dave Gamble: 111 lines = 3.09%
+FACT tomasi (same person as Tomás Ibarra): 142 lines = 3.95%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; $SL --include 'cJSON.c' --include 'cJSON.h' --merge-identities; echo ======; $SL --include 'cJSON.c' --include 'cJSON.h'; echo ======; cat .git-blame-ignore-revs; cat .mailmap 2>/dev/null | head
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> "$@"; }; sl --include 'cJSON.c' --include 'cJSON.h' --merge-identities; echo ======; sl --include 'cJSON.c' --include 'cJSON.h'; echo ======; cat .git-blame-ignore-revs; cat .mailmap 2>/dev/null | head
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool> "$@"; }; sl --include 'cJSON.c' --include 'cJSON.h'; echo "-----"; cat .git-blame-ignore-revs; echo "-----"; cat .mailmap 2>/dev/null | head; echo "-----"; git show --stat --format='%h %an %s' 413c6d1 | head; git show --stat --format='%h %an %s' f831aef | head -5
+FINAL ANSWER:
+Max Bruckner wrote most of the code still in `cJSON.c` and `cJSON.h`: 76.4%, or 2,339 of 3,062 lines. Everyone else holds 4% or less.
+
+I ran `surviving-lines`, which uses `git blame -w -M -C` at HEAD. It attributed 3,062 non-blank lines (3,601 counting blank ones) across the two files.
+
+| # | Author | Surviving lines | Share | Commits | Commit share | Last commit |
+|---|---|---|---|---|---|---|
+| 1 | Max Bruckner | 2,339 | 76.4% | 636 | 66.5% | 2026-03-12 |
+| 2 | Alan Wang (2 addresses) | 122 | 4.0% | 67 | 7.0% | 2025-09-09 |
+| 3 | tomasi (2 addresses) | 116 | 3.8% | 2 | 0.2% | 2026-02-17 |
+| 4 | Kevin Branigan | 91 | 3.0% | 7 | 0.7% | 2015-10-05 |
+| 5 | Dave Gamble | 75 | 2.4% | 84 | 8.8% | 2016-05-29 |
+| 6 | Mike Jerris | 67 | 2.2% | 2 | 0.2% | 2017-02-27 |
+| 7 | PeterAlfredLee | 30 | 1.0% | 4 | 0.4% | 2025-09-05 |
+| 8 | caglarivriz | 25 | 0.8% | 1 | 0.1% | 2020-04-02 |
+| 9 | Nicolas Badoux | 24 | 0.8% | 8 | 0.8% | 2024-08-30 |
+| 10 | Zach Hindes | 20 | 0.7% | 4 | 0.4% | 2018-09-17 |
+
+88 more authors hold 5.0% together. The largest of them is miaoerduo at 0.6%.
+
+**Identity merges (guesses):**
+- **tomasi:** Two entries cover this person: "tomasi" (61 lines, 2.0%) and "Tomás Ibarra" (55 lines, 1.8%). The tool links them with strong evidence, so the table above counts them as one person (116 lines, 3.8%). Unmerged, "tomasi" would rank 6th and "Tomás Ibarra" 7th, both below Mike Jerris.
+- **Alan Wang:** Unmerged, `<email redacted>` has 121 lines (4.0%) and `<email redacted>` has 1 line. The merged figure is 122.
+- **Same address under several names:** Alan Wang also appears as Alan_scut, PeterAlfredLee as Lee, and Stephan as Stephan Gatzka. A fourth group of the same kind is not named in the output.
+- **Existing `.mailmap`:** The repo already has one line, `Alan Wang <<email redacted>> Alanscut <<email redacted>>`. It adds 90 lines to Alan Wang and is already in these numbers.
+- **Other merges:** The merges for tomasi and Fabrice Fontaine (0 lines) come from names and addresses only. The tool also flagged Randy, Andy and Sayan Bandyopadhyay as possibly one person, but weakly. I haven't merged them, and they hold 0 lines each. I haven't written anything to `.mailmap`. Only you can confirm these.
+
+**Left out:**
+- **Reformat commit:** `413c6d1` ("style: run clang-format over cJSON.c and cJSON.h", by Priya Nair) is listed in `.git-blame-ignore-revs`. It rewrote 2,303 lines across the two files, 2,303 insertions and 2,303 deletions. The table leaves it out, so the earlier authors keep their lines. Without that exclusion, Priya Nair would hold most of both files.
+- **Bots:** `github-actions[bot]` is excluded, with 5 lines and 1 commit. Its lines aren't credited to anyone.
+- **Mechanical rewrites:** The tool examined 307 commits and set none aside. It flagged 58 more as looking mechanical and left them in. The five largest are Max Bruckner's "reformatting: …" commits (`f831aef`, `c71cd6c`, `9adc6e7`, `31e53a1`, `c88d045`), with 57, 37, 35, 28 and 26 surviving lines. I checked `f831aef` with `git show --stat`: it adds 28 lines and removes 1 in one file, so it is a real change, not a pure reformat. I didn't inspect the other 57. Because the check lists only the largest candidates, I can't call it complete.
+
+**Bus factor:** Measured on the surviving lines of these two files, the bus factor is 1, because Max Bruckner alone holds 76.4% of them. That counts the fewest authors whose lines add up to 50%. Reaching 80% takes 2 authors.
+
+**Copy detection:** The figures use the default `-w -M -C`. The tool printed no note that copy detection moved anyone's share by more than 2 points.
+
+Dave Gamble has the biggest gap in the other direction. He made 8.8% of the commits but holds 2.4% of the lines. Tomasi has the opposite pattern: 2 commits and 3.8% of the lines.
+
+Line counts show whose code survives. They don't show review, design work, or code deleted on purpose.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>

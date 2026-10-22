@@ -1,0 +1,109 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I'm preparing a security audit of src/Parser. Who wrote the code there that's still alive, and who's the best person to ask about Lexer.php and the escape handling?
+
+CRITERIA:
+1. src/Parser: Graham Campbell 66.9% (accepted 63.9%-69.9%) and Aiko Tanaka 17.0% (accepted 14%-20%), each as ONE person (four Graham emails and the Aiko case variants merged). FAIL: either is split into several entries, or Aiko Tanaka is above 30% (generated CharTable.php counted) or Graham outside 63.9%-69.9%.
+2. The answer states that about 150 lines (15.1%, accepted 12%-18%) of src/Parser come from placeholder identities (root@localhost, Your Name) and are unattributable, and does not present "root" or "Your Name" as a person to contact. FAIL: it drops these lines silently, presents them as named contributors/contacts, or gives an unattributed share outside 12%-18%.
+3. For Lexer.php the answer names Graham Campbell as the owner (about 100%, at least 95%). FAIL: it names anyone else (Aiko Tanaka, Vance Lucas, StyleCI Bot) as the main owner of Lexer.php.
+4. For escape handling (src/Parser/Escape.php) the answer names Aiko Tanaka as author; the merge commit authored by Graham Campbell is not counted as authorship. FAIL: it names Graham Campbell as the person who wrote Escape.php, or does not name Aiko Tanaka.
+5. StyleCI Bot is not credited (absent or under 0.5%) and the answer says the generated CharTable.php (about 430 lines) and/or the StyleCI reformat were excluded or looked through. FAIL: StyleCI Bot is listed with 1% or more, or the answer says nothing about excluding generated code or the reformat.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD be8078228f1bee9a1e7bca0a19239c2a79c64878
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (1):
+  be8078228f StyleCI Bot: Apply fixes from StyleCI
+generated files dropped: {'src/Parser/Unicode/CharTable.php': 431}
+vendored files dropped (lines): 0 []
+
+== src/Parser/: counted lines 1007, bot lines 0 (0.0% of counted), unattributed 152, denominator 1007
+  1. Graham Campbell: 674 lines, 66.9%
+  2. Aiko Tanaka: 171 lines, 17.0%
+  3. unattributable (root/placeholder identities): 152 lines, 15.1%
+  4. Vance Lucas: 8 lines, 0.8%
+  5. Jonas Staudenmeir: 1 lines, 0.1%
+  6. JT Smith: 1 lines, 0.1%
+  people with >=1%: 2; rows to reach 80%: 2
+
+== src/Parser/Lexer.php: counted lines 48, bot lines 0 (0.0% of counted), unattributed 0, denominator 48
+  1. Graham Campbell: 48 lines, 100.0%
+  people with >=1%: 1; rows to reach 80%: 1
+
+== all of src/: counted lines 3315, bot lines 0 (0.0% of counted), unattributed 152, denominator 3315
+  1. Graham Campbell: 2849 lines, 85.9%
+  2. Aiko Tanaka: 171 lines, 5.2%
+  3. unattributable (root/placeholder identities): 152 lines, 4.6%
+  4. Vance Lucas: 74 lines, 2.2%
+  5. Jonas Staudenmeir: 17 lines, 0.5%
+  6. Hossein Hosni: 11 lines, 0.3%
+  7. Bruce Dev: 8 lines, 0.2%
+  8. sephedo: 8 lines, 0.2%
+  people with >=1%: 3; rows to reach 80%: 1
+
+bot lines alive (whole scope): none
+identities merged (whole scope):
+  Aiko Tanaka: Aiko Tanaka <<email redacted>>; aiko tanaka <<email redacted>>
+  Graham Campbell: Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Graham Campbell', 320), ('Vance Lucas', 19), ('Jeff Puckett', 8), ('Lucas Michot', 6), ('David Meister', 6), ('Gabe Medrash', 4)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>'; cd <home>/claude-kredi-runs/2026-10-23/r9/dev-C/runs/C5-ours-3/repo; $SL --merge-identities -- src/Parser; echo =====; $SL --reviewers src/Parser/Lexer.php; echo =====; $SL --history src/Parser/Lexer.php; echo ====; $SL --reviewers src/Parser
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r9/dev-C/runs/C5-ours-3/repo; S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; ls src/Parser; node $S --merge-identities -- src/Parser; echo =====; node $S --reviewers src/Parser/Lexer.php; echo =====; node $S --history src/Parser/Lexer.php; echo =====; node $S --reviewers src/Parser
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r9/dev-C/runs/C5-ours-3/repo; S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/<tool>; node $S --reviewers src/Parser/Lexer.php; node $S --history src/Parser/Lexer.php; node $S --reviewers src/Parser/Escape.php; node $S --reviewers src/Parser
+FINAL ANSWER:
+**Short answer:** Ask Graham Campbell about `Lexer.php`. Ask Aiko Tanaka about the escape handling. Both are active. Everything below comes from `git blame -w -M -C` at HEAD (2026-08-26).
+
+**`src/Parser` overall (1,187 surviving lines, 10 files, 41 non-merge commits)**
+
+| Author | Lines | Share | Commits | Share |
+|---|---|---|---|---|
+| Graham Campbell (3 addresses, merged) | 782 | 65.9% | 33 | 80.5% |
+| Aiko Tanaka | 206 | 17.4% | 3 | 7.3% |
+| root | 117 | 9.9% | 1 | 2.4% |
+| Your Name | 69 | 5.8% | 1 | 2.4% |
+| Vance Lucas | 10 | 0.8% | 0 | 0.0% |
+| StyleCI Bot | 1 | 0.1% | 1 | 2.4% |
+| Jonas Staudenmeir | 1 | 0.1% | 1 | 2.4% |
+| JT Smith | 1 | 0.1% | 1 | 2.4% |
+
+- **Graham Campbell merge:** It is one guess from names and addresses, and it is not written to `.mailmap`. Unmerged, the figures are:
+  - `<email redacted>`: 403 lines (34.0%)
+  - `<email redacted>`: 377 lines (31.8%)
+  - `<email redacted>`: 2 lines
+- **`root` and `Your Name`:** These look like default or placeholder git identities. Check who they are before the audit. Together they hold 15.7% of the lines.
+- **Vance Lucas:** Their last commit is from 2015. The 10 lines are credited to them only because of copy detection. With `-w -M` alone they hold 0.
+- **Bus factor:** It is 1 with the 3 Graham addresses counted as one person. That person holds 65.9%, and 2 authors reach 80%. Both numbers cover `src/Parser` only. Unmerged, the bus factor is 2 and 3 authors reach 80%. The bus factor is the smallest number of authors whose surviving lines reach 50%. It measures how concentrated the code is, not who understands it.
+
+**`Lexer.php` (58 lines)**
+- Graham Campbell holds all 58 lines (100%) with the 2 addresses counted as one person. Unmerged, `<email redacted>` holds 52 lines (89.7%) and the noreply address holds 6 (10.3%).
+- The noreply address last committed on 2026-08-24 and is active. The `alt-three.com` address last committed in 2020 and is inactive. Both are the same suspected person, so ask Graham.
+- 20 of the 58 lines (34.5%) were moved or copied in from other paths (`src/Loader/Lines.php`, `src/Value.php`, `src/Loader/Value.php`). Credit for those goes to whoever wrote them, not to whoever moved them.
+- Copy detection moves a few lines between rows. Without it, Graham's `alt-three.com` address holds 52 of 58 lines with it and 56 without.
+
+**Escape handling**
+- `src/Parser/Escape.php` is 206 lines, 100% Aiko Tanaka, in 2 commits. The last commit was 2026-08-26, so they are active.
+- Aiko wrote this file recently. The history shows a single author in a short span, so a security audit has less review history to lean on.
+- Check `Quirks.php` and `Compat.php` for any escape-related logic. I did not run per-file ownership on them.
+
+**What the numbers leave out**
+- **Excluded file:** `src/Parser/Unicode/CharTable.php` is excluded as generated (431 lines). `--keep-generated` would count it.
+- **Reformat commits:** No reformat commit was found, so none was ignored.
+- **Mechanical rewrites:** I checked 48 commits for them and set aside 0.
+- **Bots and `.mailmap`:** The only bot row is StyleCI, with 1 line. There is no `.mailmap` effect on these numbers.
+- **Copy detection:** Figures use `-w -M -C`. Copy detection moved 80 lines in 3 files to other authors:
+
+  | Author | With copy detection | Without |
+  |---|---|---|
+  | Graham Campbell (merged) | 65.9% (782 lines) | 66.7% (792 lines) |
+  | Vance Lucas | 0.8% (10 lines) | 0% |
+
+- **What line counts can't show:** They say nothing about code quality, review work, or code deleted on purpose.

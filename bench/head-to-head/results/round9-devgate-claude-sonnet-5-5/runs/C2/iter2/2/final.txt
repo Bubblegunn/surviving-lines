@@ -1,0 +1,58 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" ] && echo ok; cd <home>/claude-kredi-runs/2026-10-23/r9/dev2-C/runs/C2-ours-2/repo && node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" --reviewers src/itsdangerous/signer.py src/itsdangerous/timed.py 2>&1; echo ----; node "<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js" --merge-identities -- src/itsdangerous 2>&1
+ - Bash: S='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; for f in signer.py timed.py; do echo "=== $f"; $S --reviewers src/itsdangerous/$f 2>&1; done; echo "=== moved"; git show --stat --format='%h %an %ad %s' e76747b cadbbab b1c0caf | head -30
+ - Bash: for f in signer.py timed.py; do echo "=== $f"; node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js --reviewers src/itsdangerous/$f 2>&1; done
+FINAL ANSWER:
+**Ask David Lord first, and Tomás Ibarra second.** Ranking is by surviving lines (`git blame -w -M -C`), not by commit count.
+
+**Package `src/itsdangerous/` (9 files, 1,071 lines attributed, 75 commits)**
+
+| Author | Lines | Share | Commits (share) |
+|---|---|---|---|
+| David Lord | 741 | 69.2% | 76.0% |
+| Tomás Ibarra | 120 | 11.2% | 2.7% |
+| Armin Ronacher | 116 | 10.8% | 8.0% |
+| Daverball | 48 | 4.5% | 1.3% |
+| Hsiaoming Yang | 13 | 1.2% | 2.7% |
+| Arnout van Meer | 8 | 0.7% | 0.0% |
+| Thomas Waldmann | 8 | 0.7% | 0.0% |
+| Alan Hamlett | 4 | 0.4% | 1.3% |
+| Zach Hugnou | 4 | 0.4% | 1.3% |
+| Dirk Müller | 2 | 0.2% | 1.3% |
+
+7 more authors hold 0.7% together, and the largest is Lars Veen at 0.2%.
+
+**The two files**
+
+| | `signer.py` (271 of 279 lines attributed) | `timed.py` (235 of 240 lines attributed) |
+|---|---|---|
+| 1 | David Lord: 162 lines, 59.8%. Last commit 2024-04-16, inactive. | David Lord: 142 lines, 60.4%. Last commit 2025-05-28, active. |
+| 2 | Tomás Ibarra: 70 lines, 25.8%. Last commit 2025-07-01, active. | Tomás Ibarra: 50 lines, 21.3%. Last commit 2025-07-02, active. |
+| 3 | Armin Ronacher: 18 lines, 6.6%. Last commit 2018, inactive. | Armin Ronacher: 30 lines, 12.8%. Last commit 2018, inactive. |
+
+- **`signer.py` others:** Hsiaoming Yang has 10 lines (3.7%) and Arnout van Meer has 8 (3.0%). Both are inactive.
+- **`timed.py` others:** Zach Hugnou has 4 lines (1.7%) and Alan Hamlett has 3 (1.3%). Both are inactive.
+- **Activity marker:** "Active" means a commit in the year before 2025-07-08. I did not use it to change the order.
+- **Why David Lord first:** On `signer.py` he is inactive (last commit 2024-04-16). He is still the top owner by lines, so ask him anyway. If he doesn't answer, Tomás Ibarra is the active owner.
+- **Armin Ronacher:** He is the original author. 116 of his lines (10.8%) survive package-wide, but he has not committed since 2018. I would not ask him.
+
+**Caveats**
+- **Bus factor:** It is 1 on the whole package, on `signer.py` and on `timed.py`. In each case David Lord alone holds more than 50% of the surviving lines. Reaching 80% takes 2 authors in each scope. Bus factor here means the fewest authors whose surviving lines reach 50% of the lines counted.
+- **Reformat commit ignored:** `ffeab7f` ("[pre-commit.ci] auto fixes", 2025-07-08) only changed whitespace and quotes. The table leaves it out. Counting it would give David Lord 713 lines (68.4%) instead of 741.
+- **Bots:** `pre-commit-ci[bot]` is excluded, and its lines are not credited to anyone.
+- **Mechanical rewrites:** I checked them. The package-wide run set aside 1 commit, the reformat commit above. The `signer.py` and `timed.py` runs set aside none, and no other commit looks mechanical.
+- **Copy detection:** The figures use `-w -M -C`.
+  - Package-wide, David Lord has 741 lines (69.2%) with it and 854 (79.7%) without. Armin Ronacher has 116 (10.8%) with it and 24 (2.2%) without.
+  - On `signer.py`, David Lord has 162 lines (59.8%) with it and 190 (70.1%) without.
+  - On `timed.py`, David Lord has 142 lines (60.4%) with it and 166 (70.6%) without.
+  - Some of Armin Ronacher's share comes from code that was moved into these files, mostly from the old `itsdangerous.py` and `__init__.py`. About 11% of each file was written elsewhere and moved in. Credit goes to the people who wrote those lines, not to whoever moved them.
+- **Identity merging:** No duplicate identities were found, and there is no `.mailmap`.
+- **Deleted legacy module:** Gustavo Reyes added `legacy.py` in July 2025, and David Lord deleted it. None of it survives, so Gustavo Reyes holds no lines.
+- **Limits:** Line counts say whose code remains. They say nothing about quality, design work or review.
+META cost=0.085602 ms=29338 turns=6

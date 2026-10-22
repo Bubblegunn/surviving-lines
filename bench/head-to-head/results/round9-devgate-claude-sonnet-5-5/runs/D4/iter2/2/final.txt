@@ -1,0 +1,54 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; [ -f <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js ] && $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" -- src; echo ======; node "$S" --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --merge-identities -- src; echo "exit $?"; git show --stat c584a1d | head -20; node "$S" --ignore-rev c584a1d -- src | head -12
+FINAL ANSWER:
+Ownership of `src/` is highly concentrated. **Andrew Gallant alone holds 75.5% of the surviving lines (2,219 of 2,941), so the bus factor is 1.**
+
+**Bus factor, line-based, scope `src/` only**
+- **Bus factor:** it is the smallest number of authors whose surviving lines together reach 50% of the lines counted. Here that number is 1.
+- **To reach 80%:** it takes 3 authors.
+- **What it measures:** how concentrated the remaining code is. It does not measure who understands the code.
+
+**Top authors by surviving lines** (the table shows 12 rows; commits are in brackets)
+
+| Author | Lines | Share | Commits |
+|---|---|---|---|
+| Andrew Gallant | 2,219 | 75.5% | 55 (51.9%) |
+| Ola Berg | 97 | 3.3% | 2 (1.9%) |
+| Sebastian Thiel | 66 | 2.2% | 1 (0.9%) |
+| Ashley | 65 | 2.2% | 1 (0.9%) |
+| Aron Griffis | 56 | 1.9% | 1 (0.9%) |
+| Niv Kaminer | 43 | 1.5% | 2 (1.9%) |
+| mcharsley | 43 | 1.5% | 1 (0.9%) |
+| Marvin Löbel | 39 | 1.3% | 1 (0.9%) |
+| Martin Sehnoutka | 38 | 1.3% | 1 (0.9%) |
+| Yufeng Wang | 36 | 1.2% | 3 (2.8%) |
+| Garrett Berg | 33 | 1.1% | 1 (0.9%) |
+| Jonathan Soo | 32 | 1.1% | 1 (0.9%) |
+
+26 more authors hold 5.9% together. The largest of them is Thayne McCombs at 0.7%. Gallant's line share (75.5%) is higher than his commit share (51.9%), but not by 5 times, so I did not look for a mass change.
+
+**What was left out or checked**
+- **Dropped file:** `src/errno_table.rs` (883 lines) is generated. It is left out of every number. `--keep-generated` would count it.
+- **Rustfmt commit:** `c584a1d` "style: switch to rustfmt" (Gallant, 2020-01-11) touched `src/` heavily. 122 surviving lines are attributed to it. It was not set aside automatically, so I re-ran with `--ignore-rev c584a1d`. Gallant drops to 2,212 lines (75.2%). Aron Griffis rises from 56 to 60 lines. The conclusion does not change.
+- **Mechanical rewrites:** the tool examined 75 commits that hold surviving lines and set aside none. `c584a1d` was the only candidate it flagged, and I checked it as above.
+- **Copy detection:** the figures use `git blame -w -M -C`. With `-w -M` only, Gallant would hold 80.4% (2,365 lines). Garrett Berg would hold 0 lines instead of 33. Niv Kaminer would hold 14 lines instead of 43. So the default setting lowers Gallant's share by about 5 points.
+- **Bots:** none were reported as excluded.
+- **No `.mailmap`:** there is no `.mailmap` file, so no identities are merged through it. `--merge-identities` found nothing to merge.
+
+**Same person under several names** (the tool already counts these as one author)
+- Ola Berg, whose address also appears as `ola.berg` (97 lines).
+- Niv Kaminer, whose address also appears as `nivkner` (43 lines).
+- Alisha, whose address also appears as "Alisha Aneja" (9 lines).
+
+**Weak guess, not merged:** Ashley (`<email redacted>`, 65 lines) and Ashley Mannix (`<email redacted>`, 4 lines). They might be one person, which would give 69 lines (2.3%). I lead with the unmerged figures because the evidence is weak, and only you can confirm it. The tool's guess for the Igor Gnatenko pair is also unconfirmed. I wrote nothing to `.mailmap`.
+
+**Limits:** surviving lines say nothing about code quality, review work, design done outside the code, or code that was deleted on purpose. They show whose code is still there. They do not show who knows it best.
+META cost=0.08076280000000001 ms=39659 turns=6

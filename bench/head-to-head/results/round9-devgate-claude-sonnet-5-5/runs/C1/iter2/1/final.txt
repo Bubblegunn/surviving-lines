@@ -1,0 +1,57 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go'; echo ======; $SL --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --include '*.go'; echo ======; node "$S" --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js; node "$S" --include '*.go' --merge-identities | head -20; git log --author=Lindqvist --stat --format='%h %an <%ae> %ad %s' | head -30; git log --author=Whitfield --format='%h %an %s' | head -3
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C`, `*.go` files only, HEAD of `master`):
+
+| # | Author | Surviving lines | Share | Commits | Last commit |
+|---|---|---|---|---|---|
+| 1 | Eric Paris | 1,913 | 15.2% | 46 (15.3%) | 2018-10-24 |
+| 2 | Noah Dietz | 1,092 | 8.7% | 2 (0.7%) | 2018-11-07 |
+| 3 | Alex Ogier | 1,053 | 8.4% | 33 (11.0%) | 2015-02-15 |
+| 4 | Jonathan Reyna | 941 | 7.5% | 1 (0.3%) | 2017-01-25 |
+| 5 | Marcus Lindqvist (3 addresses) | 891 | 7.1% | 3 (1.0%) | 2026-10-21 |
+
+Counts are over 12,559 attributed lines in 77 Go files.
+
+**Maintainer relevance:**
+- Four of the five last committed in 2018 or earlier, and Alex Ogier last committed in 2015. They hold the code but may not be reachable or active. Check that before you ask them.
+- Marcus Lindqvist is the only one in the top five who is active now. Both of their address groups date from 2026-10-21: `add shell completion helpers` (442 lines) and `completion: add tests` (322 lines).
+- Their code is new, so it has had little time in production.
+- Active contributors outside the top five with at least 1% of the lines:
+  - Georges Varouchas: 379 lines, 3.0%, last commit 2025-06-27.
+  - Brandon Richardson: 308 lines, 2.5%, 2025-11-29.
+  - Sebastiaan van Stijn: 129 lines, 1.0%, 2025-12-18, with 13 commits (4.3%).
+
+**Identity merge (a guess):**
+- Marcus Lindqvist appears under two addresses, `<email redacted>` and `mlindqvist@corp.example`, and the tool lists a third. The tool rates the match strong, from name and address evidence. I counted them as one person.
+- Unmerged, they hold 546 lines (4.3%) and 281 lines (2.2%). On the larger address alone they would still rank fifth.
+- This merge is a guess from names and addresses, and I haven't written a `.mailmap`. Please confirm it's one person.
+- The other duplicate group, Tomas Aschan, is tiny: 56 lines, 0.4%.
+- Several people appear under one address with two names. They are already counted as one person each in the table:
+  - therealmitchconnors, also Mitch Connors.
+  - Charlie R.C, also xilabao.
+  - bogem, also Albert Nigmatzianov.
+  - The tool lists one more such person.
+
+**What the figures leave out:**
+- One vendored file (802 lines) is dropped.
+- One bot, github-actions[bot] (77 lines), is excluded.
+- Commit `d43be5f` (`go fix ./...`, `interface{}` to `any`, 38 surviving lines, by Dana Whitfield) is set aside as a mechanical rewrite. Its lines go back to the people who wrote them before.
+- The tool flagged three more commits that look mechanical and kept them: `d16d05e` (16 lines), `6404d82` (3 lines) and `92abf19` (1 line). Together they are 20 lines, which doesn't change the top five.
+- Copy detection (`-C`) moved 622 lines to other authors. It matters most for Alex Ogier, who has 8.4% (1,053 lines) with it and 6.0% (747 lines) without. Riobard has 3.3% with it and 5.7% without. Sebastiaan van Stijn has 1.0% with it and 2.5% without. Without `-C`, Ogier would rank below Reyna, who has 7.5% (941 lines).
+- 89 more authors hold 16.9% together. The largest of them is Hu Jun at 0.9%.
+
+**Bus factor** (line based: the fewest authors whose surviving lines reach a given share of the 12,559 lines, over all Go files):
+- 7 authors reach 50%.
+- 21 authors reach 80%.
+
+These numbers show whose code survived. They say nothing about code quality, review work or design work. For example, Sebastiaan van Stijn has few lines but 13 commits, which suggests maintenance work that leaves few lines behind. Judge that from the PR history.
+META cost=0.08061209999999999 ms=37317 turns=6

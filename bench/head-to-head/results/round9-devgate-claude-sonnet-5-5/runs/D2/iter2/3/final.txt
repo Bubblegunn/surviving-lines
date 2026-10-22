@@ -1,0 +1,73 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js'; $SL --include '*.go' --merge-identities; echo ======; $SL --include '*.go'; echo =====; $SL --include '*.go' --bus-factor-threshold 80 | grep -i 'bus factor'
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js "$@"; }; sl --include '*.go' --merge-identities; echo ======; sl --include '*.go'; echo =====; sl --include '*.go' --bus-factor-threshold 80 | grep -i 'bus factor'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r9/dev2-D/runs/D2-ours-3/repo; git show --stat --format='%h %an %s' 6bf5b04 | tail -8; node <home>/claude-kredi-runs/2026-10-23/r9/ours-src/bin/surviving-lines.js --include '*.go' --ignore-rev 6bf5b04 --top 6 | head -16
+FINAL ANSWER:
+The Go code is moderately concentrated. Losing one or two people would not be a problem. Losing five would be, and the top authors have mostly left.
+
+**Scope:** 10,587 surviving Go lines across 75 files, counted at HEAD with `git blame -w -M -C` (copy detection on).
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 1,781 | 16.8% | 2018-10 |
+| Noah Dietz | 1,080 | 10.2% | 2018-11 |
+| Alex Ogier | 1,074 | 10.1% | 2015-02 |
+| Jonathan Reyna | 916 | 8.7% | 2017-01 |
+| Tamal Saha | 553 | 5.2% | 2018-08 |
+| therealmitchconnors (Mitch Connors) | 451 | 4.3% | 2019-09 |
+| Riobard | 405 | 3.8% | 2014-03 |
+| Georges Varouchas | 383 | 3.6% | 2025-06 |
+| rpothier | 336 | 3.2% | 2020-10 |
+| wu8685 | 329 | 3.1% | 2016-09 |
+| Alex Besogonov | 270 | 2.6% | 2019-08 |
+| Roman Volosatovs | 266 | 2.5% | 2018-02 |
+| Ethan P. | 260 | 2.5% | 2025-04 |
+| Eugene Agafonov | 183 | 1.7% | 2018-03 |
+| bogem (Albert Nigmatzianov) | 182 | 1.7% | 2017-05 |
+| Filipe Brandenburger | 146 | 1.4% | 2015-01 |
+| Maximilian Frank | 146 | 1.4% | 2025-07 |
+| Charlie R.C (xilabao) | 137 | 1.3% | 2017-05 |
+| Lena Voss | 122 | 1.2% | 2026-03 |
+| Hu Jun | 118 | 1.1% | 2025-05 |
+
+69 more authors hold 13.7% together. The largest of them is Alec Thomas at 1.0%.
+
+**Concentration**
+- The bus factor is 5. That is the smallest number of authors whose surviving lines reach 50% of the lines counted. Eric Paris, Noah Dietz, Alex Ogier and two more together hold 51.0%. The whole repository's Go code was the scope.
+- Reaching 80% takes 16 authors, on the same scope.
+- The top two, Eric Paris and Noah Dietz, hold 27%. No one person holds more than 17%.
+
+**The bigger risk is who is still active**
+- Most of the big holders last committed years ago. Paris, Dietz, Ogier, Reyna, Saha, Riobard and wu8685 were last active between 2014 and 2018, and together they hold about 58% of the lines.
+- Eric Paris and Alex Ogier have the most commits too (46 and 33).
+- Recent contributors are Georges Varouchas, Ethan P., Maximilian Frank, Lena Voss and Hu Jun. They hold only about 9% combined.
+- For most files you will be reviewing code whose author is not around to ask.
+
+**What the output left out or adjusted**
+- **Dropped files:** 3 files and 1,576 lines are in no number. They are vendored code (2 files, 1,088 lines, under `vendor`) and generated code (1 file, 488 lines, `zz_generated_flags.go`).
+- **Bots:** dependabot[bot] is excluded. It had 0 surviving lines and 1 commit.
+- **Same person under two names:** the output lists three addresses that appear under two names. They are counted as one person in the numbers above.
+  - therealmitchconnors is also Mitch Connors.
+  - bogem is also Albert Nigmatzianov.
+  - Charlie R.C is also xilabao.
+  - There is no `.mailmap` change and nothing was merged by `--merge-identities`. These are guesses from names and addresses, not confirmed.
+- **Reformat commits:** none were set aside. The tool checked for mechanical rewrites and flagged 3 candidates, which it kept in the numbers.
+  - `6bf5b04` is the latest commit, the `interface{}` to `any` rewrite by Sam Okafor. `git show --stat` shows it touches 39 files with 49 lines in, 49 out. I re-ran with it set aside. Eric Paris goes from 1,781 to 1,802 lines, and the other top rows move by at most 4 lines. The bus factor stays at 5 and the 80% figure drops to 15 authors.
+  - `d16d05e` ("Use strconv instead of fmt in values' String funcs", bogem, 28 lines) and `92abf19` ("Optimize fmt statements", bogem, 1 line) were kept and not re-run.
+  - Only the largest commits were examined (190 commits holding surviving lines), so this check is partial.
+- **Copy detection:** it moved 519 lines in 16 files to a different author. The figures with and without it:
+  - Alex Ogier: 10.1% (1,074 lines) with it, 7.1% (749 lines) without.
+  - Riobard: 3.8% (405 lines) with it, 6.8% (722 lines) without.
+  - Sebastiaan van Stijn: 0.1% (12 lines) with it, 1.8% (191 lines) without.
+  - Ogier's and Riobard's ranks depend on this setting. Ogier is much of the code copied from Riobard's early work.
+
+**What these numbers cannot show:** code quality, review work, design done outside the code, or code that was deleted on purpose. They show whose lines survive, not who understands the code best.
+
+**For reviewing:** I can run `--reviewers <path>` or `--group-by dir` to get owners for specific files or directories. I can also generate CODEOWNERS suggestions if you want them.
+META cost=0.0853296 ms=37461 turns=6

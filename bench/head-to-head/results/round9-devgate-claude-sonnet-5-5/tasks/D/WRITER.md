@@ -1,0 +1,5 @@
+# Who wrote this set and what the writer was shown
+
+A fresh `claude-sonnet-5-5` agent (headless, no plugins). Shown: the prompt in `WRITER-PROMPT.md` (the one-sentence user problem from the top of `README.md` and the list of files a task consists of). Not shown: the product code, `docs/HEAD-TO-HEAD.md`, the research report, any earlier task set. Not told which cases the product handles or loses. The controller did not read the tasks, criteria or ground-truth scripts before the run (a disclosed slip, if any, is in SUMMARY.md). Source branch: heldout-2026-10-d at 05e81b3babc4de270fc5457213ab00ed0ef05677 (local, never pushed). The set was held-out until this gate and is public from here on.
+
+**Status in this folder.** Set D was already used in an earlier scored round (see `rivals.json` source). Here it served only as the development set; it is not held-out and its numbers here do not enter any score table.
