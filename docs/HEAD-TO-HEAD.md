@@ -1008,3 +1008,29 @@ Rules for iteration 1 (R9-2 stays not adopted):
 - **R9-12** Skill text: when the question names files and also the package, the repository or a directory, run the tool on the wider scope too; state the `placeholder identities` line; name the bots and the `rewrites looked through` commits.
 
 Run the development gate again after these changes (iteration 2) before any new held-out measurement.
+
+## Round 9 development gate, iteration 2: diagnosis and rulings
+
+Frozen 2026-10-23 before any iteration 2 code change. Ours (`c689450`) was run x3 on the seen set D (results: `/Users/efe/claude-kredi-runs/2026-10-23/r9/dev2-D`; this section does not enter the score tables). Criteria, check scripts, tasks and the win rule are unchanged.
+
+| Task | Iteration 1 (`09e09d9`) | Iteration 2 (`c689450`) | Best rival | Result |
+| --- | --- | --- | --- | --- |
+| D1 | 5.00 | 3.00 (err=5, unparsed replies) | - | regrade by the controller |
+| D2 | 4.33 | 4.33 | 4.33 (ppi) | tie below the ceiling, fail |
+| D3 | 2.00 | 2.00 | 0.33 | ok |
+| D4 | 4.00 | 2.00 | 2.00 (base) | fail, regression |
+| D5 | 3.67 | 4.33 (err=2, unparsed replies) | - | regrade by the controller |
+
+Diagnosis from the failed-criterion reasons of all nine votes per task, the final answers, and a read-only run of the tool on the D4 and D2 fixtures.
+
+1. **D4 regression comes from R9-8 (blank lines dropped).** Iteration 1 failed only criterion 3 (see class 3) and, in one vote, criterion 4. Iteration 2 fails criterion 4 in 8 of 9 votes and criterion 1 in 3, every time with the same reason: the answer says 2,941 lines, the criterion wants about 3,320 (accept 3,150 to 3,500). Counting the fixture directly: the seven files of `src/` hold 2,941 non-blank lines and 3,322 lines in all; the D truth counts all lines, the truth of the held-out sets C counts non-blank lines. The two truths disagree about what a "line" is, so dropping blank lines is not wrong in itself (it moved C4, C5 and C2 shares by up to 4 points) but giving only the non-blank total is not enough for a reader who counts the file the way `wc -l` does. R9-9 (bots), R9-10 (placeholders), R9-11 (set-aside) and R9-12 (skill text) are not implicated: D4 has no bot, placeholder or codemod candidate that was set aside (the answers report "set aside 0 commits"), and the shares of the named people moved only by the denominator (Andrew Gallant 75.5% against 76.9%, both inside the accepted range).
+2. **D2: the same denominator effect plus a display-name choice.** D2 run 2 and 3 both fail criterion 3 for the same reason: after the merge the row is named `bogem` (27 commits) and not Albert Nigmatzianov, because the merged row takes the name of the address with the most commits. A handle with one word wins over a person's full name. The graders also say the total is 10,587 and not about 12,200 (criterion 1 and 2, 5 of 9 votes mention it, 2 fail on it). Iteration 1 failed D2 run 3 on the same denominator, so the D2 tie is not new. The Sam Okafor `interface{}` to `any` rewrite (49 lines, 39 files, tool name `gofmt -r` is in the body only) stays a named candidate that is not set aside (R9-11 needs the name in the subject); Sam holds 0.4%, inside the criterion, so nothing is lost there.
+3. **Not fixed, no general fix (D4 criterion 3, 9 of 9 votes in both iterations).** The criterion wants the share of `src/error.rs` and Kaito Mori named. The question asks about `src/` as a whole; Kaito is absent from the table because he holds no lines. Reporting a per-file share for a file nobody asked about is not a general behaviour, and a rule that names every person with 0 lines is not either. Grader noise and question shape; no change.
+4. **Not fixed:** D1 and D5 unparsed replies (the controller regrades), D2 run 1 criterion 2 and 3 reasons that contradict their own verdict.
+
+Rules for iteration 2:
+
+- **R9-13** (narrows R9-8) Blank lines stay out of every share and every count, and the header also states the size with them: `N of N lines attributed (non-blank; M with blank lines)`, printed only when a blank line was dropped. JSON: `sample.linesWithBlank`, integer, always present. The skill text tells the agent to give both numbers when it states a total.
+- **R9-14** A merged row is named by the most complete personal name in the group (two or more alphabetic words, for example "Albert Nigmatzianov") before a one-word handle; within the same kind the address with the most commits still decides (R8-5 unchanged otherwise). The address list of the person still names every address.
+
+Run the development gate again (iteration 3) after these changes before any new held-out measurement.
