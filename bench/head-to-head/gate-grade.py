@@ -51,25 +51,28 @@ def main(argv):
     for task in tasks:
         tid = task["id"]
         truth = open(os.path.join(truth_dir, task["fixture"] + ".txt"), encoding="utf-8").read()
-        numbers = list(range(1, len(task["criteria"]) + 1))
+        kinds = task.get("criteriaKinds")
+        numbers = [i + 1 for i in range(len(task["criteria"])) if not kinds or kinds[i] == "outcome"]
         runs = sorted({int(m.group(1)) for d in os.listdir(os.path.join(out, "runs"))
                        for m in [re.fullmatch(re.escape(tid) + r"-\w+-(\d+)", d)] if m})
         for n in runs:
             key = "%s-%d" % (tid, n)
             if only is not None and key not in only:
                 continue
-            finals = {}
+            finals, mailmaps = {}, {}
             for arm in ARMS:
                 p = os.path.join(out, "runs", "%s-%s-%d" % (tid, arm, n), "final.txt")
                 if os.path.exists(p):
                     finals[arm] = open(p, encoding="utf-8", errors="replace").read()
+                    mp = os.path.join(out, "runs", "%s-%s-%d" % (tid, arm, n), "mailmap.txt")
+                    mailmaps[arm] = open(mp, encoding="utf-8", errors="replace").read() if os.path.exists(mp) else None
             arms = [a for a in ARMS if a in finals]
             shuffled = list(arms)
             random.Random("%s-%d-gate" % (tid, n)).shuffle(shuffled)
             mapping = {"ABCDEF"[i]: arm for i, arm in enumerate(shuffled)}
             with open(os.path.join(grade_dir, key + ".labels.json"), "w") as fh:
                 json.dump(mapping, fh, indent=1)
-            blind = {lab: (hide_more(g.blind_text(finals[arm], plugin_dirs)), None) for lab, arm in mapping.items()}
+            blind = {lab: (hide_more(g.blind_text(finals[arm], plugin_dirs)), mailmaps[arm]) for lab, arm in mapping.items()}
             prompt = g.blind_prompt(task, truth, blind, numbers)
             with open(os.path.join(grade_dir, key + ".in"), "w", encoding="utf-8") as fh:
                 fh.write(prompt)
@@ -96,6 +99,11 @@ def cell_score(rec):
     return sum(1 for x in c if x["pass"]), sum(1 for x in c if x["pass"] is None)
 
 
+def n_outcome(t):
+    kinds = t.get("criteriaKinds")
+    return sum(1 for k in kinds if k == "outcome") if kinds else len(t["criteria"])
+
+
 def write_results(out, tasks, scores):
     lines = ["# Final gate results (outcome criteria, all arms graded together)", ""]
     arms = [a for a in ARMS if any(a in scores.get(t["id"], {}) for t in tasks)]
@@ -114,8 +122,8 @@ def write_results(out, tasks, scores):
                 row.append("%.2f (%s)%s" % (m, "/".join(str(v) for v in vals), " err=%d" % errs if errs else ""))
             else:
                 row.append("-")
-        lines.append("| %s | %d | %s |" % (t["id"], len(t["criteria"]), " | ".join(row)))
-    lines.append("| Total | %d | %s |" % (sum(len(t["criteria"]) for t in tasks), " | ".join("%.2f" % totals[a] for a in arms)))
+        lines.append("| %s | %d | %s |" % (t["id"], n_outcome(t), " | ".join(row)))
+    lines.append("| Total | %d | %s |" % (sum(n_outcome(t) for t in tasks), " | ".join("%.2f" % totals[a] for a in arms)))
     open(os.path.join(out, "grade", "RESULTS.md"), "w").write("\n".join(lines) + "\n")
     print("\n".join(lines))
 
