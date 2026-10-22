@@ -316,7 +316,9 @@ export function groupKey(path, g) {
  * identities (`<id>+<name>[bot]@users.noreply.github.com`) plus the three other bot addresses
  * workproof recognises (src/figures/bot.ts in Bubblegunn/workproof), so the two tools agree.
  */
-const BOT_MAIL_PATTERNS = [/^(?:\d+)?[^@]+\[bot\]@users\.noreply\.github\.com$/i, /^bot@renovateapp\.com$/i, /^gitlab-bot@gitlab\.com$/i, /^teabot@gitea\.io$/i];
+const BOT_MAIL_PATTERNS = [/^(?:\d+)?[^@]+\[bot\]@users\.noreply\.github\.com$/i, /^bot@renovateapp\.com$/i, /^gitlab-bot@gitlab\.com$/i, /^teabot@gitea\.io$/i, /^bot@styleci\.io$/i,
+  // Hosted translation platforms and the default GitHub Actions identity: services that commit on their own.
+  /^(?:hosted|noreply|no-reply|bot|translations?)@(?:hosted\.)?weblate\.org$/i, /^(?:noreply|no-reply|support|bot|translations?)@(?:crowdin|transifex|lokalise)\.(?:com|co)$/i, /^(?:github-actions|action)@github\.com$/i];
 
 /**
  * True for an identity that is a bot by name or by address: a name that ends in "[bot]", or one
@@ -326,6 +328,19 @@ const BOT_MAIL_PATTERNS = [/^(?:\d+)?[^@]+\[bot\]@users\.noreply\.github\.com$/i
  */
 export function isBotIdentity(name, mail) {
   return /\[bot\]$/i.test(name.trim()) || BOT_MAIL_PATTERNS.some((re) => re.test(mail));
+}
+
+/**
+ * True for an identity that no person can be asked about: git's own template name ("Your Name"), or an address on no
+ * real domain (`localhost`, `localhost.localdomain`, `(none)`, a `.local` or `.localdomain` host), as a commit made
+ * before user.name and user.email were set carries. Its lines stay in the shares; it is never named as someone to ask.
+ * @param {string} name
+ * @param {string} mail
+ */
+export function isPlaceholderIdentity(name, mail) {
+  if (/^your name$/i.test(name.trim())) return true;
+  const domain = mail.split("@")[1] ?? "";
+  return /^(?:localhost(?:\.localdomain)?|\(none\)|[^.]+\.(?:local|localdomain|lan))$/i.test(domain);
 }
 
 /**
@@ -385,6 +400,27 @@ export function selected(path, include, exclude, includeIsBare, excludeIsBare) {
   if (exclude.some((re, i) => hit(re, excludeIsBare[i]))) return false;
   if (include.length === 0) return true;
   return include.some((re, i) => hit(re, includeIsBare[i]));
+}
+
+/**
+ * Remove the entries of lines that hold only whitespace from `git blame --line-porcelain` output. An empty line has no
+ * author in any useful sense (it carries no logic, and `-w` already ignores whitespace changes), and counting it moves
+ * a share toward whoever formats with more blank lines. Each entry ends with its content line, which starts with a tab.
+ * @param {string} porcelain
+ * @returns {string}
+ */
+export function dropBlankBlameLines(porcelain) {
+  const lines = porcelain.split("\n");
+  /** @type {string[]} */
+  const kept = [];
+  let start = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith("\t")) continue;
+    if (lines[i].trim() !== "") for (let j = start; j <= i; j++) kept.push(lines[j]);
+    start = i + 1;
+  }
+  for (let j = start; j < lines.length; j++) kept.push(lines[j]);
+  return kept.join("\n");
 }
 
 /**
@@ -1005,11 +1041,17 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
   /** The counts per file of a pass without -C, for the comparison with copiedFiles. */
   /** @type {Map<string, Map<string, { name: string, lines: number }>>} */
   const fileCounts = new Map();
+  /** The index of the file that gave each address its name: blames finish in any order, so the name is the first file's. */
+  /** @type {Map<string, number>} */
+  const nameFrom = new Map();
   const worker = async () => {
     while (cursor < sampled.length) {
-      const file = sampled[cursor++];
-      const out = await git([...blameArgs, o.ref, "--", file.path], o.cwd);
+      const idx = cursor++;
+      const file = sampled[idx];
+      const out = dropBlankBlameLines(await git([...blameArgs, o.ref, "--", file.path], o.cwd));
       const counts = countBlameLines(out);
+      // The file's size as the table counts it: without its blank lines.
+      file.lines = (out.match(/^filename /gm) ?? []).length;
       if (!followsCopies) fileCounts.set(file.path, counts);
       if (followsCopies) {
         for (const m of out.matchAll(/^filename (.+)$/gm)) {
@@ -1022,6 +1064,10 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
       if (wantOrigins) origins.set(file.path, countBlameOrigins(out, file.path));
       for (const [mail, { name, lines }] of counts) {
         const a = authors.get(mail) ?? { name, lines: 0, commits: 0 };
+        if ((nameFrom.get(mail) ?? Infinity) > idx) {
+          a.name = name;
+          nameFrom.set(mail, idx);
+        }
         a.lines += lines;
         attributed += lines;
         authors.set(mail, a);
@@ -1404,7 +1450,7 @@ const MECHANICAL_SUBJECT = /\b(?:fmt|gofmt|rustfmt|clang-format|scalafmt|autopep
  * @param {Set<string>} setAside the commits the reformat rule set aside
  * @param {number} [ignoredByUser] the revisions the user ignored (--ignore-rev, an ignore-revs file); they hold no blamed line, so they are only counted
  * @param {GitRun} [run]
- * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" }[] } | null>}
+ * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject", both?: boolean }[], setAsideCommits?: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" }[] } | null>}
  */
 export async function findMechanicalCandidates(o, blamedByCommit, setAside, ignoredByUser = 0, run = (args, opts) => git(args, o.cwd, opts)) {
   const total = blamedByCommit.size;
@@ -1441,7 +1487,7 @@ export async function findMechanicalCandidates(o, blamedByCommit, setAside, igno
     const byFiles = f.files >= MECHANICAL_MIN_FILES && f.small;
     const bySubject = MECHANICAL_SUBJECT.test(f.subject);
     if (!byFiles && !bySubject) continue;
-    candidates.push({ sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, survivingLines: b.lines, filesChanged: f.files, reason: byFiles ? "files" : "subject" });
+    candidates.push({ sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, survivingLines: b.lines, filesChanged: f.files, reason: byFiles ? "files" : "subject", ...(byFiles && bySubject ? { both: true } : {}) });
   }
   return { examined: list.length, total, truncated: total > list.length, setAside: setAside.size, ignoredByUser, candidates };
 }
@@ -1680,7 +1726,7 @@ async function reviewersView(o, path, rows, applied, membersOf, pathCommits) {
   /** @type {Map<string, { author: string, mails: string[], lines: number, lineShare: number, lastCommit: string | null, active: boolean }>} */
   const people = new Map();
   for (const b of rows) {
-    if (b.lines <= 0) continue;
+    if (b.lines <= 0 || isPlaceholderIdentity(b.author, b.mail)) continue;
     const a = lastOf.get(b.mail);
     const key = foldIdentity(b.author);
     const p = people.get(key) ?? { author: b.author, mails: [], lines: 0, lineShare: 0, lastCommit: null, active: false };
@@ -2052,11 +2098,21 @@ export async function analyse(o) {
   let uncorrected = null;
   let main = first;
   let mainArgs = blameArgs;
-  if (applied) {
-    for (const s of suspects) shownFlags.push("--ignore-rev", s.shortSha, "(auto)");
-    mainArgs = [...blameArgs, ...suspects.flatMap((s) => ["--ignore-rev", s.sha])];
+  // R9-9: a commit that shows both signs of a mechanical rewrite (the same small change in at least 10 files AND a
+  // formatter, lint fix or codemod named in the subject) is set aside the way a reformat is: its lines go back to the
+  // people who wrote them before it. A commit with only one sign stays a named candidate that is not set aside.
+  const strongRewrites = mechanicalCheck && !o.keepReformat && o.coAuthors !== "share" && supportsIgnoreRevs(versionOutput) ? mechanicalCheck.candidates.filter((c) => c.both) : [];
+  if (applied || strongRewrites.length) {
+    const ignored = [...(applied ? suspects.map((x) => ({ sha: x.sha, shortSha: x.shortSha })) : []), ...strongRewrites];
+    for (const s of ignored) shownFlags.push("--ignore-rev", s.shortSha, "(auto)");
+    mainArgs = [...blameArgs, ...ignored.flatMap((s) => ["--ignore-rev", s.sha])];
     main = await blamePass(o, sampled, mainArgs, grouping, null);
-    uncorrected = linesSummary(o, first.authors);
+    if (applied) uncorrected = linesSummary(o, first.authors);
+  }
+  if (mechanicalCheck && strongRewrites.length) {
+    mechanicalCheck.candidates = mechanicalCheck.candidates.filter((c) => !c.both);
+    mechanicalCheck.setAside += strongRewrites.length;
+    mechanicalCheck.setAsideCommits = strongRewrites.map(({ both, ...c }) => c);
   }
   // Where copy detection credited lines to another path, the same files are blamed again without it, so the notes can
   // name who gained or lost. Only those files are blamed twice. Under --co-authors share the split is not a line count.
@@ -2260,7 +2316,7 @@ export async function analyse(o) {
     grouping: grouping && groups ? { by: grouping.kind === "dir" ? `dir:${grouping.depth}` : "ext", groups } : null,
     bots: { included: o.includeBots, excluded: botRows },
     dropped,
-    blame: { flags: shownFlags, copyDetection, copyEffect: copyShift ? copyEffectOf(o, copyShift, rows, attributed, o.mergeIdentities ? canonicalOf : new Map(), copyDetection.flags ?? "") : null, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: applied ? suspects.map((s) => s.sha) : [] },
+    blame: { flags: shownFlags, copyDetection, copyEffect: copyShift ? copyEffectOf(o, copyShift, rows, attributed, o.mergeIdentities ? canonicalOf : new Map(), copyDetection.flags ?? "") : null, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: [...(applied ? suspects.map((s) => s.sha) : []), ...strongRewrites.map((c) => c.sha)] },
     reformat: { detection: detect, applied, suspects, uncorrected },
     mechanicalCheck,
     busFactor: runBusFactor && { thresholdPercent: o.busFactorThreshold, ...runBusFactor, authorsFor80Percent: busFactor(byLines, 80)?.value ?? null },
@@ -2431,13 +2487,22 @@ export function renderAiBreakdown(r, sample, windowCommits) {
  * @returns {string | null}
  */
 function botsLine(r) {
+  const authors = /** @type {{ author: string, mail: string, lines: number, lineShare: number }[]} */ (/** @type {any} */ (r).authors ?? []);
   /** @type {string[]} */
   const out = [];
   const n = r.bots?.excluded.length ?? 0;
   if (r.bots && !r.bots.included && n > 0) {
     const lines = r.bots.excluded.reduce((s, b) => s + b.lines, 0);
     const commits = r.bots.excluded.reduce((s, b) => s + b.commits, 0);
-    out.push(`bots excluded: ${n} identit${n === 1 ? "y" : "ies"}, ${lines.toLocaleString("en-US")} lines, ${commits.toLocaleString("en-US")} commits (--include-bots counts them)`);
+    const names = /** @type {{ author?: string }[]} */ (r.bots.excluded).map((b) => b.author).filter(Boolean);
+    const who = names.length ? ` (${names.slice(0, 3).join(", ")}${names.length > 3 ? ", ..." : ""})` : "";
+    out.push(`bots excluded: ${n} identit${n === 1 ? "y" : "ies"}${who}, ${lines.toLocaleString("en-US")} lines, ${commits.toLocaleString("en-US")} commits (--include-bots counts them)`);
+  }
+  const holes = authors.filter((a) => a.lines > 0 && isPlaceholderIdentity(a.author, a.mail));
+  if (holes.length) {
+    const lines = holes.reduce((s, a) => s + a.lines, 0);
+    const share = holes.reduce((s, a) => s + a.lineShare, 0);
+    out.push(`placeholder identities: ${holes.slice(0, 3).map((a) => `${a.author} <${a.mail}>`).join(", ")}${holes.length > 3 ? ", ..." : ""} hold ${lines.toLocaleString("en-US")} lines (${(share * 100).toFixed(1)}%) that cannot be attributed to a person; they stay in the shares and are not someone to ask`);
   }
   const dropped = droppedLine(r);
   if (dropped) out.push(dropped);
@@ -2461,11 +2526,12 @@ export function mechanicalLine(r) {
   const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
   const scope = m.truncated ? `the ${n(m.examined)} largest of ${n(m.total)} commits` : `${n(m.examined)} commit${m.examined === 1 ? "" : "s"}`;
   const head = `mechanical rewrites checked: examined ${scope} holding surviving lines${m.truncated ? " (the rest were not examined)" : ""}, set aside ${n(m.setAside)}${m.ignoredByUser ? `, ignored by you ${n(m.ignoredByUser)}` : ""}`;
-  if (!m.candidates.length) return `${head}; no other commit looks mechanical (at least ${MECHANICAL_MIN_FILES} files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).`;
-  const one = (/** @type {typeof m.candidates[number]} */ c) => `${c.shortSha} "${c.subject}" by ${c.author}, ${n(c.survivingLines)} surviving line${c.survivingLines === 1 ? "" : "s"}`;
+  const one = (/** @type {{ shortSha: string, subject: string, author: string, survivingLines: number }} */ c) => `${c.shortSha} "${c.subject}" by ${c.author}, ${n(c.survivingLines)} surviving line${c.survivingLines === 1 ? "" : "s"}`;
+  const looked = m.setAsideCommits?.length ? `; rewrites looked through (the same small change in many files and a tool named in the subject; their lines go back to the people who wrote them before): ${m.setAsideCommits.slice(0, 5).map(one).join("; ")}` : "";
+  if (!m.candidates.length) return `${head}${looked}; no other commit looks mechanical (at least ${MECHANICAL_MIN_FILES} files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).`;
   const shown = m.candidates.slice(0, 5).map(one);
   const rest = m.candidates.length - shown.length;
-  return `${head}; ${m.candidates.length} more look${m.candidates.length === 1 ? "s" : ""} mechanical and ${m.candidates.length === 1 ? "was" : "were"} not set aside: ${shown.join("; ")}${rest > 0 ? `; and ${rest} more` : ""}. Inspect with git show --stat; to count without one, re-run with --ignore-rev.`;
+  return `${head}${looked}; ${m.candidates.length} more look${m.candidates.length === 1 ? "s" : ""} mechanical and ${m.candidates.length === 1 ? "was" : "were"} not set aside: ${shown.join("; ")}${rest > 0 ? `; and ${rest} more` : ""}. Inspect with git show --stat; to count without one, re-run with --ignore-rev.`;
 }
 
 /**

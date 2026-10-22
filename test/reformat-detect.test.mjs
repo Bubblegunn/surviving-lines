@@ -144,7 +144,7 @@ const SNAPSHOT_BOTS_TABLE = [
   `bus factor 2: Ada and Bob together hold 73.9% of 23 surviving lines · to reach 80%: 3 authors`,
   `bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.`,
   ``,
-  `bots excluded: 2 identities, 20 lines, 3 commits (--include-bots counts them)`,
+  `bots excluded: 2 identities (dependabot[bot], renovate[bot]), 20 lines, 3 commits (--include-bots counts them)`,
   ``,
   `mechanical rewrites checked: examined 8 commits holding surviving lines, set aside 0; no other commit looks mechanical (at least 10 files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).`,
   ``,

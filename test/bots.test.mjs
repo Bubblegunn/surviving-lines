@@ -36,8 +36,8 @@ test("bots leave both the line side and the commit side, and the run says how ma
     // The shares are of the people only: they add up to one on both sides.
     assert.ok(Math.abs(r.authors.reduce((/** @type {number} */ s, /** @type {any} */ a) => s + a.lineShare, 0) - 1) < 1e-9);
     assert.ok(Math.abs(r.authors.reduce((/** @type {number} */ s, /** @type {any} */ a) => s + a.commitShare, 0) - 1) < 1e-9);
-    assert.match(renderTable(r, 10), /^bots excluded: 2 identities, 20 lines, 3 commits \(--include-bots counts them\)$/m);
-    assert.match(renderMarkdown(r, 10), /^bots excluded: 2 identities, 20 lines, 3 commits/m);
+    assert.match(renderTable(r, 10), /^bots excluded: 2 identities \(dependabot\[bot\], renovate\[bot\]\), 20 lines, 3 commits \(--include-bots counts them\)$/m);
+    assert.match(renderMarkdown(r, 10), /^bots excluded: 2 identities \(dependabot\[bot\], renovate\[bot\]\), 20 lines, 3 commits/m);
   } finally {
     removeRepo(dir);
   }

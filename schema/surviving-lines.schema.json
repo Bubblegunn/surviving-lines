@@ -244,13 +244,32 @@
       "type": ["object", "null"],
       "additionalProperties": false,
       "required": ["examined", "total", "truncated", "setAside", "ignoredByUser", "candidates"],
-      "description": "The mechanical-rewrite check: the commits holding surviving lines that were examined, how many the reformat rule set aside, and the commits that look mechanical (at least 10 files with equal insertions and deletions of at most 3 lines each, or a formatter, lint fix, codemod or rename tool in the subject) and were not set aside. A candidate is never set aside by this check. Null when no commit holds a surviving line.",
+      "description": "The mechanical-rewrite check: the commits holding surviving lines that were examined, how many the reformat rule set aside, and the commits that look mechanical (at least 10 files with equal insertions and deletions of at most 3 lines each, or a formatter, lint fix, codemod or rename tool in the subject) and were not set aside. A candidate with only one sign is never set aside by this check. Null when no commit holds a surviving line.",
       "properties": {
         "examined": { "type": "integer", "minimum": 1, "description": "The commits read: at most the 3000 holding the most surviving lines." },
         "total": { "type": "integer", "minimum": 1, "description": "All commits holding surviving lines." },
         "truncated": { "type": "boolean", "description": "True when total is more than examined: only the commits holding the most lines were read." },
         "setAside": { "type": "integer", "minimum": 0 },
         "ignoredByUser": { "type": "integer", "minimum": 0, "description": "The distinct revisions the user ignored (--ignore-rev, an ignore-revs file). They are not in examined or setAside." },
+        "setAsideCommits": {
+          "type": "array",
+          "description": "Commits with both signs of a mechanical rewrite (the same small change in at least 10 files and a tool named in the subject) that this check set aside: ignored by blame, their lines credited to whoever wrote them before. Absent when none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha", "shortSha", "author", "mail", "subject", "survivingLines", "filesChanged", "reason"],
+            "properties": {
+              "sha": { "type": "string" },
+              "shortSha": { "type": "string" },
+              "author": { "type": "string" },
+              "mail": { "type": "string" },
+              "subject": { "type": "string" },
+              "survivingLines": { "type": "integer", "minimum": 0, "description": "The lines the commit held before it was set aside." },
+              "filesChanged": { "type": "integer", "minimum": 0 },
+              "reason": { "type": "string", "enum": ["files", "subject"] }
+            }
+          }
+        },
         "candidates": {
           "type": "array",
           "items": {
