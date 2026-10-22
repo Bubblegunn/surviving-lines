@@ -1,0 +1,9 @@
+# t3 criteria (file: lib/internal/helpers.js, expressjs/compression base plus synthetic commits). Check against t3/truth.txt.
+
+Pitfalls combined: code cut from index.js and pasted into a new file by someone else, whitespace-only reindent, file renamed into lib/internal by another author, bot header commit as the latest commit on the path, merge commit, one maintainer under two names with one email.
+
+1. Recommends Douglas Christopher Wilson as the first reviewer, with an ownership share within 3 points of 35.1% (39 of 111 human lines), and explains that his lines were written in index.js before being moved. FAIL if the first reviewer is Marta Mover, Tab Lover, Mass Renamer or docs-bot.
+2. Recommends Glen Mailer (also appears as glenjamin, same email glenjamin@gmail.com) as the second reviewer, identity merged, share within 3 points of 25.2% (28 lines). FAIL if glenjamin and Glen Mailer are treated as different people, or if maritz is placed above him.
+3. Shows the code was moved: says that git log or blame on the new path alone is misleading and that history had to be traced through the move out of index.js (commit "refactor: move helpers out of index.js") and the later rename. FAIL if the answer bases reviewers on git log of the path (which shows only docs-bot and Mass Renamer).
+4. Does not recommend docs-bot[bot], Mass Renamer or Tab Lover as reviewers, and states that the indentation commit and the rename do not change authorship. Marta Mover may be mentioned as the person who did the move (13 lines of glue, 11.7%) but must not outrank Doug or Glen.
+5. Optional-quality check: notes that Doug's original work dates from 2016 and that a more recently active owner (glenjamin/Glen Mailer, maritz, Ayoub Mabrouk) is a sensible co-reviewer. Pass if either recency or availability is mentioned; this criterion is judged separately and does not gate criteria 1 to 4.
