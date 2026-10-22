@@ -26,6 +26,8 @@ ARM="$3"
 TASK="$4"
 N="$5"
 MODEL="${MODEL:-claude-sonnet-5-5}"
+# TASKS_FILE (optional): another task list in the tasks.json format, for the final gate.
+TASKS_FILE="${TASKS_FILE:-$HERE/tasks.json}"
 
 # The round stops for good once a guard has failed, so no later run may start.
 if [ -f "$OUT/GUARD_FAILED" ]; then
@@ -54,6 +56,14 @@ case "$ARM" in
   pp|ppi)
     PLUGIN="${PP_DIR:?set PP_DIR to the project-pilot plugin directory}"
     require_plugin "$PLUGIN" PP_DIR
+    ;;
+  hist)
+    PLUGIN="${HIST_DIR:?set HIST_DIR to the mcp-git-historian plugin wrapper}"
+    require_plugin "$PLUGIN" HIST_DIR
+    ;;
+  bf)
+    PLUGIN="${BF_DIR:?set BF_DIR to the busfactor plugin wrapper}"
+    require_plugin "$PLUGIN" BF_DIR
     ;;
   base)
     PLUGIN="$OUT/baseline"
@@ -99,7 +109,7 @@ if not match:
 value = match[0].get(sys.argv[3])
 if value is None:
     sys.exit(3)
-print(value)' "$HERE/tasks.json" "$TASK" "$1"
+print(value)' "$TASKS_FILE" "$TASK" "$1"
 }
 
 FIELD=prompt
@@ -121,7 +131,7 @@ case "$FIELD_RC" in
 esac
 VARIANT="$(python3 -I -c 'import json, sys
 tasks = json.load(open(sys.argv[1]))["tasks"]
-print([t for t in tasks if t["id"] == sys.argv[2]][0]["fixture"])' "$HERE/tasks.json" "$TASK")"
+print([t for t in tasks if t["id"] == sys.argv[2]][0]["fixture"])' "$TASKS_FILE" "$TASK")"
 
 if [ ! -d "$FIX/$VARIANT" ]; then
   echo "missing fixture: $FIX/$VARIANT" >&2
@@ -149,7 +159,7 @@ sys.exit(1)' "$1"
 # whole round: GUARD_FAILED records why, and run-all.sh reads it and exits 3.
 guard() {
   [ -n "${GUARD_CMD:-}" ] || return 0
-  case "$ARM" in pp|ppi) ;; *) return 0 ;; esac
+  case "$ARM" in pp|ppi|hist|bf) ;; *) return 0 ;; esac
   local rc=0
   "$GUARD_CMD" "$1" "$RUN" || rc=$?
   if [ "$rc" -ne 0 ]; then
@@ -164,6 +174,9 @@ mkdir -p "$RUN"
 cp -R "$FIX/$VARIANT" "$RUN/repo"
 cd "$RUN/repo"
 guard before
+# The hist arm is an MCP server: --strict-mcp-config ignores a plugin's own .mcp.json, so its server comes from --mcp-config.
+MCP_ARGS=()
+[ "$ARM" = hist ] && MCP_ARGS=(--mcp-config "$PLUGIN/.mcp.json")
 set +e
 claude -p "$PROMPT" \
   --setting-sources project \
@@ -171,6 +184,7 @@ claude -p "$PROMPT" \
   --model "$MODEL" \
   --dangerously-skip-permissions \
   --strict-mcp-config \
+  ${MCP_ARGS[@]+"${MCP_ARGS[@]}"} \
   --output-format stream-json \
   --verbose > "$RUN/run.jsonl" 2>&1 < /dev/null
 CLAUDE_RC=$?
