@@ -594,31 +594,6 @@ Best rival arm total (project-pilot, best of pp and ppi per task): 39.00 of 51. 
 
 **Run.** `git archive` of the product commit, `OURS_DIR` that copy, `JOBS_ONLY='^ours '` in `run-all.sh`, 3 runs, parallelism 2, model `claude-sonnet-5-5`. Cost of every `claude -p` run is logged.
 
-### Round 5 results (protocol above; run 2026-10-22, `claude-sonnet-5-5`, tool commit `6d1d2cf`)
-
-Only ours ran: 11 tasks x 3 runs = 33 runs, all finished, plugin loaded and skill invoked in 33 of 33. The rival and baseline cells are reused from round 4 (`e833a7d`) as the protocol says. Outcome criteria only:
-
-| Task | Criteria | ours (r5) | pp (r4 reused) | ppi (r4 reused) | base (r4 reused) |
-| --- | --- | --- | --- | --- | --- |
-| T1 | 4 | 3.67 | 2.67 | 2.00 | 2.67 |
-| T2 | 4 | 4.00 | 2.67 | 2.33 | 3.67 |
-| T3 | 5 | 5.00 | 3.67 | not in task | 4.33 |
-| T4 | 5 | 5.00 | 3.67 | 4.00 | 3.00 |
-| T1i | 4 | 4.00 | 3.67 | 2.00 | 4.00 |
-| T4i | 5 | 5.00 | 3.00 | 4.67 | 3.00 |
-| E1 | 5 | 5.00 | 3.00 | 3.00 | 3.33 |
-| E2k | 5 | 5.00 | 3.67 | 4.00 | 3.33 |
-| E3 | 4 | 4.00 | 2.33 | not in task | 3.00 |
-| E4h | 5 | 5.00 | 4.33 | not in task | 4.33 |
-| E5 | 5 | 5.00 | 4.00 | 3.33 | 3.67 |
-| Total | 51 | 50.67 | 39.00 (best of pp, ppi) | | 38.33 |
-
-- Rule A: ours lost 0.33; the limit is 9.60. **Passes.**
-- Rule B: ours is strictly above every reused rival cell on 10 tasks. On T2 ours (4.00) equals the maximum and base is 3.67. On T1i ours and base are both at the maximum 4. **Passes on all 11 tasks, including T3 (5.00 against 4.33).**
-- Round 5 changed T3 as intended: ours copied the two-address `.mailmap` line in 3 of 3 runs.
-
-Caveats. (1) Ours was graded alone (`--arms ours`), not alongside four answers, so model-judged criteria saw one answer; 49.1% of pairs are decided by script, 76 of 84 model-judged pairs were unanimous. (2) Some grader replies corrected themselves in prose and did not parse; they were asked again. One T4 run 2 call stayed unparsed, so that cell rests on two valid votes. (3) T4 ours was 5.00 here and 5.00 in round 4; T1 ours is 3.67 (one run lost one criterion). (4) The reused rival values come from a different day's grading passes. (5) Not done: held-out tasks (all arms), F9 (Haiku, Opus), F6 audit. Those need a full run of every arm and were not started because of the budget limit. No release, merge or public claim is made.
-
 ### Round 5 results
 
 Run on 2026-10-22 under the "Round 5 measurement protocol" above (frozen and pushed in `8b83142` before any run). Ours ran from a `git archive` of `6d1d2cf` (`--identities` and the prompt hint print the exact two-address `.mailmap` line for one address under several names), model `claude-sonnet-5-5`, 3 runs per task, 33 task runs, two at a time. Ours loaded and ran its skill in 33 of 33 runs. pp, ppi and base were not run; their cells are the round 4 values ("r4 reused"). Published: `bench/head-to-head/results/round5-claude-sonnet-5-5/` (the results table and the manifest; transcripts are not committed).
