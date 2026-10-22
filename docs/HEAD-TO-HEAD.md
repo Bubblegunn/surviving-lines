@@ -677,3 +677,36 @@ Outcome criteria (mean criteria passed, runs in brackets):
 Why, from the graders' reasons for ours: the tool's headline table counts vendored files (a human-committed copy of a library) and the person who committed them as owners, and does not drop lockfile or generated files by default; it does not merge identities that differ in both name and address, so the shares of one person split; on H3 (reviewers for a file whose code was moved out of another file) it ranks the person who did the move first, because its blame view starts at the new path. The H1 and H2 answers sometimes mention the right fix in a secondary note, but the headline numbers were wrong, and the criteria need the headline. On the public tasks these cases were not present, so the round 5 result does not carry over.
 
 Not done: F9 (Haiku, Opus), the F6 audit and the new arms on the public set. The gate was already lost on the Sonnet held-out step, and the protocol says no task may be lost on any model, so later steps could not change the verdict; they were skipped to save budget (spent 11.11 USD of 18). The "first" claim is not made. What holds is the round 5 public-set result (11 tasks, Sonnet, 2026-10-22, rivals project-pilot and plain Claude), which the held-out result limits: it does not generalise to new repositories with vendored code, split identities or moved code.
+
+## Round 6 rulings (frozen 2026-10-22, owner decision)
+
+Written and committed before any round 6 code change and before any round 6 run. The old held-out set (`heldout-2026-10` t1 to t3, the final gate H1 to H3) was seen, so it is no longer held-out. It may be used for diagnosis only (ours, one run, never scored in a gate). These rules are general. They do not name any file, person or repository of the old held-out set, and the code must not either.
+
+The final gate failed because the headline numbers were wrong in three general classes of repository. The rulings below define the product behaviour for each class. They are written as properties of the output, so a reviewer can test them on any repository.
+
+**R1. Vendored, copied, lockfile and generated files leave the ownership headline by default.**
+
+- Dropped from every blame-based number (the table, the shares, the bus factor, the groups, the reviewers and history views) unless a flag restores them:
+  - lockfiles by file name (for example `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`, `Gemfile.lock`, `poetry.lock`, `composer.lock`, `go.sum`);
+  - generated files: files marked `linguist-generated` in `.gitattributes`, files whose first lines carry a generated marker (`@generated`, `DO NOT EDIT`, `Code generated`, `auto-generated`), and minified or map files (`*.min.*`, `*.map`);
+  - vendored or copied code: files under a directory named `vendor`, `vendored`, `third_party`, `third-party`, `node_modules`, `bower_components`, `Pods`, `extern` or `external`, and files marked `linguist-vendored` in `.gitattributes`.
+- The output states what was dropped: the number of files and lines per class and the top-level paths, in a line in the table output and in a field in the JSON output. Nothing is dropped silently.
+- A flag (`--keep-generated`) brings all three classes back. A user's own `--include` or `--exclude` globs still apply on top.
+- The rule is by path and file content marker only, never by author, so it does not depend on who committed the files.
+
+**R2. Identities that differ in both name and address are offered as a merge, with evidence, and are not merged on their own.**
+
+- A pair of identities whose names differ and whose addresses differ is listed as a "possible same person" suggestion when at least one fixed evidence item holds: the normalised name (letters only, folded for case and accents) is contained in the other identity's address local part (or the reverse); the two address local parts are equal after trailing digits and separators are removed; the two share a GitHub numeric user id in a noreply address; one name is the other's initial form (first initials and last name).
+- Each suggestion prints its evidence and the exact `.mailmap` line, in the two-address form already used. It is also in the JSON output.
+- No suggestion of this tier is merged by default and `--merge-identities` does not merge it either. Merging happens only through a `.mailmap` the user or the agent writes, so the owner of the repository decides. The existing same-name and same-address merge rules do not change.
+- The headline output and the prompt hint tell the reader that these shares may be split and name the suggestion.
+
+**R3. Moved and copied code is attributed to the original author, not to the person who moved it.**
+
+- The default blame uses `-w -M -C -C` (or an equivalent that follows moves and copies into a new path, including the commit that created the file). A flag (`--no-copies`) returns to `-w -M`. The existing `--copies` option stays accepted.
+- When the repository is large (more than 2000 text files) the default stays `-w -M` and the output says copy detection is off and why.
+- The reviewers and history views follow the same rule, so the person who only moved a file is not ranked first for it.
+
+**Tests and review.** Each rule gets tests on synthetic repositories built in the test itself (no fixture of the old held-out set). `npm test` and `claude plugin validate .` must pass, and a Sonnet reviewer reads the diff before the commit. The product is then fixed for round 6: it does not change after the new held-out set is run.
+
+**Order.** (1) this freeze, (2) product change, (3) new held-out set written by an agent that has not seen the product, the benchmark documents or the old held-out set, (4) round 6 protocol frozen, (5) runs. The old held-out diagnosis run is not scored.
