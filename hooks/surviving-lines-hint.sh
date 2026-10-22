@@ -152,7 +152,26 @@ END {
     for (i = 1; i <= nr; i++)
       if (find(i) == r) members = members (members == "" ? "" : "; ") substr(clean(dname[i]), 1, 60) " (" substr(clean(daddr[i]), 1, 80) ") " rcount[i] (rcount[i] == 1 ? " commit" : " commits")
     if (shown >= 5) break
+    # Same address under several names: the exact two-address .mailmap line, for the agent to copy, not to write.
+    copy = ""
+    if ((r SUBSEP 2) in gr) {
+      delete best
+      for (i = 1; i <= nr; i++) {
+        if (find(i) != r) continue
+        a = raddr[i]; sp = (dname[i] ~ / /) ? 1 : 0
+        if (!(a in best) || sp > bsp[a] || (sp == bsp[a] && rcount[i] > rcount[best[a]])) { best[a] = i; bsp[a] = sp }
+      }
+      for (i = 1; i <= nr; i++) {
+        if (find(i) != r) continue
+        a = raddr[i]
+        if (best[a] == i) continue
+        # A name that clean() would change cannot be copied faithfully: leave the line out rather than print a wrong one.
+        if (clean(dname[best[a]]) != dname[best[a]] || clean(dname[i]) != dname[i] || length(dname[best[a]]) > 60 || length(dname[i]) > 60) continue
+        copy = copy (copy == "" ? "" : "; ") substr(clean(dname[best[a]]), 1, 60) " <" substr(clean(daddr[best[a]]), 1, 80) "> " substr(clean(dname[i]), 1, 60) " <" substr(clean(daddr[i]), 1, 80) ">"
+      }
+    }
     piece = "[" rules "] " members
+    if (copy != "") piece = piece "; .mailmap line, copy it as is: " copy
     if (length(text) + length(piece) + 3 > budget) break
     text = text (text == "" ? "" : " | ") piece
     shown++

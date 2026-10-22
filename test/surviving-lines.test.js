@@ -8,7 +8,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const bin = pathToFileURL(join(import.meta.dirname, "..", "bin", "surviving-lines.js")).href;
-const { parseArgs, renderJson, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities, gitVersionProblem, MIN_GIT } = await import(bin);
+const { parseArgs, renderJson, fnv1a, inSample, globToRegExp, selected, countBlameLines, analyse, renderTable, renderCsv, renderMarkdown, displayWidth, isolate, foldIdentity, githubLogin, linkIdentities, renderIdentities, sameAddressNames, gitVersionProblem, MIN_GIT } = await import(bin);
 
 /** Build a small repository with two authors, a rewrite, a rename and a binary file. */
 async function fixtureRepo() {
@@ -804,4 +804,21 @@ test("interactive run shows progress on stderr while blaming, and --quiet suppre
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
+});
+
+test("sameAddressNames finds one address under several names and prints a two-address mailmap line", () => {
+  const same = sameAddressNames([
+    { name: "alex94puchades", mail: "alex@example.test", commits: 3 },
+    { name: "Alejandro Caravaca Puchades", mail: "ALEX@example.test", commits: 2 },
+    { name: "Ada", mail: "ada@example.test", commits: 9 },
+    { name: "ADA", mail: "ada@example.test", commits: 1 },
+    { name: "dependabot[bot]", mail: "1+dependabot[bot]@users.noreply.github.com", commits: 4 },
+    { name: "Other Bot", mail: "1+dependabot[bot]@users.noreply.github.com", commits: 1 },
+  ]);
+  // A full name wins over a login even with fewer commits; case-only name differences are one name; bots are left out.
+  assert.deepEqual(same, [{ mail: "alex@example.test", canonical: "Alejandro Caravaca Puchades", aliases: ["alex94puchades"] }]);
+  const out = renderIdentities([], same);
+  assert.match(out, /^Alejandro Caravaca Puchades <alex@example\.test> alex94puchades <alex@example\.test>$/m);
+  assert.doesNotMatch(out, /No split identities/);
+  assert.doesNotMatch(out, /0 identities look split/);
 });

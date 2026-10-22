@@ -228,3 +228,23 @@ test("a result without the key still renders every view without throwing and wit
     assert.equal(hintCount(renderGroups({ ...old, grouping: { by: "dir:1", groups: [] } }, 10)), 0);
   });
 });
+
+test("--identities prints a two-address .mailmap line for one address under two names, and git accepts it", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const { commitAsIdentity, createRepo } = await import("../scripts/fixtures.mjs");
+  const dir = createRepo("sl-same-address-");
+  try {
+    commitAsIdentity(dir, ["alex94puchades", "alex@example.test"], "2026-01-01T10:00:00Z", "a1", { "a.js": "a\n" });
+    commitAsIdentity(dir, ["Alejandro Caravaca Puchades", "alex@example.test"], "2026-01-02T10:00:00Z", "a2", { "b.js": "b\n" });
+    commitAsIdentity(dir, ["Bob", "bob@example.com"], "2026-01-03T10:00:00Z", "b1", { "c.js": "c\n" });
+    const bin = new URL("../bin/surviving-lines.js", import.meta.url).pathname;
+    const out = execFileSync("node", [bin, "--cwd", dir, "--identities"], { encoding: "utf8" });
+    const line = "Alejandro Caravaca Puchades <alex@example.test> alex94puchades <alex@example.test>";
+    assert.ok(out.split("\n").includes(line), out);
+    await import("node:fs").then((fs) => fs.writeFileSync(join(dir, ".mailmap"), `${line}\n`));
+    const names = execFileSync("git", ["log", "--format=%aN"], { cwd: dir, encoding: "utf8" }).split("\n").filter(Boolean);
+    assert.deepEqual([...new Set(names)].sort(), ["Alejandro Caravaca Puchades", "Bob"]);
+  } finally {
+    removeRepo(dir);
+  }
+});

@@ -2403,10 +2403,65 @@ export function identityHintLine(hints) {
 }
 
 /**
- * @param {ReturnType<typeof linkIdentities>} groups
+ * The addresses that more than one name commits from, as `--identities` prints them. `entries` is one item per
+ * (name, address) pair with its commit count, after .mailmap. Names are compared with foldIdentity, so case and
+ * accents do not make two names. Bots are left out. The canonical name is the one with a space in it (a full name
+ * over a login), then the most commits, then the first alphabetically; the others are the aliases.
+ * @param {{ name: string, mail: string, commits: number }[]} entries
+ * @returns {{ mail: string, canonical: string, aliases: string[] }[]}
  */
-export function renderIdentities(groups) {
-  if (!groups.length) {
+export function sameAddressNames(entries) {
+  /** @type {Map<string, Map<string, { name: string, commits: number }>>} */
+  const byMail = new Map();
+  for (const e of entries) {
+    if (!e.name || isBotAddress(e.mail) || /\[bot\]/i.test(e.name) || /noreply@github\.com/i.test(e.mail)) continue;
+    const mail = e.mail.toLowerCase();
+    const names = byMail.get(mail) ?? new Map();
+    const key = foldIdentity(e.name);
+    const seen = names.get(key) ?? { name: e.name, commits: 0 };
+    seen.commits += e.commits;
+    names.set(key, seen);
+    byMail.set(mail, names);
+  }
+  const hasSpace = (/** @type {string} */ n) => (/\s/.test(n.trim()) ? 1 : 0);
+  /** @type {{ mail: string, canonical: string, aliases: string[] }[]} */
+  const out = [];
+  for (const [mail, names] of [...byMail].sort((x, y) => x[0].localeCompare(y[0]))) {
+    if (names.size < 2) continue;
+    const ranked = [...names.values()].sort((x, y) => hasSpace(y.name) - hasSpace(x.name) || y.commits - x.commits || x.name.localeCompare(y.name));
+    out.push({ mail, canonical: ranked[0].name, aliases: ranked.slice(1).map((n) => n.name) });
+  }
+  return out;
+}
+
+/**
+ * Every (name, address) pair that author commits carry at the ref, with its commit count, merges left out. The name and
+ * address go through .mailmap, as the commit counts do.
+ * @param {Options} o
+ * @returns {Promise<{ name: string, mail: string, commits: number }[]>}
+ */
+async function readAddressNames(o) {
+  const out = await git(["log", "--no-merges", "--format=%aN%x09%aE", o.ref], o.cwd);
+  /** @type {Map<string, { name: string, mail: string, commits: number }>} */
+  const counts = new Map();
+  for (const line of out.split("\n")) {
+    if (!line) continue;
+    const [name, mail] = line.split("\t");
+    if (!mail) continue;
+    const key = `${name}\t${mail.toLowerCase()}`;
+    const e = counts.get(key) ?? { name, mail: mail.toLowerCase(), commits: 0 };
+    e.commits++;
+    counts.set(key, e);
+  }
+  return [...counts.values()];
+}
+
+/**
+ * @param {ReturnType<typeof linkIdentities>} groups
+ * @param {ReturnType<typeof sameAddressNames>} [sameAddress] addresses that several names commit from
+ */
+export function renderIdentities(groups, sameAddress = []) {
+  if (!groups.length && !sameAddress.length) {
     return [
       "No split identities found.",
       "",
@@ -2414,7 +2469,13 @@ export function renderIdentities(groups) {
       "and it is also what you see when a .mailmap has already merged them.",
     ].join("\n");
   }
-  const lines = [`${groups.length} identit${groups.length === 1 ? "y looks" : "ies look"} split across more than one address.`, ""];
+  const total = groups.length + sameAddress.length;
+  const lines = [`${total} identit${total === 1 ? "y looks" : "ies look"} split across more than one address.`, ""];
+  for (const s of sameAddress) {
+    lines.push(`${s.canonical}`, `  keep ${s.mail}  as "${s.canonical}"`);
+    for (const alias of s.aliases) lines.push(`  map  ${s.mail}  committed as "${alias}"`);
+    lines.push(`  because the same address, ${s.mail}, is written under ${s.aliases.length + 1} names`, "");
+  }
   for (const g of groups) {
     lines.push(`${g.canonical.author || g.canonical.mail}`);
     for (const m of g.members) {
@@ -2430,6 +2491,11 @@ export function renderIdentities(groups) {
       if (m.mail === g.canonical.mail) continue;
       lines.push(`${g.canonical.author} <${g.canonical.mail}> <${m.mail}>`);
     }
+  }
+  // One address under several names has no second address to map, so the line repeats the address: the proper name
+  // and address first, then the name to replace and the same address. Copy it as printed.
+  for (const s of sameAddress) {
+    for (const alias of s.aliases) lines.push(`${s.canonical} <${s.mail}> ${alias} <${s.mail}>`);
   }
   lines.push("");
   lines.push("These are guesses from names and addresses in this repository's own history; only you");
@@ -2517,7 +2583,7 @@ async function main() {
     } else if (o.markdown) {
       output = renderMarkdown(r, o.top);
     } else if (o.identities) {
-      output = renderIdentities(linkIdentities(r.authors));
+      output = renderIdentities(linkIdentities(r.authors), sameAddressNames(await readAddressNames(o)));
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
     } else if (r.reviewers) {
       // Five rows unless --top was given: the owners of one path are a short list.

@@ -166,6 +166,19 @@ test("R2: one address under two names is a suspected group, labelled with its ru
   }
 });
 
+test("R2: the hint carries the exact two-address .mailmap line, full name first", () => {
+  const dir = repoWith([
+    [["alex94p", "alex@same.example"], "a.js"],
+    [["Alejandro Caravaca Puchades", "alex@same.example"], "b.js"],
+  ]);
+  try {
+    const ctx = context(hook(PROMPT, dir));
+    assert.ok(ctx.includes("copy it as is: Alejandro Caravaca Puchades <alex@same.example> alex94p <alex@same.example>"), ctx);
+  } finally {
+    removeRepo(dir);
+  }
+});
+
 test("R3: one local part on two domains is a suspected group, with dots ignored", () => {
   const dir = repoWith([
     [["Mara L.", "mara.lund@studio.example"], "a.js"],
@@ -447,6 +460,19 @@ test("long names and addresses: the budget keeps six suspected groups under 1,20
     assert.ok(ctx.length <= 1200, `context is ${ctx.length} characters`);
     assert.match(ctx, /\(6 found, [1-5] shown; from names and addresses only\)/);
     assertClosing(ctx);
+  } finally {
+    removeRepo(dir);
+  }
+});
+
+test("R2: a non-ASCII name leaves the copy-as-is line out instead of printing a '?' name", () => {
+  const dir = repoWith([
+    [["jose", "jose@same.example"], "a.js"],
+    [["José García", "jose@same.example"], "b.js"],
+  ]);
+  try {
+    const ctx = context(hook(PROMPT, dir));
+    assert.ok(!ctx.includes("copy it as is"), ctx);
   } finally {
     removeRepo(dir);
   }
