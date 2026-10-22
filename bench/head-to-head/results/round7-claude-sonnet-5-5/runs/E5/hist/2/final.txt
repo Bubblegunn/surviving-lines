@@ -1,0 +1,70 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__file_history,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-2/repo", "file": "lib/index.js", "limit": 200}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-2/repo", "file": "lib/index.js"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-2/repo"}
+ - Bash: git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -w --ignore-revs-file /dev/null --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git show b2005d9 --stat --format='%an %ad %s' | head; git show b2005d9 -- lib/index.js | head -40
+FINAL ANSWER:
+Plain `git blame` credits the last two commits for most of the file, so I ignored them to get real authorship. The history is below.
+
+**Raw blame misleads.** `62628c0` (Fiona Formatter, 2026-04-12) reformatted the file to 4-space indent and double quotes. It touched 214 of 238 lines, so plain blame gives her 89.9%. She wrote none of the logic. `b2005d9` (Troy Goode, 2026-04-10) only added `// checked` comments to 12 lines.
+
+**Who shaped it** (62 commits, 2013-01-30 to 2026):
+- **Troy Goode** is the author and maintainer. He made the first commit (`bcd03d9`, 78 lines) and did most of the early work:
+  - Case-insensitive header lookup.
+  - `origin: false` disabling CORS.
+  - Request pause/resume for async middleware.
+  - The big 2013-10 rewrite (`4f13c63`).
+  - `Access-Control-Expose-Headers`.
+  - Express 4 support.
+  - The `vary` module.
+  - The ESLint switch.
+  - 2.8.0.
+- **Contributors, 2013–2015:**
+  - Damien Klinnert: Allow-Methods sent only on OPTIONS.
+  - Simon Mansfield: undefined-Origin checks.
+  - Eric di Domenico: `origin` as a callback.
+  - Mathias Buus: Connect support without Express.
+  - Igor Soarez: `Vary: Origin` for specific origins.
+  - Raymond Feng: `applyHeaders` without a closure.
+  - max.laverse: preflight passed to `next()`.
+  - Alejandro Caravaca Puchades: `origin` as RegExp or array.
+- **Douglas Christopher Wilson** (the repo's top committer, 143 commits) owns the 2017 hardening:
+  - Frozen-options fix.
+  - `Vary` for regexp origins and dynamic `allowedHeaders`.
+  - Missing-`methods` fix.
+  - eslint bump and lint fixes.
+- **Others, 2017–2021:**
+  - Benjamin Eidelman: Safari preflight workaround.
+  - Chima Alaebo: lint fix.
+  - Tom Arad: `maxAge: 0` fix (2018).
+  - LuisEGR: unused-parameter lint (2021).
+  - Hannah Wolfe: named the middleware function.
+  - Eran Tiktin, Shane Tomlinson, Typicode, Alberto Leal, Saad Tazi, Tomek Kopczuk, jordandenison, DracoBlue: one-to-few-line fixes.
+- **Activity gaps:** there were no commits to this file between 2021-07 and 2026-04.
+
+**Whose code survives.** I used `git blame -w --ignore-rev 62628c0`, which attributes each line to the commit before the reformat. It covers all 238 lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 159 | ~67% |
+| Douglas Christopher Wilson | 22 | ~9% |
+| Alejandro Caravaca Puchades | 12 | 5% |
+| Raymond Feng | 7 | 3% |
+| max.laverse | 6 | 2.5% |
+| LuisEGR | 6 | 2.5% |
+| alex94puchades | 4 | 1.7% |
+| Others, 1–3 lines each | 22 | ~9% |
+
+The "Others" row is 12 contributors: Simon Mansfield, Igor Soarez, Benjamin Eidelman, Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal, Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin and Chima Alaebo. `alex94puchades` is probably the same person as Alejandro Caravaca Puchades under a second identity, which would make theirs 16 lines.
+
+Ignoring `b2005d9` as well moves Troy Goode to 157 lines and Raymond Feng to 9, because the comment lines were credited to them. The oldest surviving line is Troy Goode's from 2013-01-31, the day after the first commit.
+
+The code is still mostly Troy Goode's, with Wilson's hardening and the contributors' small fixes on top. The reformat commit changed the style but not who wrote the logic.
+META cost=0.08808150000000002 ms=21771 turns=7

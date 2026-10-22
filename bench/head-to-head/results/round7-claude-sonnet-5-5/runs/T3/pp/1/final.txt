@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all; ls -a | grep -i mailmap
+ - Bash: git log --all --author="Fiona" --format='%h %an <%ae> %s'; git log --all --author="laptop.example" --format='%h %an <%ae> %s'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -i -E "alejandro caravaca|troy"
+FINAL ANSWER:
+Yes, two people appeared under more than one identity. I added a `.mailmap` file at the repo root, so each now counts once. It's untracked and I haven't committed it.
+
+- **Troy Goode:** 120 commits under `<email redacted>` and 2 under `troy@laptop.example`. They now total 122.
+- **Alejandro Caravaca Puchades:** 4 commits as "Alejandro Caravaca Puchades" and 1 as "alex94puchades", both with `<email redacted>`. They now total 5.
+
+`.mailmap` changes how `git shortlog` and `git log` display and count authors. It doesn't rewrite any commits.
+
+I left "Fiona Formatter" (`fiona@formatter.example`) as a separate author. Nothing in the history links them to anyone else. Her one commit is the 4-space reformat. If she is actually Troy, add `Troy Goode <<email redacted>> <fiona@formatter.example>` to `.mailmap`.
+
+**Top author:** Douglas Christopher Wilson, with 143 commits. Troy Goode is second with 122. The merges didn't change who is first.
+META cost=0.0531017 ms=13229 turns=4

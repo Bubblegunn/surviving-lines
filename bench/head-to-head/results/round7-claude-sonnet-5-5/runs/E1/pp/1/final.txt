@@ -1,0 +1,58 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git rev-list --count HEAD; find . -type f \( -name "*.js" -o -name "*.ts" \) -not -path "*/node_modules/*" -not -path "./.git/*" | head -50; echo ---; git log -1 --format=%ad
+ - Bash: for f in lib/index.js test/test.js test/vary.js test/error-response.js test/example-app.js test/issue-2.js test/support/env.js README.md package.json; do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -4; done; echo; echo recent active; git log --no-merges --since="2026-01-22" --pretty=format:"%an|%ad" --date=short | sort | uniq -c | head; git log --pretty=format:"%an" -1 --author="Troy Goode" --format="%an %ad"; git log -1 --author="Douglas" --format="%an %ad"; ls .github 2>/dev/null; ls
+ - Bash: for f in lib/index.js test/test.js test/vary.js test/error-response.js test/example-app.js test/issue-2.js test/support/env.js; do echo "== $f $(wc -l <$f) lines"; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; grep -rl "index\|require" lib test | head; git log --format=%an -1 -- lib/index.js; git log --format=%ad -1 -- lib/index.js
+ - Bash: for f in lib/index.js test/test.js test/error-response.js test/example-app.js; do echo "== $f"; git blame --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; git log -1 --format='%an <%ae>' 62628c0
+FINAL ANSWER:
+I ran the git-history analysis directly and skipped the haiku agent, because the repo is small. It has one source file (`lib/index.js`) and five test files. The checks were `git log` per file, `git blame`, and a grep for importers.
+
+## Bus factor: 2
+
+Troy Goode (95 commits) and Douglas Christopher Wilson (143 commits) together made 238 of the non-merge commits. The next contributors have 11 commits or fewer, and 11 of those belong to dependabot. If both left, nobody would be left who knows most of the code.
+
+## Who is active
+
+- **Troy Goode:** last commit 2026-04-10. That is about 6 months before today (2026-10-22), so this person is outside the 90-day "active" window.
+- **Douglas Christopher Wilson:** last commit 2021-09-07, about 5 years ago, so inactive.
+- **Everyone else:** no one has committed in the last 90 days except dependabot, which last ran 2026-03-02.
+- **Caveat:** the newest commit in the repo is dated 2026-04-12, so the history may be a snapshot. If so, "inactive" only reflects what this clone contains.
+
+## Per-file ownership
+
+I ignored commit `62628c0` (the 4-space/double-quote reformat by "Fiona Formatter"). It would otherwise show up as the owner of most lines.
+
+| File | Main owner | Share | Notes |
+|---|---|---|---|
+| `lib/index.js` (the only source file) | Troy Goode | 109 of 238 lines (46%) | Douglas has 36 lines and 4 commits. 4 contributors in total. |
+| `test/test.js` | Douglas Christopher Wilson | 270 of 731 lines (37%) | Troy has 213 lines. |
+| `test/error-response.js` | Troy Goode | 56 of 66 lines (85%) | Douglas has 3 commits. |
+| `test/example-app.js` | Troy Goode | 66 of 81 lines (81%) | Douglas has 2 commits. |
+| `test/issue-2.js` | Troy Goode | 40 of 48 lines (83%) | Douglas has 2 commits. |
+| `test/vary.js` | Troy Goode | 100% | One commit; Troy is its only author. |
+| `test/support/env.js` | Douglas Christopher Wilson | 100% | One commit; 2 lines. |
+
+## Risk assessment
+
+- **`lib/index.js`: medium risk.** It is not single-owner, but it is concentrated in two people. Troy has 29 commits and Douglas has 4. It is the core file, and every test file exercises it.
+- **Test files: low to medium risk.**
+  - `error-response.js`, `example-app.js` and `issue-2.js` are over 80% Troy's lines.
+  - `vary.js` and `env.js` have one author each, but they are tiny and nothing imports them.
+  - I did not measure importer counts precisely. A loose grep showed that the five test files all reference `lib/index.js`.
+- **Docs and config: shared between the same two people.**
+  - `README.md`: Troy 29 commits, Douglas 6, plus Jon Church (3) and Eran Tiktin (2).
+  - `package.json`: Douglas 68 commits, Troy 37.
+  - Release and dependency decisions probably sit with these two.
+
+## Recommendations
+
+1. **Immediate:** Have a current maintainer review `lib/index.js` and write down the design intent. Troy and Douglas hold most of the knowledge, and neither committed recently.
+2. **Short-term:** Name a second reviewer for changes to `lib/index.js` and `package.json`. Alejandro Caravaca Puchades (4 commits to `lib/index.js`) and Simon Mansfield (3) are the nearest candidates by commit count.
+3. **Ongoing:** Document the release process and the `package.json` conventions. The git history is the only record of them now.
+META cost=0.09394319999999999 ms=30028 turns=8

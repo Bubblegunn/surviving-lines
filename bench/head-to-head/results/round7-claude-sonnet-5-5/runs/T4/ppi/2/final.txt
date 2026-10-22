@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: f=lib/index.js; echo "== commits per author (all)"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; echo; echo "== last 1y"; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; echo; echo "== last commit date per author"; git log --all --no-merges --pretty=format:"%an|%as" -- $f | awk -F'|' '!s[$1]++'; echo; echo "== dependents"; grep -rl "lib/index\|require(['\"]\.\./lib\|require(['\"]\./lib\|require(['\"]\.\.['\"])" --include="*.js" . 2>/dev/null | grep -v node_modules | head; echo; echo "== total commits"; git log --all --no-merges --oneline -- $f | wc -l; echo "== blame lines"; git blame --line-porcela
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** The data supports this fairly strongly.
+
+| Author | Commits | Share | Last touched |
+|---|---|---|---|
+| Troy Goode | 29 of 62 | 47% | 2026-04-10 |
+| Douglas Christopher Wilson | 4 | 6% | 2017 |
+| Alejandro Caravaca Puchades (two names) | 4 + 1 | 8% | 2015 |
+| Simon Mansfield | 3 | 5% | 2013 |
+| 20 others | 1–2 each | | all inactive |
+
+- **Active owner:** Troy Goode is the only meaningful contributor in the last year. The other recent committer is "Fiona Formatter", which appears to be the formatting commit (`62628c0`).
+- **File bus factor:** Effectively 1. 25 people have touched the file, but only Troy has made changes recently or in volume. Nobody else has more than 6 commits, and all of them have been inactive since 2021 or earlier.
+- **Blame:** `git blame` credits 214 lines to "Fiona Formatter", but that comes from the reformat commit. Ignore it for ownership. Troy has the next most lines (20).
+- **Importance:** Moderate to high. This is the main library entry point, and it is loaded by five test files (`test/test.js`, `vary.js`, `error-response.js`, `example-app.js`, `issue-2.js`).
+
+**Recommendations**
+1. **Immediate:** Ask Troy Goode to review. If they are unavailable, nobody else has recent context. In that case, ask a reviewer who knows Express handler conventions and have them check against `test/test.js` and the other four test files.
+2. **Short-term:** Add a second regular reviewer for this file. At the moment, one person is the only source of context for it.
+3. **Ongoing:** Before merging, run the full test suite. It is the best record of the intended behavior for this file.
+
+I skipped the contributor-analyzer agent. A single file only needed a few `git log` and `git blame` calls. I did not run a project-wide bus factor, since you asked only about this file.
+META cost=0.0548534 ms=13246 turns=4

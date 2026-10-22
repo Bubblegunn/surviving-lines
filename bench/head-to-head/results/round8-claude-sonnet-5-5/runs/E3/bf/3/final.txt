@@ -1,0 +1,26 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //" | sed "s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; print c"\t"$0}' | head -100
+FINAL ANSWER:
+Top owner of surviving lines per extension, from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines | Share of total |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 | about 40% of roughly 1,200 |
+| `.md` | Troy Goode | 116 | about 31% of roughly 340 |
+| `.yml` | Douglas Christopher Wilson | 117 | about 29% of roughly 380 |
+| `.json` | Douglas Christopher Wilson | 20 | about 44% of roughly 45 |
+| `.gitignore` | Douglas Christopher Wilson | 4 | 4 of 5 |
+| no extension | Douglas Christopher Wilson | 17 | 17 of 22 |
+
+Runners-up:
+- **`.js`:** Fiona Formatter has 291 lines and Douglas Christopher Wilson has 245.
+- **`.md`:** Jon Church has 72 lines and Douglas Christopher Wilson has 67.
+- **`.yml`:** Íñigo Marquínez Prado has 95 lines and Sebastian Beltran has 63.
+
+Fiona Formatter's `.js` lines come from the latest commit, `style: reformat js with 4-space indent and double quotes`. Blame ignores whitespace but not the quote changes, so that commit took lines from earlier authors. Troy Goode's `.js` count is therefore probably an undercount. If you want original authorship, I can rerun with `--ignore-rev` on that commit.
+META cost=0.041512799999999996 ms=10922 turns=2

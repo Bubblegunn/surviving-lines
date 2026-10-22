@@ -1,0 +1,32 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src/itsdangerous | head -30; git rev-parse --is-shallow-repository; ls .git-blame-ignore-revs 2>&1; for f in signer timed; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: for f in signer timed; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{c=$1} /^author /{a=substr($0,8)} /^summary /{print a"|"c"|"substr($0,9)}' | sort | uniq -c | sort -rn | grep -E "Ibarra|pre-commit" ; done; echo; git log --format='%h %an %ad %s' --date=short --author=Ibarra | head -30; git shortlog -sne | head -15; cat .mailmap 2>/dev/null
+ - Bash: for f in signer timed; do echo "== $f"; git blame -w -M -C -C --ignore-rev ffeab7f --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; for a in "David Lord" "Tomás Ibarra" "Armin Ronacher"; do echo "$a:"; git log --author="$a" --format='%ad %h %s' --date=short -- src/itsdangerous/signer.py src/itsdangerous/timed.py | sed -n '1p;$p'; done; git log --format='%ad %an' --date=short -5 -- src/itsdangerous/signer.py src/itsdangerous/timed.py; git log -1 --format='%ae' --author=Lord; git log -1 --format='%ae' --author=Ibarra
+FINAL ANSWER:
+**Ask David Lord first. Tomás Ibarra is the second reviewer.**
+
+I used `git blame -w -M -C -C` on both files. It ignores whitespace and follows moved or copied lines. I also ignored the pre-commit.ci bot commit `ffeab7f`, which only reformatted lines. The history is not shallow.
+
+| Author | `signer.py` lines | `timed.py` lines | Notes |
+|---|---|---|---|
+| David Lord | 220 | 176 | Most of the surviving code. Last touched these files 2025-05-28 (`c294b2f`). |
+| Tomás Ibarra | 100 | 72 | Two commits only: `93695fd` (signer key rotation helpers, 2025-07-01) and `56dba8d` (timed rotation helpers, 2025-07-02). |
+| Armin Ronacher | 19 | 37 | Original author. Last commit 2018. |
+| Hsiaoming Yang | 13 | 0 | |
+| Arnout van Meer | 11 | 0 | |
+| Others | about 1–5 each | about 2–5 each | Thomas Waldmann, Markus Unterwaditzer, Zach Hugnou, Alan Hamlett, Dirk Müller, Daverball |
+
+- **David Lord** (`<email redacted>`) wrote the most surviving code in both files. His last commit to either file is from May 2025, so check that he is still active in the repo.
+- **Tomás Ibarra** (`tomas@ibarra.example`) wrote about 30% of each file, all of it recent: the key rotation helpers. If your change touches rotation, ask them first. They are the only person who knows that code. The `.example` email domain looks like a placeholder. Verify the address before you use it.
+- **Armin Ronacher** has nothing left but some original lines, and nothing since 2018. Skip them.
+
+Raw commit counts would mislead here, because the bot, the 2018 module split, and Tomás's two large commits skew them. Blame on surviving lines avoids that.
+
+Which part do you plan to change? If it is the rotation code, ask Tomás. For anything else, ask David.
+META cost=0.0683784 ms=24855 turns=5

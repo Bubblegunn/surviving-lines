@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --group-by dir --merge-identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl; echo ======; sl --group-by dir --merge-identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl --group-by dir --merge-identities; sl --merge-identities | head -20
+FINAL ANSWER:
+## Bus factor: Troy Goode
+
+**Short answer:** Troy Goode is the single contributor behind `lib/` and `test/`. Douglas Christopher Wilson is the second major holder, so the repository as a whole depends on two people.
+
+**Scope:** whole repository at HEAD, 18 files, 1,985 of 1,995 lines attributed. Counts come from `git blame -w -M -C`. The `-C` flag is the default copy detection, and I did not compare against a run without it.
+
+### Whole repository (bus factor 2)
+Bus factor here means the smallest number of authors whose surviving lines reach 50% of the lines counted.
+
+| Person | Lines | Share | Commits (share) |
+|---|---|---|---|
+| Troy Goode (2 addresses merged) | 810 | 40.8% | 95 (30.2%) |
+| Douglas Christopher Wilson | 629 | 31.7% | 143 (45.4%) |
+| Íñigo Marquínez Prado | 95 | 4.8% | 2 |
+| Jon Church | 72 | 3.6% | 3 |
+
+- **Bus factor:** 2. Troy and Douglas together hold 72.5% of the lines.
+- **To reach 80%:** 4 authors.
+- Without the merge, Troy is 762 lines (38.4%) and bus factor is still 2. The second address is `troy@laptop.example`, with 48 lines and 2 commits.
+
+### Per directory (identities merged)
+| Directory | Bus factor | Holders |
+|---|---|---|
+| `lib/` (1 file, 238 lines) | **1** | Troy Goode 159 lines (66.8%), Douglas 22 (9.2%) |
+| `test/` (7 files, 966 lines) | **1** | Troy Goode 517 lines (53.5%), Douglas 374 (38.7%) |
+| root files (6 files, 415 lines) | 2 | Troy 134 (32.3%), Douglas 115 (27.7%), Jon Church 72 (17.3%) |
+| `.github/` (4 files, 366 lines) | 2 | Douglas 118 (32.2%), Íñigo Marquínez Prado 95 (26.0%) |
+
+- `lib/` and `test/` are the single-person risk areas. In `test/` Troy's lead over Douglas is closer than in `lib/`, and he holds only 3.5 points over the 50% line.
+- `.github/` (CI and workflows) depends on Douglas and Íñigo. Their 58.2% combined share is only just above 50%.
+
+### Caveats
+- **Same-person merge is a guess.** I merged the two Troy Goode addresses because the name is identical. The tool rated this evidence strong. Nothing was written to `.mailmap`, and only Troy can confirm it. Separately, `alex94puchades` and Alejandro Caravaca Puchades share one email address. I did not merge them, because the merge is a separate guess and would not change any conclusion here.
+- **Reformat commit left out.** `62628c0` ("style: reformat js with 4-space indent and double quotes", by Fiona Formatter) is not counted. It touched 291 lines. If you count it, Fiona Formatter shows 14.7% and Troy drops to 667 lines (33.6%) unmerged. Bus factor stays 2.
+- **Mechanical rewrites checked.** The tool set aside the reformat commit above. It flagged five more as possibly mechanical but did not set them aside, so they are counted: `739dc11`, `fcd2b56`, `00d6eec`, `344ce1e` and `9c2b59d`. They hold 44 surviving lines in total, which is small next to the totals.
+- **Bots excluded:** 1 identity, 10 lines, 11 commits.
+- **Scope of the number.** The numbers show who wrote the surviving lines. They do not show who understands the code, and they ignore review, design work and deleted code. Troy has 30.2% of commits, so his lead in surviving lines is not just a count of commits.
+
+**Mitigation:** have someone other than Troy review changes in `lib/` and `test/`. Douglas is the obvious candidate, since he already holds the second-largest share in both directories.
+META cost=0.07800910000000001 ms=21452 turns=6

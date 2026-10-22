@@ -1,0 +1,40 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --since 2026-03-29 --until 2026-04-12 --merge-identities
+ - Bash: git log --since=2026-03-29 --until=2026-04-12T23:59:59 --no-merges --format='%h %ad %an <%ae> %s' --date=short; node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --since 2026-03-29 --until 2026-04-12 --merge-identities --top 60 | grep -E "Troy|alex|Saad|Fiona|bot"
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --since 2026-03-29 --until 2026-04-12 --merge-identities --top 60 | grep -iE "Vansh|more authors"; git show --stat 5317ebe | tail -3
+FINAL ANSWER:
+Two people committed in the 14 days up to 2026-04-12 (2026-03-29 to 2026-04-12), after setting aside the formatting commit. The window has 4 non-merge commits. Counts cover the whole repo at HEAD (1,985 of 1,995 lines attributed, all 18 files), and I read them with `git blame -w -M -C`.
+
+| Person | Commits in window | Surviving lines | Share |
+|---|---|---|---|
+| Troy Goode | 2 | 810 | 40.8% |
+| Vansh Sharma | 1 | 1 | 0.1% |
+
+- **Troy Goode:** the two commits are `b2005d9` "lib: annotate handlers" and `02afce3` "test: vary header coverage", both dated 2026-04-10. Both used `troy@laptop.example`, which holds 48 lines. The other address, `<email redacted>`, has no commits in the window but holds 762 lines.
+- **Vansh Sharma:** the one commit is `5317ebe`, dated 2026-04-07. It changes one line in `README.md` (`app.del()` to `app.delete()`).
+
+**Merged Troy Goode identity:** I counted the two Troy Goode addresses as one person because the name is identical. That is a guess from names and addresses, not confirmed. Counted separately, `troy@laptop.example` has 48 lines (2 commits in the window) and `<email redacted>` has 762. I did not write a `.mailmap`, since you asked only a question.
+
+**Left out:**
+- **Formatting commit:** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter, 2026-04-12. It only changed whitespace and quotes. It is excluded from commits and lines. If counted, Fiona Formatter would hold 291 lines (14.7%), and Troy's merged lines would drop to 715 (36.0%).
+- **Bots:** 1 bot identity (10 lines, 0 commits).
+
+**Mechanical rewrites:** I checked 139 commits that hold surviving lines. One was set aside (`62628c0`). Five others look mechanical and I kept them:
+- `739dc11` (Douglas Christopher Wilson, 17 lines)
+- `fcd2b56` (Troy Goode, 16 lines)
+- `00d6eec` (Douglas Christopher Wilson, 9 lines)
+- `344ce1e` (Douglas Christopher Wilson, 1 line)
+- `9c2b59d` (Douglas Christopher Wilson, 1 line)
+
+I did not run them through `git show --stat`.
+
+Bus factor, as the smallest number of authors holding 50% of the surviving lines in the whole repo, is 2: Troy Goode (both addresses) and Douglas Christopher Wilson together hold 72.5%. Reaching 80% takes 4 authors. Counting the reformat commit, the bus factor is still 2, but those two hold 58.9%.
+
+Lines are counted at HEAD for the whole repo, not only for the window's commits. They say nothing about quality, review work or deleted code.
+META cost=0.0741806 ms=16824 turns=6

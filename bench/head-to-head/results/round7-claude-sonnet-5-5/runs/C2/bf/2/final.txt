@@ -1,0 +1,44 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls; ls src/itsdangerous; git log --oneline | wc -l; git log --follow --format='%h %an <%ae> %s' -- src/itsdangerous/signer.py | head -40; ls .git-blame-ignore-revs 2>/dev/null; git config blame.ignoreRevsFile
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in signer timed; do echo "== $f"; git blame -w -M -C -C --ignore-rev ffeab7f --line-porcelain src/itsdangerous/$f.py | grep -E '^(author|author-mail) ' | paste - - | sort | uniq -c | sort -rn; wc -l src/itsdangerous/$f.py; done; git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/timed.py | head -30; git show 93695fd --stat | head -20; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head
+ - Bash: for a in "David Lord" "Tomás Ibarra" "Armin Ronacher"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | sed -n '1p;$p' | paste -sd' ')"; done; git log --author="Tomás" --format='%h %ad %s' --date=short --stat | head -20
+ - Bash: for a in "David Lord" "Tomás Ibarra" "Armin Ronacher"; do echo "$a: last $(git log --author="$a" -1 --format=%ad --date=short)"; done
+FINAL ANSWER:
+Blame result (`git blame -w -M -C -C`, ignoring the pre-commit.ci bot commit `ffeab7f`). It follows lines through the "split into modules" move and formatting changes. These are surviving lines per author:
+
+**signer.py (366 lines)**
+- David Lord: 220 (60%)
+- Tomás Ibarra: 100 (27%)
+- Armin Ronacher: 19
+- Hsiaoming Yang: 13
+- Arnout van Meer: 11
+- Thomas Waldmann: 2
+- Markus Unterwaditzer: 1
+
+**timed.py (300 lines)**
+- David Lord: 176 (59%)
+- Tomás Ibarra: 72 (24%)
+- Armin Ronacher: 37
+- Zach Hugnou: 5
+- Alan Hamlett: 4
+- Thomas Waldmann: 2
+- Dirk Müller: 2
+- Daverball: 2
+
+**Who to ask**
+- **David Lord** (<email redacted>) is the main author of the surviving code in both files. They wrote most of it through typing, the module split and the cleanups, and they committed as recently as 2025-07-07. Ask them first.
+- **Tomás Ibarra** (tomas@ibarra.example) is the second reviewer. Their lines are the key rotation helpers: 100 lines in `signer.py` (commit `93695fd`, 2025-07-01) and 72 in `timed.py` (commit `56dba8d`, 2025-07-02). Those are their only two commits. If your change touches the rotation code, ask them. They are the only one who knows it.
+- **Armin Ronacher** wrote the original fallback-signer and SHA-512 logic that is still there, but their last commit was in 2018. They are not a practical reviewer.
+
+**Caveats**
+- Blame shows who wrote a line, not who understands it today.
+- Tomás Ibarra's lines come from two large single commits. Check whether the code was written by them or only pasted in.
+- The email domain `ibarra.example` is a placeholder, so I can't confirm it is a real, reachable address.
+- The commit count is misleading here. David Lord has 342 commits, and many bot and cleanup commits would inflate any ownership figure based on commits.
+META cost=0.0735494 ms=21905 turns=6

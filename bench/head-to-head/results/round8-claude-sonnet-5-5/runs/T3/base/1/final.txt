@@ -1,0 +1,26 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all; ls -a | grep -i mailmap
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sne --all | grep -iE 'alejandro c|troy'
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** used the name "Alejandro Caravaca Puchades" (4 commits) and the name "alex94puchades" (1 commit), both with `<email redacted>`.
+
+I added a `.mailmap` file at the repo root that maps each person to one name and email. It doesn't rewrite history, so commit hashes don't change. It is not committed yet. `git shortlog`, `git log --use-mailmap` and GitHub's contributor views all read it.
+
+Troy Goode now has 122 commits and Alejandro has 5.
+
+**The top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second.
+
+I left "Fiona Formatter" and "Efe" alone. Each appears once and I found no matching second identity for either.
+META cost=0.044386499999999995 ms=12095 turns=3

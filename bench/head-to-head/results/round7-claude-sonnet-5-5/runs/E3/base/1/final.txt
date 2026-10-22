@@ -1,0 +1,26 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none:$e)";; esac; git blame --line-porcelain -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,""); print e "\t" $0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{n=$1; $1=""; print n "\t" substr($0,2)}' > /tmp/blame_out.txt; wc -l /tmp/blame_out.txt; cat /tmp/blame_out.txt | head -100
+FINAL ANSWER:
+Owner of the most surviving lines per extension (from `git blame` at HEAD):
+
+| Extension | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` | Fiona Formatter | 1016 | ~83% of 1203 |
+| `.md` | Troy Goode | 104 | ~28% of ~340 |
+| `.yml` | Douglas Christopher Wilson | 117 | ~27% of 383 |
+| `.json` | Douglas Christopher Wilson | 20 | ~46% of 43 |
+| `.gitignore` | Douglas Christopher Wilson | 4 | 80% of 5 |
+| `LICENSE` (no extension) | Douglas Christopher Wilson | 17 | ~77% of 22 |
+
+- **`.js`:** Fiona Formatter owns most lines because of the latest commit, `style: reformat js with 4-space indent and double quotes`. That commit reassigned blame for most lines. The next owner is Troy Goode with 139 lines.
+- **`.md`:** Jon Church has 72 lines and Douglas Christopher Wilson has 67, so the lead is not large.
+- **`.yml`:** Íñigo Marquínez Prado has 94 lines, second place.
+
+Blame is counted per line and I did not pass `-w` or `-M`/`-C`. Whitespace and moved lines therefore go to whoever last touched them. To see ownership before the reformat, use `git blame --ignore-rev 62628c0` and I can rerun it that way.
+META cost=0.048971100000000004 ms=10532 turns=3

@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%h|%an|%ae|%s' --no-merges | head -80; echo; git log --no-merges --format='%an <%ae>' | sort | uniq -c | sort -rn; ls -a; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c
+ - Bash: git show --stat --format='%h %s' 62628c0 | head -30; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | awk -v f=$f '/^author /{sub(/^author /,"");a=$0} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done > /tmp/blame.tsv; awk -F'\t' '{split($1,p,"/"); d=(length(p)>1?p[1]:"(root)"); print d"\t"$2"\t"$3}' /tmp/blame.tsv | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Troy Goode is the only person with at least half the surviving lines, in `lib/` and `test/`. `.github/` and the root files have no majority owner.
+
+I used `git blame` with `-w -M -C` and `--ignore-rev 62628c0`, which is Fiona's reformat commit. I left out dependabot. Troy's two identities (`<email redacted>` and `troy@laptop.example`) count as one person. I also merged Alejandro Caravaca Puchades and alex94puchades, which share an email.
+
+| Path | Top author | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159 of 238 (67%) | yes |
+| `test/` | Troy Goode | 517 of 966 (54%) | yes, barely |
+| `.github/` | Douglas Christopher Wilson | 118 of 366 (32%) | no |
+| root files | Troy Goode | 134 of 415 (32%) | no |
+
+The `test/` figure is close to the threshold. Doug holds 374 lines there (39%).
+
+On `.github/`, Doug has 118 lines, Íñigo 95, Sebastian Beltran 63, Ulises 45 and Ignacio 44. On the root files, Troy has 134 lines, Doug 115 and Jon Church 72.
+
+I don't know anyone's GitHub username, so I used the commit emails. CODEOWNERS accepts emails, but replace them with `@handle` if you have it.
+
+```
+# CODEOWNERS
+# Only paths where one person holds >= 50% of surviving lines get an owner.
+
+/lib/    <email redacted>
+/test/   <email redacted>
+
+# /.github/ and root files: no majority owner (top share 32%), left unowned.
+```
+META cost=0.07634350000000001 ms=18125 turns=3

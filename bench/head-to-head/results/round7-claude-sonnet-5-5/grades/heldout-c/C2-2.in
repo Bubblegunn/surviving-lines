@@ -1,0 +1,357 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I need a reviewer for a change to src/itsdangerous/signer.py and timed.py. Who really wrote the code that's still in the package (not who committed most or last), and who should I ask?
+
+CRITERIA:
+1. Package level: David Lord 69.2% (accepted 66%-72%), Tomás Ibarra 11.2% (accepted 8%-14%), Armin Ronacher 10.8% (accepted 8%-14%), credited by AUTHOR. FAIL: David Lord above 75% or Tomás Ibarra under 8% or absent (credit given to the committer instead of the author), or Armin Ronacher outside 8%-14%.
+2. signer.py: David Lord 60.9% and Tomás Ibarra 25.1% (each within 4 points), Tomás second. timed.py: David Lord 60.8%, Tomás Ibarra 20.8% (within 4 points), Armin Ronacher 12.5% (within 4 points). FAIL: Tomás Ibarra under 16% in signer.py or under 14% in timed.py, or not ranked second for signer.py.
+3. Lars Veen (module rename and import edits only) is not credited as an owner of the urlsafe module or the package: absent or under 1%. FAIL: Lars Veen is credited 2% or more, or named as the person to ask about the urlsafe/url_safe code.
+4. No bot (pre-commit-ci[bot], dependabot) is named as an owner or reviewer, and the answer says bot/formatter commits were ignored or that no bot lines remain. FAIL: any bot appears in the ranking with 1% or more, or the answer credits the quote-style rewrite lines to a bot.
+5. Gustavo Reyes (added then lost a module, 0 lines alive) is not listed as an owner or reviewer, and the answer names David Lord as the primary reviewer and Tomás Ibarra for the rotation helpers in signer.py/timed.py. FAIL: Gustavo Reyes is listed with any share or recommended, or David Lord is not named first.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD ffeab7f11b227b4a92dc226cf85b361a9bfc5b1c
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (33):
+  ffeab7f11b pre-commit-ci[bot]: [pre-commit.ci] auto fixes from pre-commit.com hooks
+  4bf8d6fd80 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  afe72f9c29 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  5bb67722a5 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  c1c530b601 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  a3ad6e46bd pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  7678d9e903 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  a38e573e8b pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  aa642e9ef4 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  c02c0a59d9 pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  f46ab60a4e pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  0bf007418a pre-commit-ci[bot]: [pre-commit.ci] pre-commit autoupdate
+  ... 21 more
+generated files dropped: none
+vendored files dropped (lines): 0 []
+
+== src/itsdangerous (package): counted lines 1071, bot lines 0 (0.0% of counted), unattributed 0, denominator 1071
+  1. David Lord: 741 lines, 69.2%
+  2. Tomás Ibarra: 120 lines, 11.2%
+  3. Armin Ronacher: 116 lines, 10.8%
+  4. Daverball: 48 lines, 4.5%
+  5. Hsiaoming Yang: 13 lines, 1.2%
+  6. Arnout van Meer: 8 lines, 0.7%
+  7. Thomas Waldmann: 8 lines, 0.7%
+  8. Alan Hamlett: 4 lines, 0.4%
+  people with >=1%: 5; rows to reach 80%: 2
+
+== signer.py: counted lines 279, bot lines 0 (0.0% of counted), unattributed 0, denominator 279
+  1. David Lord: 170 lines, 60.9%
+  2. Tomás Ibarra: 70 lines, 25.1%
+  3. Armin Ronacher: 18 lines, 6.5%
+  4. Hsiaoming Yang: 10 lines, 3.6%
+  5. Arnout van Meer: 8 lines, 2.9%
+  6. Thomas Waldmann: 2 lines, 0.7%
+  7. Markus Unterwaditzer: 1 lines, 0.4%
+  people with >=1%: 5; rows to reach 80%: 2
+
+== timed.py: counted lines 240, bot lines 0 (0.0% of counted), unattributed 0, denominator 240
+  1. David Lord: 146 lines, 60.8%
+  2. Tomás Ibarra: 50 lines, 20.8%
+  3. Armin Ronacher: 30 lines, 12.5%
+  4. Alan Hamlett: 4 lines, 1.7%
+  5. Zach Hugnou: 4 lines, 1.7%
+  6. Daverball: 2 lines, 0.8%
+  7. Dirk Müller: 2 lines, 0.8%
+  8. Thomas Waldmann: 2 lines, 0.8%
+  people with >=1%: 5; rows to reach 80%: 2
+
+bot lines alive (whole scope): none
+identities merged (whole scope):
+raw commit counts by author name (non-merge, whole history), top 6: [('David Lord', 159), ('Armin Ronacher', 79), ('dependabot[bot]', 53), ('dependabot-preview[bot]', 48), ('pre-commit-ci[bot]', 33), ('Thomas Waldmann', 9)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --oneline | wc -l && for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -C -C -M --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; cat .mailmap 2>/dev/null
+ - Bash: git log --format='%h %an %ad %s' --date=short -n 15 -- src/itsdangerous/signer.py src/itsdangerous/timed.py; echo; git log --author='Ibarra' --format='%h %ad %s' --date=short | head -30; git log --author='Ibarra' --oneline | wc -l; echo; git shortlog -sne HEAD | head -15; git log --format='%an %ae' | sort -u | grep -i -E 'lord|ibarra'
+ - Bash: git log --author='Gustavo' --format='%h %ad %s' --date=short --stat; git show -s --format=fuller 93695fd 56dba8d; git log --all --oneline | wc -l; git branch -a; git log --all --grep='Reyes\|Co-authored\|cherry' -i --format='%h %an %s' | head
+ - Bash: for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f ($(wc -l <$f) lines)"; git blame -w -CCC -M --line-porcelain $f | awk '/^author /{a=substr($0,8)} /^\t/{ l=substr($0,2); if (l ~ /^[ ]*$/ || l ~ /^[ ]*#/) next; c[a]++} END{for(k in c) print c[k], k}' | sort -rn; done; echo; git show 93695fd --stat --format= ; git show 56dba8d --stat --format=; git log --format='%h %an %ad %s' --date=short --diff-filter=A -- src/itsdangerous/signer.py src/itsdangerous/timed.py; git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/signer.py | tail -3
+ - Bash: for f in signer timed; do echo "== $f lines by commit/author (top)"; git blame -w -CCC -M --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{h=substr($1,1,7)} /^author /{a=substr($0,8)} /^\t/{c[h" "a]++} END{for(k in c) print c[k], k}' | sort -rn | head -8; done; git show 0635526 --stat --format='%h %an %s' | head -20
+ - Bash: for f in signer timed; do echo "== $f: lines from split commit, traced to pre-split __init__.py"; git blame -w -CCC -M --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{h=substr($1,1,7); n=$2} /^\t/{ if (h=="0635526") print n}' > /tmp/split_$f.txt; wc -l < /tmp/split_$f.txt; done
+# map each surviving split-commit line to its origin by blaming the parent's __init__.py
+for f in signer timed; do
+  echo "-- $f origin of split lines"
+  git blame -w -CCC -M --line-porcelain 0635526^ -- src/itsdangerous/__init__.py >/dev/null 2>&1 || git blame -w --line-porcelain 0635526^ -- src/itsdangerous.py | head -0
+  git show 0635526:src/itsdangerous/$f.py | sed 's/^[ \t]*//' | grep -v '^$' | gr
+ - Bash: git blame -w --line-porcelain 0635526^ -- src/itsdangerous/__init__.py | awk '/^author /{a=substr($0,8)} /^\t/{ l=substr($0,2); gsub(/^[ \t]+|[ \t]+$/,"",l); if(l!="") print a "\t" l}' > /tmp/orig_blame.tsv
+for f in signer timed; do
+ echo "== $f"
+ git blame -w -CCC -M --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{h=substr($1,1,7)} /^\t/{ if(h=="0635526"){l=substr($0,2); gsub(/^[ \t]+|[ \t]+$/,"",l); if(l!="") print l}}' | sort | uniq > /tmp/s_$f.txt
+ awk -F'\t' 'NR==FNR{s[$0]=1;next} ($2 in s){c[$1]++} END{for(k in c) print c[k],k}' /tmp/s_$f.txt /tmp/orig_blame.tsv | sort -rn
+done
+FINAL ANSWER:
+**Ask David Lord. If the change touches the key-rotation helpers, also ask Tomás Ibarra.**
+
+Raw `git blame` is misleading here, so this is the adjusted picture. I ran blame with whitespace, move and copy detection, and ignored blank and comment lines.
+
+**`signer.py` (about 250 code lines)**
+- **David Lord:** about 144 lines directly. Most are typing, generics and later rewrites.
+- **Tomás Ibarra:** 70 lines. These are the key-rotation helpers from 93695fd, 2025-07-01.
+- **Armin Ronacher:** 17 lines directly. Many more are his originals that Lord moved in 2018.
+- **Others:** Hsiaoming Yang 10 and Arnout van Meer 8, plus a few single lines.
+
+**`timed.py` (about 200 code lines)**
+- **David Lord:** 131 lines.
+- **Tomás Ibarra:** 50 lines. These are the rotation helpers from 56dba8d, 2025-07-02.
+- **Armin Ronacher:** 24 lines directly, plus originals moved in 2018.
+- **Others:** a few lines each from Alan Hamlett, Dirk Müller, Zach Hugnou and Daverball.
+
+**Traps in the history**
+- **2018 split:** 0635526 "split into modules" credits 134 surviving lines to David Lord. That commit only moved code out of `__init__.py`. I traced those lines back to the pre-split file by matching line text. That is approximate, because common lines like `return` or `else:` match more than once. It shows Armin wrote most of them (about 48 in `signer.py` and 63 in `timed.py`). Lord wrote about 34 and 21. Arnout van Meer wrote about 10 and 9.
+- **Commit counts mislead:** Lord has 342 commits, but many are dependency and tooling changes. Dependabot and pre-commit bots have about 180 commits, and they only changed a few lines of these two files.
+- **Ibarra's commits:** Lord applied them on 2025-07-03 (committer), but Ibarra authored them. Ibarra has only those 2 commits, so the rotation code has one owner.
+
+**Who to ask**
+- **David Lord:** he owns the current structure and typing. He is the maintainer who merged the newest code. Armin wrote the original design. I did not check whether Armin is still active on this repo.
+- **Tomás Ibarra:** only for changes to the rotation helpers. His commit email is `tomas@ibarra.example`, which is a placeholder domain, so you will need another way to reach him.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: ls; ls src/itsdangerous; git log --oneline | wc -l; git log --follow --format='%h %an <%ae> %s' -- src/itsdangerous/signer.py | head -40; ls .git-blame-ignore-revs 2>/dev/null; git config blame.ignoreRevsFile
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in signer timed; do echo "== $f"; git blame -w -M -C -C --ignore-rev ffeab7f --line-porcelain src/itsdangerous/$f.py | grep -E '^(author|author-mail) ' | paste - - | sort | uniq -c | sort -rn; wc -l src/itsdangerous/$f.py; done; git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/timed.py | head -30; git show 93695fd --stat | head -20; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head
+ - Bash: for a in "David Lord" "Tomás Ibarra" "Armin Ronacher"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | sed -n '1p;$p' | paste -sd' ')"; done; git log --author="Tomás" --format='%h %ad %s' --date=short --stat | head -20
+ - Bash: for a in "David Lord" "Tomás Ibarra" "Armin Ronacher"; do echo "$a: last $(git log --author="$a" -1 --format=%ad --date=short)"; done
+FINAL ANSWER:
+Blame result (`git blame -w -M -C -C`, ignoring the pre-commit.ci bot commit `ffeab7f`). It follows lines through the "split into modules" move and formatting changes. These are surviving lines per author:
+
+**signer.py (366 lines)**
+- David Lord: 220 (60%)
+- Tomás Ibarra: 100 (27%)
+- Armin Ronacher: 19
+- Hsiaoming Yang: 13
+- Arnout van Meer: 11
+- Thomas Waldmann: 2
+- Markus Unterwaditzer: 1
+
+**timed.py (300 lines)**
+- David Lord: 176 (59%)
+- Tomás Ibarra: 72 (24%)
+- Armin Ronacher: 37
+- Zach Hugnou: 5
+- Alan Hamlett: 4
+- Thomas Waldmann: 2
+- Dirk Müller: 2
+- Daverball: 2
+
+**Who to ask**
+- **David Lord** (<email redacted>) is the main author of the surviving code in both files. They wrote most of it through typing, the module split and the cleanups, and they committed as recently as 2025-07-07. Ask them first.
+- **Tomás Ibarra** (tomas@ibarra.example) is the second reviewer. Their lines are the key rotation helpers: 100 lines in `signer.py` (commit `93695fd`, 2025-07-01) and 72 in `timed.py` (commit `56dba8d`, 2025-07-02). Those are their only two commits. If your change touches the rotation code, ask them. They are the only one who knows it.
+- **Armin Ronacher** wrote the original fallback-signer and SHA-512 logic that is still there, but their last commit was in 2018. They are not a practical reviewer.
+
+**Caveats**
+- Blame shows who wrote a line, not who understands it today.
+- Tomás Ibarra's lines come from two large single commits. Check whether the code was written by them or only pasted in.
+- The email domain `ibarra.example` is a placeholder, so I can't confirm it is a real, reachable address.
+- The commit count is misleading here. David Lord has 342 commits, and many bot and cleanup commits would inflate any ownership figure based on commits.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>" ] && echo yes; git rev-parse --is-shallow-repository; ls src/itsdangerous/
+ - Bash: S='node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>'; $S --reviewers src/itsdangerous/signer.py; echo ======; $S --reviewers src/itsdangerous/timed.py; echo ======; $S --merge-identities --reviewers src/itsdangerous/signer.py src/itsdangerous/timed.py 2>&1 | head -60
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> "$@"; }; sl --reviewers src/itsdangerous/signer.py; echo ======; sl --reviewers src/itsdangerous/timed.py; echo ======; sl --merge-identities --reviewers src/itsdangerous/signer.py 2>&1 | head -40
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> "$@"; }; sl --reviewers src/itsdangerous/timed.py; echo; echo =====; sl --merge-identities --reviewers src/itsdangerous/signer.py 2>&1 | head -30; echo ====; sl --merge-identities --reviewers src/itsdangerous/timed.py 2>&1 | head -30
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> "$@"; }; sl --merge-identities --reviewers src/itsdangerous/signer.py 2>&1 | head -14; sl --merge-identities --reviewers src/itsdangerous/timed.py 2>&1 | head -14; git log --author="Ibarra" --stat --format='%h %ad %s' --date=short | head -20; ls .mailmap .git-blame-ignore-revs 2>&1
+FINAL ANSWER:
+**Ask David Lord first. Tomás Ibarra is the second reviewer if your change touches the rotation helpers.**
+
+These are surviving-line counts from `git blame -w -M` at HEAD, from `surviving-lines --reviewers`. No identity merging was suggested, and there is no `.mailmap` or `.git-blame-ignore-revs` file in the repo.
+
+**`signer.py`** (358 of 366 lines attributed)
+
+| Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| David Lord | 212 | 59.2% | 10 | 2024-04-16, inactive |
+| Tomás Ibarra | 100 | 27.9% | 1 | 2025-07-01, active |
+| Armin Ronacher | 19 | 5.3% | 2 | 2018-10-26, inactive |
+
+**`timed.py`** (295 of 300 lines attributed)
+
+| Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| David Lord | 172 | 58.3% | 16 | 2025-05-28, active |
+| Tomás Ibarra | 72 | 24.4% | 1 | 2025-07-02, active |
+| Armin Ronacher | 37 | 12.5% | 3 | 2018-10-27, inactive |
+
+- **David Lord** holds the most surviving lines in both files. "Inactive" means no commit in the year before 2025-07-08. In `signer.py` his last commit is 2024-04-16, so he is inactive there. In `timed.py` he is active, with a commit on 2025-05-28. I kept the order by lines, as the tool does.
+- **Tomás Ibarra** has one commit in each file, both recent and both pure additions:
+  - `93695fd` (2025-07-01) added 100 lines, "signer: add key rotation helpers".
+  - `56dba8d` (2025-07-02) added 72 lines, "timed: add rotation helpers for timestamp signer".
+
+  They own those rotation helpers entirely. They are the right person if your change touches that code.
+- **Armin Ronacher** is third in both files, but inactive since 2018. He is probably not reachable.
+
+**Bus factor** is the smallest number of authors whose surviving lines reach a given share of the lines counted. For each file on its own, the factor is 1 at 50%, because David Lord alone holds 59.2% of `signer.py` and 58.3% of `timed.py`. Reaching 80% takes 2 authors in each file.
+
+**Left out or moved**
+- **Bots:** 1 bot identity is excluded: 8 lines in `signer.py` and 5 lines in `timed.py`.
+- **Moved or copied code:** 34 of 366 lines (9.3%) in `signer.py` and 32 of 300 lines (10.7%) in `timed.py` were written in other paths. The largest sources are `itsdangerous.py` and `src/itsdangerous/__init__.py`. Credit goes to whoever wrote them, not to whoever moved them. The tool counts that credit under the original authors.
+- **Reformat commits:** none were detected.
+- **Unattributed lines:** some lines were not attributed (8 in `signer.py`, 5 in `timed.py`).
+
+These counts show whose code is still here. They don't show who understands it well, and review or design work leaves no lines behind.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/itsdangerous/signer.py src/itsdangerous/timed.py"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ppi-2/repo
+for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do
+echo "== $f (blame lines, -w -M -C -C, ignoring whitespace/moves)"
+git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn
+echo "-- commits (no merges)"
+git log --no-merges --follow --pretty='%an' -- $f | sort | uniq -c | sort -rn
+echo "-- last touch per author"
+git log --no-merges --pretty='%an|%ad' --date=short -- $f | awk -F'|' '!s[$1]++'
+done
+echo "== recent activity (all repo, last 12 mo)"
+git log --no-merges --since=12.months --pretty='%an' | sort | uniq -c | sort -rn | head
+echo "== importers"
+grep -rlE "signer
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ppi-2/repo
+git log --no-merges --author='Ibarra' --pretty='%h %ad %an <%ae>%n  %s' --date=short --stat -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -20
+git log --no-merges --author='David Lord' --pretty='%ad' --date=short | head -1
+git log --no-merges --author='Ibarra' --pretty='%h' | wc -l
+FINAL ANSWER:
+## Bus factor: `signer.py` and `timed.py`
+
+I ran `git blame -w -M -C -C` on HEAD. That counts the lines that survive today, and it ignores whitespace changes and code moved between files. Commit counts are shown only for comparison.
+
+**`signer.py` (366 lines)**
+
+| Author | Surviving lines | Commits | Last touched |
+|---|---|---|---|
+| David Lord | 212 (58%) | 10 | 2024-04-16 |
+| Tomás Ibarra | 100 (27%) | 1 | 2025-07-01 |
+| Armin Ronacher | 19 | 2 | 2018 |
+| Hsiaoming Yang | 13 | 1 | 2019 |
+| Arnout van Meer | 11 | 0 | — |
+| pre-commit-ci[bot] | 8 | 1 | — |
+
+**`timed.py` (298 lines)**
+
+| Author | Surviving lines | Commits | Last touched |
+|---|---|---|---|
+| David Lord | 172 (58%) | 17 | 2025-05-28 |
+| Tomás Ibarra | 72 (24%) | 1 | 2025-07-02 |
+| Armin Ronacher | 37 | 3 | 2018 |
+| Zach Hugnou | 5 | 1 | 2019 |
+| Other contributors, each 5 lines or fewer | 12 | — | — |
+
+**What the numbers show**
+- David Lord wrote most of the code that survives, about 58% of each file. They are also the top committer and have the most commits to both files.
+- Tomás Ibarra is a real second owner. Each file has only one commit from them, but those commits added 100 and 72 lines. Commit counts hide this, and `git shortlog` doesn't list them in its top contributors.
+- Ibarra's commits are the key rotation helpers: `93695fd` for `signer.py` and `56dba8d` for `timed.py`. Those helpers are the newest logic in both files.
+- Armin Ronacher wrote the original design, but only 19 and 37 lines of it remain.
+- The other contributors are one-off or fully rewritten, so don't ask them. The bot's lines are formatting only.
+- Bus factor is 2 for both files: David Lord and Tomás Ibarra. Together they own about 85% of each file.
+
+**Who to ask**
+1. **David Lord** for the core signing and timestamp logic. Ask them first if your change touches anything other than rotation.
+2. **Tomás Ibarra** if your change touches the rotation helpers, or if it has to stay consistent with them. They are the only person who knows that code.
+
+**Caveats**
+- The repo's last commit is 2025-07-08, so nobody has committed in the last 12 months. I can't tell from git whether either person is still active, so check before you tag them.
+- I didn't count importers, because my `grep` for them failed on a shell glob. For these two modules the answer is obvious anyway: `signer.py` and `timed.py` are the package's core, so the risk is high either way.
+- I looked at only these two files, not the whole repo. I didn't compute a project-level bus factor, and I didn't launch the contributor-analyzer agent, because blame answers this question directly.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Bash: ls src/itsdangerous/ && git log --oneline | wc -l && git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/signer.py | tail -5; for f in signer timed; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls -a | head -30; cat .git-blame-ignore-revs 2>/dev/null; for f in signer timed; do echo "== $f"; git blame -w -M -C -C -C --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{c=$1} /^author /{a=substr($0,8)} /^summary /{print a" | "substr(c,1,8)" | "substr($0,9)}' | sort | uniq -c | sort -rn | head -25; done; echo; git shortlog -sne HEAD | head -20
+ - Bash: git log --author='Ibarra\|Reyes' --format='%h %an <%ae> | committer %cn <%ce> | %ad%n  %s%n%b' --date=short --stat; git show 93695fd6 | head -200
+ - Bash: grep -rn "rotate_" --include=*.py --include=*.rst --include=*.md . | grep -v "^./src/itsdangerous/\(signer\|timed\).py:.*def rotate_" | head; grep -c "def rotate_" src/itsdangerous/signer.py src/itsdangerous/timed.py; git show --stat --format='%h %an %s' 0635526 | head -15; git show 0635526^ --stat --format= | head -3; git ls-tree -r --name-only 0635526^ | grep -i itsdangerous
+ - Bash: cat > /tmp/trace.py <<'EOF'
+import subprocess,collections,sys
+def blame(args):
+    out=subprocess.run(["git","blame","-w","-M","-C","-C","--line-porcelain"]+args,capture_output=True,text=True).stdout.split("\n")
+    res=[];sha=None;auth=None
+    for l in out:
+        if l.startswith("\t"): res.append((sha,auth,l[1:]));continue
+        p=l.split(" ")
+        if len(p[0])==40: sha=p[0]
+        elif l.startswith("author "): auth=l[7:]
+    return res
+old=collections.defaultdict(set)
+for sha,a,t in blame(["0635526^","--","src/itsdangerous/__init__.py"]):
+    old[t.strip()].add(a)
+for f in ("signer","timed"):
+    c=collections.Counter()
+    for sha,a,t in blame(["HEAD","--",f"src/itsdangerous/{f}.
+ - Bash: grep -rn "rotate_" src tests docs CHANGES.rst | grep -v "def rotate_" | head; grep -n "^def rotate_\|^class \|^    def " src/itsdangerous/timed.py | head -30; git log -3 --format='%h %an | %s' -- tests | head
+FINAL ANSWER:
+**Ask David Lord. Armin Ronacher is the backup for the original design.**
+
+I ran `git blame -w -M -C -C -C` on both files. I also traced the 2018 "split into modules" commit back into the old `__init__.py`, because that commit hides the original authors.
+
+**Who wrote what is still there**
+
+| File | David Lord | Armin Ronacher | Tomás Ibarra | Others |
+|---|---|---|---|---|
+| `signer.py` (~350 lines) | ~205 | ~22 | 100 | Hsiaoming Yang 13, Arnout van Meer ~15, and a few small ones |
+| `timed.py` (~270 lines) | ~160 | ~49 | 72 | Zach Hugnou 5, Alan Hamlett 3, and a few small ones |
+
+- **David Lord:**
+  - He wrote the typing, the module structure, the timezone-aware UTC handling, and the secret-key and salt handling.
+  - He also holds about 110 lines (62 in `signer.py`, 51 in `timed.py`) that came from the split commit. I could not match them to older lines, so they are probably his rewrites.
+- **Armin Ronacher:** He wrote the original signer and timestamp logic, the fallback signers, and the exception handling in `timed.py`. His code reached these files through the split, so plain blame credits David for it.
+
+**Tomás Ibarra's lines don't count as authorship:**
+- Commits `93695fd` and `56dba8d` added 100 lines to `signer.py` and 72 to `timed.py` (July 2025).
+- They are `rotate_0` to `rotate_13` in `signer.py` and `rotate_ts_*` in `timed.py`. Each one is a near-identical function around `value % n` arithmetic. None of them is called from `src`, `tests` or `docs`.
+- David Lord committed both, but I found nothing in the git history that shows he reviewed them.
+- They look like filler. Don't treat Tomás as an owner of this code.
+
+**Who to ask**
+1. **David Lord** (<email redacted>) for `Signer`, `TimestampSigner` and `TimedSerializer`. He wrote most of the surviving code, and his recent commits touch these files.
+2. **Armin Ronacher** (<email redacted>) if your change affects the original signing or timestamp behavior or the fallback signers.
+3. Check where the change sits. Edits in `unsign` or `loads` (the future-timestamp, overflow and OSError handling) were added by Zach Hugnou, Alan Hamlett, Dirk Müller and David Lord. David is the only one of them still active in the history I looked at.
+
+Run `git blame -w -M -C -C -C <file>` on your exact lines before you ask, because who owns a given line can differ from these file-wide totals.
+
+If your change touches the `rotate_*` functions, ask David whether they should stay in the package.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__tool__blame_summary,mcp__tool__file_history,mcp__tool__knowledge_risk,mcp__tool__bus_factor", "max_results": 4}
+ - mcp__tool__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/signer.py"}
+ - mcp__tool__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/timed.py"}
+ - mcp__tool__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/signer.py", "limit": 40}
+ - mcp__tool__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/timed.py", "limit": 40}
+ - Bash: git show -s --format='%h %an <%ae> | committer %cn <%ce> | %ad%n%B' 0635526 93695fd 56dba8d | head -60; echo ----; git log --oneline | wc -l; git log --format='%h %ad %an' --date=short | tail -5; echo ----; git blame -w -M -C -C --line-porcelain src/itsdangerous/signer.py | grep '^author ' | sort | uniq -c | sort -rn; echo; git blame -w -M -C -C --line-porcelain src/itsdangerous/timed.py | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git log --format='%an' | sort | uniq -c | sort -rn | head -8; for a in "David Lord" "Tomás Ibarra" "Armin Ronacher" "Arnout van Meer" "Hsiaoming Yang" "Thomas Waldmann"; do echo "$a: $(git log --author="$a" -1 --format='%ad' --date=short) first $(git log --author="$a" --format='%ad' --date=short | tail -1) n=$(git log --author="$a" --oneline | wc -l)"; done; git log --author='Tomás' --format='%h %ad %s' --date=short; git log --format='%cn' --since=2025-01-01 | sort | uniq -c
+FINAL ANSWER:
+**Ask David Lord.** If the change touches the key rotation helpers, also ask Tomás Ibarra.
+
+**Authorship of surviving lines.** Plain blame credits David 67% of both files. That overstates it. His 2018 "split into modules" commit (`0635526`) moved code out of the old single-file `itsdangerous.py`, so blame gives him lines Armin Ronacher wrote. Rerunning blame with move/copy detection (`git blame -w -M -C -C`) gives:
+
+| File | David Lord | Tomás Ibarra | Armin Ronacher | Others |
+|---|---|---|---|---|
+| `signer.py` (366 lines) | 212 | 100 | 19 | Hsiaoming Yang 13, Arnout van Meer 11, bot 8, Thomas Waldmann 2, Markus Unterwaditzer 1 |
+| `timed.py` (300 lines) | 172 | 72 | 37 | Zach Hugnou 5, bot 5, Alan Hamlett 3, Thomas Waldmann 2, Dirk Müller 2, Daverball 2 |
+
+The move/copy detection is heuristic, so treat these counts as approximate.
+
+**Who wrote what:**
+- **Armin Ronacher** wrote the original signing and timestamp logic and the fallback signers (2011–2018). His last commit was 2018-10-27, so he is not a practical reviewer.
+- **David Lord** owns the current structure: the module split, the typing rewrites (2020 and 2024), and the `_compat` removal. He has committed 342 times since 2016 and made the most recent non-bot commit on 2025-07-07. He also committed Tomás's two patches.
+- **Tomás Ibarra** wrote the key rotation helpers: 100 lines in `signer.py` (`93695fd`) and 72 lines in `timed.py` (`56dba8d`). That is about a quarter of each file. Both commits are from 2025-07-01 and 2025-07-02, and they are Tomás's only commits in the repo.
+- **Small contributors** wrote one-off fixes and are not worth asking: Zach Hugnou (future-timestamp check), Alan Hamlett and Dirk Müller (overflow handling), Hsiaoming Yang (accepting secret keys in `Signer`), and Daverball (generic typing).
+
+**What to do:** If the change touches the rotation code, ask Tomás to review it, with David as the second reviewer. Tomás has little history in the repo, so David should be the approver. If the change is elsewhere in these files, ask David alone.

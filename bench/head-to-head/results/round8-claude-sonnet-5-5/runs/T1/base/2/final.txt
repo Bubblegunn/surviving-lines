@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | head -300 | wc -l && git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -15 && cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git ls-files && git log --oneline | wc -l && echo "--- naive blame" && for f in $(git ls-files); do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -20 && echo "--- ignoring reformat commit" && for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: echo "--- total lines" && for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep -c '^author '; done | paste -sd+ - | bc && echo "--- lib/index.js" && git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -6 && echo "--- lib+test js" && for f in lib/index.js test/*.js test/support/*.js; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6; git log -1 --format='%an %ad' 62628c0; git log --reverse --format='%ad %an' | head -1
+FINAL ANSWER:
+Measured with `git blame` on the current tree: 1,995 lines across 18 tracked files. I used `-w -M -C` and ignored commit `62628c0`.
+
+That commit is the style reformat by "Fiona Formatter". It rewrote 291 lines (indent and quotes) and would otherwise show as the third-largest owner. With it ignored, those lines go back to whoever wrote them.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1% |
+| Everyone else | ~170 | ~8% |
+
+- **Core library:** `lib/index.js` is mostly Troy Goode (159 lines). Douglas Christopher Wilson has 22, and Alejandro Caravaca Puchades has 12.
+- **JS code and tests only:** Troy Goode has 676 lines and Douglas Christopher Wilson has 394. Together they own about 85% of the JS code and tests.
+- **Non-code files:** The CI and workflow YAML, docs and `package.json` are where the other contributors' lines mostly sit. The 10 dependabot lines are there too.
+- **Origin:** Troy Goode made the first commit in January 2013, and their code is still the largest share.
+
+`Efe` shows 6 lines, from recent work such as the `vary` test commit.
+
+Blame follows the last commit that touched a line. A small edit to someone else's line moves it to the editor. That means these numbers understate the original authors a little. I did not separate out whitespace-only or rename-only commits other than the reformat.
+META cost=0.064144 ms=24266 turns=5

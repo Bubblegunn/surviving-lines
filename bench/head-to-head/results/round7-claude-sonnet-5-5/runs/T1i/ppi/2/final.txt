@@ -1,0 +1,69 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -E '\.(js|ts|jsx|tsx|py|go|rs|java|rb|php|cs)$' | grep -v -E 'node_modules|vendor|dist|build' | wc -l; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head; git shortlog -sne --all | wc -l
+ - Bash: git ls-files | grep -E '\.(js|ts|jsx|tsx|py|go|rs|java|rb|php|cs)$'; echo ---; git ls-files | head -50; echo; git log -1 --format=%cd; git log --reverse --format='%ad %an' --date=short | head -1
+ - Bash: for f in $(git ls-files | grep -E '\.js$'); do echo "== $f ($(wc -l <$f) lines)"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "== ALL source (js)"; for f in $(git ls-files | grep -E '\.js$'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn; echo "== lib only vs raw blame (no ignore)"; git blame --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "== last commit per author"; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | hea
+ - Bash: for a in "Douglas Christopher Wilson" "Troy Goode" "Alejandro Caravaca Puchades" "alex94puchades"; do echo "$a: $(git log --all --no-merges --author="$a" --format='%ad %ae' --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done; echo; git log --no-merges --format='%ad' --date=short -- lib/index.js | head -3; echo; for f in lib/index.js; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | awk '/^author /{a=$0} /^author-time /{print substr(a,8), strftime("%Y",$2)}' | sort | uniq -c | sort -rn | head -6; done
+FINAL ANSWER:
+## Bus Factor: Express-style router repo (surviving lines)
+
+Method: I ran `git blame -w -M -C` on every tracked source file at HEAD, so only lines still in the code count. I skipped the `/project-pilot:bus-factor` default of counting commits, because you asked who owns the code that is still here. I excluded the reformat commit `62628c0` through `.git-blame-ignore-revs`. Without that exclusion, "Fiona Formatter" would own 214 of the 238 lines in `lib/index.js`.
+
+### Project-level bus factor: 1
+
+Troy Goode owns 676 of 1,202 surviving lines (56%). If Troy left, more than half the code would have no knowledgeable maintainer.
+
+| Owner | Surviving lines | Share | Last commit | Active? |
+|---|---|---|---|---|
+| Troy Goode | 676 | 56.2% | 2026-04-10 | Yes |
+| Douglas Christopher Wilson | 394 | 32.8% | 2021-09-07 | No (about 5 years) |
+| Alejandro Caravaca Puchades (also `alex94puchades`, same email) | 34 | 2.8% | 2015-05-28 | No |
+| 17 other contributors | 98 | 8.2% | not checked | not checked |
+
+Troy and Douglas together own 89% of the code. Douglas has been inactive since 2021, so Troy is the only active owner of significant size. No other contributor owns more than 2.8%.
+
+### Per-file ownership
+
+| File | Lines | Top owner | Share | Second owner |
+|---|---|---|---|---|
+| `lib/index.js` | 238 | Troy | 66.8% | Douglas 9.2% (19 authors in total) |
+| `test/test.js` | 731 | Douglas | 46.4% | Troy 43.4% |
+| `test/example-app.js` | 81 | Troy | 82.7% | Douglas 17.3% |
+| `test/error-response.js` | 66 | Troy | 86.4% | Douglas 13.6% |
+| `test/issue-2.js` | 48 | Troy | 83.3% | Douglas 16.7% |
+| `test/vary.js` | 36 | Troy | 100% | none |
+| `test/support/env.js` | 2 | Douglas | 100% | none |
+
+### Critical risk areas
+
+- **`lib/index.js`** is the only runtime source file, and every test imports it. Troy owns 67% of it. Douglas is the only other contributor with more than a few lines, and he is inactive. Risk: **HIGH**. This is the file that matters most.
+- **`test/vary.js`** is 100% Troy's. It has few dependents, so the risk is **LOW**.
+- **`test/support/env.js`** is 100% Douglas's, and he is inactive. The file is 2 lines, so the risk is **LOW**.
+- **`test/test.js`** is the one well-shared file. Douglas and Troy are nearly even, and 11 other people have lines in it. The risk is **MEDIUM**, because Douglas's half has no active owner.
+
+### Heat map
+
+```
+lib/    [███████░░░] 🔴 Bus Factor: 1 (Troy 67%, next owner inactive)
+test/   [█████░░░░░] 🟡 Bus Factor: 2 (Troy 54%, Douglas 39%, Douglas inactive)
+```
+
+### Recommendations
+
+1. **Immediate:** Get a second active person to review changes to `lib/index.js`. Ask Troy to document the non-obvious parts of that file.
+2. **Short-term:** Review the 372 test lines Douglas wrote, which have no active owner. Pair someone on `test/test.js`.
+3. **Ongoing:** Require a second reviewer on every PR that touches `lib/`.
+
+### Caveats
+
+- The repo has only 7 source files, so the percentages swing on small changes.
+- I did not run the contributor-analyzer agent or the import-count step. `lib/index.js` is the single source module and all tests import it, so I judged the importance ranking without them.
+- I did not check last-commit dates for the 17 minor contributors. Their combined share is only 8.2%.
+- Troy's latest commit uses the email `troy@laptop.example`, which differs from his 2013 email. I treated both as the same person because the name matches. If they are different people, the active ownership figures change.
+META cost=0.1070231 ms=40757 turns=8

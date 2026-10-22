@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "src/Parser \u2014 surviving authorship (git blame), and best contact for Lexer.php and escape handling"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -60; echo ---; ls src/Parser; echo ---; git log --format='%an <%ae> %ad' --date=short -- src/Parser | sort | uniq -c | sort -rn | head; git log --reverse --format='%h %ad' --date=short | head -1; git log -1 --format='%h %ad' --date=short; git rev-list --count HEAD
+ - Bash: for f in src/Parser/*.php; do echo "== $f"; git blame -w -M -C --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn; done; echo; echo "== Lexer log"; git log --format='%h %ad %an: %s' --date=short --follow -- src/Parser/Lexer.php | head -20; echo "== escape grep"; grep -rniE 'escape|unescape|\\\\\\\\' src/Parser -l
+ - Bash: git log --format='%h %ad %an <%ae>: %s' --date=short -- src/Parser/Escape.php src/Parser/Quirks.php src/Parser/Compat.php | head; echo ---; grep -niE 'escape' src/Parser/Lexer.php | head; echo ---; for n in "Vance Lucas" "JT Smith" "Jonas Staudenmeir"; do echo "$n: $(git log --author="$n" -1 --format=%ad --date=short)"; done
+FINAL ANSWER:
+Graham Campbell wrote most of `src/Parser`, and Aiko Tanaka wrote `Escape.php`. Ask Graham about `Lexer.php`. Ask Aiko about escape handling. These names come from git history only, so confirm them with the team.
+
+**Surviving lines in `src/Parser` (`git blame -w -M -C`)**
+
+| File | Surviving author |
+|---|---|
+| `Lexer.php`, `Parser.php`, `ParserInterface.php`, `Value.php`, `Entry.php`, `EntryParser.php` | Graham Campbell, 100% (one line in `Entry.php` is Jonas Staudenmeir, one in `EntryParser.php` is StyleCI Bot) |
+| `Lines.php` | Graham Campbell, 126 lines. Vance Lucas has 10 lines and JT Smith has 1. |
+| `Escape.php` | Aiko Tanaka, 100% (198 lines as "Aiko Tanaka", 8 as "aiko tanaka") |
+| `Quirks.php` | `root <root@localhost>`, 117 lines |
+| `Compat.php` | `Your Name <<email redacted>>`, 69 lines |
+
+**Lexer.php**
+- Graham Campbell wrote all 58 lines. The history runs from "Improved parsing performance" in 2020-06 to a static-analysis cleanup on 2026-08-24.
+- `Lexer.php` has no "escape" text in it. Escape handling lives in `Escape.php`, with some in `EntryParser.php` and `Lines.php`.
+
+**Escape handling**
+- Aiko Tanaka is the only author of `Escape.php`. They made two commits, "Add escape sequence handling" and "Escape: more sequences", both on 2026-08-26.
+- The git email is `<email redacted>`, in two different letter cases. That is probably a placeholder, so check who this is.
+- Ask Aiko about the escape logic. Ask Graham about how `EntryParser.php` calls it.
+
+**Risks for the audit**
+- **Bus factor 1:** the busfactor tool marks `/src/Parser/` as bus factor 1, with Graham as the main owner and Aiko as secondary. Graham is also the repo-wide fallback owner.
+- **Identity gaps:** `root` and `Your Name` are placeholder identities, not real people. Nobody can be asked about `Quirks.php` or `Compat.php` (the "compat shims" commit) until someone claims them. Both files were added on 2026-08-26, so check them closely.
+- **Departed contributors:** Vance Lucas (last commit 2018), JT Smith (2022) and Jonas Staudenmeir (2024) have only a few surviving lines. Don't treat them as contacts.
+- **Recent code:** `Escape.php`, `Quirks.php` and `Compat.php` were all written on 2026-08-26, the day of the newest commit. They have had no time in production or review, so they are a good place to start the audit.
+- **Limits:** the busfactor run used `--no-github`, so identities are matched by email only. Aiko's two author-name spellings are merged by email.
+
+I ran the busfactor script with `--dry-run`, so it wrote nothing to the repo.
+META cost=0.07850889999999999 ms=22871 turns=7

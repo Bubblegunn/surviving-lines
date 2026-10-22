@@ -1,0 +1,39 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | head -100 && git ls-files | wc -l && ls -a | head -50 && cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git log -1 --format='%h %an %ad' 62628c0 && git rev-list --count HEAD && for mode in plain ignore; do echo "== $mode"; for f in $(git ls-files); do if [ $mode = ignore ]; then git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f; else git blame -w -M -C --line-porcelain -- $f; fi | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; done; echo; echo "== by file type (ignore, JS only lib+test)"; for f in lib/index.js test/test.js; do echo $f; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -5; done
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author '; done | awk '{n++} END{print n}'; git shortlog -sn HEAD | head -3
+FINAL ANSWER:
+Method: `git blame -w -M -C` over all 18 tracked files, counting surviving lines per author. The latest commit (`62628c0`, Fiona Formatter) only reformatted JS to 4-space indent and double quotes. It touched 291 lines, so I skipped it with `--ignore-rev`. Otherwise it would show as the third-largest owner.
+
+Total: 1995 lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Everyone else | ~226 | ~11% |
+
+Commit counts rank them the other way: Wilson has 143 and Goode has 122. Goode wrote more of what is still here.
+
+Per-file split:
+- `lib/index.js` (the core library): Goode has 159 lines and Wilson 22. Goode owns most of the core.
+- `test/test.js`: Wilson has 339 lines and Goode 317. The tests are split about evenly.
+
+Caveats:
+- Blame credits the last person to touch a line. Small edits like renames or lint fixes can move a line to a new author. These numbers understate the original authors somewhat.
+- Non-code files (`LICENSE`, `README.md`, `HISTORY.md`, CI config, `package.json`) are included in the counts. `HISTORY.md` is a changelog, so it favors recent contributors.
+- `-M -C` follows lines moved or copied between files. If this repo was squashed or imported, history before that point is lost.
+
+I can rerun this for just `lib/` and `test/`, or exclude docs and config, if you want a code-only figure.
+META cost=0.0602201 ms=17095 turns=5

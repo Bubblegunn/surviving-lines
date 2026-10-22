@@ -1,0 +1,34 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; ls .mailmap 2>&1; for f in cJSON.c cJSON.h; do echo "== $f: $(wc -l < $f) lines"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep -a '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: cat .mailmap; for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | awk '/^author /{n=substr($0,8)} /^author-mail /{print n" "$2}'; done | sort | uniq -c | sort -rn > /tmp/blame_raw.txt; wc -l /tmp/blame_raw.txt; awk '{c=$1; $1=""; print c"\t"$0}' /tmp/blame_raw.txt | while IFS=$'\t' read c rest; do n="${rest% *}"; m="${rest##* }"; r=$(git check-mailmap "${n# } $m"); echo "$c	$r"; done | awk -F'\t' '{a[$2]+=$1; t+=$1} END{for(k in a) printf "%d\t%.1f%%\t%s\n", a[k], 100*a[k]/t, k; print t" total" > "/dev/stderr"}' | sort -rn | head -20
+FINAL ANSWER:
+Surviving lines in `cJSON.c` and `cJSON.h` combined, 3,601 lines at HEAD. I used `git blame -w -M -C` and skipped the clang-format commit through `.git-blame-ignore-revs`, so the reformat doesn't credit everything to one person. Names are resolved through `.mailmap`.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 129 | 3.6% |
+| 4 | Dave Gamble | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi | 74 | 2.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 8 | PeterAlfredLee | 31 | 0.9% |
+| 10 | Nicolas Badoux | 29 | 0.8% |
+| 11 | Zach Hindes | 23 | 0.6% |
+| 12 | miaoerduo | 22 | 0.6% |
+
+Another 36 people each own under 0.4%.
+
+- **Likely duplicate identities:** `tomasi` (a GitHub noreply address) and `Tomás Ibarra` (a corporate address) are probably the same person. Combined they have 142 lines (3.9%), which would rank them 3rd. `Lee` (9 lines) and `PeterAlfredLee` (31) are probably also one person, at 40 lines (1.1%). `.mailmap` only merges Alan Wang's two entries, so I left these separate. Confirm before merging them.
+- **Dave Gamble:** he wrote the original library, but only 3.1% of the original code is left. Max Bruckner rewrote most of it.
+- **Per file:** `cJSON.c` is 78.6% Bruckner (2,587 of 3,298 lines). In `cJSON.h` he has 37% (112 of 303), and Gamble, Jerris and Hindes hold more of it. The header is mostly API declarations and has changed less.
+- **Bots and release commits:** the latest commit adds SPDX headers and bumps the version. It still counts in the totals, and `github-actions[bot]` owns 5 lines.
+META cost=0.0678002 ms=24444 turns=4

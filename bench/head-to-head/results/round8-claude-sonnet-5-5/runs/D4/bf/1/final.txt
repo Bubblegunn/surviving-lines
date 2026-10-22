@@ -1,0 +1,32 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files src | wc -l && git ls-files src | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn
+ - Bash: git log -1 --format=%cd && git log --reverse --format='%h %ad %ae' --date=short | head -3 && git shortlog -sne HEAD | head
+FINAL ANSWER:
+**Bus factor is 1 by surviving lines.** One author wrote about 61% of the 4,205 lines now in `src/`, and two authors together wrote about 82%.
+
+I ran `git blame -w -M -C` on the 8 tracked files in `src/` and counted the author of each current line:
+
+| Author | Lines | Share |
+|---|---|---|
+| <email redacted> (Andrew Gallant) | 2,554 | 60.7% |
+| <email redacted> | 883 | 21.0% |
+| All other 32 authors | 768 | 18.3% |
+
+- **Top author:** Andrew Gallant alone passes 50% (bus factor 1).
+- **Top two:** the two together reach 81.7% (bus factor 2 at an 80% threshold).
+- **Everyone else:** no one else holds more than 74 lines (1.8%). The next largest are <email redacted> (74), <email redacted> (68) and <email redacted> (59).
+
+**Caveats**
+- I merged `<email redacted>` (58 lines) and `<email redacted>` (55 lines) into one person with 113 lines (2.7%). Other emails that belong to one person would also need merging. I didn't check for them.
+- I didn't check who is still active. The last commit is 2026-04-09. If Andrew Gallant is no longer working on this code, `src/` has no one who knows most of it. If <email redacted> is also gone, about 82% of it has no active owner.
+- Lines count equally, including comments and blanks. `-w`, `-M` and `-C` make blame ignore whitespace changes and follow moved or copied lines. Even so, a bulk reformat or file move can still credit lines to the wrong person.
+- This is the whole of `src/`, not a per-file breakdown. If you want to know which of the 8 files are single-owner, I can run it per file.
+
+I didn't use the `busfactor` skill. It weights commits with a decay over time, so it doesn't measure surviving lines.
+META cost=0.05728660000000001 ms=17338 turns=5

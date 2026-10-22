@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls; for d in lib test; do echo "== $d"; git ls-files -z $d | xargs -0 -n1 git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR&&i<=8;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/t}; print "total", t}'; done
+ - Bash: git log --since=2023-01-01 --format='%an' -- lib test | sort | uniq -c | sort -rn | head -6; git log -1 --format='%an %ad' --author='Valim' -- lib test; git log -1 --format='%an %ad' --author='Kaito' -- lib test
+FINAL ANSWER:
+Share of surviving lines, from `git blame` (whitespace ignored, and `.git-blame-ignore-revs` applied so the rubocop reformat doesn't count).
+
+**lib/** (1496 lines)
+- José Valim: 56%
+- Kaito Mori: 17%
+- Weblate: 5% (translation bot, likely the locale files)
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+- Lucas Mazza: 3%
+- Jan De Poorter: 2%
+
+**test/** (1853 lines)
+- José Valim: 51%
+- Carlos Antonio da Silva: 11%
+- Rafael Mendonça França: 9%
+- Kaito Mori: 9%
+- Lucas Mazza: 8%
+- Jan De Poorter: 4%
+- Vasiliy Ermolovich: 2%
+- Nando Vieira: 1%
+
+**Ownership of `lib/` and `test/`:** Valim is the top owner of both, but the rest differs. Kaito Mori is second in `lib/` at 17% and fourth in `test/` at 9%. Carlos Antonio da Silva is second in `test/` at 11% and only 3% in `lib/`. So the two directories are only partly owned by the same people.
+
+**Who to ask:** Valim wrote most of the code, but his last commit to `lib/` or `test/` was in January 2015. Since 2023, `lib/` and `test/` commits are mostly Carlos Antonio da Silva (11), then Kaito Mori (3) and Rafael Mendonça França (2). Kaito Mori committed most recently, on 2026-10-10. For design history, check with Valim. For current behavior, ask Carlos or Kaito.
+META cost=0.05479730000000001 ms=14426 turns=4

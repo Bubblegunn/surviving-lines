@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; echo ---; ls -a | grep -i mailmap; git shortlog -sn --all | wc -l
+ - Bash: git shortlog -sne --all | tail -14; echo ---; git log --all --format='%aN|%aE%n%cN|%cE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[tolower($2)]++} END{for(k in n) if(n[k]>1) print "name",k,n[k]; for(k in e) if(e[k]>1) print "email",k,e[k]}'; git log --all --format='%H %aN <%aE>' | grep -i -E 'laptop.example|formatter.example|Efe'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -E 'Troy|Alejandro Car|alex94'
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** had two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** had two names on the same email, `<email redacted>`: the full name (4 commits) and `alex94puchades` (1 commit).
+
+I added a `.mailmap` at the repo root that maps these to one identity each. It is not committed. It changes how `git shortlog` and `git log` group authors, and it does not rewrite history.
+
+I left two other authors alone: `Efe <<email redacted>>` and `Fiona Formatter <fiona@formatter.example>`. Each has one commit and nothing links them to another identity. Fiona's `.example` address looks synthetic, but I can't tell who she is.
+
+**Top author:** Douglas Christopher Wilson, 143 commits. Troy Goode is second at 122, up from 120 after merging his two identities, so the ranking doesn't change.
+META cost=0.0493769 ms=11643 turns=4

@@ -1,0 +1,20 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head; echo ---; git log --format='%an' --since='2 years ago' -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log -8 --format='%h %ad %an %s' --date=short -- lib/index.js
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git show --stat --format='%h %an' b2005d9 62628c0 | head -20
+FINAL ANSWER:
+Review `lib/index.js` with **Troy Goode**. No CODEOWNERS file exists, so this comes from git history.
+
+- Troy Goode made 30 of the 56 commits to the file. Excluding Fiona Formatter's reformat, they also own the most lines in `git blame -w` (138). Their last commit was `b2005d9` on 2026-04-10.
+- **Douglas Christopher Wilson** is a good second reviewer. They have 4 commits and 18 lines, and last touched the file in 2017.
+- **Alejandro Caravaca Puchades** is another option, with 4 commits and 12 lines.
+
+Fiona Formatter's 32 blamed lines come from the style reformat `62628c0`. Don't treat them as an owner. The reformat touched 428 lines in `lib/index.js` and also touched the tests, so expect `git blame` noise there. `git blame -w` removes most whitespace-only changes but not quote changes. `--ignore-rev 62628c0` skips the whole commit.
+
+Wilson's and Puchades's commits are old, so I can't tell whether they still follow this repo. Ask Troy Goode first.
+META cost=0.052434999999999996 ms=13083 turns=4

@@ -1,0 +1,23 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none:$e)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author /$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{n=$1; $1=""; print n"\t"$0}' | head -100
+FINAL ANSWER:
+Top owner of surviving lines by extension, from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines | Runner-up |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 | Fiona Formatter (291), Douglas Christopher Wilson (245) |
+| `.md` | Troy Goode | 116 | Jon Church (72), Douglas Christopher Wilson (67) |
+| `.yml` | Douglas Christopher Wilson | 117 | Íñigo Marquínez Prado (95), Sebastian Beltran (63) |
+| `.json` | Douglas Christopher Wilson | 20 | Troy Goode (12) |
+| `.gitignore` | Douglas Christopher Wilson | 4 | Troy Goode (1) |
+| `LICENSE` (no extension) | Douglas Christopher Wilson | 17 | Troy Goode (5) |
+
+- **Reformat commit:** the latest commit (`62628c0`, a 4-space indent and double-quote reformat) credits Fiona Formatter with 291 `.js` lines. I used `-w`, so pure whitespace changes don't count. The quote changes still do, so Fiona Formatter ranks second on `.js`. The true authors of those lines are probably spread among the other contributors.
+- **Fix for the reformat:** I can re-run the count ignoring that commit with `--ignore-rev 62628c0`. That should show who wrote the logic.
+- **Names:** I counted names as git reports them. I didn't merge aliases such as `alex94puchades` and Alejandro Caravaca Puchades.
+META cost=0.042427 ms=9551 turns=2

@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git shortlog -sne HEAD -- src/Parser && echo ---LEXER && git shortlog -sne HEAD -- src/Parser/Lexer.php && echo ---FILES && git log --format='%an|%ad' --date=short -- src/Parser | head -40
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git log --format='%h %an %ad %s' --date=short -- src/Parser/Escape.php src/Parser/Lexer.php | head -30
+ - Bash: git log --format='%an <%ae>|%ad' --date=short | awk -F'|' '!s[$1]++' | head -15; echo ---; grep -n "Escape\|escape" src/Parser/Lexer.php | head; grep -rn "Escape::" src | grep -v "^src/Parser/Escape.php" | head; echo ---; git log -3 --format='%h %an %ad %s' --date=short -- src/Parser/Compat.php src/Parser/Quirks.php; git log --format='%h %an %s' -- src/Parser/Lines.php | grep -i -m3 "vance\|import"; git blame -w --line-porcelain HEAD -- src/Parser/Lines.php | grep -A0 -m1 '^author Vance'
+ - Bash: grep -rnw "Escape" src tests 2>/dev/null | grep -v "^src/Parser/Escape.php" | head; git log -1 --format='%h %an %s%n%b' 4b9b803 | head -8
+FINAL ANSWER:
+**Surviving lines in `src/Parser`** (`git blame -w -M -C` on HEAD):
+
+| Author | Files (surviving lines) |
+|---|---|
+| Graham Campbell | `Lexer.php` (58 of 58), `Parser.php`, `ParserInterface.php`, `Entry.php` (58 of 59), `EntryParser.php` (362 of 363), `Value.php`, `Lines.php` (126 of 137) |
+| Aiko Tanaka | `Escape.php` (206 lines), `Unicode/CharTable.php` (431 lines) |
+| "root" `<root@localhost>` | `Quirks.php` (117 lines) |
+| "Your Name" `<<email redacted>>` | `Compat.php` (69 lines) |
+| Others | Vance Lucas (10 lines in `Lines.php`), JT Smith (1 line in `Lines.php`), Jonas Staudenmeir (1 line in `Entry.php`), StyleCI Bot (1 line in `EntryParser.php`) |
+
+Aiko's commits appear under two spellings, "Aiko Tanaka" and "aiko tanaka". I counted both as one person.
+
+**Who to ask**
+- **`Lexer.php`: Graham Campbell.** They wrote every surviving line. The last change was the 2026-08-24 static-analysis cleanup (301c079). The lexing logic dates from June 2020 ("Improved parsing performance", "Tweaked lexing").
+- **Escape handling: Aiko Tanaka.** They wrote all of `Escape.php` on 2026-08-26 (4b9b803 "Add escape sequence handling", then 09f7c5c "Escape: more sequences"). Ask Aiko about this file.
+- **Lexer and escapes together:** Aiko for `Escape.php`, Graham for the lexer side. `Lexer.php` has no reference to escapes, and nothing else in `src` or `tests` references the `Escape` class. So Graham's lexer never calls Aiko's escape code. Check whether `Escape.php` is dead code or is wired in some way grep can't see, such as a string class name.
+
+**Things to flag for the audit**
+- `Quirks.php`, `Compat.php` and `Escape.php` all landed on 2026-08-26 after Graham's cleanup. `Quirks.php` and `Compat.php` are committed under placeholder identities ("root", "Your Name"), so there is no real owner to ask. `git log` shows only commit messages "fix" and "compat shims".
+- The commit for `Escape.php` has no message body.
+- No tests reference `Escape`.
+
+I did not check whether these authors are still active outside this repo. The commit dates only show that Graham and Aiko both committed as recently as 2026-08-26.
+META cost=0.0797225 ms=21596 turns=6

@@ -1,0 +1,47 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --group-by dir --top 3 | grep -E "^(test|lib|\.|\.github)  ·|Troy"
+FINAL ANSWER:
+**Suggested CODEOWNERS** (nothing written):
+
+```
+/lib/   <email redacted>
+/test/  <email redacted>
+```
+
+Troy Goode is counted once, with both addresses merged. That merge is a guess from the shared name, not confirmed. Without it, Troy's gmail address alone holds 61.8% of `lib/` and 49.8% of `test/`. `test/` is therefore only over half when the second address is merged in.
+
+| Path | Top holder | Share | Lines | Owner line |
+|---|---|---|---|---|
+| `lib/` | Troy Goode (2 addresses) | 66.8% (159) | 238 | yes |
+| `test/` | Troy Goode (2 addresses) | 53.5% (517) | 966 | yes |
+| `.github/` | Douglas Christopher Wilson | 32.2% (118) | 366 | **nobody holds half** |
+| root files | Troy Goode | 32.3% (134) | 415 | **nobody holds half** |
+
+- **`.github/`:** Wilson holds 32.2% and Íñigo Marquínez Prado holds 26.0%. I suggest no owner line.
+- **Root files:** Troy holds 32.3% and Wilson holds 27.7%. I suggest no owner line. A root-file CODEOWNERS pattern would also match every directory, so the tool skips it.
+- **Bus factor:** This is the smallest number of authors who together hold 50% of surviving lines. It is 1 for `lib/` and 1 for `test/`. It is 2 for the root files and 2 for `.github/`.
+
+**What the figures leave out**
+- **Reformat commit:** `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter, 291 lines) is ignored. Counting it, Fiona would hold 14.7% of the repo.
+- **Bots:** One bot identity is excluded (10 lines, 11 commits).
+- **Mechanical rewrites:** I checked for them and set aside only `62628c0`. Five other commits look mechanical and were kept:
+  - `739dc11`, Wilson, 17 lines
+  - `fcd2b56`, Troy, 16 lines
+  - `00d6eec`, Wilson, 9 lines
+  - `344ce1e`, Wilson, 1 line
+  - `9c2b59d`, Wilson, 1 line
+- **Copy detection:** The figures use `git blame -w -M -C`, and the tool reported no copy-detection shifts. All 18 files were counted, with 1,985 of 1,995 lines attributed.
+
+**Identities:** Nothing is written to `.mailmap`, so the merge exists only in memory.
+- **Troy Goode:** The same name appears at `<email redacted>` (762 lines, 93 commits) and `troy@laptop.example` (48 lines, 2 commits). The tool rates this as strong evidence.
+- **alex94puchades:** This is probably the same person as Alejandro Caravaca Puchades, because they share an address. I did not merge them. In `lib/` they show as `alex94puchades` with 16 lines (6.7%), which doesn't change any owner.
+
+These figures show who wrote the lines that survive. They don't show who should review changes. Please review the owner lines before you commit them. For the owner lines, consider a GitHub handle or team instead of a bare email, because CODEOWNERS matches handles more reliably.
+META cost=0.0704079 ms=21340 turns=5

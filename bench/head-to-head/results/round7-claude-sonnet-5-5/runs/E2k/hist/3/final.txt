@@ -1,0 +1,23 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso && git log --since='2026-03-29' --until='2026-04-13' --no-merges --format='%h|%an|%ae|%ad|%s' --date=short && git shortlog -sne --all | head -30; cat .mailmap 2>/dev/null
+ - Bash: git log --since='2026-03-29' --format='%h %an %s' --shortstat | head -30; echo ---; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail' ; done | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -aE '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe|62628c0'
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12. Three people committed in it once the formatting commit and bots are set aside.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| **Troy Goode** | `b2005d9` lib: annotate handlers (12 lines)<br>`02afce3` test: vary header coverage (36 lines) | **810** in total. 762 are under `<email redacted>` and 48 under `troy@laptop.example`. 48 of those come from the two window commits. |
+| **Vansh Sharma** | `5317ebe` docs: replace `app.del()` with `app.delete()` in the README example (#411) | **1** (the README line from that commit) |
+
+- **Troy Goode:** Git lists two author emails for Troy, with the same name. I merged them and counted Troy once.
+- **Fiona Formatter:** Excluded. Their one commit in the window, `62628c0`, is a formatting-only change (4-space indent, double quotes).
+- **Blame method:** To avoid crediting Fiona with the reformatted lines, I ran `git blame` with `--ignore-rev 62628c0` and `-w -M -C`. Lines then go to whoever wrote them before the reformat.
+- **No bot commits:** No bot committed in the window. `dependabot[bot]` appears in the blame totals only for older lines, and I did not count it.
+- **Vansh's total is one line:** Vansh has only that one commit in the repo history, so the 1 line is both their total and their window figure.
+META cost=0.032604799999999996 ms=33178 turns=4

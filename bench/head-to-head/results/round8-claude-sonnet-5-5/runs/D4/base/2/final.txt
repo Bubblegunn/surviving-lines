@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Bus factor is **1**. One author wrote more than half of the surviving lines in `src/`.
+
+I ran `git blame -w -M -C` on HEAD over the 8 tracked files in `src/`, which gives about 4,205 lines. Authors with a few lines each are grouped as "others" below.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| Sebastian Thiel | 74 | 1.8% |
+| Ashley, plus Ashley Mannix | 72 | 1.7% |
+| Ola Berg, plus ola.berg | 113 | 2.7% |
+| About 30 others | Under 60 each | About 12% together |
+
+- **Top 1:** 60.7%.
+- **Top 2:** 81.7%.
+- **Bus factor:** 1 if the threshold is 50% of lines. It is 2 if the threshold is 80%.
+
+I merged the author names that look like the same person (Ola Berg and ola.berg, Ashley and Ashley Mannix, Niv Kaminer and nivkner). I did not use a mailmap. That grouping doesn't change the top two. Also, `-w` ignores whitespace changes and `-M -C` follow moved and copied lines. This credits code to its original author instead of whoever reformatted or moved it.
+
+Some of Niko's 883 lines may be the generated errno table (commit `a7c0151`). I didn't check. If that's the case, the share of hand-written code held by the top author would be higher than 60.7%.
+META cost=0.0496315 ms=13725 turns=3

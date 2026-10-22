@@ -1,0 +1,55 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | awk -F/ '{print $1}' | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files '*.go' | xargs grep -l -E '^// Code generated' | head; echo ---; git shortlog -sne HEAD | head -20; echo ---; ls
+ - Bash: 
+run(){ git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated_flags.go$' | grep "$1" | while read f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; }
+echo "== ALL (non-vendor, non-generated)"; run '.'
+echo "== NON-TEST"; run '' | head -0; git ls-files '*.go' | grep -v '^vendor/' | grep -v '_test.go$' | grep -v '^zz_generated_flags.go$' | while read f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -12
+echo "== naive blame without ignore (to show refactor effect)"; git ls-files '*.go' | grep -v '^vendor/' | g
+ - Bash: 
+for e in <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted>; do echo "$e | $(git log --author="$e" --format='%an|%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ') | commits=$(git log --author="$e" --oneline | wc -l)"; done
+echo; git log --author='noahdietz\|JReyLBC\|lena.voss\|sam.okafor' --format='%h %an %ad %s' --date=short | head -15
+echo; git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated' | xargs cat | wc -l
+echo; for f in flag.go golangflag.go
+FINAL ANSWER:
+Ownership is spread out, and the people who wrote the most surviving code are mostly gone. Losing one or two current people would hurt review capacity more than it would lose code knowledge.
+
+I ran `git blame` on every non-vendor `.go` file (about 12.2k lines). I excluded `zz_generated_flags.go`, and I used `-w -M -C` so whitespace changes and moved code don't take credit. I also ignored the `interface{}` → `any` commit `6bf5b04`. Without that, blame would credit it for lines it only reformatted.
+
+**Surviving lines by author**
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 2041 | 17% | 2018 |
+| Alex Ogier | 1237 | 10% | 2015 |
+| Noah Dietz | 1232 | 10% | 2018 |
+| Jonathan Reyna | 1047 | 9% | 2017 |
+| Tamal Saha | 626 | 5% | 2018 |
+| Riobard | 538 | 4% | 2014 |
+| Mitch Connors | 522 | 4% | 2019 |
+| Georges Varouchas | 454 | 4% | 2025 |
+| about 55 others | the rest | | |
+
+- **Concentration:** Eric Paris and Alex Ogier together own about 27% of the lines. The top 4 own about 45%. The tail of the table is a long list of one-off contributors.
+- **Where the risk is:** The core files are the most concentrated. In `flag.go`, Ogier (424 lines), Paris (185) and Albert Nigmatzianov (117) own most of it. In `golangflag.go`, Paris owns 101 lines, and the next author owns 34.
+- **Slice types:** Most of the Noah Dietz and Jonathan Reyna lines are the typed slice flags (`int32_slice`, `float*_slice`, `bool_slice`, `uint_slice`). Those files are repetitive and low-risk.
+- **Who is active:** In the last 2 years, Tomas Aschan (18 commits touching Go), Georges Varouchas, eth-p, Hu Jun, Mercari's Maximilian Frank and Sebastiaan van Stijn are the active names. They own small shares of the lines, for example Aschan about 67 and Varouchas about 454.
+- **Recent maintainers:** Sam Okafor (vendoring, regenerating, the `any` refactor) and Lena Voss (the `Require*` helpers, about 143 lines) are the newest names. Check whether the first of these is the maintainer you're replacing.
+
+**Bus factor**
+
+- **Code knowledge:** The people who own the most code have been inactive for 7 to 11 years. Losing them now changes nothing, because that knowledge is already unavailable. For the oldest core logic you would rely on tests and history, not on people.
+- **Current maintainers:** Active ownership is thin. Losing Aschan, Varouchas or Okafor would remove most of the people who currently know the recent changes.
+- **Practical risk:** Nobody active owns `flag.go` and `golangflag.go`, which are the highest-risk files. Review changes to them carefully and don't assume an author will have context.
+
+**Caveats**
+
+- I merged authors by email, not by name. Albert Nigmatzianov also appears as "bogem" in `git shortlog`, and Mitch Connors appears under two names. Only one email each showed up in blame, so their totals should be right.
+- Commit counts and line counts differ a lot. Dietz has 2 commits but 1232 lines, so I used lines, not commits, to measure ownership.
+- I did not check which commits are merges or bot commits, so Aschan's 32 commits may overstate their hands-on work.
+META cost=0.0956797 ms=42364 turns=5

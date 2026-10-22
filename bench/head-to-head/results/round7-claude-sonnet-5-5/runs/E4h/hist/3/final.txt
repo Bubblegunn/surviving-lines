@@ -1,0 +1,51 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls -a && git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c && cat .mailmap 2>/dev/null
+ - Bash: git log --format='%h %an <%ae> %s' | head -60; echo; git shortlog -sne HEAD | head -30; git ls-files
+ - Bash: agg(){ for f in "$@"; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1;a[NR]=$0} END{for(i=1;i<=NR&&i<=5;i++)print a[i]; print "total",t}'; }
+for g in lib test .github; do echo "== $g"; agg $(git ls-files $g); done
+echo "== root"; agg $(git ls-files | grep -v /)
+for f in $(git ls-files | grep -v /); do echo "-- $f"; agg $f | head -3; done
+FINAL ANSWER:
+Two of the four areas have an owner at 50% or more of surviving lines. `.github` and the root files have none.
+
+I counted lines in `git blame` at HEAD. I ignored the formatting commit `62628c0` (Fiona Formatter), ignored whitespace, and left out dependabot. Troy Goode appears under two emails (`<email redacted>` and `troy@laptop.example`). I counted that as one person.
+
+| Path | Top holder | Share | Result |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 67% | owner |
+| `test/` | Troy Goode | 517/966 = 54% | owner |
+| `.github/` | Douglas Christopher Wilson | 118/374 = 32% | no owner |
+| root files | Troy Goode | 134/417 = 32% | no owner |
+
+For `.github/`, the next holders are Íñigo Marquínez Prado (25%), Sebastian Beltran (17%), Ulises Gascón (12%) and Ignacio Mangas (12%).
+
+For the root files, Douglas Christopher Wilson holds 28% and Jon Church 17%. Per file:
+- `README.md`: Troy Goode has 116 lines of about 214, roughly 54%. I only saw the top three authors and did not total the file, so the exact share is approximate.
+- `package.json`: Troy has 12 lines, Douglas 20.
+- `HISTORY.md`: Douglas holds most lines, 50 of an unknown total.
+- `.eslintrc.yml`: all 7 lines are Douglas's. That is too small a file to base an owner on.
+- `LICENSE`: Douglas has 17 of 22 lines. This is also small.
+
+Suggested CODEOWNERS:
+
+```
+# Only paths where one person holds >=50% of surviving lines
+/lib/   @troygoode
+/test/  @troygoode
+
+# No owner: no one holds >=50% of .github/ or of the root files
+# /.github/
+# /*
+```
+
+- **Handles:** `@troygoode` is my guess at the GitHub handle. The history only gives a name and emails, so confirm it.
+- **`README.md`:** If you want to go file by file, Troy qualifies for `README.md` at about 54%. The directory-level answer for the root is still "nobody".
+- **Activity:** I did not check how recently Troy committed. His most recent commits are the two `laptop.example` ones, so he looks active.
+META cost=0.055194400000000005 ms=26908 turns=6

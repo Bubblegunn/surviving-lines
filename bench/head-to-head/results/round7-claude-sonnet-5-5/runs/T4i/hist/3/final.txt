@@ -1,0 +1,19 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-3/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-3/repo", "file": "lib/index.js", "limit": 30}
+FINAL ANSWER:
+**Troy Goode** should review it. Douglas Christopher Wilson is a good second reviewer if the change touches Vary or preflight logic.
+
+- **Blame is misleading here.** Fiona Formatter owns 89.9% of the lines, but only because of the 2026-04-12 reformat (`62628c0`, 4-space indent and double quotes). Fiona made no logic changes, so skip them. `.git-blame-ignore-revs` now lists that commit.
+- **Troy Goode** wrote the original file in 2013. They also made the last real change, `b2005d9` "lib: annotate handlers" on 2026-04-10, so they are active and know the current code. They still own about 8% of lines through blame, which understates it.
+- **Douglas Christopher Wilson** made many of the 2017 logic fixes. These include `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders` (`075c4b5`) and the missing `methods` option fix (`d603fdc`). Neither reviewer is flagged as inactive.
+
+I did not run `knowledge_risk` or check `CODEOWNERS`. Run `git log --since="6 months ago" --format=%an lib/index.js` if you want to confirm who is recently active.
+META cost=0.0355474 ms=10130 turns=5

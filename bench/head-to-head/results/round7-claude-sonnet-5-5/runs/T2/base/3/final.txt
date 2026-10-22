@@ -1,0 +1,33 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && git log --format='%an' -- lib | sort | uniq -c | sort -rn && git log --oneline -- lib | wc -l
+ - Bash: wc -l lib/index.js && git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -w -M -C --line-porcelain 62628c0^ -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo ---; git log -3 --format='%an %ad' --date=short -- lib; git log --since=2025-01-01 --format='%an' -- lib | sort | uniq -c
+FINAL ANSWER:
+**Bus factor: 1.** Troy Goode.
+
+`lib/` holds one file, `lib/index.js`, with 238 lines.
+
+| Author | Surviving lines (`git blame -w -M -C`) |
+|---|---|
+| Troy Goode | 138 (58%) |
+| Fiona Formatter | 32 (reformat commit `62628c0`, no real authorship) |
+| Douglas C. Wilson | 18 |
+| Alejandro Caravaca Puchades | 12 |
+| 13 others | 1–7 each |
+
+- **Before the reformat:** Troy owned 160 of about 230 lines (about 70%). The reformat moved some of that credit to the formatter.
+- **Troy's share:** he wrote 34 of the 67 commits that touched `lib/`. Losing Troy alone loses the majority of the code and its history.
+- **Recent activity:** only Troy has changed `lib/` meaningfully since 2025. His last change was 2026-04-10. The only other recent commit is the reformat.
+- **Everyone else:** the remaining authors have 18 lines or fewer each. Most made one or two commits and are probably not active maintainers.
+
+If Troy leaves, nobody active has deep context. Douglas Wilson (18 lines, 4 commits) and Alejandro Caravaca Puchades (12 lines, 4 commits) are the closest backups.
+
+The risk is lower than the number suggests. The file is small and has a single entry point. Tests and docs should cover most of the behavior. This measures git authorship only. It cannot show who currently understands the code, so check that with the team.
+
+To raise the bus factor, have someone else review or make the next few changes to `lib/index.js`.
+META cost=0.053844300000000005 ms=15393 turns=4

@@ -1,0 +1,59 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/rack/attack/store_proxy"}
+ - Bash: ls lib/rack/attack/store_proxy* && echo --- && git log --all --no-merges --pretty=format:"%an" -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn && echo --- && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn && echo --- && for f in lib/rack/attack/store_proxy/*.rb lib/rack/attack/store_proxy.rb; do echo "$f: $(git log --all --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done && echo --- && git log --all --no-merges --pretty=format:"%an|%ae|%ad" --date=short -n 400 | sort -t'|' -k1,1 -u | head -20; echo ---; git log -8 --form
+ - Bash: for a in "Gonzalo Rodriguez" hakanensari "Vincent Boisard" fatkodima "Hye-jin Park" "Mei Tanaka" "Divya Rao"; do echo "$a: last repo commit $(git log --all -1 --author="$a" --format=%ad --date=short), last store_proxy $(git log --all -1 --author="$a" --format=%ad --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb)"; done; git log -1 --format=%ad --date=short; ls .github/CODEOWNERS CODEOWNERS 2>&1 | head -2; for f in store_proxy; do grep -rl "StoreProxy\|store_proxy" lib test --include=*.rb | wc -l; done
+FINAL ANSWER:
+## 🚌 Bus Factor: `lib/rack/attack/store_proxy/` (+ `store_proxy.rb`)
+Period: all history | Generated: 2026-10-22
+
+**Who to ask:** Gonzalo Rodriguez. **Who to review:** Gonzalo Rodriguez, plus one of Hye-jin Park or Mei Tanaka.
+
+### Ownership
+Gonzalo Rodriguez has 27 of about 70 commits on this path. Counting the other aliases that share their email (`Gonzalo`, `Gonzalo R`), the share is somewhat higher. 27 other authors have 1–6 commits each.
+
+| File | Top contributors (commits) | Bus factor |
+|---|---|---|
+| `store_proxy.rb` | Gonzalo 7, hakanensari 6, Vincent Boisard 6 | 3+ |
+| `redis_cache_store_proxy.rb` | Gonzalo 9, fatkodima 2, Ryan Laughlin 2 | 3+ |
+| `redis_store_proxy.rb` | Gonzalo 9, Stan Hu 2, hakanensari 1 | 3+ |
+| `redis_proxy.rb` | fatkodima 4, Gonzalo 4, bot 1 | 2–3 |
+| `dalli_proxy.rb` | Gonzalo 5, hakanensari 1, bot 1 | 2 |
+| `dalli_accessors.rb` | Mei Tanaka 1 | **1** |
+| `mem_cache_store_proxy.rb` | thomas morgan 1, fatkodima 1, bot 1 | 2 |
+| `memory_store_proxy.rb` | Divya Rao 1, bot 1 | **1** (the bot only did autocorrect) |
+
+### Who is still active
+Dates are each person's last commit on this path. The repo's latest commit is 2026-04-14, and nothing has been committed in the last 90 days.
+
+| Person | Last commit | Notes |
+|---|---|---|
+| Gonzalo Rodriguez | 2026-03-09 | Main owner. Most recent human committer. Removed `NullProxy`. |
+| Hye-jin Park | 2026-02-20 | Added `ttl` to `RedisCacheStoreProxy`. Added `multi_increment`, `ttl` and `exists?` to `RedisProxy`. |
+| Mei Tanaka | 2026-02-09 | Wrote `DalliAccessors`. |
+| Divya Rao | 2026-01-28 | Wrote `MemoryStoreProxy`. |
+| Jaroslav Novak | 2026-03-03 | Added `NullProxy`, which was later removed. |
+| fatkodima | 2019-10 | Inactive. |
+| hakanensari | 2014-04 | Inactive. |
+| Vincent Boisard | 2016-01 | Inactive. |
+
+Most of the long-tail authors are long gone. Only the 2026 contributors have recent context.
+
+### Recommendations
+1. **Ask:** Gonzalo Rodriguez for design intent and history. The proxy layer is mostly their code.
+2. **Review:** Gonzalo Rodriguez as the main reviewer. Add a second reviewer by the part you change:
+   - Redis proxies: Hye-jin Park.
+   - Dalli or Memcached: Mei Tanaka.
+   - `MemoryStoreProxy`: Divya Rao.
+3. **Risk:** `dalli_accessors.rb` and `memory_store_proxy.rb` each have one author and one commit. A second reviewer on changes there spreads that knowledge.
+4. **Gap:** There is no `CODEOWNERS` file, so review assignment is manual. Adding one for `lib/rack/attack/store_proxy/` would make it automatic.
+
+### Limits
+- I counted commits by author name, not by lines surviving in the code. Aliases that I did not merge may split some people's counts.
+- I did not run the dependents-count step. My grep for `StoreProxy` references in `lib` and `test` failed on a shell glob error, so I have no importance scores for these files.
+- I ran the git commands directly and did not launch the contributor-analyzer agent. The scope was one directory.
+META cost=0.0752239 ms=29139 turns=5

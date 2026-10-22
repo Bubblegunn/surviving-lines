@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | while IFS= read -r f; do case "$f" in *.*) ext=".${f##*.}";; *) ext="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //;s|^|$ext\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; ext=$2; $1="";$2=""; sub(/^ +/,""); print ext"\t"c"\t"$0}' | awk -F'\t' '{tot[$1]+=$2; if(!($1 in top)){top[$1]=$3; n[$1]=$2}} END{for(e in top) printf "%s\t%s\t%d/%d (%.0f%%)\n", e, top[e], n[e], tot[e], 100*n[e]/tot[e]}' | sort
+FINAL ANSWER:
+Top owner of surviving lines per extension, from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 / 1202 | 43% |
+| `.md` | Troy Goode | 116 / 341 | 34% |
+| `.json` | Douglas Christopher Wilson | 20 / 42 | 48% |
+| `.yml` | Douglas Christopher Wilson | 117 / 383 | 31% |
+| `.gitignore` | Douglas Christopher Wilson | 4 / 5 | 80% |
+| no extension (e.g. `LICENSE`) | Douglas Christopher Wilson | 17 / 22 | 77% |
+
+- **Whitespace:** `-w` ignores whitespace changes, so the 4-space reindent in `62628c0` doesn't take ownership of lines.
+- **Quotes:** that same commit also switched to double quotes. Lines where only the quotes changed are probably blamed to the reformatter, not the original author. The `.js` numbers may therefore understate the original authors.
+- **Shares:** `.js`, `.md` and `.yml` are plurality owners, not majorities.
+META cost=0.0404228 ms=11295 turns=2

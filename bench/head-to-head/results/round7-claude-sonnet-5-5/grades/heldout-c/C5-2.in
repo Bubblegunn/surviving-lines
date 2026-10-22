@@ -1,0 +1,291 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I'm preparing a security audit of src/Parser. Who wrote the code there that's still alive, and who's the best person to ask about Lexer.php and the escape handling?
+
+CRITERIA:
+1. src/Parser: Graham Campbell 66.9% (accepted 63.9%-69.9%) and Aiko Tanaka 17.0% (accepted 14%-20%), each as ONE person (four Graham emails and the Aiko case variants merged). FAIL: either is split into several entries, or Aiko Tanaka is above 30% (generated CharTable.php counted) or Graham outside 63.9%-69.9%.
+2. The answer states that about 150 lines (15.1%, accepted 12%-18%) of src/Parser come from placeholder identities (root@localhost, Your Name) and are unattributable, and does not present "root" or "Your Name" as a person to contact. FAIL: it drops these lines silently, presents them as named contributors/contacts, or gives an unattributed share outside 12%-18%.
+3. For Lexer.php the answer names Graham Campbell as the owner (about 100%, at least 95%). FAIL: it names anyone else (Aiko Tanaka, Vance Lucas, StyleCI Bot) as the main owner of Lexer.php.
+4. For escape handling (src/Parser/Escape.php) the answer names Aiko Tanaka as author; the merge commit authored by Graham Campbell is not counted as authorship. FAIL: it names Graham Campbell as the person who wrote Escape.php, or does not name Aiko Tanaka.
+5. StyleCI Bot is not credited (absent or under 0.5%) and the answer says the generated CharTable.php (about 430 lines) and/or the StyleCI reformat were excluded or looked through. FAIL: StyleCI Bot is listed with 1% or more, or the answer says nothing about excluding generated code or the reformat.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD be8078228f1bee9a1e7bca0a19239c2a79c64878
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (1):
+  be8078228f StyleCI Bot: Apply fixes from StyleCI
+generated files dropped: {'src/Parser/Unicode/CharTable.php': 431}
+vendored files dropped (lines): 0 []
+
+== src/Parser/: counted lines 1007, bot lines 0 (0.0% of counted), unattributed 152, denominator 1007
+  1. Graham Campbell: 674 lines, 66.9%
+  2. Aiko Tanaka: 171 lines, 17.0%
+  3. unattributable (root/placeholder identities): 152 lines, 15.1%
+  4. Vance Lucas: 8 lines, 0.8%
+  5. Jonas Staudenmeir: 1 lines, 0.1%
+  6. JT Smith: 1 lines, 0.1%
+  people with >=1%: 2; rows to reach 80%: 2
+
+== src/Parser/Lexer.php: counted lines 48, bot lines 0 (0.0% of counted), unattributed 0, denominator 48
+  1. Graham Campbell: 48 lines, 100.0%
+  people with >=1%: 1; rows to reach 80%: 1
+
+== all of src/: counted lines 3315, bot lines 0 (0.0% of counted), unattributed 152, denominator 3315
+  1. Graham Campbell: 2849 lines, 85.9%
+  2. Aiko Tanaka: 171 lines, 5.2%
+  3. unattributable (root/placeholder identities): 152 lines, 4.6%
+  4. Vance Lucas: 74 lines, 2.2%
+  5. Jonas Staudenmeir: 17 lines, 0.5%
+  6. Hossein Hosni: 11 lines, 0.3%
+  7. Bruce Dev: 8 lines, 0.2%
+  8. sephedo: 8 lines, 0.2%
+  people with >=1%: 3; rows to reach 80%: 1
+
+bot lines alive (whole scope): none
+identities merged (whole scope):
+  Aiko Tanaka: Aiko Tanaka <<email redacted>>; aiko tanaka <<email redacted>>
+  Graham Campbell: Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Graham Campbell', 320), ('Vance Lucas', 19), ('Jeff Puckett', 8), ('Lucas Michot', 6), ('David Meister', 6), ('Gabe Medrash', 4)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser | head -50 && echo --- && git shortlog -sne HEAD -- src/Parser && echo --- && git shortlog -sne HEAD -- src/Parser/Lexer.php && echo --- && git log --format='%h %an %ad %s' --date=short -- src/Parser/Lexer.php | head -30
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");a=$0} /^author-mail /{m=$2} /^\t/{c[a" "m]++} END{for(k in c) print f"\t"c[k]"\t"k}'; done | sort -t$'\t' -k1,1 -k2,2nr > /tmp/blame.tsv; echo "== per author total"; awk -F'\t' '{t[$3]+=$2} END{for(k in t) print t[k]"\t"k}' /tmp/blame.tsv | sort -nr; echo "== Lexer/Escape"; grep -E 'Lexer.php|Escape.php' /tmp/blame.tsv; echo; git log --format='%h %an %ad %s' --date=short -- src/Parser/Escape.php; grep -n -i 'escape' src/Parser/Lexer.php | head -20
+ - Bash: awk -F'\t' '{print $1"\t"$2"\t"$3}' /tmp/blame.tsv | sed 's#src/Parser/##'; echo ---; grep -rn 'Escape' src --include=*.php | grep -v '^src/Parser/Escape.php' | head; echo ---; git log --format='%h %an %ad %s' --date=short -5 -- src/Parser/Lexer.php src/Parser/Escape.php src/Parser/EntryParser.php | head; git log -1 --format='%an %ad' --date=short -- src/Parser/Lines.php
+ - Bash: grep -rn 'Escape' src | grep -v '^src/Parser/Escape.php' | head; git log --format='%h %an %ad %s' --date=short -- src/Parser/Quirks.php src/Parser/Compat.php src/Parser/Unicode | head
+FINAL ANSWER:
+Graham Campbell wrote Lexer.php, so ask them about the lexing. Ask Aiko Tanaka about escape handling.
+
+**Surviving lines in `src/Parser`** (`git blame -w -M -C` on HEAD, 1,618 lines)
+
+| Author | Lines | Share | Files |
+|---|---|---|---|
+| Graham Campbell (3 emails) | 782 | 48% | `Lexer`, `EntryParser`, `Lines`, `Parser`, `Value`, `Entry`, `ParserInterface` |
+| Aiko Tanaka (2 emails) | 637 | 39% | `Escape.php`, `Unicode/CharTable.php` |
+| `root <root@localhost>` | 117 | 7% | `Quirks.php` |
+| `Your Name <<email redacted>>` | 69 | 4% | `Compat.php` |
+| Vance Lucas, Jonas Staudenmeir, JT Smith, StyleCI Bot | 13 | <1% | `Lines.php` (Vance Lucas 10, JT Smith 1), `Entry.php` (Jonas Staudenmeir 1), `EntryParser.php` (StyleCI Bot 1) |
+
+**Lexer.php**
+- Graham wrote all 58 lines. The code dates from 2020 ("Improved parsing performance", "Tweaked lexing"). The latest change is 2026-08-24, #614 (static analysis baseline).
+- Graham is the person to ask about the lexing design.
+
+**Escape handling**
+- `Escape.php` is Aiko Tanaka's: 206 lines, added 2026-08-26 in "Add escape sequence handling" and "Escape: more sequences". Nobody else has touched it.
+- `Unicode/CharTable.php` is also entirely Aiko's, added the same day.
+
+**Findings for the audit**
+- **Escape code is not wired in.** `grep -rn Escape src` finds no callers outside `Escape.php`, and `Lexer.php` has no escape logic. Check whether `Escape` is dead code or is used from outside `src`. Also check whether the Lexer still handles escapes itself somewhere else.
+- **New code with one author.** Everything Aiko wrote is from one day, 2026-08-26. Nobody else has reviewed it.
+- **Unknown authors.** `Quirks.php` is by `root@localhost` (commit "fix"). `Compat.php` is by `<email redacted>` ("compat shims"). Git can't tell you who they are, so ask Aiko or Graham. Both files are on the Parser surface.
+- **Same-person assumption.** I treated the different Graham and Aiko emails as the same person. I didn't verify that.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/Parser"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser; echo ---; git log --all --no-merges --pretty=format:"%an|%ae|%ad" --date=short -- src/Parser | awk -F'|' '{c[$1]++; if(!($1 in last)) last[$1]=$3; first[$1]=$3} END{for(a in c) print c[a], a, "first="first[a], "last="last[a]}' | sort -rn; echo ---; for f in src/Parser/*; do echo "$f"; git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn; done; echo ---; git log -1 --format=%ad --date=short; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- . | sort | uniq -c
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | sed "s|^|$f |"; done; echo ---; git ls-files src/Parser | xargs -I{} git blame -w -M -C --line-porcelain -- {} | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --pretty='%h %an %ad %s' --date=short -- src/Parser/Lexer.php src/Parser/Escape.php src/Parser/Quirks.php src/Parser/Compat.php
+FINAL ANSWER:
+## Bus Factor: `src/Parser`
+
+Period: all history. Today is 2026-10-22. The last commit in the repo is 2026-08-26, which is 57 days ago.
+
+**Project-level bus factor for `src/Parser`: 2.** Graham Campbell and Aiko Tanaka together own about 90% of surviving lines. Losing Graham alone leaves about 55% of lines without a knowledgeable maintainer.
+
+### Surviving code by author (`git blame -w -M -C`, 1,617 lines)
+
+| Author | Lines | Share | Where |
+|---|---|---|---|
+| Graham Campbell | 782 | 48% | `EntryParser`, `Value`, `Lines`, `Lexer`, `Parser`, `Entry`, `ParserInterface` |
+| Aiko Tanaka (`Aiko Tanaka` plus `aiko tanaka`) | 637 | 39% | `Escape.php`, `Unicode/CharTable.php` |
+| `root` | 117 | 7% | `Quirks.php` |
+| `Your Name` | 69 | 4% | `Compat.php` |
+| Vance Lucas, JT Smith, Jonas Staudenmeir, StyleCI Bot | 12 | under 1% | scattered lines |
+
+The two Aiko spellings are probably one person with two git `user.name` settings. I did not check emails.
+
+### Who to ask
+
+- **`Lexer.php`: Graham Campbell.** Sole author with 7 commits and 100% of the 58 surviving lines. The last substantive change was 2020-06-07 ("Tweaked lexing", "Improved parsing performance"). His most recent commit on this file is 2026-08-24, a static-analysis cleanup.
+- **Escape handling: Aiko Tanaka.**
+  - `Escape.php` is 100% theirs: 2 commits, both on 2026-08-26 ("Add escape sequence handling", "Escape: more sequences").
+  - `Unicode/CharTable.php` is also 100% theirs.
+  - Both files are less than 2 months old. They are brand new compared with the Graham-owned core.
+
+### Risks for the audit
+
+- **Lexer and escapes have different owners.** `Lexer.php` has no `Escape` commits. Escape handling was added later as a separate file. Check how the two connect. Graham knows the lexing side and Aiko knows the escape side, and neither is the sole expert on the boundary. I did not read the code to confirm the call path.
+- **Unattributed code.** `Quirks.php` (author `root`, commit message "fix") and `Compat.php` (author `Your Name`, "compat shims") have no identifiable human owner. Both were committed on 2026-08-26, the same day as the escape work, probably from a machine with no configured git identity. Ask Aiko first, since the timing matches. Treat both files as unreviewed. They are the highest-risk files in the module.
+- **Dependents not checked.** I skipped the importer-count step, so I have no per-file criticality ranking. Every file is single-owner, so bus factor is 1 per file except `Entry.php` and `Lines.php`, which have 2 to 3 authors but one dominant owner.
+- **Activity.** Graham (16 commits) and Aiko (3 commits) both committed within the last 90 days. Nobody on this module is inactive by that measure. All 90-day activity falls on 2026-08-24 to 2026-08-26, so "active" mostly reflects one burst of work.
+
+### Suggested audit order
+
+1. `Escape.php`, `Unicode/CharTable.php`, `Quirks.php`, `Compat.php`: new, concentrated, partly unattributed. Interview Aiko.
+2. `Lexer.php` and its interface with `Escape.php`: interview Graham and Aiko together.
+3. `EntryParser.php`: 362 lines, 22 commits, all Graham. It is the largest and most stable file.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>'; cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-ours-2/repo && $SL --merge-identities -- src/Parser; echo ======; $SL --reviewers src/Parser/Lexer.php; echo ======; $SL --history src/Parser/Lexer.php; echo =====; ls src/Parser; grep -rli escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> "$@"; }; sl --merge-identities -- src/Parser; echo ======; sl --reviewers src/Parser/Lexer.php; echo ======; sl --history src/Parser/Lexer.php; echo =====; ls src/Parser; grep -rli escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> "$@"; }; sl --reviewers src/Parser/Lexer.php; echo '------'; sl --history src/Parser/Lexer.php; echo '------'; ls src/Parser; grep -rli escape src/Parser; echo '------'; sl --reviewers src/Parser; echo '------'; sl --history src/Parser/Escapes 2>&1 | head -40
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> "$@"; }; sl --reviewers src/Parser/Escape.php; echo '------'; sl --history src/Parser/Escape.php; echo '------'; sl --reviewers src/Parser/EntryParser.php | head -12; echo '------'; git log --format='%h %an %ad %s' --date=short -5 -- src/Parser/Escape.php
+FINAL ANSWER:
+**Short answer:** Graham Campbell wrote most of `src/Parser` that is still alive. Ask Graham about `Lexer.php`. Ask Aiko Tanaka about the escape handling in `Escape.php`.
+
+Numbers are surviving lines from `git blame -w -M -C -C` at HEAD, across 10 files and 1,187 lines.
+
+## `src/Parser` overall
+
+| Author | Lines | Share | Commits | Commit share |
+|---|---|---|---|---|
+| Graham Campbell (3 addresses) | 800 | 67.4% | 33 | 80.5% |
+| Aiko Tanaka | 330 | 27.8% | 3 | 7.3% |
+| root | 26 | 2.2% | 1 | 2.4% |
+| Your Name | 18 | 1.5% | 1 | 2.4% |
+| Vance Lucas | 10 | 0.8% | 0 | 0.0% |
+| StyleCI Bot, Jonas Staudenmeir, JT Smith | 1 each | 0.1% each | 1 each | 2.4% each |
+
+- **Graham Campbell merge is a guess.** Graham appears under three addresses: `<email redacted>` (384 lines, 32.4%), `<email redacted>` (414 lines, 34.9%) and `<email redacted>` (2 lines). The merge rests on the shared name and address patterns, and you should confirm it. Unmerged, the largest single identity holds 34.9%. I did not write a `.mailmap`.
+- **Bus factor (line-based, whole of `src/Parser`):** 1 author holds 50% of the surviving lines, counting Graham as one person. Reaching 80% takes 2 authors. If the three addresses are separate people, the 50% figure is 2.
+- **Left out:** `src/Parser/Unicode/CharTable.php` (431 lines) is excluded as a generated file. Bots are excluded by default.
+- **Moved or copied code:** 56.2% of the lines (667) were written in other paths and moved or copied into `src/Parser`. Credit goes to the original authors, not to whoever moved them.
+- **Largest sources:** `CharTable.php`, `src/Parser.php` and `src/Value.php`.
+
+## `Lexer.php` (58 lines)
+
+- Graham Campbell holds all 58 lines (100%) across 2 addresses. `<email redacted>` holds 53 (91.4%), and the noreply address holds 5 (8.6%). The 3rd address, `<email redacted>`, holds 0. The merge is a guess.
+- Graham made the first commit on 2020-06-07. The noreply address last committed on 2026-08-24 and counts as active. The `alt-three.com` address last committed in 2020 and counts as inactive.
+- The person behind these lines has committed recently, so Graham is reachable.
+- 19 of the 58 lines (32.8%) came from other paths: `src/Store/File/Reader.php`, `src/Value.php` and `src/Loader/Value.php`. Graham is the credited author of those lines, not just the person who moved them.
+- Bus factor for this file is 1 author at 91.4% on one address, and 1 author at 80%.
+
+## Escape handling
+
+The escape code is in `src/Parser/Escape.php`. `EntryParser.php` also mentions escapes.
+
+**`Escape.php`** (206 lines):
+- Aiko Tanaka holds 200 lines (97.1%).
+- Graham holds 6 lines (2.9%), split 3 and 3 across two addresses.
+- Aiko made both commits to the file, "Add escape sequence handling" and "Escape: more sequences", both on 2026-08-26.
+- Aiko is the right person to ask, and is active.
+- Of the 206 lines, 161 (78.2%) were moved or copied in from other paths (`CharTable.php`, `src/Value.php`, `src/Loader/Value.php`). So the original authors of the underlying logic may differ from the 200 lines credited to Aiko. Check `git log -p` on those source files before treating Aiko as the sole expert.
+- Bus factor for this file is 1.
+
+**`EntryParser.php`** (363 lines): Graham holds 100% across 3 addresses. The noreply address holds 199 lines (54.8%), and `alt-three.com` holds 163 (44.9%). Graham is the one to ask about how entries are parsed and unescaped.
+
+## Points for your audit
+
+- **Risk concentration:** Aiko wrote the escape code in a single day. Both the code and Aiko's knowledge of it are new, with one person involved.
+- **Moved code:** The moved or copied lines in `Escape.php` mean part of its logic existed before Aiko's commits. Check that history.
+- **Limits of the numbers:** Surviving lines show who still owns the code. They don't show code quality, review work or design discussions.
+- **Scope:** I counted the working tree at HEAD. I did not check other branches.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/Parser; focus on Lexer.php and escape handling"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin>/scripts/ && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin>/scripts/<plugin> . --dry-run --no-github 2>&1 | head -60; git log --format='%h %an <%ae> %ad %s' --date=short -- src/Parser | head -40; git log --format='%an <%ae>' | sort | uniq -c | sort -rn; git log --oneline | wc -l; git rev-list --max-parents=0 HEAD | xargs git show --stat --format='%h %ad' --date=short | tail -3
+ - Bash: ls src/Parser; for f in src/Parser/*.php; do echo "== $f"; git log --format='%an' --follow -- $f | sort | uniq -c | sort -rn | head -4; git log -3 --format='  %h %ad %an %s' --date=short --follow -- $f; done; echo; git show --stat --format='%h %an %s' 7007c6e b39e8d9 09f7c5c 4b9b803 d08cf83 | grep -v '^$'; echo; git blame -w -M --line-porcelain src/Parser/Lexer.php | grep '^author ' | sort | uniq -c | sort -rn | head; git blame -w -M --line-porcelain src/Parser/Escape*.php 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Graham Campbell is the person to ask about `Lexer.php`. Aiko Tanaka is the person for escape handling. This is inferred from commit history, so it is a starting point.
+
+**Who wrote `src/Parser`**
+- **Graham Campbell** wrote almost all of it. He has about 430 commits across 5 emails, and his latest is 2026-08-24, so he is active. He is the sole author of `Lexer.php`, `Parser.php`, `EntryParser.php`, `Lines.php` and `Value.php`, apart from a few minor edits below.
+- **Aiko Tanaka** wrote `Escape.php` (206 lines, 2 commits) and `Unicode/CharTable.php` (431 lines). All 3 commits are from 2026-08-26, in PR #1 (`feature/escapes`), which Graham merged. They appear under 3 spellings of the same name and email, differing only in case.
+- Minor edits came from Jonas Staudenmeir (a PHP 8.4 commit in 2024), JT Smith (a typo fix in 2022) and Dan Heggø (a small edit in `Parser.php` and `EntryParser.php`). None of them is a useful contact.
+
+**`Lexer.php`**
+- Graham made all 7 commits, and `git blame` attributes all 58 lines to him. The last change was 2026-08-24, a static-analysis cleanup (#614).
+- Ask him why it is built the way it is. The 2026-08-23 and 08-24 commits are the most relevant for an audit:
+  - `8bf174e`: "Fix memory-safety crash on invalid UTF-8 variable names (#602)"
+  - `dd5b391`: "Remove quadratic value parsing (#604)"
+  - `4426075`: comments no longer start multiline values (#615)
+  - `226b4ed`: diagnostics and messages (#607)
+
+**Escape handling**
+- `Escape.php` is entirely Aiko's, and Graham reviewed and merged it. Ask Aiko about the design and Graham about the review.
+- This code is about two months old, and Aiko's only commits are that one-day burst. Confirm Aiko is still reachable before you rely on them. I can't tell from git.
+
+**Risks for the audit**
+- **Bus factor 1:** the tool flags `/src/Parser/` as bus factor 1, owned by Graham and Aiko. It reports no orphaned zones.
+- **Code with no real author:**
+  - `Quirks.php` (117 lines) was committed by `root <root@localhost>` with the message "fix".
+  - `Compat.php` (69 lines) was committed by `Your Name <<email redacted>>` with the message "compat shims".
+  - Both are from 2026-08-26, are the newest code in the directory, and have no contact. They look like commits made with a default git identity. Treat them as unreviewed and ask Graham where they came from.
+- **Short history:** the repo has 616 commits going back years, so thin history is not a caveat here. Most of the recent security-relevant change landed in the last week of the history (2026-08-23 to 08-26), which is a reason to review it first.
+
+I ran the ownership script with `--dry-run`, so nothing was written to the repo.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__blame_summary,mcp__tool__file_history", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-2/repo", "path": "src/Parser"}
+ - mcp__tool__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-2/repo", "file": "src/Parser/Lexer.php"}
+ - mcp__tool__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-2/repo", "file": "src/Parser/Lexer.php", "limit": 30}
+FINAL ANSWER:
+**Who wrote the live code in `src/Parser`** (line ownership at HEAD, 11 files, about 1,620 lines):
+
+| Author | Lines | Share | Main owner of |
+|---|---|---|---|
+| Graham Campbell | 792 | 48.9% | `Entry`, `Lines`, `EntryParser`, `Value`, `Lexer`, `Parser`, `ParserInterface` |
+| Aiko Tanaka | 590 | 36.5% | `Escape.php`, `Unicode/CharTable.php` |
+| "root" | 117 | 7.2% | `Quirks.php` |
+| "Your Name" | 69 | 4.3% | `Compat.php` |
+| "aiko tanaka" (lowercase) | 47 | 2.9% | part of `Escape.php` |
+| JT Smith, Jonas Staudenmeir, StyleCI Bot | 1 each | 0.1% each | single lines |
+
+- **Lexer.php:** Graham Campbell wrote all 58 lines. The file has 7 commits, from 2020-06-06 to 2026-08-24. The newest is a static-analysis cleanup. The core logic dates from June 2020.
+- **Escape handling:** it lives in `Escape.php`, not `Lexer.php`. Aiko Tanaka owns it (77%, or about 100% if "aiko tanaka" is the same person), and `Unicode/CharTable.php` is 100% theirs. I did not check whether `Lexer.php` calls `Escape.php`.
+
+**Who to ask:**
+- **Lexer.php:** Graham Campbell. They have written all of it, and they are active (last commit 2026-08-26).
+- **Escape handling:** Aiko Tanaka. For anything involving the Lexer and escapes together, ask both.
+
+**Audit notes:**
+- **Orphaned code:** none. The only inactive authors are JT Smith (last commit 2022-10-15) and Jonas Staudenmeir (last commit 2024-07-20), and each owns one line.
+- **Unattributable files:** `Quirks.php` ("root") and `Compat.php` ("Your Name") have placeholder git identities, so you can't tell who wrote them. Their "active" status only means that identity committed recently. Run `git log` on those two files and check the commit emails or PR authors to find the real person.
+- **Duplicate identity:** "Aiko Tanaka" and "aiko tanaka" look like one person under two identities. A `.mailmap` entry would merge them.
+- **Escape ownership:** it is concentrated in one person. Aiko Tanaka owns `Escape.php` and `CharTable.php`, which is 590 lines, and `Escape.php` is the part most likely to matter for a security audit. Do not rely on anyone else for questions about it.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git log --format='%an' -- src/Parser | sort | uniq -c | sort -rn && echo --- && git ls-files src/Parser | while read f; do echo "== $f"; git blame -w -M -C --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: git log --format='%h %ad %an <%ae> %s' --date=short -- src/Parser/Lexer.php src/Parser/Escape.php src/Parser/Unicode src/Parser/Compat.php src/Parser/Quirks.php | head -30; echo ---; git log -3 --format='%h %ad %an %s' --date=short -- src/Parser/Lexer.php; git shortlog -sne HEAD | head
+FINAL ANSWER:
+Surviving lines in `src/Parser`, by `git blame -w -M -C`:
+
+| File | Surviving author(s) |
+|---|---|
+| `Lexer.php` | Graham Campbell, 58 of 58 lines |
+| `Escape.php` | Aiko Tanaka, 206 of 206 lines (198 as "Aiko Tanaka", 8 as "aiko tanaka", the same person under different capitalization) |
+| `Unicode/CharTable.php` | Aiko Tanaka, 431 of 431 lines |
+| `Parser.php`, `ParserInterface.php`, `EntryParser.php`, `Entry.php`, `Value.php` | Graham Campbell. `EntryParser.php` has 1 StyleCI line and `Entry.php` has 1 line from Jonas Staudenmeir. |
+| `Lines.php` | Graham Campbell (126), Vance Lucas (10), JT Smith (1) |
+| `Compat.php` | "Your Name" `<<email redacted>>`, 69 lines. This is a placeholder git identity. |
+| `Quirks.php` | "root" `<root@localhost>`, 117 lines. This is also not a real identity. |
+
+**Who to ask**
+- **`Lexer.php`:** Graham Campbell. The last change was 2026-08-24 (`301c079`, static analysis cleanup). Before that it was last touched in 2021, and the lexing logic dates from 2020.
+- **Escape handling:** Aiko Tanaka wrote all of `Escape.php` and `Unicode/CharTable.php`. Both were added on 2026-08-26 in `d08cf83`, `4b9b803` and `09f7c5c`. Graham Campbell has no lines in them.
+- **How `Lexer.php` and `Escape.php` connect:** `Lexer.php` has no lines from Aiko Tanaka. I did not check how the two files call each other. Ask Aiko Tanaka about that.
+
+**For the audit**
+- The newest code is the least reviewed: `Escape.php`, `CharTable.php`, `Compat.php` and `Quirks.php`. It was all added on 2026-08-26, most of it in one day. `Compat.php` and `Quirks.php` came from commits `b39e8d9` ("compat shims") and `7007c6e` ("fix").
+- Nobody can be asked about `Compat.php` or `Quirks.php`, because the commits have no real author. Aiko Tanaka may know where they came from. `Quirks.php` is a candidate for review because `7007c6e` has an uninformative message. I haven't read either file or the diffs yet.
+- The `Lexer.php` and `Parser.php` code is old and has stayed stable. That means it has been in use for a long time, but it is not evidence that it has been audited.
+- I did not check whether Aiko Tanaka is still active. Only the commit emails are available, and `<email redacted>` looks like a placeholder. Confirm the contact before you plan around them.
+
+I can read the `Escape.php`, `Quirks.php` and `Compat.php` diffs next and flag anything risky, if you want.

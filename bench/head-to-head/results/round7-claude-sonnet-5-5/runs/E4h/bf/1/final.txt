@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git shortlog -sne --all | head -30; git log --format='%h %an <%ae> %s' | head -40; git log --oneline | wc -l
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-bf-1/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: git ls-files; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done > /tmp/blame.tsv; wc -l /tmp/blame.tsv
+ - Bash: cd /tmp && awk -F'\t' '{split($1,p,"/"); z=(NF&&index($1,"/")?p[1]:"(root)"); print z"\t"$2"\t"$3}' blame.tsv | grep -v 'bot' | awk -F'\t' '{c[$1" | "$2]++; t[$1]++} END{for(k in c){split(k,x," \\| "); printf "%s\t%d\t%.0f%%\t%s\n", x[1],c[k],100*c[k]/t[x[1]],k}}' | sort -k1,1 -k2,2nr | awk -F'\t' '{n[$1]++; if(n[$1]<=4)print}'; echo; grep -c bot blame.tsv; awk -F'\t' '{print $1}' blame.tsv | sort | uniq -c
+FINAL ANSWER:
+Only `lib/` and `test/` have an owner. The root files and `.github/` have none, because nobody holds half of the surviving lines.
+
+I did not use the busfactor script's output. It weights commits by age, and it counted the formatter commit and named Fiona Formatter as a fallback owner. I measured with `git blame` at HEAD instead. The blame run ignored the reformat commit `62628c0`, ignored whitespace changes, and followed moved lines. I excluded dependabot lines and merged Troy Goode's two emails into one person. The percentages are each person's share of the non-bot lines.
+
+| Path | Top holder | Share | Next | Result |
+|---|---|---|---|---|
+| `lib/` | Troy Goode | 67% | Douglas Wilson 9% | owner |
+| `test/` | Troy Goode | 54% | Douglas Wilson 39% | owner |
+| `.github/` | Douglas Wilson | 32% | Íñigo Marquínez Prado 26% | no owner |
+| root files | Troy Goode | 32% | Douglas Wilson 28% | no owner |
+
+The root files are `.eslintrc.yml`, `.gitignore`, `HISTORY.md`, `LICENSE`, `README.md` and `package.json`.
+
+Suggested lines:
+
+```
+# lib/ and test/: one person holds at least half of the surviving lines
+/lib/   <email redacted>
+/test/  <email redacted>
+
+# .github/ and root files: no one holds half, so no owner is named
+```
+
+- **Handle:** I used Troy's git email because I did not look up GitHub handles. Replace it with their `@handle` before committing.
+- **`test/` margin:** 54% is close to the cutoff. Troy's two newest commits (`b2005d9`, `02afce3`) are in his count, and I did not check how many lines they account for.
+- **Troy's two emails:** I merged `<email redacted>` and `troy@laptop.example` because the author name matches. Both emails are treated as the same person.
+- **Activity:** I did not check whether Troy is still active. Confirm that before making them the only owner.
+META cost=0.0797846 ms=26931 turns=7

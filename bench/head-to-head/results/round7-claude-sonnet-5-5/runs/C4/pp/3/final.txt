@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls && for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -8; done; cat .git-blame-ignore-revs
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{print "total",t; for(i=1;i<=6;i++){split(c[i],a," "); printf "%s (%.0f%%)\n", c[i], a[1]*100/t}}'; done
+FINAL ANSWER:
+`git blame` counts for surviving lines. I used `-w -M -C` and ignored the rubocop reformat commit through `.git-blame-ignore-revs`.
+
+**lib/** (1,496 lines)
+- José Valim: 57%
+- Kaito Mori: 17%
+- Weblate: 5%. This is a bot, so the lines are likely locale files. Ask whoever reviews translations.
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+
+**test/** (1,853 lines)
+- José Valim: 57%
+- Rafael Mendonça França: 10%
+- Kaito Mori: 9%
+- Carlos Antonio da Silva: 6%
+- Lucas Mazza: 4%
+- Jan De Poorter: 4%
+
+**Who to ask:** José Valim for `lib/`. Kaito Mori is the second choice, with the largest share after José.
+
+**Same owners?** Mostly. José has 57% of both. Below José the order differs:
+- In `lib/`, Kaito Mori is clearly second (17%).
+- In `test/`, Rafael Mendonça França is second (10%), Kaito Mori is close behind (9%), and the rest is spread thinner.
+- Weblate and Vestimir Markov appear only in the top `lib/` list, and Lucas Mazza and Jan De Poorter only in the top `test/` list.
+
+Line counts show who wrote the code, not who is active now. Check `git log` for recent activity before you pick someone to ask.
+META cost=0.055791999999999994 ms=13551 turns=4

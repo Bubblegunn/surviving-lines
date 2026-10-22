@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: echo "== all-time commits per author (lib/index.js)" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last 12m" && git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit date per author" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++' && echo && echo "== blame lines per author" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo && echo "== dependents" && grep -rlE "lib/index|require\(['\"]\.\./lib['\"]\)|require\(['\"]\./lib['\"]\)|fro
+ - Bash: echo "== blame ignoring reformat commits" && git blame -w -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "== recent commits"; git log --no-merges -5 --pretty='%h %an %ad %s' --date=short -- lib/index.js; echo "== Fiona commit"; git log -1 --pretty='%h %an <%ae>' 62628c0
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** Douglas Christopher Wilson is a fallback, with a caveat below.
+
+| Metric | Value |
+|---|---|
+| Commits (all time) | 62, from 25 authors |
+| Troy Goode share of commits | 29 of 62 (47%) |
+| Troy Goode share of current lines | 159 of 231 (69%) |
+| File bus factor | 1 |
+| Dependents | `package.json` (`"main"`), `test/error-response.js`, `test/example-app.js`, `test/issue-2.js` |
+
+Line ownership comes from `git blame -w -C -C --ignore-rev 62628c0`. A plain blame credits 214 of 231 lines to "Fiona Formatter" because of the reformat commit `62628c0`, so I excluded it.
+
+- **Troy Goode:** the only active owner. They made the last real change on 2026-04-10 (`lib: annotate handlers`) and were the only human committer in the last 12 months. They are the clear reviewer.
+- **Douglas Christopher Wilson:** second by lines (22, about 10%). Their last commit was 2017-10-04, so they have been inactive for about 9 years. They can only be a secondary reviewer if you can reach them.
+- **Everyone else:** each has 12 or fewer lines, and most last committed between 2013 and 2018. Only LuisEGR (2021) is more recent. None of them is a realistic reviewer.
+- **Fiona Formatter:** a formatting-only commit, not a knowledge owner. Do not assign review to them.
+
+**Risk: HIGH.** The file is the package entry point (`"main"`), and one person owns most of it. If you can't get Troy Goode, there is no second reviewer who knows the code. In that case, run the three dependent tests (`test/error-response.js`, `test/example-app.js`, `test/issue-2.js`) and treat them as the main safety check.
+
+**Suggestions:**
+1. Ask Troy Goode to review this change.
+2. Use the PR as a chance to add a second reviewer who then learns the file.
+3. Keep your edit separate from any formatting changes. The next blame on this file will show your commit, not the earlier authors, if the two are mixed.
+
+I analyzed this one file inline and did not launch the `contributor-analyzer` agent. I did not compute a project-wide bus factor.
+META cost=0.0727979 ms=19279 turns=6

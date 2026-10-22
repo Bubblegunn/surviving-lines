@@ -1,0 +1,30 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame --line-porcelain -w -M -C HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame --line-porcelain -w -M -C HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | awk '{c[NR]=$0;n[NR]=$1;t+=$1} END{print "total",t; print "authors",NR}'
+FINAL ANSWER:
+Mostly one person. Andrew Gallant owns 2838 of 4366 surviving Rust lines (65%).
+
+Basis: `git blame -w -M -C` on all 10 tracked `.rs` files at HEAD, so it counts lines that still exist. 38 distinct author names appear.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2838 | 65.0% |
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau / Ines Moreau | 217 (120 + 97) | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+- **Top two:** Gallant and Sam Okoro together own about 80% of the lines.
+- **Moreau:** The same person appears under two spellings, "Inès" and "Ines". I assumed that is one person and combined them. If they are two people, each is about 2.5%. A `.mailmap` file would fix this.
+- **Long tail:** The other ~32 authors each hold 1.0% or less. They are mostly small one-off contributions.
+- **Bus factor:** About 1. Gallant alone is over 50% of the code. Losing Gallant would leave most of the Rust code without a maintainer who wrote it.
+- **Not checked:** I did not check whether these people are still active, and I did not do the per-file or per-module breakdown from the full bus-factor report. Say if you want those.
+META cost=0.06183519999999999 ms=14288 turns=6

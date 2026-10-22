@@ -1,0 +1,39 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__file_history,mcp__git-historian__blame_summary,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E5-hist-2/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E5-hist-2/repo", "file": "lib/index.js", "limit": 200}
+ - Bash: git blame --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame --ignore-revs-file /dev/null --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git show b2005d9 --stat --format='%an %ae %s' | head; git show 62628c0 --format='%an %ae' --stat | head -5
+FINAL ANSWER:
+`blame` on HEAD is misleading here. `62628c0` (2026-04-12, Fiona Formatter) rewrote the whole file for 4-space indent and double quotes: 214 lines added, 214 deleted. Plain blame credits Fiona with 214 of 238 lines (89.9%). That share is formatting, not authorship.
+
+I reran `git blame --ignore-rev 62628c0` to see through that commit. It shows who wrote the surviving logic.
+
+**Who still has code in the file (238 lines, formatting ignored)**
+- **Troy Goode:** 109 lines, about 46%. Author of the original file and the largest contributor.
+- **Fiona Formatter:** 57 lines. These come from the reformat itself, where it added lines that don't map to an old one (for example, wrapped or split lines). It is not original logic.
+- **Douglas Christopher Wilson:** 36 lines, about 15%. This is the largest contribution after Troy's.
+- **Raymond Feng:** 8 lines. The `applyHeaders` closure removal (2015).
+- **LuisEGR:** 6 lines. Unused-parameter lint cleanup (2021).
+- **Tom Arad:** 5 lines. The `maxAge: 0` fix (2018).
+- **Alejandro Caravaca Puchades:** 5 lines. Regexp and array `origin` matching (2015).
+- **max.laverse:** 3 lines. Preflight pass-through to `next()`.
+- **Tomek Kopczuk, Hannah Wolfe, Alberto Leal:** 2 lines each.
+- **Saad Tazi, Eric di Domenico, Benjamin Eidelman:** 1 line each. Eric's is the `origin` callback, and Benjamin's is the Safari preflight workaround.
+
+**How the file developed (62 commits)**
+1. **Jan–Oct 2013, Troy Goode:** The first commit was on 2013-01-30 with 78 lines. He added case-insensitive header lookup, `origin: false` to disable CORS, request pause/resume for async middleware, and preflight-only headers. The 2013-10-09 "wrapping up" commit (147 lines added) was the main restructure. Contributors Simon Mansfield, Damien Klinnert, Eric di Domenico and Mathias Buus added small fixes around this time.
+2. **2014–2015:** Troy added `Access-Control-Expose-Headers` and Express 4 support. Contributors added `Vary: Origin` handling (Igor Soarez, Eran Tiktin), regexp and array `origin` matching, and preflight continuation. Troy also moved to ESLint (May 2015).
+3. **2016–2018, Douglas Christopher Wilson:** He took over maintenance with `Vary` fixes, the missing `methods` option fix, and lint and build cleanups. Tomek Kopczuk and Saad Tazi contributed fixes in this period. Tom Arad's `maxAge` fix is from late 2018.
+4. **2021:** LuisEGR's lint cleanup.
+5. **April 2026:** `b2005d9` "lib: annotate handlers" (Troy Goode, 2026-04-10) changed 12 lines. Fiona's reformat followed two days later.
+
+**One oddity.** The 2026 "annotate handlers" commit is credited to Troy Goode (`troy@laptop.example`). His previous commit to this file was in 2016, so the 10-year gap is unusual. I did not check whether this is the same person or a different identity, for example a `.mailmap` or author-config artifact.
+
+**Summary.** Troy Goode created the file and still owns the most original logic. Douglas Christopher Wilson shaped the later behavior, mostly `Vary` header correctness. The remaining contributors each left a small fix or feature. Fiona Formatter's share is the April 2026 reformat.
+META cost=0.08371540000000001 ms=21809 turns=6

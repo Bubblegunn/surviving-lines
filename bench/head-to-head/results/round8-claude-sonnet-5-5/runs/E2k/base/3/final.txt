@@ -1,0 +1,23 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; git log --since='2026-03-29' --format='%h|%an|%ae|%ad|%s' --date=short --no-merges
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --since='2026-03-29' --format='%h|%an|%ae|%cn|%s' ; echo ---; git shortlog -sne HEAD | head -30; echo ---; git show --stat --format='%h %an' 02afce3 b2005d9 5317ebe 62628c0 | head -60; git log -3 --format='%h %p'
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^(author|author-mail) ' | paste - - | sed "s|^|$f\t|"; done | awk -F'\t' '{print $2, $3}' | sort | uniq -c | sort -rn | grep -Ei 'troy|vansh|fiona'; echo ---; git show b2005d9 -- lib/index.js | head -40
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), excluding Fiona Formatter's formatting-only commit (62628c0). There are no bot commits in this window.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (04-10)<br>`b2005d9` lib: annotate handlers (04-10) | 746 |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) (04-07) | 1 |
+
+- **Troy's identities:** Troy appears under two emails, `troy@laptop.example` and `<email redacted>`. I assumed they are the same person and counted them once.
+- **Troy's lines:** 746 is 698 under `<email redacted>` plus 48 under `troy@laptop.example`. The 48 come from the two window commits (36 lines in `test/vary.js`, 12 in `lib/index.js`). If you meant only lines from the window commits, the figure is 48.
+- **Line counting:** I used `git blame -w` and ignored the formatter commit `62628c0`, so reformatted lines stay credited to their original authors. The count covers every tracked file.
+- **Troy's `lib/index.js` lines:** the 12 lines are existing function lines with a `// checked` comment added. They count as his because the blame ignores whitespace only, so the added comment makes them his lines.
+META cost=0.0650414 ms=47734 turns=5

@@ -1,0 +1,60 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/rack/attack/store_proxy"}
+ - Bash: ls lib/rack/attack/store_proxy* ; echo ---; git log --all --no-merges --pretty=format:"%an|%ae" -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---; for f in lib/rack/attack/store_proxy/*.rb lib/rack/attack/store_proxy.rb; do echo "$f"; git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn; echo; done; echo ---RECENT; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib/rack/attack | sort | uniq -c | sort -rn; echo ---LAST; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/rack/attack/store_proxy | head -15
+FINAL ANSWER:
+## 🚌 Bus Factor: `lib/rack/attack/store_proxy/`
+Period: all history | Generated: 2026-10-22
+
+I ran the git-log commands directly and did not launch the contributor-analyzer agent. I did not compute the importance step (dependent-file counts).
+
+### Result: bus factor is fine, but the main owner is not recently active
+
+Across 72 commits to the directory, Gonzalo Rodriguez has 27 (about 37%). That is well under the 80% single-owner threshold, and 28 distinct author names have touched the code. One of them is the `github-actions[bot]` autocorrect commit, and one person (Jonathan del Strother) appears under two emails.
+
+### Per-file ownership
+
+| File | Top owner | Commits | Other contributors | Bus factor |
+|---|---|---|---|---|
+| `store_proxy.rb` | Gonzalo (7), hakanensari (6), Vincent Boisard (6) | 28 | 9 more | 3+ |
+| `redis_cache_store_proxy.rb` (the one you're changing) | Gonzalo (9) | 21 | fatkodima (2), Ryan Laughlin (2), 8 others | 3+ |
+| `redis_proxy.rb` | fatkodima (4), Gonzalo (4) | 14 | 5 more | 2+ |
+| `redis_store_proxy.rb` | Gonzalo (9) | 17 | Stan Hu (2), 6 others | 3+ |
+| `dalli_proxy.rb` | Gonzalo (5) | 10 | fatkodima, hakanensari, Mei Tanaka, Lucas Mansur | 3+ |
+| `mem_cache_store_proxy.rb` | 5 authors with 1 commit each | 5 | – | 4+ |
+| `memory_store_proxy.rb` | Divya Rao (1) | 2 | – | 1 (low risk, tiny file) |
+| `dalli_accessors.rb` | Mei Tanaka (1) | 1 | – | 1 (new file, extracted from `dalli_proxy.rb`) |
+
+### Activity check
+
+- No human commits in the last 90 days.
+- Gonzalo's last commit to this directory was 2026-03-09. The last commit of any kind was the bot on 2026-04-14.
+- Other contributors from 2026: Hye-jin Park (Jan and Feb), Mei Tanaka (Feb), Divya Rao (Jan), Jaroslav Novak (Mar).
+- The older contributors (Vincent Boisard, hakanensari, Ryan Laughlin) have not touched the code in years.
+- fatkodima is the second most consistent contributor. I did not pull their last commit date for this directory, so check before asking them.
+
+### Who to ask
+
+1. **Gonzalo Rodriguez** (<email redacted>). They are the top contributor to `redis_cache_store_proxy.rb`, `redis_store_proxy.rb`, `dalli_proxy.rb`, and the top author on `store_proxy.rb`. Treat them as the primary contact, but they have been quiet for about 7 months, so expect a slow reply.
+2. **fatkodima** (<email redacted>). They contributed to `redis_proxy.rb`, `redis_cache_store_proxy.rb`, `dalli_proxy.rb`, and `mem_cache_store_proxy.rb`. They are a good second opinion on the proxy interfaces.
+3. **Mei Tanaka**. They wrote `dalli_accessors.rb`. Ask them only if your change touches the Dalli read/write/increment/delete path.
+4. **hakanensari** or **Vincent Boisard**. Ask them about `store_proxy.rb` design history, such as the proxy wrapping logic. Both are long inactive here.
+
+### Who should review the PR
+
+- **Gonzalo Rodriguez** as the primary reviewer, since they have the most context on these files.
+- **fatkodima** as the second reviewer, since the knowledge is spread across them and Gonzalo. I'd avoid relying on one person.
+- If either is unavailable, a recent contributor such as Mei Tanaka or Hye-jin Park can review. They have less history in these files.
+
+Check `CODEOWNERS` (if the repo has one) and the repo's current maintainers on GitHub before you tag anyone. Git history shows who wrote the code. It does not show who currently has merge rights.
+
+### Recommendations
+
+- **Immediate:** Ask Gonzalo and fatkodima to review. If neither responds, look at the recent commits (`17f56ae`, `5160a1d`) to see the intent behind the TTL and `DalliAccessors` changes.
+- **Short-term:** Add tests or comments for the proxy behavior you change. The directory has little documentation, so your PR description should explain the intent.
+- **Ongoing:** The directory has no active maintainer. A new contributor who reviews and owns these files would lower that risk.
+META cost=0.0705995 ms=24148 turns=4

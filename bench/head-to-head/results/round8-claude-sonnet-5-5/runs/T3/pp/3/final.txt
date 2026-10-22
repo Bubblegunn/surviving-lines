@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git shortlog -sn --all | awk '{$1="";print tolower($0)}' | sort | uniq -d; echo ---; git log --all --format='%an <%ae>|%cn <%ce>' | grep -i -E 'doug|wilson|efe|genc|fiona|troy'| sort | uniq -c
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sne --all | grep -i -E 'alejandro c|alex94'
+FINAL ANSWER:
+Yes, two people showed up under more than one identity. I added a `.mailmap` file at the repo root, so `git shortlog` and `git log` now count each of them once. I didn't commit it, and no history was rewritten.
+
+- **Troy Goode** appeared as `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). Combined, that is 122.
+- **Alejandro Caravaca Puchades** appeared as "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit). Both used the same email. Combined, that is 5.
+
+**The top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second with 122. Merging Troy's two identities didn't change the order.
+
+I did not merge the other names. Fiona Formatter and Efe each appear under a single identity.
+
+Do you want me to commit the `.mailmap`?
+META cost=0.0537043 ms=14364 turns=4

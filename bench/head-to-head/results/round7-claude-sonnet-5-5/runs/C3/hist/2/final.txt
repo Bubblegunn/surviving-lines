@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -E '^author(-mail)? ' | paste - - | grep -i 'moreau' | sort | uniq -c; git ls-files -z '*.rs' | xargs -0 cat | wc -l; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -c '^author '; ls .mailmap 2>&1 | head -1
+FINAL ANSWER:
+Not quite one person, but close to it. Andrew Gallant owns about two-thirds of the surviving Rust lines, and Sam Okoro has most of the rest.
+
+I ran `git blame -w -M -C` on HEAD across the 10 tracked `.rs` files, which hold 4,366 lines in total.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,838 | 65.0% |
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau and Ines Moreau (probably one person) | 217 (120 + 97) | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+Further down are mcharsley (45), Marvin Löbel (41) and Martin Sehnoutka (38).
+
+- **Moreau:** Git lists two names with two emails, `ines@moreau.example` and `ines.moreau@university.example`. The repo has no `.mailmap`, so git does not merge them. I assumed they are the same person, but I haven't confirmed it. If they are separate people, each is about 2–3% and the third place goes to Sebastian Thiel (1.7%) or Ashley (1.6%).
+- **Concentration:** The top two authors hold about 80% of the lines. Beyond them, ownership is spread thinly across many contributors.
+META cost=0.0553004 ms=17056 turns=4

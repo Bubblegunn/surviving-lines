@@ -1,0 +1,47 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -30; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c | sort -rn; echo ---; git log --format='%an' | wc -l
+ - Bash: git ls-files; echo ---; for f in $(git ls-files | grep -v -e '^\.' -e package -e LICENSE); do echo "== $f ($(wc -l <$f) lines)"; git blame -w -M -C --line-porcelain "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo ---; git log -1 --format=%ad; git log --since='2 years ago' --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: git log --format='%h %an %ad %s' --date=short | head -5; for f in lib/index.js test/test.js test/error-response.js test/example-app.js README.md; do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo; git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -4; git log --format='%an %ad' --date=format:%Y -- lib/index.js | awk '{print $NF}' | sort | uniq -c | tail -6; git log --format='%an' --since=2024-01-01 -- lib test | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Single-owner areas: Troy Goode owns most of the library and its tests. Douglas Christopher Wilson owns HISTORY.md and the config files.**
+
+I used `git blame -w -M -C`, ignoring the formatting-only commit `62628c0` (by "Fiona Formatter"), because it would otherwise take credit for reformatted lines. I counted "Troy Goode" under both of their emails as one person. The history has 354 commits.
+
+| Area | Top owner | Share of lines | Risk |
+|---|---|---|---|
+| `lib/index.js` (the only source file) | Troy Goode | 159/238 (67%) | **High.** Next is Wilson at 22 lines (9%), then Alejandro Caravaca Puchades at 12 lines (5%). |
+| `test/vary.js` | Troy Goode | 100% | **High** |
+| `test/issue-2.js` | Troy Goode | 83% (40/48 before the exclusion; the rest is Wilson) | **High** |
+| `test/error-response.js` | Troy Goode | 57/66 (86%) | **High** |
+| `test/example-app.js` | Troy Goode | 67/81 (83%) | **High** |
+| `test/test.js` (main suite) | Wilson 339, Troy 317, of 731 lines | 46% / 43% | **Low.** Two people know it. |
+| `README.md` | Troy 116, Jon Church 72, Linus Unnebäck 26 | 42% for the top owner | **Low.** Spread across several people. |
+| `HISTORY.md` | Wilson | 50/64 (78%) | **Medium.** It is only a changelog. |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, and `.github/` workflows | Wilson | Mostly his | **Low.** Config, easy to recreate. |
+
+Contributors per file:
+- **Overall:** Troy Goode is the main bus factor, at about 1.
+- **`lib/index.js`:** Troy has 30 of its commits. Next are Wilson with 4, Caravaca Puchades with 4 and Simon Mansfield with 3. Almost nobody else has touched it.
+- **Test files:** `vary`, `error-response`, `example-app` and `issue-2` are essentially Troy-only. Only `test/test.js` has real shared knowledge.
+
+Recent activity:
+- **Maintenance since 2024:** In `lib/` and `test/`, only Troy (2 commits), the formatter commit (1) and Alejandro García Fernández (1) have committed. Wilson has not.
+- **Last two years overall:** Dependabot has 11 commits. Humans are Ulises Gascón (3), Jon Church (3), Troy (2) and Sebastian Beltran (2).
+- **Recent source changes:** Troy made the latest source and test commits (`b2005d9`, `02afce3`, both 2026-04-10). Before that, the last change to `lib/index.js` was in 2021, and most of its history is from 2015–2017.
+
+Caveats:
+- Blame measures who wrote lines, not who understands them. Wilson co-owns the test suite, so he may be a fallback reviewer.
+- The `lib/index.js` count of 159 lines excludes whitespace-only changes, so Troy's share depends on blame ignoring `62628c0`.
+- The "Troy Goode" commits under `troy@laptop.example` are 2 of his 122, so the merge is safe.
+
+Mitigation:
+- Have a second person review changes to `lib/index.js`.
+- Ask Wilson or Caravaca Puchades to take part in `lib/index.js` changes.
+- Move the one-owner tests (`vary`, `error-response`, `example-app`, `issue-2`) into `test/test.js` or add review coverage for them.
+META cost=0.0710728 ms=25482 turns=5

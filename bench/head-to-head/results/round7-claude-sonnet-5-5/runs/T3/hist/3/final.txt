@@ -1,0 +1,25 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; echo ---; ls -a | grep -i mailmap; git log --all --format='%an|%ae' | sort -u | wc -l
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%an|%ae|%cn|%ce' | grep -iE 'troy|doug|wilson|fiona|efe' | sort | uniq -c
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -iE 'alejandro c|alex94'; git status --short
+FINAL ANSWER:
+Yes, two people appeared under more than one identity. I added a `.mailmap` file to fix it.
+
+- **Troy Goode** committed under `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). He now counts as 122.
+- **Alejandro Caravaca Puchades** committed as "Alejandro Caravaca Puchades" (4) and as "alex94puchades" (1), both with `<email redacted>`. They now count as 5.
+
+I used `.mailmap` instead of rewriting history, so no commit hashes change. `git shortlog` and `git log --use-mailmap` apply it. I haven't committed the file; it's untracked.
+
+I treated "Fiona Formatter" and "Efe" as separate people, because each has only one identity.
+
+**Top author: Douglas Christopher Wilson with 143 commits.** Troy Goode is second with 122. The merge only changed Troy's count, so the top author is the same as before.
+META cost=0.0544758 ms=12611 turns=4

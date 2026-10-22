@@ -1,0 +1,8 @@
+# d4 criteria: walkdir (Rust), ownership of live lines under src/ at the fixture HEAD (about 3,320 lines after exclusions)
+Hazards: whole-file LF to CRLF commit by a bystander, generated 880-line table, code added then deleted, one contributor under two spellings of one e-mail (case differs), real duplicate (nivkner/Niv Kaminer).
+
+1. Andrew Gallant owns about 77% of live lines (accept 74.5% to 79.5%), and the answer gives the bus factor as 1 (one person holds more than half). FAIL if his share is below 70% or above 83%, or if the bus factor is stated as 2 or more.
+2. Everyone else together holds about 23% (accept 20.5% to 25.5%); the second-ranked person is Ola Berg with about 3.4% as ONE entry (accept 2.4% to 4.4%), not two. FAIL if Ola Berg is split into two entries without saying they are one person, or if someone else is ranked second.
+3. Kaito Mori (only converted src/error.rs line endings) is credited with at most 0.5%, and src/error.rs remains mostly Andrew Gallant's (about 65%, accept 55% to 75%). FAIL if Kaito Mori has 3% or more.
+4. The generated src/errno_table.rs (Niko Alvarez) is excluded: Niko Alvarez holds at most 0.5% and the total is about 3,320 lines (accept 3,150 to 3,500), not about 4,200. Jun Park (code deleted again) holds 0%. FAIL if Niko Alvarez has 1% or more, or Jun Park is credited.
+5. The answer states what it left out or merged: at least two of (a) ignored whitespace or line-ending-only changes, (b) excluded the generated table, (c) merged the Ola Berg identities. FAIL if fewer than two are stated, or if commit counts are used as the ownership measure.

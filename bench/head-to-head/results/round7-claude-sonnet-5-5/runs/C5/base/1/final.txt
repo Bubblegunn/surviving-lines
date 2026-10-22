@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git log --format='%an <%ae>' -- src/Parser | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | sort | uniq -c | sort -k2,2 -k1,1rn; echo ---TOTAL; for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn; echo ---LEX; git log --format='%h %ad %an %s' --date=short -- src/Parser/Lexer.php src/Parser/Escape.php
+FINAL ANSWER:
+Surviving lines in `src/Parser` (`git blame -w -M -C` at HEAD), by author, 1,618 lines in total:
+
+| Author | Lines | Files |
+|---|---|---|
+| Graham Campbell | 782 | `EntryParser`, `Lexer`, `Parser`, `Value`, `Lines`, `Entry`, `ParserInterface` |
+| Aiko Tanaka | 637 | `Escape.php` (206 lines), `Unicode/CharTable.php` (431 lines) |
+| `root` | 117 | `Quirks.php` |
+| `Your Name` | 69 | `Compat.php` |
+| Vance Lucas | 10 | `Lines.php` |
+| StyleCI Bot, Jonas Staudenmeir, JT Smith | 1 each | `EntryParser.php`, `Entry.php`, `Lines.php` |
+
+- **Aiko Tanaka:** The 637 lines combine two git identities, `Aiko Tanaka` (629) and `aiko tanaka` (8). Both look like the same person, but I haven't confirmed that. Their commits are dated 2026-08-26 ("Add escape sequence handling", "Escape: more sequences").
+- **`root` and `Your Name`:** These are unconfigured git identities. `Quirks.php` and `Compat.php` look like the recent "compat shims" work, but you can't tell who wrote them from the log. Ask the repo owner. Both files are new code and weren't reviewed upstream, so audit them closely.
+
+**Who to ask**
+- **`Lexer.php`:** Graham Campbell. All 58 surviving lines are theirs, from the 2020 rewrite ("Improved parsing performance", "Tweaked lexing") and later cleanups. `Lexer.php` has no escape code from Aiko.
+- **Escape handling:** Aiko Tanaka. They wrote nearly all of `Escape.php` and the Unicode `CharTable`.
+- **How the two meet:** Ask Aiko how `Escape` hooks into the parse flow. Ask Graham whether `Lexer` and `EntryParser` hand off quoted values the way `Escape` expects. That boundary is the most likely place for a security bug.
+
+Graham's history in the lexer is upstream project history, so they probably aren't actively maintaining the escape additions. Aiko's escape code is the newest in the directory, about two months old.
+META cost=0.0582511 ms=16190 turns=4

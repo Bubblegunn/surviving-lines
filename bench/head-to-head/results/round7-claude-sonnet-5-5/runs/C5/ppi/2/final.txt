@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser; echo ---; git log --all --no-merges --pretty=format:"%an|%ae|%ad" --date=short -- src/Parser | awk -F'|' '{c[$1]++; if(!($1 in last)) last[$1]=$3; first[$1]=$3} END{for(a in c) print c[a], a, "first="first[a], "last="last[a]}' | sort -rn; echo ---; for f in src/Parser/*; do echo "$f"; git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn; done; echo ---; git log -1 --format=%ad --date=short; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- . | sort | uniq -c
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | sed "s|^|$f |"; done; echo ---; git ls-files src/Parser | xargs -I{} git blame -w -M -C --line-porcelain -- {} | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --pretty='%h %an %ad %s' --date=short -- src/Parser/Lexer.php src/Parser/Escape.php src/Parser/Quirks.php src/Parser/Compat.php
+FINAL ANSWER:
+## Bus Factor: `src/Parser`
+
+Period: all history. Today is 2026-10-22. The last commit in the repo is 2026-08-26, which is 57 days ago.
+
+**Project-level bus factor for `src/Parser`: 2.** Graham Campbell and Aiko Tanaka together own about 90% of surviving lines. Losing Graham alone leaves about 55% of lines without a knowledgeable maintainer.
+
+### Surviving code by author (`git blame -w -M -C`, 1,617 lines)
+
+| Author | Lines | Share | Where |
+|---|---|---|---|
+| Graham Campbell | 782 | 48% | `EntryParser`, `Value`, `Lines`, `Lexer`, `Parser`, `Entry`, `ParserInterface` |
+| Aiko Tanaka (`Aiko Tanaka` plus `aiko tanaka`) | 637 | 39% | `Escape.php`, `Unicode/CharTable.php` |
+| `root` | 117 | 7% | `Quirks.php` |
+| `Your Name` | 69 | 4% | `Compat.php` |
+| Vance Lucas, JT Smith, Jonas Staudenmeir, StyleCI Bot | 12 | under 1% | scattered lines |
+
+The two Aiko spellings are probably one person with two git `user.name` settings. I did not check emails.
+
+### Who to ask
+
+- **`Lexer.php`: Graham Campbell.** Sole author with 7 commits and 100% of the 58 surviving lines. The last substantive change was 2020-06-07 ("Tweaked lexing", "Improved parsing performance"). His most recent commit on this file is 2026-08-24, a static-analysis cleanup.
+- **Escape handling: Aiko Tanaka.**
+  - `Escape.php` is 100% theirs: 2 commits, both on 2026-08-26 ("Add escape sequence handling", "Escape: more sequences").
+  - `Unicode/CharTable.php` is also 100% theirs.
+  - Both files are less than 2 months old. They are brand new compared with the Graham-owned core.
+
+### Risks for the audit
+
+- **Lexer and escapes have different owners.** `Lexer.php` has no `Escape` commits. Escape handling was added later as a separate file. Check how the two connect. Graham knows the lexing side and Aiko knows the escape side, and neither is the sole expert on the boundary. I did not read the code to confirm the call path.
+- **Unattributed code.** `Quirks.php` (author `root`, commit message "fix") and `Compat.php` (author `Your Name`, "compat shims") have no identifiable human owner. Both were committed on 2026-08-26, the same day as the escape work, probably from a machine with no configured git identity. Ask Aiko first, since the timing matches. Treat both files as unreviewed. They are the highest-risk files in the module.
+- **Dependents not checked.** I skipped the importer-count step, so I have no per-file criticality ranking. Every file is single-owner, so bus factor is 1 per file except `Entry.php` and `Lines.php`, which have 2 to 3 authors but one dominant owner.
+- **Activity.** Graham (16 commits) and Aiko (3 commits) both committed within the last 90 days. Nobody on this module is inactive by that measure. All 90-day activity falls on 2026-08-24 to 2026-08-26, so "active" mostly reflects one burst of work.
+
+### Suggested audit order
+
+1. `Escape.php`, `Unicode/CharTable.php`, `Quirks.php`, `Compat.php`: new, concentrated, partly unattributed. Interview Aiko.
+2. `Lexer.php` and its interface with `Escape.php`: interview Graham and Aiko together.
+3. `EntryParser.php`: 362 lines, 22 commits, all Graham. It is the largest and most stable file.
+META cost=0.0794611 ms=26492 turns=6

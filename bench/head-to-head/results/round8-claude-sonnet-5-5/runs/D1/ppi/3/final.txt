@@ -1,0 +1,43 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "cJSON.c cJSON.h \u2014 surviving-line ownership via git blame, ranked with percentages"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; for f in cJSON.c cJSON.h; do echo "== $f lines: $(wc -l < $f)"; done; echo "--- raw blame (no ignore)"; git blame --line-porcelain -w cJSON.c cJSON.h | grep '^author ' | sort | uniq -c | sort -rn | head -15; echo "--- with ignore-revs"; git blame --line-porcelain -w -M -C --ignore-revs-file .git-blame-ignore-revs cJSON.c cJSON.h | grep '^author ' | sort | uniq -c | sort -rn | head -25
+ - Bash: run(){ for f in cJSON.c cJSON.h; do git blame --line-porcelain "$@" -- $f | grep '^author '; done | sort | uniq -c | sort -rn; }; echo "--- raw, whitespace-insensitive, no ignore"; run -w | head -12; echo "--- ignore-revs + -w -M -C"; run -w -M -C --ignore-revs-file .git-blame-ignore-revs > /tmp/own.txt; cat /tmp/own.txt | head -30; awk '{t+=$1} END{print "total",t}' /tmp/own.txt; echo "--- per file"; for f in cJSON.c cJSON.h; do echo $f; git blame --line-porcelain -w -M -C --ignore-revs-file .git-blame-ignore-revs -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -6; done; echo "--- commit counts"; git log --no-merges --pretty=%an -- cJSON.c cJSON.h | sort | uniq -c | sort -rn | he
+ - Bash: ls .mailmap 2>&1 | head -1; for f in cJSON.c cJSON.h; do git blame --line-porcelain -w -M -C --ignore-revs-file .git-blame-ignore-revs -- $f | grep -E '^author(-mail)? ' | paste - - ; done | sort | uniq -c | sort -rn | awk '{n=$1; $1=""; print n"\t"$0}' | head -22; echo; git log --no-merges --pretty='%an <%ae>' | sort -u | grep -iE 'alan|tomas|tomás|dave|gamble|max|bruckner'
+FINAL ANSWER:
+**Sonuç:** `cJSON.c` ve `cJSON.h` içinde bugün duran satırların yaklaşık %75'ini Max Bruckner yazdı. Proje bus factor değeri 1.
+
+Yöntem: `git blame -w -M -C` ile yaptım. Toplam 3601 satır var (`.c` 3298, `.h` 303). `.git-blame-ignore-revs` içindeki clang-format commit'i (`413c6d1`) sayımdan çıkarıldı. Bu commit sayılsaydı satırların sahipliği formatlayan kişiye geçerdi.
+
+| # | Yazar | Satır | Pay |
+|---|---|---|---|
+| 1 | Max Bruckner | 2699 | 74,95% |
+| 2 | Kevin Branigan | 149 | 4,14% |
+| 3 | Tomás Ibarra (`tomasi` + `Tomás Ibarra`) | 142 | 3,94% |
+| 4 | Alan Wang | 131 | 3,64% |
+| 5 | Dave Gamble | 111 | 3,08% |
+| 6 | Mike Jerris | 76 | 2,11% |
+| 7 | caglarivriz | 31 | 0,86% |
+| 7 | PeterAlfredLee | 31 | 0,86% |
+| 9 | Nicolas Badoux | 29 | 0,81% |
+| 10 | Zach Hindes | 23 | 0,64% |
+| 11 | miaoerduo | 22 | 0,61% |
+| | Diğer (yaklaşık 25 kişi, her biri ≤13 satır) | 157 | 4,36% |
+
+**Dosya bazında**
+- `cJSON.c`: Max 2587 satır (78,4%). Sonra Kevin Branigan 149, Alan Wang 112, tomasi 66, Dave Gamble 62, Tomás Ibarra 60.
+- `cJSON.h`: Burada dağılım daha dengeli. Max 112 satır (37,0%), Mike Jerris 51 (16,8%), Dave Gamble 49 (16,2%), Alan Wang 19, Zach Hindes 17.
+
+**Commit sayısı neden yanıltıcı:** Commit sayısında Max 313 ile Dave Gamble 67 ilk iki sırada. Dave Gamble'ın payı satırlarda %3,08'e düşüyor, çünkü orijinal kodun büyük kısmı sonradan yeniden yazılmış. Kevin Branigan, Mike Jerris ve Tomás Ibarra commit listesinde üst sıralarda yok, ama toplamda Dave Gamble kadar ya da ondan fazla satırları duruyor.
+
+**Varsayımlar ve sınırlar**
+- `tomasi` (noreply e-postası) ile `Tomás Ibarra` (kurumsal e-posta) adları aynı kişiye benziyor, ben birleştirdim. Ayrı sayarsanız 74 (%2,06) ve 68 (%1,89) olur. Bu kişi hâlâ 3. sırada kalmıyor, 5.–6. sıraya düşüyor.
+- `.mailmap` dosyası var ama `blame --line-porcelain` onu uygulamıyor. `Alanscut` gibi başka takma adlar küçük bir farkla Alan Wang'a eklenebilir.
+- Satır sayısı bilgi derinliğini ölçmez. Küçük bir düzeltme ile bir çekirdek algoritmanın yazılması aynı ağırlıkta sayılıyor.
+- Sahiplerin hâlâ aktif olup olmadığına ve dosyaların kaç yerden kullanıldığına bakmadım. Bu iki dosya zaten kütüphanenin tamamı. İsterseniz aktiflik kontrolünü ekleyebilirim.
+META cost=0.0980634 ms=36380 turns=7

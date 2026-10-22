@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; cat .mailmap 2>/dev/null
+ - Bash: git shortlog -sne --all | sed -n '50,$p'; echo ---; git shortlog -sne --all | awk '{ $1=""; print }' | sed 's/ <.*//' | sort | uniq -d; echo ---; git log --all --format='%an <%ae>|%cn <%ce>' | tr '|' '\n' | sort -u | grep -i -E 'troy|goode|doug|wilson|efe|fiona'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sne --all | grep -E 'Troy|alex94|Alejandro C'; git status --short
+FINAL ANSWER:
+Two people appeared under more than one identity. I added a `.mailmap` at the repo root to merge them. It is untracked and not committed.
+
+- **Troy Goode** had two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2). Merged, that is 122.
+- **Alejandro Caravaca Puchades** had two names on the same email: `alex94puchades` (1) and the full name (4). Merged, that is 5.
+
+`.mailmap` only changes how Git reports authors, so history is not rewritten. `git shortlog` and `git log --use-mailmap` now count each person once.
+
+The top author is still **Douglas Christopher Wilson** with 143 commits. The merge moves Troy Goode to 122, still second.
+
+I left `Efe <<email redacted>>` and `Fiona Formatter <fiona@formatter.example>` alone. Nothing in the history shows they are the same person as anyone else. If either one is an alias of another author, tell me and I'll add a mapping.
+META cost=0.0500923 ms=12264 turns=4

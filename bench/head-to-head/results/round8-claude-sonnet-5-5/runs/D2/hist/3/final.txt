@@ -1,0 +1,43 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-hist-3/repo", "inactive_after": "1 year ago"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-hist-3/repo"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-hist-3/repo"}
+ - Bash: echo "== raw (no ignore) ==" && git ls-files '*.go' ':!vendor' | xargs -n1 git blame -w -M --line-porcelain 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -12 && echo "== ignoring 6bf5b04 ==" && git ls-files '*.go' ':!vendor' | xargs -n1 git blame -w -M --ignore-rev 6bf5b04 --line-porcelain 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -12 && git ls-files '*.go' ':!vendor' | xargs cat | wc -l && git log -3 --format='%h %an %ad %s' --date=short -- . ':!vendor'
+ - Bash: git ls-files '*.go' ':!vendor' | xargs -n1 git blame -w -M --ignore-rev 6bf5b04 --line-porcelain 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn > /tmp/own.txt; wc -l < /tmp/own.txt; git log --since='1 year ago' --no-merges --format='%an' -- '*.go' ':!vendor' | sort | uniq -c | sort -rn; echo ---; for a in "Lena Voss" "Sam Okafor" "Ethan P." "Georges Varouchas" "Maximilian Frank" "Sebastiaan van Stijn"; do echo "$a: $(grep -F " $a" /tmp/own.txt | head -1)"; done
+FINAL ANSWER:
+Short answer: the living Go code is spread thin and mostly written by people who are gone. Losing one or two people would not hurt much. The real problem is that almost nobody active knows the code.
+
+I counted lines with `git blame` over the 12,682 non-vendored lines of Go. I used `-w -M` and ignored the `interface{}`→`any` refactor (6bf5b04). Without that, the refactor credits Sam Okafor with lines they only reformatted. I excluded `vendor/`, because the historian's `knowledge_risk` output credits Sam with about 1,100 vendored x/term and x/sys lines.
+
+**Who owns the live code**
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 2,032 | 16% | 2018 |
+| Noah Dietz | 1,232 | 10% | 2018 |
+| Jonathan Reyna | 1,047 | 8% | 2017 |
+| Riobard | 923 | 7% | 2014 |
+| Alex Ogier | 837 | 7% | 2015 |
+| Tamal Saha | 626 | 5% | 2018 |
+| therealmitchconnors | 522 | 4% | 2019 |
+| Sam Okafor | 488 | 4% | 2026 |
+
+- **Concentration:** the top two authors own about 26% of the lines, and the top five about 48%. There are 79 distinct authors in the blame. Commit counts agree: 93 authors in total, and it takes 8 of them to cover 50% of commits.
+- **Departures:** no single departure would be a problem. The two biggest owners, Eric Paris and Noah Dietz, are already gone, and the library still works.
+- **Orphaned code:** the tool flags 86 of 93 files as orphaned. In the Go root, 94.8% of lines belong to authors inactive for more than a year. Most of that code was written between 2014 and 2019 and is mostly tests.
+- **Active maintainers:** only two people have touched Go in the last year. Sam Okafor owns about 488 lines and made 2 commits. Lena Voss owns about 143 lines and made 1 commit, the `Require*` helpers in #512. The rest of the recent ownership is from 2025 one-off contributors (Ethan P., Georges Varouchas, Maximilian Frank, Sebastiaan van Stijn) who haven't committed since. The 2025–26 commit rate is only about 0–7 a month.
+
+**What matters for you**
+- The risk is that two people are the whole active team. If either leaves, you have almost no one who knows the code.
+- Very few active people have written the core code. In `errors.go` (Ethan P.), `time.go` (Maximilian Frank) and the 2014–2018 slice and map flag types, the original authors are gone and nobody current has context.
+- When reviewing, expect to rely on tests and on reading the code. There is no one to ask about intent.
+
+Caveat: line ownership credits whoever last changed a line. Reformatting, renames and the generated accessors (9cc6f50) shift credit away from the original designers. The shares are approximate.
+META cost=0.10086550000000001 ms=31085 turns=8

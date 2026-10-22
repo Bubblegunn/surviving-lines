@@ -1,0 +1,23 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso && git log --since='2026-03-29 00:00' --until='2026-04-13 00:00' --date=short --format='%h %ad %an <%ae> %s' --no-merges | cat
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .mailmap 2>/dev/null; git log --all --format='%h %an <%ae> | %cn <%ce> %ad' --date=short | head -20; git show --stat --format='%h %s' b2005d9 02afce3 5317ebe | cat; git ls-files | head -50; echo ---; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^(author |[0-9a-f]{40} )' ; done | awk '/^author /{a=substr($0,8); c[a]++}END{for(k in c)print c[k],k}'
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe'; echo ---nofilter; for f in $(git ls-files); do git blame --line-porcelain -- "$f" | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E '62628c0|b2005d9|02afce3|5317ebe'; git log --format='%h %an' --author='Troy' | wc -l; git log --format='%h %ad' --date=short --author=Troy | cat
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12):
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (2026-04-10)<br>`b2005d9` lib: annotate handlers (2026-04-10) | 48 (36 in `test/vary.js`, 12 in `lib/index.js`) |
+| Vansh Sharma | `5317ebe` docs: replace `app.del()` with `app.delete()` in README example (2026-04-07, PR #411) | 1 (in `README.md`) |
+
+- **Excluded:** `62628c0` (Fiona Formatter, 2026-04-12) only reformats the JS to 4-space indent and double quotes. I found no bot commits in the window. Dependabot's latest commits are from March 2.
+- **Line counts:** I used `git blame` on HEAD and skipped the formatting commit, so lines it reformatted still count for their original author. Plain blame gives Troy only 1 line from `b2005d9`, because the reformat took over the other 11.
+- **Wider reading:** Troy has older history in this repo. Counting all of Troy's commits, 746 lines in the code today are theirs. Vansh has 1 either way.
+- **Counted once:** Each person appears under one name and one email, so nobody needed merging.
+META cost=0.0725296 ms=22368 turns=5

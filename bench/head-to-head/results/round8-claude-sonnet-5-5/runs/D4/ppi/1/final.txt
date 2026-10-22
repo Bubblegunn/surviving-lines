@@ -1,0 +1,69 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/ \u2014 based on surviving lines (git blame), not commit counts"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100 && echo --- && git ls-files src | wc -l && echo --- && git shortlog -sne --all --no-merges | head
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- $f | awk -v f=$f '/^author /{sub(/^author /,""); print f"\t"$0}'; done > /tmp/blame.tsv
+echo "== per file =="; sort /tmp/blame.tsv | uniq -c | sort -k2,2 -k1,1rn
+echo "== total src =="; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn
+echo "== last commit per author =="; git log --all --no-merges --format='%an|%ad' --date=short | sort -t'|' -k1,1 -u | head -0; git log --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -15
+FINAL ANSWER:
+## Bus factor: 1
+
+Based on `git blame -w -M -C` over `src/` at HEAD: 4,206 surviving lines across 8 files.
+
+Andrew Gallant wrote 2,554 of them (60.7%). One person already holds more than 50% of the code. If you exclude `errno_table.rs` (883 lines, generated), Andrew's share rises to 76.9%.
+
+### Per file
+
+| File | Lines | Top author | Share | Authors |
+|---|---|---|---|---|
+| `src/lib.rs` | 1194 | Andrew Gallant | 65.8% | 29 |
+| `src/tests/recursive.rs` | 1158 | Andrew Gallant | 87.7% | 5 |
+| `src/errno_table.rs` | 883 | Niko Alvarez | 100% | 1 |
+| `src/dent.rs` | 352 | Andrew Gallant | 82.7% | 8 |
+| `src/tests/util.rs` | 252 | Andrew Gallant | 100% | 1 |
+| `src/error.rs` | 262 | Andrew Gallant | 64.5% | 11 |
+| `src/util.rs` | 100 | ola.berg | 55% | 3 |
+| `src/tests/mod.rs` | 4 | Andrew Gallant | 100% | 1 |
+
+### Risk areas
+
+- **Critical:** `src/lib.rs` is the crate root. Andrew owns 65.8% of it. The other 28 authors each wrote 45 lines or fewer.
+- **High:** `src/dent.rs` (82.7% Andrew) and `src/tests/recursive.rs` (87.7% Andrew).
+- **Single owner:** `src/errno_table.rs` is 100% Niko Alvarez. It is generated, so the risk is low if the generator is documented. `src/tests/util.rs` is 100% Andrew.
+- **Healthier:** `src/util.rs` has no author above 55%. It is only 100 lines.
+
+### Owner activity
+
+I used each author's last commit date. 90 days before today (2026-10-22) is about 2026-07-24.
+
+| Author | Last commit | Active (90 days)? |
+|---|---|---|
+| Andrew Gallant | 2026-04-09 | No |
+| Niko Alvarez | 2026-03-20 | No |
+| ola.berg / Ola Berg | 2026-03-12 / 2026-02-10 | No |
+| Sebastian Thiel | 2023-09-05 | No |
+
+Nobody who owns a meaningful share of `src/` committed in the last 90 days. The main owner's last commit is about 6.5 months old.
+
+### Caveats
+
+- Authors are counted by name, and there is no `.mailmap`. These names look like the same person:
+  - Ola Berg and ola.berg: 113 lines combined.
+  - Ashley and Ashley Mannix: 72 lines.
+  - Niv Kaminer and nivkner: 45 lines.
+  - Alisha and Alisha Aneja: 9 lines.
+- Merging them does not change the result. Bus factor stays 1.
+- I did not count dependents per file. I judged `lib.rs` as critical because it is the crate root.
+
+### Recommendations
+
+1. **Now:** Get someone other than Andrew to review `lib.rs` and `dent.rs` changes.
+2. **Short-term:** Add a `.mailmap`. Document how `errno_table.rs` is generated, so Niko is not the only person who knows it.
+3. **Ongoing:** Have a second person write or extend tests in `recursive.rs`. Add module-level docs to `dent.rs`.
+META cost=0.0866715 ms=27868 turns=6

@@ -1,0 +1,58 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne HEAD | head -20; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c | sort -rn | head -20
+ - Bash: git ls-files; echo ---; git log --oneline | wc -l; git log --format='%an' --since='2 years ago' | sort | uniq -c | sort -rn | head; echo; for f in $(git ls-files | grep -vE 'lock|\.png|\.svg'); do echo "== $f"; git blame -w -C -M --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done
+ - Bash: for f in $(git ls-files); do echo "$(git log --format='%an' -- "$f" | sort | uniq -c | sort -rn | head -2 | tr '\n' ';') $f"; done; git log --format='%an %ad' --date=short | head -3; git log --format='%ad' --date=short | tail -1
+FINAL ANSWER:
+Bus factor is low, and the line-level risk is mostly Troy Goode. I used `git blame -w -C -M`, ignoring the reformat commit `62628c0`, plus per-file commit counts. History is 354 commits from 2013-01-30 to 2026-04.
+
+**Overall**
+- Douglas Christopher Wilson: 143 commits.
+- Troy Goode: 122 commits, counting a second email for the same name.
+- Everyone else: 11 or fewer commits each. Dependabot has 11.
+
+**Single-contributor dependence (blame ownership)**
+
+| Area | Owner | Share |
+|---|---|---|
+| `lib/index.js`, the only source file | Troy Goode | 159 of 193 lines (82%). Wilson has 22 and Caravaca Puchades 12. |
+| `test/vary.js` | Troy Goode | 100% (36 lines) |
+| `test/issue-2.js` | Troy Goode | 83% |
+| `test/example-app.js` | Troy Goode | 83% |
+| `test/error-response.js` | Troy Goode | 86% |
+| `README.md` | Troy Goode | 54%, with Jon Church 33% and Linus Unnebäck 12% |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js` | Wilson | 100%, but only 2–7 lines each |
+| `.github/workflows/scorecard.yml` | Íñigo Marquínez Prado | 94% |
+| `.github/workflows/codeql.yml` | Sebastian Beltran | 95% |
+| `.github/dependabot.yml` | Ulises Gascón | 100% |
+
+**Shared ownership**
+- `test/test.js`, the main test suite: Wilson 339 lines, Goode 317 lines.
+- `.github/workflows/ci.yml`: Wilson 118 lines, Ignacio Mangas 44, Gascón 30.
+- `package.json` and `HISTORY.md`: Wilson owns most of both. `HISTORY.md` is 85% Wilson.
+
+**Risk assessment**
+- **Troy Goode is the main risk.** They wrote most of `lib/index.js` and nearly all the older tests.
+  - Their last commits are 2026-04-10, the most recent author dates I checked, so they may still be active.
+  - Wilson is the only other significant contributor to the core code, and he is mostly in the release and tooling files.
+- **CI and security workflows** each depend on one person: Marquínez Prado (scorecard), Beltran (codeql) and Gascón (dependabot). They are small, self-contained config files. Replacing the owner is easy, so the impact is low.
+- **Recent activity** is spread across many people, but the commits are small:
+  - Over the last two years there were 11 Dependabot commits.
+  - Gascón and Jon Church made 3 commits each.
+  - Beltran, Mangas and Troy Goode made 2 each.
+  - No recent contributor has taken over `lib/index.js`.
+
+**Caveats**
+- Blame shows who last touched a line, not who understands the code. Sole-author lines are a proxy for knowledge, not proof of it.
+- Git shows the same person under different emails. Troy Goode appears under `<email redacted>` and `troy@laptop.example`. I merged them by name. I did not merge other identities, so some counts may be slightly low.
+- I excluded `62628c0` from blame, along with whitespace changes. Without that, "Fiona Formatter" would own most lines.
+
+**Suggested actions**
+- Have a second person review or co-own `lib/index.js`.
+- Document the intent behind `test/vary.js`, since only Goode has touched it.
+META cost=0.041489700000000004 ms=40016 turns=5

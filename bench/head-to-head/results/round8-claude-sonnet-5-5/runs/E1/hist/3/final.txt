@@ -1,0 +1,46 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 3}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-3/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-3/repo"}
+ - Bash: git show -s --format='%h %an <%ae> %ad' 62628c0 && for f in lib/index.js test/test.js test/example-app.js test/error-response.js; do echo "== $f"; git blame --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+Short answer: no part of the codebase depends on a single contributor. Two people hold most of the knowledge, and both are now inactive.
+
+**Overall**
+- The repo has 326 non-merge commits from 64 authors, spanning 2013-01-30 to 2026-04-12.
+- The bus factor is 2. Douglas Christopher Wilson (143 commits, 43.9%) and Troy Goode (95 commits, 29.1%) together cover more than 50% of commits. dependabot is next at 11 commits, and no one else has more than 4.
+- The tool's silo rule flags a directory when one author made more than 80% of its commits. No directory is flagged:
+
+| Directory | Commits | Authors | Top author | Top author's share |
+|---|---|---|---|---|
+| root | 233 | 42 | Wilson | 51% |
+| `lib` | 66 | 25 | Goode | 50% |
+| `test` | 72 | 18 | Goode | 44% |
+| `.github` | 27 | 7 | Wilson | 37% |
+
+**Single-owner files**
+
+These are the files where line ownership is concentrated in one person. Ownership here is the share of lines at HEAD, from `git blame`.
+- Wilson owns `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js`, which are tiny config files. He is also the main owner of `HISTORY.md` (78%), `LICENSE` (77%), `.gitignore` (80%), `package.json` (48%) and `.github/workflows/ci.yml` (49%). His last commit was 2021-09-07.
+- Goode owns `test/vary.js` (100%), `test/issue-2.js` (83%) and `README.md` (38%). His last commit was 2026-04-10.
+- Some CI files have a single owner who is no longer active:
+  - `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado (93%), last commit 2024-05-14.
+  - `.github/workflows/codeql.yml`: Sebastian Beltran (95%), last commit 2025-07-23.
+  - `.github/dependabot.yml`: Ulises Gascón (100%), last commit 2026-01-22.
+
+**Two caveats on the tool's output**
+- The "Fiona Formatter" figure is misleading. The tool reports her as owning 50.9% of lines, including `lib/index.js` (90%) and `test/test.js` (94%). All of that comes from the style commit `62628c0` (4-space indent and double quotes), which rewrote whitespace. Ignoring that commit with `git blame --ignore-rev`, the real `lib/index.js` owners are Goode (109 lines), Fiona Formatter (57), Wilson (36) and Raymond Feng (8). For `test/test.js` they are Wilson (270), Goode (213) and Fiona Formatter (178). `test/example-app.js` and `test/error-response.js` are mostly Goode's work (66 of 81 and 56 of 66 lines). I did not re-run the rest of the files this way.
+- The tool reports all 18 files as orphaned, but I don't trust that count. It treats "inactive" as no commit since 2026-04-22, six months before today (2026-10-22), and the repo's last commit was 2026-04-12. So every author counts as inactive, including Goode. That says the repo has had no commits for six months. It does not show that any particular person has left.
+
+**Recommendation**
+- The core logic in `lib/index.js` is shared mainly by Goode and Wilson. If either leaves, the other is the only person with deep history there.
+- The highest-risk files are the CI and security workflows (`scorecard.yml`, `codeql.yml`, `dependabot.yml`). Each was written by one person who is no longer committing.
+- If you want, I can run `knowledge_risk` or `blame_summary` on `lib/` alone with the style commit excluded.
+META cost=0.08604640000000001 ms=21505 turns=7

@@ -1,0 +1,45 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -20; echo ---; git log --format='%an' | wc -l; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c
+ - Bash: git ls-files; echo ---; for f in $(git ls-files | grep -v -E 'package-lock|\.png|\.ico'); do echo "== $f ($(git log --follow --format=%an -- $f | wc -l) commits)"; git log --follow --format='%aN' -- $f | sort | uniq -c | sort -rn | head -3; done 2>/dev/null; echo ---; git blame -w -M -C --line-porcelain lib/*.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo; git log --since=2024-10-22 --format='%aN' | sort | uniq -c | sort -rn | head -5
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson"; do echo "$a: first $(git log --author="$a" --format=%as | tail -1) last $(git log --author="$a" --format=%as | head -1)"; done; git log -5 --format='%h %aN %as %s'
+FINAL ANSWER:
+Repo is small (17 tracked files, 354 commits), so the analysis is per file. It uses `git log --follow` for commit counts and `git blame -w -M -C` for surviving lines.
+
+**Main single-contributor risk: Troy Goode**
+
+- **`lib/index.js`** is the whole runtime. Troy wrote 138 of the surviving lines. The next largest shares are Fiona Formatter with 32 (a formatting-only commit, so it carries no real knowledge), Douglas Wilson with 18, and Alejandro Caravaca Puchades with 12. Troy has 29 of 62 commits on the file, which is the biggest share. Nobody else has more than 4 commits there.
+- **`test/vary.js`** has 1 commit, from Troy.
+- **`test/issue-2.js`** has 10 of 12 commits from Troy.
+- **`test/example-app.js`** has 10 of 13 commits from Troy.
+- **`test/error-response.js`** has 5 of 9 commits from Troy.
+- **`README.md`** has 37 of 74 commits from Troy.
+
+Troy is also still active. Their last commit was 2026-04-10, and they made 2 of the commits in the last 2 years. That makes them the only maintainer who still knows the code. Losing Troy would leave nobody with deep knowledge of `lib/index.js`.
+
+**Secondary risk: Douglas Christopher Wilson**
+
+- He owns the single-author files `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js`. These are lint and test-environment config, so the risk is low.
+- He has 68 of 113 commits on `package.json`, covering release and dependency handling.
+- He has 10 of 16 commits on `.github/workflows/ci.yml`.
+- His last commit was 2021-09-07, so he is effectively inactive. Whatever he knew about package and CI setup has already left the project.
+
+**Not at risk**
+
+- `.github/workflows/codeql.yml` and `scorecard.yml` are mostly dependabot bumps, with a few contributors.
+- `.github/dependabot.yml` is a single commit from Ulises Gascón. It is trivial config.
+- `HISTORY.md`, `LICENSE` and `.gitignore` are small and easy to recreate.
+
+**Caveats**
+
+- Authors are matched by name. "Troy Goode" appears under two emails (`<email redacted>` and `troy@laptop.example`), and I counted both as the same person.
+- Commit counts show activity, not ownership. The line-blame numbers for `lib/index.js` are the better signal.
+- "Fiona Formatter" is a formatting-only author, and the blame run did not filter it out. It probably reflects the recent reformat commit.
+
+**Recommendation:** get a second person to review changes to `lib/index.js`. Ulises Gascón, Jon Church and Sebastian Beltran all contributed in the last 2 years and are the most likely candidates. Document the intent of the `lib/index.js` handlers. Also give `package.json` and the CI workflows a current owner.
+META cost=0.0640856 ms=19320 turns=5

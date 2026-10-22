@@ -1,0 +1,32 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso && git log --since='2026-03-29' --until='2026-04-13' --no-merges --format='%h|%an|%ae|%ad|%s' --date=short; cat .mailmap 2>/dev/null
+ - Bash: git log --since='2026-03-20' --format='%h|%an|%ae|%cn|%ad|%s' --date=iso | head -30; git shortlog -sne --all | head -30
+ - Bash: git show --stat --format='%h %s' b2005d9 02afce3 5317ebe 62628c0 | head -40; git show b2005d9 02afce3 5317ebe | head -150
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -C -M --line-porcelain -- "$f" 2>/dev/null | grep -E '^(author|summary) ' | paste - - | grep -E 'b2005d9|02afce3|5317ebe' >/dev/null; done; git ls-files | while read f; do git blame --ignore-rev 62628c0 -w --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^[0-9a-f]{40} /{sha=substr($1,1,7)} /^author /{print sha"|"substr($0,8)"|"f}'; done | grep -E '^(b2005d9|02afce3|5317ebe)' | sort | uniq -c
+ - Bash: grep -c '// checked' lib/index.js; wc -l test/vary.js; grep -n 'delete' README.md | head -3
+FINAL ANSWER:
+Two people committed in the 14 days up to 2026-04-12 (the window starts 2026-03-29). The counts below ignore the formatting commit.
+
+| Person | Commits in window | Lines still in the code |
+|---|---|---|
+| **Troy Goode** | 2 | **48** |
+| **Vansh Sharma** | 1 | **1** |
+
+**Troy Goode**
+- `02afce3` (test: vary header coverage) added `test/vary.js`. All 36 lines are still there.
+- `b2005d9` (lib: annotate handlers) added `// checked` comments to 12 function lines in `lib/index.js`. All 12 are still there.
+- These two commits use the email `troy@laptop.example`. Troy's other 120 commits in the repo use `<email redacted>`, and no `.mailmap` file merges the two. I counted both as one person, since the name is the same. That is an assumption on my part.
+
+**Vansh Sharma**
+- `5317ebe` (docs: app.del() with app.delete() in README example, #411) changed one line in `README.md`. That line is still there.
+
+**Set aside**
+- Fiona Formatter's commit `62628c0` (style: reformat js with 4-space indent and double quotes) only changed formatting. I left it out.
+- I ran `git blame` ignoring that commit and ignoring whitespace changes. Troy's 12 `lib/index.js` lines would otherwise show as Fiona's.
+- The window had no bot commits. Dependabot appears elsewhere in the repo history but not in this window.
+META cost=0.06854319999999998 ms=21689 turns=6

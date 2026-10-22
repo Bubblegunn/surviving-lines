@@ -1,0 +1,33 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --oneline | wc -l && ls src/itsdangerous && for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -M -C -C --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn; done; git shortlog -sne HEAD | head -20
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --author='Ibarra' --author='Reyes' --stat --format='--- %h %an %ad%n%s%n%b' --date=short | head -60; echo; git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/signer.py | head -40
+ - Bash: git log --format='%h %an %ad %s' --date=short --follow -- src/itsdangerous/timed.py | head -40; echo; git log --all --oneline -S'pre-commit' --format='%h %an %s' -- .pre-commit-config.yaml | tail -2; echo; git show 93695fd --format='%h %an <%ae> committer=%cn %s' --stat | head; git show 93695fd -- src/itsdangerous/signer.py | head -140
+ - Bash: grep -rn "rotate_" --include=*.py --include=*.rst --include=*.md . | grep -v "def rotate_" | head; ign=$(mktemp); for r in 0635526 228b7b1 7104e55 0e255fc aed5b26 d9b9514 69a3bca 9a25d98 ffeab7f c294b2f; do git rev-parse $r; done > $ign; for f in signer timed; do echo "== $f (ignoring mechanical commits)"; git blame -w -M -C -C -C --ignore-revs-file $ign --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git show 0635526 --stat --format=%s | head; git show 0635526 --stat -M --format=%s -- src | head -20
+ - Bash: ign=$(mktemp); for r in 228b7b1 7104e55 0e255fc aed5b26 d9b9514 69a3bca 9a25d98 ffeab7f c294b2f; do git rev-parse $r; done > $ign; for f in signer timed; do echo "== $f"; git blame -w -M -C -C -C --ignore-revs-file $ign --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done; echo; grep -rn 'rotate_' . --include='*.py' --include='*.rst' --include='*.md' | grep -v 'def rotate_' | head -5; grep -n 'rotate' CHANGES.rst docs/*.rst | head; git log -3 --format='%h %an %ad %s' --date=short -- src/itsdangerous/__init__.py; git log --since=2025-01-01 --format='%an' -- src/itsdangerous | sort | uniq -c
+FINAL ANSWER:
+**David Lord** is the best reviewer for the code that survives in `signer.py` and `timed.py`. Ask **Tomás Ibarra** as well if your change touches the `rotate_*` helpers.
+
+Surviving lines per author. I ignored whitespace and pure-move changes, plus the bulk commits that touched every line: pyupgrade, typing, pyright, pre-commit and the `_compat` removal.
+
+| File | David Lord | Tomás Ibarra | Armin Ronacher | Others |
+|---|---|---|---|---|
+| `signer.py` (366 lines) | 215 | 100 | 19 | Hsiaoming Yang 18, Arnout van Meer 11, 3 more with 1–2 lines each |
+| `timed.py` (300 lines) | 167 | 72 | 45 | Zach Hugnou 6, Alan Hamlett 4, 4 more with 2 lines each |
+
+- **David Lord:** They wrote the largest share of the current code and have touched these files in every year since 2018. They are the only active maintainer of the core logic.
+- **Armin Ronacher:** Armin wrote the original design, including the fallback signers and the SHA-512 fallback. Their last commit to these files was in 2018, and David has rewritten much of it since. I would not ask Armin.
+- **Tomás Ibarra:** Their two commits from 2025-07-01 and 2025-07-02 account for 172 lines, about a quarter of the two files. The lines are `rotate_0` through `rotate_13` in `signer.py` and a similar set in `timed.py`.
+  - Nothing in the repo calls `rotate_*`, and the docs don't mention them.
+  - They are small arithmetic functions (`value % n`, `value * k + i`) with no connection to signing or keys.
+  - They look like placeholder or generated code, not real key-rotation logic.
+  - I did not verify this beyond the grep.
+- **Your change:** I don't know what it is. If it touches the Tomás code, check first whether that code should exist at all.
+
+The blame data cannot show who designed a given function. It only shows who last wrote each line.
+META cost=0.1003061 ms=36588 turns=7

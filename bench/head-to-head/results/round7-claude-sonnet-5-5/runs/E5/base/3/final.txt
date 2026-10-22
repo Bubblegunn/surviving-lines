@@ -1,0 +1,66 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -50; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo; wc -l lib/index.js; git log --follow --format=%h -- lib/index.js | wc -l
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git ls-files lib | head
+ - Bash: git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -13; git log --follow --name-status --format='%h' -- lib/index.js | grep -E '^R'; git show --stat --format='%h %an <%ae> %s' b2005d9 62628c0 | head -20
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+`lib/index.js` has 62 commits and 238 lines today. Troy Goode created it and wrote most of what remains.
+
+**Who shaped it**
+- **Troy Goode** (2013–2026): 29 commits. He made the first commit on 2013-01-30 and the early structure: case-insensitive header lookup, `origin: false` disabling CORS, pause/resume for async middleware, and the `Access-Control-Expose-Headers` support. He added Express 4+ and Connect support, switched to the `vary` module, and moved the linter to ESLint. His latest commit is `lib: annotate handlers` (2026-04-10).
+- **Alejandro Caravaca Puchades** (2015): 4 commits plus 1 under the alias `alex94puchades`. They added RegExp and array values for `options.origin`.
+- **Douglas Christopher Wilson** (2017): 4 commits. He added `Vary: Access-Control-Request-Headers`, fixed the missing-`methods` error, and made lint fixes.
+- **Simon Mansfield** (2013): 3 commits for the early `Origin` check and the credentials header.
+- **One-commit contributors:**
+  - Damien Klinnert: only send `Access-Control-Allow-Methods` on preflight.
+  - Mathias Buus: non-Express request/response support.
+  - Eric di Domenico: `origin` as a callback.
+  - Shane Tomlinson: uppercase method names.
+  - Typicode: `PATCH` as a default method.
+  - Igor Soarez: `Vary: Origin` for specific origins.
+  - Raymond Feng: `applyHeaders` without a closure.
+  - Eran Tiktin: no `Vary: origin` for `*`.
+  - max.laverse: pass the preflight request to `next()`.
+  - DracoBlue: expose headers on OPTIONS.
+  - Hannah Wolfe: name the anonymous middleware.
+  - jordandenison: strict-mode fix for the `middlewareWrapper` param.
+  - Saad Tazi: handle frozen options.
+  - Tomek Kopczuk: `Vary: Origin` with regular expressions.
+  - Benjamin Eidelman: Safari preflight workaround.
+  - Chima Alaebo: remove an unreachable branch.
+  - Tom Arad: `maxAge: 0` fix.
+  - LuisEGR: remove unused function parameters.
+- **Fiona Formatter** (2026-04-12): 1 commit. It reformatted the file to 4-space indentation and double quotes. It is style only.
+
+**Whose code is still in it**
+
+I ran `git blame -w -M -C` and ignored the reformat commit `62628c0`, so those lines go to whoever last changed their content. Without that exclusion, Fiona shows as the author of 32 lines, all from quote and indent changes.
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 (+4 as `alex94puchades`) |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Benjamin Eidelman | 3 |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy Goode wrote about two thirds of the current lines. Wilson is second, mostly through the `Vary` handling and lint fixes. Alejandro Caravaca Puchades is third, through the `origin` matching logic.
+
+**Caveats**
+- Some contributors have no surviving lines. These are Damien Klinnert, Typicode, DracoBlue, Tomek Kopczuk and jordandenison, and later rewrites replaced their code. Alberto Leal still has 2 lines.
+- The blame counts total 238, so they cover every line in the file.
+- Git authorship is not the same as who designed a change. Squashed or rewritten commits can hide that.
+- The 2026 commits come from `@laptop.example` and `@formatter.example` addresses. The 2026-04-10 `lib: annotate handlers` commit is under Troy Goode's name, and I did not check whether the identity is genuine.
+META cost=0.0535671 ms=23671 turns=6

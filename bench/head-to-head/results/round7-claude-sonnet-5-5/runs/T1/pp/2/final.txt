@@ -1,0 +1,31 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | wc -l && git log --oneline | wc -l && git show --stat --format='%h %an %s' 62628c0 | tail -5
+ - Bash: git ls-files; for mode in raw ignore; do echo "== $mode"; for f in $(git ls-files); do case $f in *.png|*.jpg|*.ico) continue;; esac; if [ $mode = ignore ]; then git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f"; else git blame -w -M -C --line-porcelain -- "$f"; fi 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; done
+ - Bash: B="git blame -w -M -C --ignore-rev 62628c0 --line-porcelain"; echo "== all files"; for f in $(git ls-files); do $B -- "$f"; done 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1} END{print "total",n; for(i=1;i<=6;i++) print c[i]}'; echo "== lib/index.js"; $B -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo "== README.md"; $B -- README.md | grep '^author ' | sort | uniq -c | sort -rn | head -3; git log --format='%an' | sort | uniq -c | sort -rn | head -3
+ - Bash: b(){ git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$1" 2>/dev/null | grep '^author '; }; echo "== all"; for f in $(git ls-files); do b $f; done | sort | uniq -c | sort -rn > /tmp/own.txt; awk '{n+=$1} END{print "total",n}' /tmp/own.txt; head -4 /tmp/own.txt; echo "== lib/index.js"; b lib/index.js | sort | uniq -c | sort -rn | head -4; echo "== test/test.js"; b test/test.js | sort | uniq -c | sort -rn | head -3
+FINAL ANSWER:
+Method: `git blame` on all 18 tracked files, counting the author of each line that survives at HEAD (1,995 lines). I used `-w -M -C` to ignore whitespace changes and follow moved or copied lines. I also excluded commit `62628c0`, the 4-space/double-quote reformat. That commit touched 1,016 lines and gave "Fiona Formatter" credit for 291 lines that don't reflect real authorship.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Others (Ignacio Mangas, Alejandro Caravaca Puchades, Linus Unnebäck, and others) | remainder | ~12% |
+
+- **Troy Goode and Douglas Wilson** own about 72% of the surviving lines.
+- **Troy Goode** wrote most of the library. In `lib/index.js` he has 159 lines and Wilson has 22.
+- **Douglas Wilson** leads the tests. In `test/test.js` he has 339 lines to Troy's 317.
+- **Commit counts** put Wilson (143) slightly ahead of Troy (122). Line survival reverses that order, because Troy's lines in the core library lasted.
+- **Counts are approximate.** Blame credits the last person to change a line. Small edits such as lint fixes or renames can transfer a line from its original author, and `-M -C` only partly corrects for that.
+- **Reformat commit.** If you keep it, "Fiona Formatter" shows 291 lines (14.6%). That is mostly mechanical reformatting of lines Troy and Wilson wrote, so I excluded it.
+META cost=0.07356739999999999 ms=24253 turns=6

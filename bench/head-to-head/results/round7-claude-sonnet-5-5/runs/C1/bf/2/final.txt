@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.go' | wc -l && for f in $(git ls-files '*.go'); do git blame -w -M -C --ignore-rev d43be5f --ignore-rev 822af32 --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -12
+ - Bash: for f in $(git ls-files '*.go'); do git blame -w -M -C --ignore-rev d43be5f --ignore-rev 822af32 --line-porcelain -- "$f" | grep -E '^author(-mail)? ' | paste - -; done | sort | uniq -c | sort -rn > /tmp/blame.txt; awk '{s+=$1} END{print s}' /tmp/blame.txt; head -15 /tmp/blame.txt
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C`, 78 tracked `.go` files, 15,313 lines). I excluded the `go fix` and license-header commits (`d43be5f`, `822af32`), which would otherwise credit Efe Genc with lines they only touched mechanically.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,085 | ~13.6% |
+| 2 | Noah Dietz | 1,256 | ~8.2% |
+| 3 | Alex Ogier | 1,222 | ~8.0% |
+| 4 | Jonathan Reyna | 1,077 | ~7.0% |
+| 5 | Marcus Lindqvist | 961 | ~6.3% |
+
+- **Marcus Lindqvist merge:** Marcus appears under two emails, `<email redacted>` (636 lines) and `mlindqvist@corp.example` (325 lines). I merged them because the name is identical, but I haven't confirmed it's one person. If they are separate, Priya Raman (802 lines, ~5.2%) takes fifth place and Marcus drops to 636 lines (~4.2%).
+- **Concentration:** The top five own only about 43% of the lines. Ownership is spread across many contributors (the next ten authors each hold between roughly 2% and 4%).
+- **What blame can't tell you:** Blame shows who wrote the surviving lines, not who is still active. Several of these contributors may have left the project. Check recent commit dates before inviting anyone as a co-maintainer. The `busfactor` skill can produce that activity and CODEOWNERS view if you want it.
+META cost=0.048911300000000005 ms=19839 turns=3

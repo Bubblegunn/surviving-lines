@@ -1,0 +1,29 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls; ls .github CODEOWNERS docs 2>/dev/null | head; echo ---; git shortlog -sne HEAD -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb; echo ---; git log --since="12 months ago" --format='%an|%ad' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | head -20; echo ---; git log --format='%h %an %ad %s' --date=short -- lib/rack/attack/store_proxy | head -25
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sn --since="18 months ago" HEAD | head; echo ---; git log -3 --format='%an %ad' --date=short -- lib/rack/attack/store_proxy/redis_cache_store_proxy.rb; git log --format='%an' --since="18 months ago" -- lib | sort | uniq -c | sort -rn | head -5; ls lib/rack/attack/store_proxy
+FINAL ANSWER:
+No CODEOWNERS file exists, so this comes from git history for `lib/rack/attack/store_proxy/`.
+
+**Who to ask**
+- **Hye-jin Park** is the best person to ask about current behavior. They wrote the latest work on the Redis proxies: `multi_increment`/`ttl`/`exists?` on `RedisProxy` (2026-01-14) and TTL on `RedisCacheStoreProxy` (2026-02-20).
+- **Mei Tanaka** extracted `DalliAccessors` (2026-02-09). Ask them about the Dalli/memcached proxies.
+- **Divya Rao** added `MemoryStoreProxy` (2026-01-28).
+- **Jaroslav Novak** added `NullProxy` (2026-03-03), and Gonzalo Rodriguez removed it a few days later (2026-03-09). Ask one of them why it was dropped before you add anything similar.
+- **Gonzalo Rodriguez** has the most commits on this directory (29 plus 2 under another email) and the longest history, back to 2019. They also made the most recent human commit here, so they are the best person to ask why the code is shaped this way.
+- **fatkodima** wrote the dynamic proxy lookup and the test-reset behavior (2019). **Santiago Bartesaghi** fixed `reset!` for namespaced stores (2024).
+
+**Who to ask to review**
+- Ask **Gonzalo Rodriguez** to review. They have the most history on this code and are still active in the repo.
+- Ask **Hye-jin Park** as a second reviewer if your change touches the Redis proxies. Ask **Mei Tanaka** instead if it touches the Dalli proxies.
+
+**Caveats**
+- Four of the 2026 authors (Hye-jin Park, Mei Tanaka, Divya Rao, Jaroslav Novak) have `@example.org` emails. Check that they are real, reachable contributors before you tag them.
+- Git history shows who edited the code, not who has merge rights. Check the repo's maintainer list on GitHub for that.
+- I can generate a CODEOWNERS file and a bus-factor report with the `busfactor` skill if you want.
+META cost=0.06220850000000001 ms=15065 turns=4

@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files lib); do echo "== $f $(grep -rlE "$(basename $f .js)" --include=*.js lib index.js 2>/dev/null | wc -l)"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; echo; done; echo ---; git log -1 --format=%cd; git log --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c
+ - Bash: git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | awk -F'|' '!s[$1]++' | head -8; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn | awk '{t+=$1} END{print t}'; git log --since="2025-10-22" --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn
+FINAL ANSWER:
+## Bus factor of `lib/`: 1
+
+`lib/` holds one source file, `lib/index.js`, so file-level and directory-level results are the same. History covers all time, with merges excluded.
+
+**Answer: if Troy Goode leaves, nobody is left who has substantial knowledge of `lib/`.**
+
+| Metric | Value |
+|---|---|
+| Source files | 1 (`lib/index.js`) |
+| Commits touching `lib/` | 66 |
+| Contributors | 25 |
+| Troy Goode's share | 33 of 66 commits (50%) |
+| Next most active contributors | Douglas Christopher Wilson (4), Alejandro Caravaca Puchades (4), Simon Mansfield (3) |
+| Everyone else | 1–2 commits each |
+
+The share is 29 of 58 (50%) for `lib/index.js` alone, using the commit counts from the per-file blame check. I could not reconcile why that count is 58 and the directory total is 66. Both give 50% for Troy Goode.
+
+**Why the answer is 1, not 25:**
+- Troy Goode has about 7 times more commits than the next person. The commit-count method I'm using treats a contributor as someone who understands the code only if they have a meaningful share of commits. By that measure, Troy Goode is the only one.
+- Most of the other 24 contributors made one-off patches. Several of them left in 2017–2021, for example LuisEGR (last commit 2021-07), Tom Arad (2018-11) and Douglas Christopher Wilson (2017-10).
+- Two contributors have committed in the last year: Troy Goode (2026-04-10, 1 commit) and Fiona Formatter (2026-04-12, 1 commit). Fiona Formatter's single commit is the formatting-only change, `style: reformat js with 4-space indent and double quotes`, which shows no knowledge of the logic.
+- No one has committed to `lib/` in the last 90 days, because the latest commit is 2026-04-12 and today is 2026-10-22.
+
+**Risk: HIGH.**
+- `lib/index.js` is the library's entire public surface.
+- One person wrote half of it.
+- Activity is low: only two commits in the last year.
+
+The importance check (counting files that import it) showed 0 dependents inside the repo. That is expected for a library entry point. External consumers are the real dependents, and this analysis can't count them.
+
+**Caveats:**
+- This is based on git commit counts, not on who actually understands the code.
+- Squashed or merged contributions and renamed author names could be undercounting some people.
+- I did not use the `contributor-analyzer` agent, because the data for one file was small enough to gather directly.
+
+**Recommendations:**
+1. Have a second maintainer, ideally a currently active one, review and take ownership of `lib/index.js`. Troy Goode's logic is the part to transfer.
+2. Add a short design note or comments on the non-obvious handlers, since the annotation commit (`lib: annotate handlers`) shows this is already under way.
+3. Route future `lib/` changes through review by someone other than Troy Goode, so the commit share spreads over time.
+META cost=0.061614300000000004 ms=17064 turns=5

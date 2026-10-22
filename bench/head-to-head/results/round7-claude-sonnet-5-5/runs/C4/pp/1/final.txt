@@ -1,0 +1,34 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author '; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{for(i=1;i<=NR&&i<=8;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/t}; print "total", t}'; done
+FINAL ANSWER:
+Ask **José Valim** about `lib/`. `test/` is mostly the same person, but the rest of the ownership differs. These shares come from `git blame` on surviving lines. I ignored whitespace changes, tracked moved or copied lines, and applied `.git-blame-ignore-revs`.
+
+**`lib/`** (1,496 lines)
+- José Valim: 56.7%
+- Kaito Mori: 17.0%
+- Weblate: 5.3%. This is bot-committed translation text, so it has no human owner.
+- Rafael Mendonça França: 3.8%
+- Vestimir Markov: 3.4%
+- Carlos Antonio da Silva: 3.1%
+
+**`test/`** (1,853 lines)
+- José Valim: 57.5%
+- Rafael Mendonça França: 9.8%
+- Kaito Mori: 8.6%
+- Carlos Antonio da Silva: 6.4%
+- Lucas Mazza: 4.5%
+- Jan De Poorter: 3.7%
+
+**Same owners?** Partly.
+- José Valim owns about 57% of both, so he is the main contact for either.
+- Kaito Mori is the second owner of `lib/` (17%) but only third in `test/` (8.6%).
+- Rafael Mendonça França and Carlos Antonio da Silva have more of `test/` than of `lib/`. Rafael is second in `test/` (9.8%) and fourth in `lib/` (3.8%). Carlos has 6.4% of `test/` against 3.1% of `lib/`.
+- If José isn't available, ask Kaito Mori about `lib/` and Rafael Mendonça França about `test/`.
+
+Blame shows who wrote the code, not who is active now. I did not check recent activity.
+META cost=0.0431468 ms=13978 turns=2

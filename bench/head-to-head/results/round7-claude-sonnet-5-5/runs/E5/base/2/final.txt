@@ -1,0 +1,47 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -20; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -5; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -8; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git log --follow --format='%ad' --date=short -- lib/index.js | awk -F- '{print $1}' | sort | uniq -c | tr '\n' ' '
+FINAL ANSWER:
+`lib/index.js` has 238 lines. History comes from `git log --follow` and `git blame -w -M -C`.
+
+**Who shaped it**
+- **Troy Goode** created it in the first commit on 2013-01-30. He made 29 of the roughly 70 commits, most of them in 2013. In that first stretch he added:
+  - case-insensitive header lookup;
+  - `origin: false` to turn CORS off;
+  - lint fixes;
+  - pause/resume of the request to handle async middleware (2013-02-07).
+  
+  He also did the 2026-04-10 "annotate handlers" commit.
+- **Douglas Christopher Wilson** is the second-largest contributor, with 4 commits. They were maintenance: eslint upgrade, parens spacing, and similar lint changes in 2017.
+- **Alejandro Caravaca Puchades** (also appears as `alex94puchades`) made about 5 commits across the two author names.
+- **Simon Mansfield** made 3 commits.
+- Other contributors made one or two commits each:
+  - Benjamin Eidelman: Safari pre-flight workaround.
+  - Chima Alaebo: removed an unreachable branch.
+  - Tom Arad: fix for `maxAge: 0` (2018).
+  - LuisEGR: removed unused parameters (2021).
+- **Activity by year:** 24 commits in 2013, 11 in 2014, 13 in 2015, 2 in 2016, 8 in 2017, and 1 each in 2018 and 2021. The file then sat untouched until 2 commits in 2026.
+
+**Whose code is still there**
+The 2026-04-12 commit `62628c0` reformatted the whole file. Plain `git blame` credits "Fiona Formatter" with 32 lines because of it. I re-ran blame with `--ignore-rev 62628c0` to see who wrote those lines originally:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 (about 67%) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades (+ `alex94puchades`) | 12 + 4 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Others (Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal) | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+About two thirds of the file is still Troy Goode's code, and the 2013 skeleton is intact. The rest is small fixes from about 18 other contributors. Some lines were reformatted by `62628c0`, so for them the "Fiona Formatter" attribution only reflects the style change.
+META cost=0.0583967 ms=18165 turns=4

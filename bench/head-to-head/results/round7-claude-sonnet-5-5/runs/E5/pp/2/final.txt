@@ -1,0 +1,66 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -60; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -5; echo; wc -l lib/index.js
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: echo "== ignoring format commit"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "== ignoring format + annotate"; git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git show --stat --format='%h %an <%ae> %cn %ad%n%s%n%b' b2005d9 | head -20; git show --stat --format='%h %an <%ae> %ad%n%s%n%b' 62628c0 | head -20; git log --format='%an|%ae' -1 bcd03d9
+FINAL ANSWER:
+Troy Goode created `lib/index.js` and still owns most of it. Plain `git blame` is misleading because of a recent reformat, so the numbers below look through it.
+
+**Timeline**
+- **2013, creation:** Troy Goode made the first commit on 2013-01-30. Over the next few months they added the basics: `origin: false` to disable CORS, case-insensitive header lookup, pause/resume of the request for async middleware, a `use strict` line, and HEAD in the default methods. Damien Klinnert and Simon Mansfield contributed fixes in this period.
+- **2013 to 2014, features:**
+  - Eric di Domenico added `origin` as a callback.
+  - Mathias Buus made it work with plain Connect, without Express.
+  - Typicode added PATCH to the default methods.
+  - Alberto Leal fixed a bug where the `origin` callback was overridden.
+  - Shane Tomlinson normalized method names to uppercase.
+  - Troy added `Access-Control-Expose-Headers`, Express 4+ support, and the `vary` module (2014-11-07).
+  - Igor Soarez added the `Vary: Origin` header for specific origins.
+- **2015, matching and preflight:**
+  - Raymond Feng optimized `applyHeaders`.
+  - Eran Tiktin fixed the `Vary` header for `*`.
+  - max.laverse let CORS pass the preflight request on to `next()`.
+  - DracoBlue added exposed headers to OPTIONS responses.
+  - Alejandro Caravaca Puchades (also committing as alex94puchades) added RegExp and array values for `options.origin`.
+  - Troy moved the project to ESLint, and jordandenison fixed a strict-mode bug.
+- **2016 to 2017, maintenance:**
+  - Hannah Wolfe named the anonymous middleware function.
+  - Troy fixed issues #66 and #73 in 2.8.0.
+  - Saad Tazi fixed an error with frozen options.
+  - Tomek Kopczuk added `Vary: Origin` for RegExp origins.
+  - Douglas Christopher Wilson took over maintenance, sending `Vary` for dynamic `allowedHeaders` and fixing a missing `methods` option.
+  - Benjamin Eidelman added a Safari workaround for the preflight response.
+  - Chima Alaebo removed an unreachable branch.
+- **2018 to 2021:** Tom Arad fixed `maxAge: 0`, and LuisEGR removed unused parameters.
+- **2026:** Two commits touched the file. Troy's "annotate handlers" commit on 2026-04-10 changed 12 lines. Fiona Formatter's 2026-04-12 commit reformatted the file to 4-space indent and double quotes.
+
+**Whose code is still there (238 lines)**
+
+`git blame -w -M -C` with `--ignore-rev 62628c0` (the reformat) gives:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 (about 67%) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12, plus 4 as alex94puchades |
+| Raymond Feng | 7 |
+| max.laverse, LuisEGR | 6 each |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Without `--ignore-rev`, Fiona Formatter is credited with 32 lines. Those lines were only reformatted, so the ignore flag gives them back to their earlier authors. With `--ignore-rev b2005d9` as well, Troy drops to 157 and Raymond Feng rises to 9.
+
+**Not in the current file**
+- Contributors who only appear in the history are Damien Klinnert, DracoBlue, Tomek Kopczuk, jordandenison and Typicode. Their lines were later rewritten or removed.
+- Typicode's PATCH addition and Tomek Kopczuk's RegExp `Vary` handling may still exist in changed form. Blame can't show that.
+
+**Caveats**
+- Blame counts lines, not importance. Several 1-line authors fixed real bugs.
+- The 2026 commits use `@example` emails (`troy@laptop.example`, `fiona@formatter.example`). The 2026 "Troy Goode" commit may not come from the original author. I only checked the author name and email, so I can't confirm it is the same person.
+META cost=0.0782242 ms=23733 turns=5

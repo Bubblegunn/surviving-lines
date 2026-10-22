@@ -1,0 +1,43 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-bf-3/repo --dry-run --no-github 2>&1 | head -100
+ - Bash: git log --no-merges --format='%ad %ae' --date=short | awk '{print substr($1,1,4), $2}' | sort | uniq -c | sort -k2,2r -k1,1nr | head -30; echo ---; git ls-files | wc -l; git rev-list --max-parents=0 HEAD | xargs -I{} sh -c 'git show --stat --format="%h %ad %ae" --date=short {} | tail -3'; git rev-list --count HEAD; git log -1 --format=%ad --date=short; echo ---; git shortlog -sne --no-merges --since=2025-04-12 | head; for d in lib test .github; do echo "== $d"; git shortlog -sne --no-merges --since=2025-04-12 -- $d | head -4; done
+ - Bash: git ls-files; for p in lib test .github README.md Readme.md package.json; do echo "== $p"; git log --no-merges --format='%ae' --after=2025-04-12 -- $p | sort | uniq -c | sort -nr | head -4; echo " all-time:"; git log --no-merges --format='%ae' -- $p | sort | uniq -c | sort -nr | head -3; done; git log --format='%h %ad %ae %s' --date=short -8
+ - Bash: for e in <email redacted> <email redacted> <email redacted>; do echo $e $(git log --author=$e --format=%ad --date=short -1) $(git log --author=$e --oneline | wc -l); done; git log --format='%ad %ae %s' --date=short -3 -- lib test | cat
+FINAL ANSWER:
+I'm finishing the bus factor analysis now. I ran the busfactor script as a dry run with `--no-github`. I then checked the details with `git log`. The dry run writes nothing, so there is no `ownership.json`. I had no per-zone active-share numbers and used commit counts instead.
+
+**Orphaned or nearly orphaned: `lib/` and `test/`**
+- `lib/index.js` is the whole library, and `test/` holds its tests. Nearly all of the history comes from two people who have left.
+  - `<email redacted>` has 120 commits and last committed on 2019-05-27. They have 32 commits in `lib/` and 31 in `test/`.
+  - `<email redacted>` has 143 commits and last committed on 2021-09-07. They have 23 commits in `test/` and 68 in `package.json`.
+  - `<email redacted>` has 5 commits in `lib/`, the last in 2015.
+- The only commits to `lib/` and `test/` in the last year are three from April 2026:
+  - `troy@laptop.example` made 2 commits.
+  - `fiona@formatter.example` made 1 commit, a style reformat.
+- Those two emails look like placeholder addresses. I can't tell whether `troy@laptop.example` is the same person as `<email redacted>`, so I did not merge them. If it is, `lib/` is bus factor 1. If it isn't, nobody active understands the code.
+
+**Bus factor above 1, but only for maintenance work**
+- `.github/` is spread across `<email redacted>`, `<email redacted>`, `<email redacted>` and dependabot. Dependabot is a bot, not a person.
+- `package.json` is shared by the same people plus `<email redacted>`.
+- `README.md` has a few recent contributors: `<email redacted>` (3 commits), `<email redacted>`, `<email redacted>` and `<email redacted>`.
+
+**The generated CODEOWNERS**
+- The fallback owners are `fiona@formatter.example`, `<email redacted>` and `<email redacted>`.
+- It has one specific rule, for `/.github/`.
+- `lib/` and `test/` fall under the fallback, so `<email redacted>` and `<email redacted>` would review code they have barely touched.
+
+**Caveats**
+- The 2013 root commit has 8 of the 18 tracked files, so the script flags the history as imported. Its ownership numbers cover only work since that import. The 2013 root commit could also simply be the real first commit.
+- I ran with `--no-github`, so emails were not mapped to accounts. Any person with two emails is counted as two people. That makes the real risk worse than these numbers show.
+- Commit volume only approximates who understands the code.
+
+**Next steps (your call)**
+- Tell me who owns `troy@laptop.example` and `fiona@formatter.example`. I can then re-run and write `.github/CODEOWNERS` and `.github/ownership.json`.
+- I can also build the HTML report. I haven't done that yet.
+META cost=0.08124980000000001 ms=30753 turns=7

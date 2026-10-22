@@ -1,0 +1,41 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn; echo ---; git log -1 --format=%ci; git log --format='%ae %ci' -- src/Parser | sort -k1,1 -u | head -20
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D5-bf-3/repo --dry-run --no-github 2>&1 | head -40
+FINAL ANSWER:
+Share of the lines still in `src/Parser` (961 lines, `git blame -w -M -C` at HEAD):
+
+| Person | Lines | Share |
+|---|---|---|
+| Graham Campbell | 790 | 82.2% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| <email redacted> | 9 | 0.9% |
+| <email redacted> | 2 | 0.2% |
+| Jonas Staudenmeir | 2 | 0.2% |
+
+- **Graham:** I merged `<email redacted>` (483 lines) and the `<email redacted>` address (307 lines). They look like the same person, but I haven't confirmed it.
+- **gjcampbell.co.uk:** If `<email redacted>` is also Graham, his share is 83.1%.
+
+**Reviewers**
+- **Graham Campbell** is the main reviewer. He wrote most of the surviving code and committed as recently as 2026-02-27.
+- **Fatima Zahra** or **Dmitri Volkov** should be the second reviewer. Their last commits are 2026-01-22 and 2026-03-10. Each owns about 7% of the lines, which is the next largest share after Graham.
+- **Marta Kowalska** has commits in `src/Parser` (latest 2026-02-11) but no surviving lines, so her work was later rewritten. I wouldn't count her as an owner of the current code.
+- **Not a reviewer:** the StyleCI bot, which only reformats code.
+
+I also ran the busfactor script (`--dry-run --no-github`). It generated this rule:
+
+`/src/Parser/ <email redacted> <email redacted> <email redacted>`
+
+It names the bot as the first owner and leaves out Fatima and Dmitri. I wouldn't use that rule as written. The script weights commits by recency, not surviving lines, so it answers a different question from yours. Its `*` and `/src/` rules also name the bot or `<email redacted>`.
+
+I only ran `--dry-run`, so the script wrote no files to the repo.
+META cost=0.068395 ms=18831 turns=6

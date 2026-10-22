@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -8; done; ls; cat .git-blame-ignore-revs | head
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1} END{for(i=1;i<=6&&i<=NR;i++){split(c[i],a," "); printf "%s  %.0f%%\n",c[i],a[1]*100/n}; print "total",n}'; done
+FINAL ANSWER:
+José Valim is the person to ask about `lib/`. `test/` is mostly the same person, but the rest of its ownership is spread differently.
+
+I counted surviving lines with `git blame -w`, ignoring the rubocop reformat commit listed in `.git-blame-ignore-revs`.
+
+**lib/** (1,496 lines)
+- José Valim: 56%
+- Kaito Mori: 17%
+- Weblate: 5%. These are automated translation commits, so nobody to ask there.
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+
+**test/** (1,853 lines)
+- José Valim: 51%
+- Carlos Antonio da Silva: 11%
+- Rafael Mendonça França: 9%
+- Kaito Mori: 9%
+- Lucas Mazza: 8%
+- Jan De Poorter: 4%
+
+Valim owns about half or more of both directories. For `lib/`, the next person to ask is Kaito Mori, who owns a clear second share. For `test/`, the second tier is Carlos Antonio da Silva, then Rafael Mendonça França and Lucas Mazza.
+
+Valim is the original author, so I'd check whether they are still active before relying on them. I didn't check recent activity. I can run `knowledge_risk` to see who has committed lately.
+META cost=0.0586864 ms=14503 turns=5

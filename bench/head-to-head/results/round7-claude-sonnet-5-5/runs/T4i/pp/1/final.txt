@@ -1,0 +1,20 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --no-merges -- lib/index.js | head -10; echo ---; git log -n 8 --format='%h %an %ad %s' --date=short -- lib/index.js; echo ---; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Bash: git shortlog -sn --no-merges HEAD -- lib/index.js | head -8; echo ---; git shortlog -sn --no-merges --since=2025-10-22 HEAD | head -5
+FINAL ANSWER:
+No CODEOWNERS file exists, so I used git history instead.
+
+**Reviewer: Troy Goode.** They have 29 commits on `lib/index.js`, far more than anyone else. They also made the latest real change, `b2005d9 lib: annotate handlers` (2026-04-10), and are still active in the past year.
+
+**Second reviewer, if you want one:** Douglas Christopher Wilson (4 commits) or Alejandro Caravaca Puchades (4 commits). Wilson's last commit on the file was in 2017, so check that they're still active first.
+
+Skip Fiona Formatter. `62628c0` was only a formatting pass, so it doesn't show ownership.
+
+Adding a `CODEOWNERS` file would make this automatic on PRs.
+META cost=0.052484 ms=10049 turns=4

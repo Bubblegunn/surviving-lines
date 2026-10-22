@@ -1,0 +1,24 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-hist-3/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-hist-3/repo", "file": "lib/index.js", "limit": 30}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-hist-3/repo", "path": "lib/index.js"}
+FINAL ANSWER:
+Nobody active owns `lib/index.js`, so I can't point to one clear reviewer.
+
+- **Blame is misleading.** Fiona Formatter owns 89.9% of the lines (214 of 238), but only because of the `62628c0` reformat on 2026-04-12. That commit rewrote the indentation and quotes, not the logic. Don't pick them for that reason.
+- **Logic authors.** Troy Goode wrote the original code and made most of the substantive changes: the Vary header handling, origin matching, and the preflight and non-Express fixes. Douglas Christopher Wilson fixed several CORS edge cases in 2017: the `Vary: Access-Control-Request-Headers` header, the missing `methods` option, and frozen options. Alejandro Caravaca Puchades added the regexp and array `origin` matching.
+- **Nobody is active.** Every author who owns lines has had no commit since 2026-04-22. The tool flags the file as orphaned: 100% of the lines belong to inactive authors. Troy Goode and Fiona Formatter committed most recently, on 2026-04-10 and 2026-04-12. Wilson's last commit was in 2021.
+
+If you want a person, ask Troy Goode first and Douglas Christopher Wilson second. They know the CORS behavior best, and the file's history shows they still care about it. Troy Goode is the likelier of the two to still be around.
+
+The history also shows which areas are risky to change: `Vary` headers, preflight handling, and `origin` matching. I suggest asking a reviewer to read those areas closely and checking `test/` coverage for them before you merge.
+
+I only checked git history. I can't tell who is on the team now or who is listed in CODEOWNERS or `package.json`. Do you want me to check those next?
+META cost=0.0686654 ms=16274 turns=6

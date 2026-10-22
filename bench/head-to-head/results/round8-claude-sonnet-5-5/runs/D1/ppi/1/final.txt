@@ -1,0 +1,51 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "cJSON.c and cJSON.h: ranked surviving-line authorship with percentages (git blame based, not commit counts)"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo; cat .git-blame-ignore-revs; ls .mailmap 2>&1 | head -1; git rev-list --count HEAD; for mode in ignore noignore; do echo "== $mode"; for f in cJSON.c cJSON.h; do echo "-- $f"; done; done; 
+run(){ args="$1"; git blame $args --line-porcelain -w -M -C -- cJSON.c cJSON.h 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn; }
+echo "### ignoring revs file, -w -M -C"; run "--ignore-revs-file .git-blame-ignore-revs"
+echo "### no ignore"; run ""
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo
+run(){ for f in cJSON.c cJSON.h; do git blame $1 --line-porcelain -w -M -C -- $f; done | grep -a '^author ' | sort | uniq -c | sort -rn; }
+echo "### ignore-revs"; run "--ignore-revs-file .git-blame-ignore-revs" | tee /tmp/a.txt
+echo "### no ignore"; run "" | head -8
+wc -l cJSON.c cJSON.h; cat .mailmap | head -20
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo
+git log -1 --format='%an <%ae> %s' 413c6d1
+run(){ for f in cJSON.c cJSON.h; do git blame "$@" --line-porcelain -w -M -C -- $f; done | grep -a '^author-mail ' | sed 's/^author-mail //' | sort | uniq -c | sort -rn | while read n m; do echo "$n $(git check-mailmap "X $m")"; done | awk '{n=$1;$1="";c[$0]+=n;t+=n} END{for(k in c) printf "%d\t%.1f%%\t%s\n",c[k],100*c[k]/t,k; print t" total"}' | sort -rn; }
+echo "### ignoring formatter"; run --ignore-revs-file .git-blame-ignore-revs
+echo "### raw"; run
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo
+for f in cJSON.c cJSON.h; do git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain -w -M -C -- $f; done | grep -a -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn | head -14
+git log --format='%an <%ae>' | grep -i -E 'ibarra|tomasi' | sort | uniq -c
+FINAL ANSWER:
+Durum özeti: blame çıktısını okudum, yüzdeleri hesapladım. Sonuç aşağıda.
+
+**Yöntem:** `git blame --line-porcelain -w -M -C` ile `cJSON.c` + `cJSON.h` içindeki bugün hayatta olan 3601 satır sayıldı. Her satır son yazan kişiye ait. `.mailmap` uygulandı. `.git-blame-ignore-revs` içindeki clang-format commit'i (`413c6d1`, Priya Nair) yok sayıldı. Ignore dosyası olsa da olmasa da sonuç aynı çıktı, çünkü `-w` boşluk değişikliklerini zaten atlıyor. Priya Nair'in hayatta kalan satırı yok.
+
+| # | Yazar | Satır | Pay |
+|---|---|---|---|
+| 1 | Max Bruckner | 2699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Tomás Ibarra (`tomasi` + `Tomás Ibarra`, 74+68) * | 142 | 3.9% |
+| 4 | Alan Wang | 129 | 3.6% |
+| 5 | Dave Gamble | 111 | 3.1% |
+| 6 | Mike Jerris | 76 | 2.1% |
+| 7 | Peter Alfred Lee (`peteralfredlee` + `<email redacted>`, 32+9) * | 41 | 1.1% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | Nicolas Badoux | 29 | 0.8% |
+| 10 | Zach Hindes | 23 | 0.6% |
+| 11 | miaoerduo | 22 | 0.6% |
+| — | ~34 diğer kişi (her biri ≤13 satır) | 149 | 4.1% |
+
+\* `.mailmap` bu iki kimliği birleştirmiyor. Ben birleştirdim, çünkü isim ve e-posta kullanıcı adı aynı kişiyi gösteriyor. Bu bir tahmin, doğrulanmadı. Birleştirmezsen Ibarra 74 ve 68 satıra, Lee 32 ve 9 satıra bölünür.
+
+**Bus factor: 1.** Max Bruckner tek başına kodun %75'ine sahip. Sıradaki kişi %4.1'de. Max ayrılırsa %50'den fazla satırın bilgili bakımcısı kalmaz.
+
+Not: Max'in %75'i yeniden yazım olabilir. Bu repo cJSON'ın bakım dalı. İstersen `--period 1y` ile son yıldaki etkinliği ve Max'in hâlâ aktif olup olmadığını kontrol ederim.
+META cost=0.106878 ms=33396 turns=8

@@ -1,0 +1,23 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | while read -r f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //;s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; print c"\t"$0}' | head -80
+FINAL ANSWER:
+Top owner per extension, by surviving lines at HEAD (`git blame -w`, tracked files only):
+
+| Extension | Top owner | Lines | Runner-up |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 | Fiona Formatter (291), Douglas Christopher Wilson (245) |
+| `.md` | Troy Goode | 116 | Jon Church (72), Douglas Christopher Wilson (67) |
+| `.yml` | Douglas Christopher Wilson | 117 | Íñigo Marquínez Prado (95), Sebastian Beltran (63) |
+| `.json` | Douglas Christopher Wilson | 20 | Troy Goode (12) |
+| `.gitignore` | Douglas Christopher Wilson | 4 | Troy Goode (1) |
+| no extension | Douglas Christopher Wilson | 17 | Troy Goode (5) |
+
+- The latest commit, "reformat js with 4-space indent and double quotes", gave Fiona Formatter 291 `.js` lines. `-w` ignores whitespace-only changes, but the quote changes still count as edits. Troy Goode and Douglas Christopher Wilson would likely own more `.js` lines without that commit.
+- I ran blame without `-M` or `-C`, so lines moved or copied between files count toward whoever last touched them.
+- The `.md` count includes 6 lines from Efe.
+META cost=0.0399086 ms=12036 turns=2

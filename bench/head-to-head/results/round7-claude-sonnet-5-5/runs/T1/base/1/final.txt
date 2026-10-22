@@ -1,0 +1,38 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | head -500 | wc -l && git log --oneline | wc -l && git log -1 --format=%H 62628c0 && ls -a | head -30
+ - Bash: git ls-files; echo ---; 
+count() { for f in $(git ls-files); do git blame -w -M -C --line-porcelain $1 -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; }
+echo "RAW blame:"; count ""
+echo "Ignoring reformat commit:"; count "--ignore-rev 62628c0"
+ - Bash: git blame -w -M -C --ignore-rev 62628c04a1b16306a0285b3e26645acfa1c21687 --line-porcelain -- lib/index.js 2>&1 | head -3; git --version; git show --stat 62628c0 | head -20
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c04a1b16306a0285b3e26645acfa1c21687 --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -15
+echo; echo per-file top:; for f in lib/index.js test/test.js; do echo $f; git blame -w -M -C --ignore-rev 62628c04a1b16306a0285b3e26645acfa1c21687 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c04a1b16306a0285b3e26645acfa1c21687 --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0;n[NR]=$1;t+=$1} END{print "total",t; for(i=1;i<=5;i++) printf "%s  %.1f%%\n", c[i], 100*n[i]/t}'
+FINAL ANSWER:
+I measured surviving lines with `git blame` and I'm giving you the result now. I ignored the 4-space and double-quote reformat commit (62628c0), because it would credit about 290 lines to "Fiona Formatter". I also ignored whitespace changes and tracked lines moved between files.
+
+**Surviving lines: 1,995 across 18 tracked files**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Others (about 20 people, each under 2%) | the rest | |
+
+- **Troy Goode owns the most code.** He wrote most of `lib/index.js` (159 of its surviving lines, far more than anyone else).
+- **Douglas Christopher Wilson owns the most of the tests.** He has 339 lines in `test/test.js`, against Troy's 317.
+- **The reformat commit hides the true authors in raw blame.** Without ignoring it, Fiona Formatter shows 291 lines, third place, and Troy and Douglas each lose lines. Those lines belong to whoever wrote the logic before the reformat.
+- **Ownership is split between two people.** Troy and Douglas together hold about 72% of the code. Everyone else is a small contributor.
+
+Blame credits the last person who changed a line's content. A later edit, like a rename or a one-line fix, moves a line to that person even if someone else wrote the logic. These numbers show who touched each line last, not who designed it.
+META cost=0.063901 ms=24540 turns=6

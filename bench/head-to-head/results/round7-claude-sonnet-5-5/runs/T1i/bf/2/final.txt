@@ -1,0 +1,39 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs && echo --- && git ls-files | grep -vE '(^|/)(node_modules|package-lock\.json)' | head -200 | wc -l && for f in $(git ls-files | grep -vE 'package-lock\.json|\.(png|jpg|gif|ico)$'); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: git ls-files; echo ---; for f in $(git ls-files | grep -vE 'package-lock\.json|\.(png|jpg|gif|ico)$'); do echo "$f $(git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -1)"; done
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that is still in the repo.
+
+I counted lines from `git blame`, ignoring the reformat commit `62628c0` (via `.git-blame-ignore-revs`) and whitespace changes. Each line goes to the author who last wrote it in substance.
+
+| Author | Surviving lines | Share (approx.) |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Everyone else (about 30 people) | under 30 each | the rest |
+
+The shares are against roughly 1,950 counted lines, so treat them as approximate.
+
+**By area (top owner of each file):**
+- **Core library:** Troy Goode owns `lib/index.js` (159 lines). This is the original code and it has survived.
+- **Tests:** Wilson owns `test/test.js` (339 lines). Troy owns `error-response.js`, `example-app.js`, `issue-2.js` and `vary.js`.
+- **Docs:** Troy owns `README.md`. Wilson owns `HISTORY.md` and `LICENSE`.
+- **Config, `package.json` and CI:** Wilson owns `ci.yml`, `package.json`, `.eslintrc.yml` and `.gitignore`.
+- **Security workflows:** Íñigo Marquínez Prado owns `scorecard.yml`, Sebastian Beltran owns `codeql.yml`, and Ulises Gascón owns `dependabot.yml`.
+
+**Caveats:**
+- The ignore-revs file only covers the reformat commit. Other bulk edits, such as the "annotate handlers" commit, still credit the person who made them.
+- I did not merge author name or email variants. If one person committed under two identities, their share is split across them.
+- I left out `package-lock.json` and image files.
+- `.git-blame-ignore-revs` itself shows as "Fiona Formatter". That is the file's own two lines, not real ownership.
+META cost=0.0538284 ms=19193 turns=3

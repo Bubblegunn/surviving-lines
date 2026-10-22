@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:sprint-health
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:sprint-health", "args": "--team"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad' --date=iso; git log --since="2026-03-29" --until="2026-04-12 23:59:59" --no-merges --pretty=format:"%h|%an|%ae|%ad|%s" --date=short; echo; git shortlog -sne --all | head -50; ls .mailmap 2>&1
+ - Bash: git show --stat --format='== %h %an %s' b2005d9 02afce3 5317ebe 62628c0 | head -60; echo; for r in b2005d9 02afce3 5317ebe; do echo "$r plain: $(git ls-files | while read f; do git blame -w --line-porcelain HEAD -- "$f" 2>/dev/null | grep -c "^${r}" ; done | paste -sd+ | bc)"; done
+ign=$(mktemp); echo 62628c04a1b16306a0285b3e26645acfa1c21687 > $ign
+for r in b2005d9 02afce3 5317ebe; do echo "$r ignoring-format: $(git ls-files | while read f; do git blame -w --ignore-revs-file $ign --line-porcelain HEAD -- "$f" 2>/dev/null | grep -c "^${r}" ; done | paste -sd+ | bc)"; done
+ - Bash: echo 62628c04a1b16306a0285b3e26645acfa1c21687 > /tmp/ign.txt
+for mode in plain ignore; do echo "-- $mode"; for f in $(git ls-files); do if [ $mode = ignore ]; then git blame -w --ignore-revs-file /tmp/ign.txt --line-porcelain HEAD -- "$f"; else git blame -w --line-porcelain HEAD -- "$f"; fi 2>&1 | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe|62628c0'; done
+FINAL ANSWER:
+Three people committed in the 14 days up to 2026-04-12 (2026-03-29 to 2026-04-12). The window has four non-merge commits. I did not launch the haiku contributor-analyzer agent, since four commits were quick to check directly.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | 2 (`b2005d9` lib: annotate handlers, `02afce3` test: vary header coverage) | 48 (12 in `lib/index.js`, 36 in `test/vary.js`) |
+| Vansh Sharma | 1 (`5317ebe` README `app.del()` → `app.delete()`) | 1 (in `README.md`) |
+
+**Excluded**
+- **Fiona Formatter:** her one commit, `62628c0`, is a formatting-only change (4-space indent, double quotes). Excluding it leaves her with no commits in the window.
+- **Bots:** `dependabot[bot]` has no commits in this window, so nothing was dropped.
+
+**Counted once**
+- **Troy Goode:** he appears under two emails, `<email redacted>` and `troy@laptop.example`. I merged them into one person. The two window commits both use the laptop email.
+
+**How I counted "still in the code today"**
+- I ran `git blame -w` on every tracked file at HEAD and counted lines attributed to each person's window commits.
+- I ran it with and without the formatting commit ignored. The counts were the same: 12, 36 and 1.
+- Without the ignore, the formatting commit owns 291 lines of current code. I did not credit those lines to anyone.
+
+I did not produce the rest of the sprint-health dashboard (hotspots, risk flags, action items), because you only asked for the contributor numbers.
+META cost=0.0825854 ms=25472 turns=7

@@ -1,0 +1,26 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-2/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-2/repo", "file": "lib/index.js", "limit": 30}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-2/repo", "path": "lib/index.js"}
+FINAL ANSWER:
+No one active owns `lib/index.js`. Every author has had no commits for over 6 months, and the file counts as orphaned.
+
+- **Fiona Formatter** owns 89.9% of the lines. That comes only from `62628c0`, the 4-space and double-quote reformat. Blame credits those lines to Fiona, but Fiona did not write the logic. Do not pick Fiona on that basis.
+- **Troy Goode** wrote the file in 2013 and owns 8.4% of current lines. Troy also made the Vary, ESLint and `#42` changes, plus the latest commit, `b2005d9` (2026-04-10). Troy is the best fit for knowing the file and its intent.
+- **Douglas Christopher Wilson** made the 2017 CORS logic fixes. These cover Vary on dynamic `allowedHeaders`, a missing `methods` option, and the eslint changes. Douglas owns 1 line now. Last commit in the repo was 2021-09-07.
+- Other contributors (Alejandro Caravaca Puchades for regex and array `origin`, Raymond Feng, others) have not committed in years.
+
+Recommendation:
+1. Ask Troy Goode first. If Troy is unavailable, ask Douglas Christopher Wilson.
+2. Ask whoever currently maintains the repo to review as well. Git history cannot show who that is.
+3. Any change to Vary or preflight handling is risky. Check it against the tests in `test/`, because those edge cases came from past bug fixes.
+
+Tell me which part of the file you plan to change. I can then run `change_coupling` or `find_change` to show which other files and tests usually change with it.
+META cost=0.0659266 ms=13161 turns=6

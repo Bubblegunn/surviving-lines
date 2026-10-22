@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git shortlog -sne --all | sed -E 's/^ *[0-9]+\t//' | sed -E 's/ <.*//' | sort | uniq -d; echo ---; git log --all --format='%aN <%aE>%n%cN <%cE>' | sort -u | grep -iE 'troy|doug|wilson|efe|fiona'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -iE 'troy|alej|puchades'; git status --short
+FINAL ANSWER:
+Yes, two people appeared under more than one identity. I added a `.mailmap` at the repo root to merge them. I didn't rewrite any commits, so hashes are unchanged.
+
+- **Troy Goode** had two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). They now count as one person with 122 commits.
+- **Alejandro Caravaca Puchades** also appeared as `alex94puchades`, with the same email. The two entries now total 5 commits.
+
+**Top author:** Douglas Christopher Wilson, with 143 commits. He was already first, and merging the duplicates doesn't change that. Troy Goode is second with 122.
+
+I left a few other pairs alone because nothing shows they are the same person. `Efe <<email redacted>>` is probably you, but I didn't merge it with anything. `Fiona Formatter` has one commit and a placeholder email.
+
+`.mailmap` is untracked, so you need to commit it for others to get the merged counts. I haven't committed it.
+META cost=0.0525716 ms=15115 turns=4

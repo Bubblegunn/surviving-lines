@@ -1,0 +1,54 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts && grep -n "argv\|--out\|writeFile\|dry" ownership.mjs | head -30
+ - Bash: T=$(mktemp -d); git clone -q <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-1/repo $T/repo && cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs $T/repo --no-github --cache $T/cache.json >/dev/null 2>&1; cd $T/repo; jq '.meta, .unresolved, (.authors // .people // empty)' .github/ownership.json | head -80; jq 'keys' .github/ownership.json; echo $T
+ - Bash: cd <tmp> jq -c '.authors|(if type=="array" then .[] else to_entries[] end)' .github/ownership.json | head -40; jq -c '.zones[]|select(.significant)' .github/ownership.json | head -30; cat .github/CODEOWNERS | tail -20
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0; n[NR]=$1} END{for(i=1;i<=NR&&i<=15;i++){printf "%s  %.1f%%\n", c[i], 100*n[i]/t}; print "total lines", t}'; echo; git ls-files '*.go' | grep -v '^vendor/' | wc -l; git ls-files vendor | wc -l
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn > /tmp/blame.txt
+git log --since=2025-04-08 --format='<%ae>' | sort -u > /tmp/active.txt; wc -l < /tmp/active.txt
+awk 'NR==FNR{a["author-mail "$0]=1;next}{k=$2" "$3; act=(k in a); t+=$1; if(act)s+=$1; if(act)print} END{printf "active lines %d of %d = %.1f%%\n",s,t,100*s/t}' /tmp/active.txt /tmp/blame.txt
+git log -1 --format=%cd --date=short; git ls-files '*.go' | grep -v '^vendor/' | grep -i 'zz_\|generated\|gen' | head
+FINAL ANSWER:
+**Short answer:** most of the surviving Go code was written by people who have left. The part still written by active people is spread thin, with a few people carrying most of it.
+
+I counted surviving lines with `git blame` on the 76 non-vendored `.go` files (12,682 lines). Rename and move tracking was on, and whitespace was ignored. "Active" means a commit in the 12 months before the newest commit (2026-04-08).
+
+**Top authors of surviving lines**
+
+| Author | Lines | Share | Status |
+|---|---|---|---|
+| Eric Paris | 2020 | 15.9% | inactive, last commit 2018 |
+| Alex Ogier | 1237 | 9.8% | inactive, 2015 |
+| Noah Dietz | 1228 | 9.7% | inactive, 2018 |
+| JReyLBC | 1044 | 8.2% | not in the active list |
+| Tamal Saha | 624 | 4.9% | inactive, 2018 |
+| riobard | 538 | 4.2% | not in the active list |
+| **Sam Okafor** | 537 | 4.2% | active |
+| Mitch Connors | 522 | 4.1% | inactive, 2019 |
+| **Georges Varouchas** | 454 | 3.6% | active |
+
+**Concentration**
+- **Active authors:** 14 people account for 2,012 lines, which is **15.9%** of the Go code. The other 84% belongs to authors who are not active.
+- **Among active authors:** Sam Okafor, Georges Varouchas and Eth-p (295 lines) hold 1,286 of the 2,012 lines, about 64%. Nobody else active has more than 172 lines.
+- **Recent commit weighting:** the busfactor script's recency-weighted score gives Sam Okafor about 51% of the whole repo. The next two are Tomas Aschan (about 9%) and Georges Varouchas (about 9%). The script marks the repo root as bus factor 1.
+- **`.github/`:** the script flags this as a separate risk. 72% of its weight comes from Mark Sagi-Kazar, who is inactive, and Tomas Aschan is the only active author left there.
+
+**Would losing one or two people be a problem?**
+- **Losing Sam Okafor:** yes. Sam is the largest active author by both measures. Sam's recent commits also make up most of the recency-weighted score.
+- **Losing Sam and Georges:** this would remove about half of the Go lines that active people hold. Reviews would then fall to people with under 175 lines each.
+- **The bigger problem:** it already exists. The original authors of the core flag-parsing code are gone, so no active reviewer wrote most of it. Reviewing PRs there means reading the code fresh, not relying on a past author.
+
+**Caveats**
+- **Generated code:** `zz_generated_flags.go` is included in the counts. Whoever last regenerated it is credited with its lines, so some of Sam's and Georges's totals may be generator output and not hand-written code. I didn't separate it out.
+- **Inactive status:** I classed JReyLBC and riobard as not active because they have no commit in the window. I didn't check their histories. Anyone who reviews without committing would look like a stranger in these numbers.
+- **Repo history:** it has 255 commits since 2012 and is not an import or a young repo. So the low active share reflects real turnover.
+- **GitHub logins:** I ran the script with `--no-github`, so owners appear as emails. Some emails may belong to the same person, which would make the active concentration look lower than it is.
+
+I ran the script on a throwaway clone under `<tmp> so nothing was written to your repo. I haven't generated the HTML report or a CODEOWNERS file. I can do either if you want.
+META cost=0.1075341 ms=47269 turns=9

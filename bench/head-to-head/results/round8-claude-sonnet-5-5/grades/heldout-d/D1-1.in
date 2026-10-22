@@ -1,0 +1,312 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who actually wrote the code in cJSON.c and cJSON.h that's still in this repo today? I want a ranked list with percentages, because commit counts only tell me who was busy.
+
+CRITERIA:
+1. Top owner is Max Bruckner with 75% of live lines (accept 72.5% to 77.5%) and he is ranked first. FAIL if anyone else is first, or his share is below 70% or above 80%.
+2. The two Tomás Ibarra identities (tibarra@corp.example and "tomasi", <email redacted>) appear as ONE person with about 4.0% (accept 3.0% to 5.0%), inside the top five (Max Bruckner, Kevin Branigan 4.1%, Tomás Ibarra 4.0%, Alan Wang 3.6%, Dave Gamble 3.1%; order among positions 2 to 5 may differ by a place or two). FAIL if the two identities are listed as separate people at about 2% each without saying they are the same person, or if either identity is missing from the share.
+3. Alan Wang and Alanscut are one entry with about 3.6% (accept 2.6% to 4.6%). FAIL if "Alanscut" appears as a separate person with its own share.
+4. Priya Nair (author of the formatting commit and of the reverted MergePatchLite) is credited with at most 0.5% (absent is correct), and github-actions[bot] is not ranked as an owner of the code. FAIL if Priya is above 1%, or if the bot appears as a ranked author.
+5. The answer says what it left out or merged: it must state that it ignored or looked through the formatting/whitespace commit, that it merged identities (at least the Tomás Ibarra pair), and that bot-authored lines (about 5 lines) are excluded or reported separately. FAIL if any of these three statements is missing, or if the answer presents commit counts as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD a36179526b43a4793d30898fc90ec0911270a0a1
+scope: cJSON.c cJSON.h
+files counted: 2  excluded: 0
+ignore-revs (1):
+  413c6d155eb4 Priya Nair | style: run clang-format over cJSON.c and cJSON.h (2-space indent)
+live lines in scope: 3601
+bot-authored live lines (not ranked): 5 github-actions[bot]=5
+human live lines (denominator for shares): 3596
+RANKING (share of human live lines)
+ 1. Max Bruckner: 2699 lines, 75.06%
+ 2. Kevin Branigan: 149 lines, 4.14%
+ 3. Tomás Ibarra: 142 lines, 3.95%
+ 4. Alan Wang: 131 lines, 3.64%
+ 5. Dave Gamble: 111 lines, 3.09%
+ 6. Mike Jerris: 76 lines, 2.11%
+ 7. PeterAlfredLee: 32 lines, 0.89%
+ 8. caglarivriz: 31 lines, 0.86%
+ 9. Nicolas Badoux: 29 lines, 0.81%
+10. Zach Hindes: 23 lines, 0.64%
+11. miaoerduo: 22 lines, 0.61%
+12. Jiri Zouhar: 13 lines, 0.36%
+13. Sang-Heon Jeon: 13 lines, 0.36%
+14. Pawel Winogrodzki: 11 lines, 0.31%
+15. Kyle Chisholm: 9 lines, 0.25%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Tomás Ibarra: tomasi <<email redacted>>=74; Tomás Ibarra <tibarra@corp.example>=68
+  Alan Wang: Alan Wang <<email redacted>>=129; Alan Wang <<email redacted>>=2
+  PeterAlfredLee: PeterAlfredLee <<email redacted>>=31; Lee <<email redacted>>=1
+people needed to cover >=50% of human live lines: 1; >=80%: 3
+FACT Ibarra: 142 lines = 3.95%
+FACT Priya: 0 lines = 0.00%
+FACT Alan Wang: 131 lines = 3.64%
+FACT Max Bruckner: 2699 lines = 75.06%
+FACT Dave Gamble: 111 lines = 3.09%
+FACT tomasi (same person as Tomás Ibarra): 142 lines = 3.95%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -E '^cJSON\.(c|h)$'; git log --oneline | wc -l; git config blame.ignoreRevsFile
+ - Bash: for f in cJSON.c cJSON.h; do echo "== $f"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -E '^author ' | sort | uniq -c | sort -rn; wc -l < $f; done; echo "== combined"; for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -E '^author '; done | sort | uniq -c | sort -rn
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -E '^(author|author-mail) '; done | paste - - | sort | uniq -c | sort -rn | grep -iE 'tomas|tomás|Max Br|Efe|Dave|Alan' ; git show --stat --format='%an %s' a361795 | head
+FINAL ANSWER:
+Max Bruckner wrote about 75% of the code still in `cJSON.c` and `cJSON.h`. Nobody else has more than about 4%.
+
+I used `git blame -w -M -C` on HEAD. That ignores whitespace changes and follows lines moved or copied between files. I also used `.git-blame-ignore-revs`, which skips the clang-format commit `413c6d1`; without it that commit would own most of the files. The total is 3,601 lines: 3,298 in `cJSON.c` and 303 in `cJSON.h`.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 74.95% |
+| 2 | Kevin Branigan | 149 | 4.14% |
+| 3 | Tomás Ibarra (`tomasi` 74 + `Tomás Ibarra` 68) | 142 | 3.94% |
+| 4 | Alan Wang (two emails, 129 + 2) | 131 | 3.64% |
+| 5 | Dave Gamble | 111 | 3.08% |
+| 6 | Mike Jerris | 76 | 2.11% |
+| 7 | caglarivriz | 31 | 0.86% |
+| 7 | PeterAlfredLee | 31 | 0.86% |
+| 9 | Nicolas Badoux | 29 | 0.81% |
+| 10 | Zach Hindes | 23 | 0.64% |
+| 11 | miaoerduo | 22 | 0.61% |
+| 12 | Sang-Heon Jeon | 13 | 0.36% |
+| 12 | Jiri Zouhar | 13 | 0.36% |
+| 14 | Pawel Winogrodzki | 11 | 0.31% |
+| – | About 25 other authors, 10 lines or fewer each | 120 | 3.3% |
+
+- **Merged identities:** I merged the two Alan Wang emails, since the name is identical. I also merged `tomasi` and `Tomás Ibarra`. That one is a guess from the name and the `<email redacted>` address. If they are different people, `tomasi` has 74 lines (2.05%) and `Tomás Ibarra` has 68 (1.89%), so Alan Wang moves up to #3.
+- **Dave Gamble:** He is the original author, and only 3.1% of his lines survive. Blame credits whoever last touched a line, so Max's 75% includes rewrites and rewordings of Dave's original code. It is not all original design.
+- **Mid-sized contributors:** The mid-sized authors, ranked 2 to 6, each hold 2 to 4% of the lines.
+- **Truncated names:** Some blame names are cut off in the git history itself: `Use`, `Lee`, `Julian Ste`, `Stephan`.
+- **Bot commit:** The latest commit, the SPDX headers, is by `github-actions[bot]`. It shows up with only 5 surviving lines, because it mostly deleted lines.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>" ] && node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>" --include 'cJSON.c' --include 'cJSON.h'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ours-1/repo; SL=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>; cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' 413c6d1 | head; git show --stat --format='%h %an %s' f831aef | head -5; echo ---MERGED; node $SL --include cJSON.c --include cJSON.h --merge-identities --top 6; echo ---KEEP; node $SL --include cJSON.c --include cJSON.h --keep-reformat --top 4
+FINAL ANSWER:
+**Who wrote the code still in `cJSON.c` and `cJSON.h` (surviving lines at HEAD)**
+
+Basis: 3,596 of 3,601 lines attributed, with `git blame -w -M -C`. Copy detection is the default `-C`, and the output flagged no copy-detection shifts.
+
+| # | Author | Lines | Share | Commits (share) |
+|---|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.1% | 636 (66.5%) |
+| 2 | Kevin Branigan | 149 | 4.1% | 7 (0.7%) |
+| 3 | Alan Wang (2 addresses) | 131 | 3.6% | 67 (7.0%) |
+| 4 | Dave Gamble | 111 | 3.1% | 84 (8.8%) |
+| 5 | Mike Jerris | 76 | 2.1% | 2 (0.2%) |
+| 6 | tomasi | 74 | 2.1% | 1 (0.1%) |
+| 7 | Tomás Ibarra | 68 | 1.9% | 1 (0.1%) |
+| 8 | PeterAlfredLee | 32 | 0.9% | 4 (0.4%) |
+| 9 | caglarivriz | 31 | 0.9% | 1 (0.1%) |
+| 10 | Nicolas Badoux | 29 | 0.8% | 8 (0.8%) |
+
+91 more authors hold the remaining lines.
+
+**Bus factor**
+- The repository has a bus factor of 1: Max Bruckner alone holds 75.1% of the lines.
+- Reaching 80% of the lines takes 3 authors.
+- Both numbers cover `cJSON.c` and `cJSON.h` only. The bus factor is the smallest number of authors whose surviving lines reach 50%. It measures concentration, not who understands the code.
+
+**What was left out or merged**
+- **Reformat commit set aside:** `413c6d1` (Priya Nair, "run clang-format over cJSON.c and cJSON.h"). It rewrote 2,303 lines across both files. `.git-blame-ignore-revs` lists it, so the table skips it. Without that file, Priya Nair would hold most of the lines. I did not run that counterfactual.
+- **Bot excluded:** 1 identity (5 lines, 1 commit).
+- **Merged by `.mailmap`:** `Alanscut <<email redacted>>` into Alan Wang, which adds 94 lines. Alan Wang's table row shows 129 lines because the extra address `<email redacted>` (2 lines) is not merged there. Counting it too gives 131 lines (3.6%), but that merge is a guess from names and addresses.
+- **Mechanical-rewrite check:** it examined 320 commits and set aside none. It lists 59 commits that look mechanical, mostly Max Bruckner's "reformatting: …" commits. I inspected `f831aef` ("reformatting: cJSON_CreateIntArray"). It adds 28 lines and removes 1, so it is real code, not a pure reformat. I did not inspect the other candidates, so this check is partial. If they were set aside, Max's share would drop slightly.
+- **Weak same-person guess:** `tomasi` (74 lines) and `Tomás Ibarra` (68 lines) might be one person. Together that would be 142 lines (3.9%), which would rank them 2nd. This rests on names and addresses only, so I kept them separate. Nothing was written to `.mailmap`.
+
+**Limits**
+- Surviving lines say whose code is still here. They do not measure quality or merit.
+- They also miss review, design work, and code that was deleted on purpose.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; for f in cJSON.c cJSON.h; do echo "== $f"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | awk '{c=$1; $1="";$2=""; n[NR]=$0; k[NR]=c; t+=c} END{for(i=1;i<=NR;i++){s+=k[i]; if(i<=15) printf "%2d %-28s %5d %5.1f%%\n",i,n[i],k[i],100*k[i]/t}; print "total",t}'; git blame --line-porcelain cJSON.c cJSON.h >/dev/null; wc -l cJSON.c cJSON.h | tail -1
+FINAL ANSWER:
+Ranking is by surviving lines in `cJSON.c` and `cJSON.h` combined (3,601 lines at HEAD).
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 131 | 3.6% |
+| 4 | Dave Gamble | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi | 74 | 2.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | PeterAlfredLee | 31 | 0.9% |
+| 10 | Nicolas Badoux | 29 | 0.8% |
+| 11 | Zach Hindes | 23 | 0.6% |
+| 12 | miaoerduo | 22 | 0.6% |
+| 13 | Sang-Heon Jeon | 13 | 0.4% |
+| 14 | Jiri Zouhar | 13 | 0.4% |
+| 15 | Pawel Winogrodzki | 11 | 0.3% |
+
+About 25 more authors have 10 lines or fewer each. Together they hold roughly 4% of the lines.
+
+**Method**
+- I ran `git blame -w -M -C` and passed `--ignore-revs-file .git-blame-ignore-revs`. That file lists the clang-format commit `413c6d1`. Without it, that commit would have taken credit for most of the two files.
+- `-w` skips whitespace-only changes. `-M` and `-C` follow lines that were moved or copied within a file or between files.
+- Per file, Max Bruckner holds 2,587 of the `cJSON.c` lines and 112 of the `cJSON.h` lines. Dave Gamble, the original author, holds 62 and 49.
+
+**Caveats**
+- `tomasi` and `Tomás Ibarra` may be the same person. If so, they total 142 lines (3.9%) and rank 3rd. I didn't merge them because `.mailmap` doesn't, and I don't want to guess.
+- A line counts for whoever last changed it, so Dave Gamble's design work is understated. His original code was largely rewritten or reformatted later.
+- Lines count equally, whether it's a comment, a brace, or a hard algorithm.
+- The `-C` flag can occasionally credit a line to the wrong commit. Treat the small percentages as approximate.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git rev-list --count HEAD; for f in cJSON.c cJSON.h; do echo "$f lines: $(wc -l < $f)"; done
+ - Bash: for mode in ignore raw; do
+  if [ $mode = ignore ]; then opt="--ignore-revs-file .git-blame-ignore-revs"; else opt=""; fi
+  echo "== $mode (-w -M -C) =="
+  for f in cJSON.c cJSON.h; do git blame $opt -w -M -C --line-porcelain -- $f; done | grep '^author ' | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1} END{for(i=1;i<=NR;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/n}; print "total", n}'
+done
+ - Bash: git log -1 --format='%an | %s' 413c6d1; git log -1 --format='%an | %s' a361795
+echo "== ignore (-w -M -C) =="
+for f in cJSON.c cJSON.h; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- $f; done | grep '^author ' | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1} END{for(i=1;i<=NR&&i<=15;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/n}; print "total", n}'
+FINAL ANSWER:
+Ranked by surviving lines in `cJSON.c` + `cJSON.h` at HEAD (3,601 lines: 3,298 + 303), from `git blame -w -M -C`.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 131 | 3.6% |
+| 4 | Dave Gamble | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi | 74 | 2.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 8 | PeterAlfredLee | 31 | 0.9% |
+| 10 | Nicolas Badoux | 29 | 0.8% |
+| 11 | Zach Hindes | 23 | 0.6% |
+| 12 | miaoerduo | 22 | 0.6% |
+| 13 | Sang-Heon Jeon | 13 | 0.4% |
+| 13 | Jiri Zouhar | 13 | 0.4% |
+| 15 | Pawel Winogrodzki | 11 | 0.3% |
+
+The other 30 authors each have 10 lines or fewer, about 4% combined. That includes `github-actions[bot]` with 5 lines, which are the SPDX headers.
+
+- **Formatting commit:** I excluded `413c6d1`, the clang-format run, using `.git-blame-ignore-revs`. The numbers are identical with and without the exclusion. `-w` already ignores whitespace changes, and the reformat didn't change any lines beyond that. Priya Nair, who made that commit, owns no lines.
+- **Moved code:** `-M -C` credits moved or copied lines to whoever first wrote them. Without those flags, refactors and file splits would shift some credit to the people who moved the code.
+- **Original author:** Dave Gamble wrote the original library but owns only 3.1% of what survives. Most of his code was rewritten or replaced.
+- **Same person, different names:** Blame groups by the author name in each commit, and the repo has no `.mailmap`. Someone who committed under two names, such as "Kevin Branigan" and a username, would be counted as two authors. I didn't check for that.
+- **What it counts:** This counts lines, not importance. A one-line bug fix counts the same as a boilerplate line.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git log --oneline | wc -l; wc -l cJSON.c cJSON.h
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author ' | sed 's/^author //' > /tmp/blame_$f.txt; done
+cat /tmp/blame_cJSON.c.txt /tmp/blame_cJSON.h.txt | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR;i++){split(c[i],a," "); n=a[1]; sub(/^ *[0-9]+ /,"",c[i]); printf "%5d  %5.1f%%  %s\n", n, n*100/t, c[i]} print t" total"}'
+echo; echo "--- naive (no ignore-revs, no -w/-M/-C) ---"
+for f in cJSON.c cJSON.h; do git blame --line-porcelain $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -5
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep -E '^author(-mail)? ' | paste - -; done | sort | uniq -c | sort -rn | grep -iE 'tomasi|Ibarra|Bruckner|Gamble|Priya|Use|Lee|root|Stephan' 
+FINAL ANSWER:
+Max Bruckner wrote about 75% of the lines that survive in `cJSON.c` and `cJSON.h`.
+
+I counted 3,601 surviving lines (3,298 in `cJSON.c`, 303 in `cJSON.h`) with `git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs`. That command ignores whitespace changes, follows lines moved or copied within or between files, and skips the clang-format commit `413c6d1`.
+
+Without those flags, the clang-format commit is credited with 2,265 of the 3,601 lines (63%), all under Priya Nair, and Max Bruckner drops to 844. Plain `git blame` is therefore misleading here.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 131 | 3.6% |
+| 4 | Dave Gamble (original author) | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi + Tomás Ibarra | 142 (74 + 68) | 3.9% combined |
+| 7 | PeterAlfredLee + Lee | 41 (31 + 9 + 1) | 1.1% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | Nicolas Badoux | 29 | 0.8% |
+| 10 | Zach Hindes | 23 | 0.6% |
+| 11 | miaoerduo | 22 | 0.6% |
+
+About 30 more authors each hold 13 lines or fewer. Together they hold roughly 4%.
+
+- **Merged identities:** I merged PeterAlfredLee and Lee because 31 of those lines share the email `<email redacted>`. The `<email redacted>` email (9 lines) is a guess that it's the same person.
+- **Unmerged identities:** I did not merge `tomasi` (a GitHub noreply email) and `Tomás Ibarra` (`tibarra@corp.example`) in the ranking. The names and emails suggest the same person, but the repo doesn't confirm it. If they are the same person, that person ranks 3rd at 3.9%.
+- **Bot lines:** `github-actions[bot]` holds 5 lines. Some other small entries are also bots or one-off contributors.
+- **Method limit:** Blame credits the last commit that changed a line, not the person who first wrote it. A one-character fix to a line takes over that line. Credit for Dave Gamble's original code is therefore understated.
+
+I used `git blame` rather than the `busfactor` skill because that skill is aimed at CODEOWNERS output.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "cJSON.c and cJSON.h: ranked surviving-line authorship with percentages (git blame based, not commit counts)"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo; cat .git-blame-ignore-revs; ls .mailmap 2>&1 | head -1; git rev-list --count HEAD; for mode in ignore noignore; do echo "== $mode"; for f in cJSON.c cJSON.h; do echo "-- $f"; done; done; 
+run(){ args="$1"; git blame $args --line-porcelain -w -M -C -- cJSON.c cJSON.h 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn; }
+echo "### ignoring revs file, -w -M -C"; run "--ignore-revs-file .git-blame-ignore-revs"
+echo "### no ignore"; run ""
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo
+run(){ for f in cJSON.c cJSON.h; do git blame $1 --line-porcelain -w -M -C -- $f; done | grep -a '^author ' | sort | uniq -c | sort -rn; }
+echo "### ignore-revs"; run "--ignore-revs-file .git-blame-ignore-revs" | tee /tmp/a.txt
+echo "### no ignore"; run "" | head -8
+wc -l cJSON.c cJSON.h; cat .mailmap | head -20
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo
+git log -1 --format='%an <%ae> %s' 413c6d1
+run(){ for f in cJSON.c cJSON.h; do git blame "$@" --line-porcelain -w -M -C -- $f; done | grep -a '^author-mail ' | sed 's/^author-mail //' | sort | uniq -c | sort -rn | while read n m; do echo "$n $(git check-mailmap "X $m")"; done | awk '{n=$1;$1="";c[$0]+=n;t+=n} END{for(k in c) printf "%d\t%.1f%%\t%s\n",c[k],100*c[k]/t,k; print t" total"}' | sort -rn; }
+echo "### ignoring formatter"; run --ignore-revs-file .git-blame-ignore-revs
+echo "### raw"; run
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ppi-1/repo
+for f in cJSON.c cJSON.h; do git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain -w -M -C -- $f; done | grep -a -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn | head -14
+git log --format='%an <%ae>' | grep -i -E 'ibarra|tomasi' | sort | uniq -c
+FINAL ANSWER:
+Durum özeti: blame çıktısını okudum, yüzdeleri hesapladım. Sonuç aşağıda.
+
+**Yöntem:** `git blame --line-porcelain -w -M -C` ile `cJSON.c` + `cJSON.h` içindeki bugün hayatta olan 3601 satır sayıldı. Her satır son yazan kişiye ait. `.mailmap` uygulandı. `.git-blame-ignore-revs` içindeki clang-format commit'i (`413c6d1`, Priya Nair) yok sayıldı. Ignore dosyası olsa da olmasa da sonuç aynı çıktı, çünkü `-w` boşluk değişikliklerini zaten atlıyor. Priya Nair'in hayatta kalan satırı yok.
+
+| # | Yazar | Satır | Pay |
+|---|---|---|---|
+| 1 | Max Bruckner | 2699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Tomás Ibarra (`tomasi` + `Tomás Ibarra`, 74+68) * | 142 | 3.9% |
+| 4 | Alan Wang | 129 | 3.6% |
+| 5 | Dave Gamble | 111 | 3.1% |
+| 6 | Mike Jerris | 76 | 2.1% |
+| 7 | Peter Alfred Lee (`peteralfredlee` + `<email redacted>`, 32+9) * | 41 | 1.1% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | Nicolas Badoux | 29 | 0.8% |
+| 10 | Zach Hindes | 23 | 0.6% |
+| 11 | miaoerduo | 22 | 0.6% |
+| — | ~34 diğer kişi (her biri ≤13 satır) | 149 | 4.1% |
+
+\* `.mailmap` bu iki kimliği birleştirmiyor. Ben birleştirdim, çünkü isim ve e-posta kullanıcı adı aynı kişiyi gösteriyor. Bu bir tahmin, doğrulanmadı. Birleştirmezsen Ibarra 74 ve 68 satıra, Lee 32 ve 9 satıra bölünür.
+
+**Bus factor: 1.** Max Bruckner tek başına kodun %75'ine sahip. Sıradaki kişi %4.1'de. Max ayrılırsa %50'den fazla satırın bilgili bakımcısı kalmaz.
+
+Not: Max'in %75'i yeniden yazım olabilir. Bu repo cJSON'ın bakım dalı. İstersen `--period 1y` ile son yıldaki etkinliği ve Max'in hâlâ aktif olup olmadığını kontrol ederim.
+
+FILE .mailmap written by this run
+Alan Wang <<email redacted>> Alanscut <<email redacted>>

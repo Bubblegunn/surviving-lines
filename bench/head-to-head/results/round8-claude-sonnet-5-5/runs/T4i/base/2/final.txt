@@ -1,0 +1,23 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head; echo ---; git shortlog -sne --since="2 years ago" -- lib/index.js | head; echo ---; git log --format='%h %an %ad %s' --date=short -n 10 -- lib/index.js
+ - Bash: git shortlog -sn HEAD -- lib/index.js | head -8; echo ---; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo ---; grep -n -i -A3 'maintainer\|contribut' package.json | head -20
+FINAL ANSWER:
+No CODEOWNERS file exists, so this comes from git history only.
+
+**Troy Goode** is the best reviewer for `lib/index.js`:
+- They made 30 commits to the file, the most of anyone.
+- They authored 159 lines in a blame that ignores the reformat commits.
+- They made the latest substantive change, `b2005d9 lib: annotate handlers` (2026-04-10).
+
+**Douglas Christopher Wilson** is a good second reviewer. They have 22 surviving lines and made several earlier fixes to the file. These include the `Vary` header handling and the options-delegate fix.
+
+**Alejandro Caravaca Puchades** has 12 surviving lines. They are a third option if you want another reviewer.
+
+- **Skip Fiona Formatter.** Their only commit (`62628c0`) is a whole-file reformat, which `.git-blame-ignore-revs` already excludes.
+- **Recent activity.** I didn't check how active Wilson or Puchades are lately. Check before you request a review from either.
+META cost=0.04164230000000001 ms=10579 turns=3

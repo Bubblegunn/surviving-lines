@@ -1,0 +1,54 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser; echo ---; git log --all --no-merges --pretty=format:"%an|%ae" -- src/Parser | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files src/Parser); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; done; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | sort -t'|' -k2 -r | awk -F'|' '!s[$1]++'
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo ---; git log --all --no-merges --pretty=format:"%h %an %ad %s" --date=short -- src/Parser/Lexer.php; echo; echo --- escape; git log --all --no-merges -i --grep=escape --pretty=format:"%h %an %ad %s" --date=short; echo; grep -rli "escape" src | head
+FINAL ANSWER:
+## Bus factor: `src/Parser`
+
+I ran the `/project-pilot:bus-factor` steps by hand with `git log` and `git blame` and skipped the contributor-analyzer agent. The directory has only 12 files, so the per-file numbers are easy to read directly. I did not count importers for the Step 3 importance ranking.
+
+**Project-level bus factor for `src/Parser`: 1.** Graham Campbell owns most surviving lines. Aiko Tanaka owns the rest (`Escape.php`, `Unicode/CharTable.php`).
+
+### Surviving lines by author (`git blame -w`)
+
+| File | Surviving lines by author | Owner |
+|---|---|---|
+| `EntryParser.php` | 362 Graham, 1 StyleCI Bot | Graham |
+| `Lines.php` | 136 Graham, 1 JT Smith | Graham |
+| `Value.php` | 101 Graham | Graham |
+| `Lexer.php` | 58 Graham | Graham (100%) |
+| `Parser.php` | 58 Graham | Graham |
+| `Entry.php` | 58 Graham, 1 Jonas Staudenmeir | Graham |
+| `ParserInterface.php` | 19 Graham | Graham |
+| `Escape.php` | 206 Aiko Tanaka (159 as `Aiko Tanaka`, 47 as `aiko tanaka`) | Aiko |
+| `Unicode/CharTable.php` | 431 Aiko Tanaka | Aiko |
+| `Compat.php` | 69 "Your Name" | unknown identity |
+| `Quirks.php` | 117 "root" | unknown identity |
+
+Every file has bus factor 1. Only `Entry.php` and `Lines.php` contain a single line from anyone else.
+
+### Who to ask
+
+- **`Lexer.php`: Graham Campbell.**
+  - He wrote all 58 surviving lines.
+  - He made all 7 commits to the file.
+  - The main ones are `9a97cc4` and `2d0d4ba` (June 2020, lexing and performance) and `301c079` (2026-08-24, static-analysis cleanup).
+- **Escape handling: two people, split by file.**
+  - **Aiko Tanaka** wrote `Escape.php` in two commits on 2026-08-26 (`4b9b803` "Add escape sequence handling", `09f7c5c` "Escape: more sequences"). They also wrote `Unicode/CharTable.php`.
+  - **Graham Campbell** wrote the older escape logic in `EntryParser.php`, including `21c540a`, "fix escaped quotes in multiline values" (2019). He also wrote the escape rule documentation in `5d0bb3b` and the regression tests in `eec19ee`.
+  - `Lexer.php` has no escape handling itself. `grep -i escape` matches only `EntryParser.php` and `Escape.php`. For the audit, ask Aiko about the new escape code and Graham about how escaped quotes reach the lexer.
+
+### Caveats for the audit
+
+- **Duplicate identity.** `Aiko Tanaka` and `aiko tanaka` use the same email with different case. I counted them as one person. Their other commits are `<email redacted>` and `<email redacted>`.
+- **Unattributable code.** `Compat.php` (author "Your Name", `<email redacted>`) and `Quirks.php` (author "root", `root@localhost`) were committed with placeholder git configs. I can't tell who wrote them. Both are new code, from 2026-08-26 per the author list. Treat them as unreviewed, and check with Aiko or Graham who added them.
+- **Activity.** Last commits are Graham on 2026-08-24 and Aiko on 2026-08-26. Today is 2026-10-22, so both are inside the skill's 90-day "active" window, but only just. I checked commit dates only, not whether either is still available.
+- **Review gap.** The newest code (`Escape.php`, `CharTable.php`, `Compat.php`, `Quirks.php`) has one author each and no history. Prioritize it in the audit. The commit history cannot show whether another person reviewed it.
+- **Scope of the data.** The commit counts above include `git log --all`. I did not check whether any commits sit on unmerged branches.
+META cost=0.07898440000000001 ms=21458 turns=6

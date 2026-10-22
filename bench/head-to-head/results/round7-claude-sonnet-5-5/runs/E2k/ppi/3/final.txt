@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:sprint-health
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:sprint-health", "args": "--team"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad' --date=iso; git log --since="2026-03-29" --until="2026-04-12 23:59:59" --no-merges --pretty=format:"%h|%an|%ae|%ad|%s" --date=short --shortstat
+ - Bash: git log --since="2026-03-20" --format='%h|%an|%ae|%cn|%ad' --date=short | head -20; ls .mailmap 2>&1; git log --since="2026-03-29" --until="2026-04-12 23:59:59" --no-merges --format='%h' --name-only; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head; echo ---; for f in lib/index.js test/vary.js README.md; do echo $f; git blame --ignore-rev 62628c0 --line-porcelain -- $f | awk '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author /{a[c" "substr($0,8)]++} END{for(k in a)print a[k],k}'; done
+FINAL ANSWER:
+Pencere: 2026-03-29 → 2026-04-12 (son commit `62628c0`, 14 gün). `sprint-health --team` komutundaki git sorgularını bu tarih aralığıyla çalıştırdım. Komutun varsayılanı bugünden geriye saydığı için sabit tarih verdim. Contributor-analyzer agent'ını çalıştırmadım. Sadece 3 kişi var, `git log` ve `git blame` yetti.
+
+| Kişi | Commit (pencere içi) | Bugün kodda kalan satır |
+|---|---|---|
+| Troy Goode | 2 (`b2005d9`, `02afce3`) | 47 / 48 |
+| Vansh Sharma | 1 (`5317ebe`) | 1 / 1 |
+
+**Troy Goode**
+- `02afce3` test: `test/vary.js`, 36 satır eklendi. 36'sı hâlâ duruyor.
+- `b2005d9` lib: `lib/index.js`, 12 satır eklendi. 11'i hâlâ duruyor.
+- Toplam 48 eklenen satırdan 47'si kodda.
+
+**Vansh Sharma**
+- `5317ebe` docs: `README.md`, 1 satır değişti (#411). Satır hâlâ duruyor.
+- Commit'i GitHub üzerinden yapılmış (committer: GitHub). Yazar olarak sayıldı.
+
+**Hariç tutulanlar**
+- Fiona Formatter, `62628c0`: sadece biçimlendirme (4 dosya, +1016/−1016). Kural gereği dışarıda.
+- Bot commit'i pencerede yok. `ee714bd` (dependabot bump) pencere dışında.
+
+**Yöntem**
+- Troy iki commit'te de aynı e-postayla (`troy@laptop.example`) göründü, tek kişi sayıldı.
+- Kalan satırlar için `git blame --ignore-rev 62628c0 -w` kullandım. Biçimlendirme commit'i satır sahipliğini bozmasın diye.
+- Troy'un `lib/index.js` satırlarından 1'inin kaybolduğunu blame'e dayanarak çıkardım. Hangi satır olduğunu tek tek doğrulamadım. Büyük ihtimalle biçimlendirmeyle yeniden yazılan bir satır.
+- Pencere içi Troy kodundan bağımsız olarak, repodaki toplam Troy satırı 746. Bu sayı tüm geçmişi kapsıyor, sorunun cevabı değil.
+META cost=0.053926299999999996 ms=39882 turns=7

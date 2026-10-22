@@ -1,0 +1,45 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: ls; for d in lib test; do echo "== $d"; git ls-files $d | xargs -n50 git blame -w -M --line-porcelain HEAD -- 2>/dev/null | grep -a '^author-mail' | sort | uniq -c | sort -rn | head -8; done
+ - Bash: for d in lib test; do echo "== $d"; for f in $(git ls-files $d); do git blame -w -M --line-porcelain HEAD -- "$f"; done | grep -a '^author-mail' | sort | uniq -c | sort -rn | head -8; done; git log -1 --format=%ad; git log --since=12.months --format=%ae | sort | uniq -c
+ - Bash: for d in lib test; do echo "== $d"; for f in $(git ls-files $d); do git blame -w -M --line-porcelain HEAD -- "$f"; done | grep -a '^author-mail' | sort | uniq -c | sort -rn | awk '{t+=$1;a[NR]=$0} END{print "total",t; for(i=1;i<=NR;i++)print a[i]}' | head -16; done
+FINAL ANSWER:
+**Short answer:** ask Carlos (<email redacted>) or Kaito (kaito@mori.example) about `lib/`. `test/` has a different mix, and most of both directories was written by someone who no longer commits.
+
+Shares of lines still alive, from `git blame` at HEAD (1,496 lines in `lib/`, 1,853 in `test/`). I merged José's two emails into one person:
+
+| Person | `lib/` | `test/` | Committed in last 12 months? |
+|---|---|---|---|
+| José Valim | ~57% | ~56% | no |
+| Kaito Mori | ~17% | ~9% | yes (3 commits, plus 1 more under a laptop email) |
+| Rafael França | ~4% | ~9% | yes (~8 commits across 4 emails; I counted only the gmail and franca.dev addresses for lines) |
+| Carlos Silva | ~3% | ~6% | yes (22 commits, the most active) |
+| Lucas Mazza | ~2% | ~8% | no |
+| Weblate | ~5% | – | yes (1 commit; it only handles translations) |
+| Everyone else | ~12% | ~12% | – |
+
+**Is `test/` owned by the same people?** Mostly, but not quite:
+- José's share is the same in both, about 56–57%. That is the main reason the two overlap.
+- Kaito owns about twice as much of `lib/` as of `test/`.
+- Rafael and Lucas are stronger in `test/` than in `lib/`.
+
+**Who to ask:**
+- **`lib/`:** Carlos first, since they are the most active. Kaito is next and owns the most live `lib/` code among current committers.
+- **`test/`:** Carlos or Rafael. Kaito has less of it.
+- **Original design questions:** José wrote over half of everything, but has no commits in the last year. His knowledge is not held by anyone active, so treat it as a risk.
+
+The busfactor tool's dry run (`--no-github`) suggests the same names for `lib/`: Carlos, Kaito and Weblate. It weights recent commits more heavily than my blame count does. It listed no separate rule for `test/`, so `test/` falls under the repo fallback owners (Carlos and Kaito).
+
+**Caveats:**
+- Counts are by email address, so Rafael's lines are probably undercounted: I only merged two of his four addresses. His `@shopify.com` address (`<email redacted>`) probably belongs to him too.
+- Weblate is a bot account, so don't contact it. A human should review translation changes.
+- Commit history is only a proxy for who knows the code. Someone who reviews but doesn't commit won't show up.
+
+I didn't write a CODEOWNERS file or the HTML report. Say so if you want them.
+META cost=0.0715453 ms=22057 turns=7

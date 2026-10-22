@@ -1,0 +1,22 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso && git log --since='2026-03-29 00:00' --until='2026-04-12 23:59:59' --no-merges --format='%h|%an|%ae|%ad|%s' --date=iso --shortstat; cat .mailmap 2>/dev/null
+ - Bash: git log --format='%h|%an|%ae|%cn|%ad|%s' --date=short -12; echo; git shortlog -sne --all | head -20
+ - Bash: git show --stat --format='%h %s' 62628c0 b2005d9 02afce3 5317ebe | cat; echo ---ALL; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain "$f" 2>/dev/null | grep -E '^(author-mail|[0-9a-f]{40} )' ; done | awk '/^author-mail/{print $2}' | sort | uniq -c | sort -rn | head; echo ---WINDOW; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain "$f" 2>/dev/null | awk '/^[0-9a-f]{40} /{sha=substr($1,1,7)} /^author-mail/{print sha, $2}'; done | grep -E '^(b2005d9|02afce3|5317ebe)' | sort | uniq -c
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), after excluding formatting-only commits and bots.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (+36 lines, `test/vary.js`)<br>`b2005d9` lib: annotate handlers (12 lines changed, `lib/index.js`) | 48 (36 + 12) |
+| Vansh Sharma | `5317ebe` docs: `app.del()` → `app.delete()` in README (#411) | 1 |
+
+- **Troy Goode** appears under two emails, `<email redacted>` (the older history) and `troy@laptop.example` (the window commits). They are one person, so I counted them once.
+- **Excluded:** `62628c0` by Fiona Formatter, which reformats four files to 4-space indent and double quotes. I also excluded dependabot, whose latest commits are from 2026-03-02, before the window.
+- **Method:** I ran `git blame` at HEAD and told it to skip `62628c0`. That formatting commit rewrote about 1,000 lines. Without skipping it, Troy's 12 `lib/index.js` lines would show up as Fiona's.
+- **"Lines of theirs":** I read this as lines from their window commits that survive today. If you meant all lines they own in the repo today, Troy owns about 810 (762 under `<email redacted>` plus 48 under `troy@laptop.example`), and Vansh owns 1.
+META cost=0.0596969 ms=16702 turns=4

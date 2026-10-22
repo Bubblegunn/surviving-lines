@@ -1,0 +1,40 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D4-hist-2/repo/src", "top": 50, "max_files": 1000}
+FINAL ANSWER:
+**Bus factor: 1.** Andrew Gallant alone owns 53.1% of the lines in `src/` that survive at HEAD (2,231 of about 4,200). That is more than half, so one person covers the majority.
+
+This comes from `git blame` on the current lines, not from commit counts. It covers all 8 files in `src/`.
+
+| Author | Surviving lines | Share | Files mainly owned |
+|---|---|---|---|
+| Andrew Gallant | 2,231 | 53.1% | 5 |
+| Niko Alvarez | 883 | 21.0% | 1 (`errno_table.rs`) |
+| Kaito Mori | 262 | 6.2% | 1 (`error.rs`) |
+| nivkner | 147 | 3.5% | 0 |
+| Sebastian Thiel | 96 | 2.3% | 0 |
+| Everyone else (about 25 authors) | under 2% each | about 14% | 1 (`util.rs`, ola.berg) |
+
+Gallant plus Alvarez own 74%. Adding Mori brings that to about 80%.
+
+**Per file:**
+- `src/tests/recursive.rs`: Gallant 83%.
+- `src/dent.rs`: Gallant 98%.
+- `src/tests/util.rs` and `src/tests/mod.rs`: Gallant 100%.
+- `src/lib.rs`: Gallant 54%, nivkner 12%, and the rest spread across many authors.
+- `src/errno_table.rs`: Alvarez 100%. It looks generated, judging by the "Add generated errno table" commit, so the real risk is lower than the number suggests.
+- `src/error.rs`: Mori 100%.
+- `src/util.rs`: ola.berg 75%, Gallant 25%. The same person also commits as "Ola Berg" (66 lines in `src/tests/recursive.rs`), so combined they own about 3.4%. The author names are not merged.
+
+**Activity:**
+- The tool flags every author as inactive, using a cutoff of 2026-04-22 (6 months ago). All 8 files count as orphaned.
+- The most recent last-commit dates are Gallant 2026-04-09, Alvarez 2026-03-20, Mori 2026-02-24 and ola.berg 2026-03-12. These are close to the cutoff, so a longer window would change the "inactive" result. The line shares would not change.
+- The cutoff is the tool's default. I can rerun with a different `inactive_after` if you want.
+- Efe Genc has no surviving lines in `src/`. That fits the history, where `fastpath.rs` was added and then removed.
+META cost=0.0677307 ms=16377 turns=4

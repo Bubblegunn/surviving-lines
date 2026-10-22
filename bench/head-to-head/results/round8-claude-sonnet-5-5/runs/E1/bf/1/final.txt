@@ -1,0 +1,59 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-bf-1/repo --dry-run --no-github
+ - Bash: T=$(mktemp -d) && git clone -q <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-bf-1/repo $T/r && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs $T/r --no-github >/dev/null && cat $T/r/.github/ownership.json | head -150; cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-bf-1/repo && git shortlog -sne HEAD | head -15; git ls-files | head -30
+ - Bash: cd /tmp/tmp.t5SA8murNP/r 2>/dev/null || cd $(ls -dt <tmp> | head -1); node -e '
+const j=require("./.github/ownership.json");console.log(Object.keys(j));console.log(JSON.stringify(j.zones,null,1).slice(0,5000));console.log(JSON.stringify(j.unresolved).slice(0,200))'
+ - Bash: git log --format='%h %ad %an <%ae> %s' --date=short -4; for f in lib/index.js test/test.js .github/workflows/ci.yml; do echo "== $f"; git log --follow --format='%an' -- $f | sort | uniq -c | sort -rn | head -4; done; git show --stat --format=%h 62628c0 | tail -8
+FINAL ANSWER:
+Analysis done. I ran the busfactor script with `--no-github` on a temp clone, so your repo is untouched. I then checked the top-ranked authors against raw `git log`.
+
+**Short answer:** The script flags `test/` as bus factor 1, with Fiona Formatter as the sole active owner. I don't trust that result. The real dependency is on Troy Goode and Douglas Wilson, who are both mostly inactive.
+
+**Repo facts**
+- 326 commits, 18 tracked files, history from 2013-01-31.
+- The root commit is a bulk import of 8 files. Ownership reflects work since the import, not the original authors.
+
+**What the script reports**
+
+| Zone | Verdict | Sole active owner |
+|---|---|---|
+| `test/` | bus factor 1 (active share 0.90) | `fiona@formatter.example` (67%) |
+| `lib/` | bus factor 1, but only 1 file, so not significant | `fiona@formatter.example` (48%) and `troy@laptop.example` (48%) |
+| `test/support/` | orphaned, 1 file, negligible weight | Douglas Wilson, last commit 2021-09 |
+| `.github/` and `.github/workflows/` | bus factor 2 | Ulises Gascón and Ignacio Mangas |
+| repo root | bus factor 3 | Fiona, Ulises Gascón, Jon Church |
+
+**Why the Fiona result is wrong**
+- Fiona's only commit is `62628c0`, the 4-space and double-quote reformat. It rewrote 1,016 lines across 4 files.
+- That is a mechanical refactor, so it inflates her share. The script's caveats warn about exactly this.
+- Fiona is not a knowledgeable owner of `lib/` or `test/`.
+
+**Where the knowledge actually sits (`git log --follow`)**
+- `lib/index.js` (the whole library): Troy Goode has 29 commits and Douglas Wilson has 4.
+- `test/test.js`: Troy Goode has 21 and Douglas Wilson has 15.
+- `.github/workflows/ci.yml`: Douglas Wilson has 10. Ulises Gascón and Ignacio Mangas have 2 each.
+
+**Troy Goode**
+- He is listed as two identities. `<email redacted>` has 93 commits in the script (120 in `git shortlog`), last active 2019-05, and counts as inactive.
+- `troy@laptop.example` has 2 commits on 2026-04-10, so it counts as active.
+- If both are the same person, the code is a single-person dependency on Troy. He wrote nearly all of the library and tests, and he is the only one who has committed to them recently.
+- If they are different people, `lib/` and `test/` have no active owner with real history, and the orphan risk is much larger than the script shows.
+- GitHub lookup was off, so the script could not merge these identities. Please confirm which case applies.
+
+**Other points**
+- Douglas Wilson (143 commits, last 2021-09) is inactive. His CI and test knowledge is effectively orphaned.
+- Ulises Gascón and Ignacio Mangas are the only active people with real history in `.github/`.
+- The script found 63 unresolved author emails.
+- Commit volume is only a proxy for knowledge. Reviewers who never commit are invisible.
+
+**Next steps**
+- Tell me whether `troy@laptop.example` is Troy Goode. I can then record the identity merge in the cache and re-run.
+- I can also write `.github/CODEOWNERS` into the repo. I held back because you asked for analysis only, and the current output would name Fiona as a fallback owner, which looks wrong.
+META cost=0.09659880000000001 ms=30428 turns=8

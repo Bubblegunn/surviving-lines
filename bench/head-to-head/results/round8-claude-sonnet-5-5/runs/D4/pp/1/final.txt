@@ -1,0 +1,28 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && for f in $(git ls-files src); do git blame --line-porcelain -w -M -C -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Bus factor is **1** at the 50% threshold and **2** at the 80% threshold. I counted lines that still exist in `src/` (8 files, 4,205 lines) using `git blame -w -M -C`. That ignores whitespace-only changes and follows lines moved or copied between files.
+
+| Author | Lines | Share | Cumulative |
+|---|---|---|---|
+| Andrew Gallant | 2,554 | 60.7% | 60.7% |
+| Niko Alvarez | 883 | 21.0% | 81.7% |
+| Ola Berg (two identities merged) | 113 | 2.7% | 84.4% |
+| Sebastian Thiel | 74 | 1.8% | 86.2% |
+| Ashley / Ashley Mannix (merged) | 72 | 1.7% | 87.9% |
+| Aron Griffis | 59 | 1.4% | 89.3% |
+| Remaining ~30 authors | 450 | 10.7% | 100% |
+
+- **Concentration:** Gallant alone wrote a majority of the surviving lines. Gallant and Alvarez together wrote 81.7%. No one else holds more than 2.7%.
+- **Long tail:** About 35 other people each own a small number of lines. Most own fewer than 50, so no one else could realistically take over a file.
+- **Identity merging:** I merged names that looked like the same person: `Ola Berg` and `ola.berg`, `Niv Kaminer` and `nivkner`, `Ashley` and `Ashley Mannix`, and `Alisha` and `Alisha Aneja`. This was a guess from the names, and there is no `.mailmap` to confirm it. Merging changes the long tail but not the top two.
+- **Thresholds:** The 50% and 80% cutoffs are conventional. The result is the same at 50% and 80% even if some of the merges are wrong.
+
+I only ran the aggregate across `src/`. I can break it down per file to show which files depend on one person. Say so if you want that.
+META cost=0.056257499999999995 ms=13867 turns=3

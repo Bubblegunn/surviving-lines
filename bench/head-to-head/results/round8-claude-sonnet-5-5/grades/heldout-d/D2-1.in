@@ -1,0 +1,381 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I'm taking over reviewing PRs for this flag library. Which people wrote the Go code that is still alive in it, and how concentrated is that: would losing one or two people be a problem?
+
+CRITERIA:
+1. Top owner is Eric Paris with 16.7% of live Go lines (accept 14.2% to 19.2%); the next two are Alex Ogier (10.1%) and Noah Dietz (10.1%), and the top three together hold about 37% (accept 34% to 40%). FAIL if the top person is not Eric Paris, or the top-three total is outside 34% to 40%.
+2. Sam Okafor is credited with at most 0.5% of the Go code. The answer must not count vendor/ or zz_generated_flags.go (without them about 12,200 live lines; with them about 14,000), and dependabot[bot] is not listed as an owner of Go code. FAIL if Sam Okafor has 1% or more, or if a bot is ranked as an author.
+3. Identity duplicates are merged: "bogem" and Albert Nigmatzianov (same e-mail) are one entry with about 1.8% (accept 1.3% to 2.3%). FAIL if "bogem" appears as a separate ranked person.
+4. Lena Voss (author of the squash-merged PR) is credited with about 1.2% (accept 0.7% to 1.7%), while Ravi Menon and Yuki Sato, who only appear in Co-authored-by trailers, get at most 0.2% each (or the answer says trailers cannot be attributed to lines). FAIL if Lena is missing or above 2.5%, or if either co-author is credited with 0.5% or more.
+5. Concentration: the answer states that ownership is spread out, with no one above 20% and about five people (accept 4 to 6) needed to reach half of the live lines. FAIL if it says one person owns a majority or says one or two people cover half or more.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD 6bf5b04a62e172bd6e088f63040decead3db89ad
+scope: *.go
+files counted: 75  excluded: 3
+  excluded vendor/golang.org/x/sys/unix/syscall_linux.go: vendored third-party code
+  excluded vendor/golang.org/x/term/term.go: vendored third-party code
+  excluded zz_generated_flags.go: generated (header says so)
+ignore-revs (1):
+  6bf5b04a62e1 Sam Okafor | refactor: replace interface{} with any (gofmt -r 'interface{} -> any', no functional change)
+live lines in scope: 12194
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 12194
+RANKING (share of human live lines)
+ 1. Eric Paris: 2041 lines, 16.74%
+ 2. Alex Ogier: 1237 lines, 10.14%
+ 3. Noah Dietz: 1232 lines, 10.10%
+ 4. Jonathan Reyna: 1047 lines, 8.59%
+ 5. Tamal Saha: 626 lines, 5.13%
+ 6. Riobard: 538 lines, 4.41%
+ 7. therealmitchconnors: 522 lines, 4.28%
+ 8. Georges Varouchas: 454 lines, 3.72%
+ 9. rpothier: 385 lines, 3.16%
+10. wu8685: 384 lines, 3.15%
+11. Alex Besogonov: 305 lines, 2.50%
+12. Roman Volosatovs: 303 lines, 2.48%
+13. Ethan P.: 295 lines, 2.42%
+14. Eugene Agafonov: 229 lines, 1.88%
+15. Albert Nigmatzianov: 215 lines, 1.76%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Albert Nigmatzianov: Albert Nigmatzianov <<email redacted>>=167; bogem <<email redacted>>=48
+  Charlie R.C: xilabao <<email redacted>>=128; Charlie R.C <<email redacted>>=19
+people needed to cover >=50% of human live lines: 5; >=80%: 15
+FACT Sam Okafor: 0 human lines = 0.00%
+FACT Lena Voss: 143 human lines = 1.17%
+FACT Ravi Menon: 0 human lines = 0.00%
+FACT Yuki Sato: 0 human lines = 0.00%
+FACT dependabot: 0 human lines = 0.00%
+FACT top-3 share: 36.99%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | awk -F/ '{print $1}' | sort | uniq -c | sort -rn | head; git log --format='%h %an %s' -5; git shortlog -sn --all | head -20; git ls-files '*.go' | grep -v '^vendor/' | wc -l
+ - Bash: git log --format='%h %an %ad %s' --date=short | head -8; head -5 zz_generated_flags.go; git ls-files '*.go' | grep -v '^vendor/' | grep -c zz_; 
+blame(){ for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated'); do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn; }
+echo "== raw (no ignore, no excl)"; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame --line-porcelain "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -8
+echo "== excl vendor/generated, ignore refactor"; blame | head -15
+ - Bash: ls .mailmap 2>&1 | head -1
+for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated'); do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain "$f" | grep '^author ' ; done | sed 's/^author //' | sort | uniq -c | sort -rn > /tmp/blame.txt
+awk '{t+=$1; n++} END{print "total lines",t,"authors",n}' /tmp/blame.txt
+awk '{t+=$1; a[NR]=$1; nm[NR]=$0} END{c=0; for(i=1;i<=NR;i++){c+=a[i]; if(i<=8) printf "%d cum %.1f%%  %s\n", i, 100*c/t, nm[i]}}' /tmp/blame.txt
+echo "--- non-test only top"; for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated' | grep -v _test.go); do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain "$f" | grep '^author ' ; done
+ - Bash: grep -E "Mitch|Tomas|Sam Okafor|Lena|Sebastiaan|Hu Jun" /tmp/blame.txt; awk '{t+=$1} END{print t}' /tmp/blame.txt; git -C <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-base-1/repo log --since=2024-10-22 --format=%an | wc -l
+ - Bash: wc -l /tmp/blame.txt; head -3 /tmp/blame.txt; grep -c . /tmp/blame.txt; grep -iE "mitch|aschan|okafor|voss" /tmp/blame.txt
+ - Bash: out=$(mktemp -d)/blame.txt
+for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated'); do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain "$f" | grep '^author ' ; done | sed 's/^author //' | sort | uniq -c | sort -rn > "$out"
+awk '{t+=$1} END{print "total",t,"authors",NR}' "$out"
+awk '{t+=$1; a[NR]=$1; l[NR]=$0} END{c=0; for(i=1;i<=NR;i++){c+=a[i]; if(i<=8) printf "cum %.1f%% %s\n",100*c/t,l[i]}}' "$out"
+grep -iE "mitch|aschan|okafor|voss|sebastiaan|hu jun" "$out"
+git blame -w --ignore-rev 6bf5b04 --line-porcelain zz_generated_flags.go | grep '^author ' | sort | uniq -c
+FINAL ANSWER:
+Verified numbers are below. They come from `git blame -w -M -C` on the 75 non-vendor, non-generated `.go` files. I ignored the mechanical `interface{}` → `any` commit (`6bf5b04`). That is 12,194 live lines from 78 authors.
+
+**Who wrote the live code**
+
+| Author | Lines | Cumulative share |
+|---|---|---|
+| Eric Paris | 2041 | 16.7% |
+| Alex Ogier | 1237 | 26.9% |
+| Noah Dietz | 1232 | 37.0% |
+| Jonathan Reyna | 1047 | 45.6% |
+| Tamal Saha | 626 | 50.7% |
+| Riobard | 538 | 55.1% |
+| therealmitchconnors | 522 | 59.4% |
+| Georges Varouchas | 454 | 63.1% |
+
+- **Concentration:** It is moderate. No one owns more than 17%. The top 5 authors hold about half the code, and the top 8 hold about 63%. Eric Paris, at 103 commits, is the largest author by both commits and lines. Alex Ogier is the second-largest by lines.
+- **Generated file:** `zz_generated_flags.go` is 488 lines, and Sam Okafor wrote all of them. I excluded it above. It is generated by `hack/genflags`, so the real dependency is on that generator and the person who knows it.
+
+**Who is still active**
+
+Almost none of the top authors are active. Their last commits:
+- Eric Paris: 2018-10-24
+- Noah Dietz: 2018-11-07
+- Tamal Saha: 2018-08-21
+- Jonathan Reyna: 2017-01-25
+- Alex Ogier: 2015-02-15
+- Riobard: 2014-03-15
+
+The people who have committed in the last two years are:
+- **Tomas Aschan:** 32 commits, most recently 2025-10-07. This is the only sustained maintainer. He owns only about 67 live lines, but he merges PRs.
+- **Sam Okafor:** 3 commits, the latest 2026-04-08. Their commits cover the vendored `x/term` and `x/sys` packages, the generated accessors and the `any` refactor.
+- **Lena Voss:** 1 commit, `490d961` (Require* helpers, #512). It left 143 live lines.
+- **Hu Jun:** about 137 live lines.
+
+**Would losing one or two people hurt?**
+
+- **Code authorship:** Not much. Losing any one or two of the top authors would orphan at most about 27–37% of the lines. Those authors are already gone, so the risk has already happened. This is a risk of lost institutional knowledge, not of a bus factor.
+- **Review and merge capacity:** Yes, this is the real risk. Tomas Aschan is the only recurring maintainer, and I see no second person with a steady commit history. If Tomas left, nobody would be left who regularly reviews and merges. You are taking over review, so your role matters here.
+- **Generator:** The generator and accessors depend on Sam Okafor. Sam has only 3 commits, so check that someone else can run `hack/genflags`.
+
+**Caveats**
+- `therealmitchconnors` and the `Mitch Connors` commit author are probably one person, but there is no `.mailmap` to confirm it. Merged, they would hold more than 522 lines.
+- Blame measures who last touched a line, not who designed it. `-w` and `-M -C` cut some noise from whitespace and moved code, but they do not remove it.
+- Author names come from git metadata and are not verified identities.
+
+I can also break this down per file to show which ones have no active owner, if that helps.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | wc -l; git ls-files '*.go' | grep -c '^vendor/'; git ls-files '*.go' | grep -v '^vendor/' | xargs wc -l | tail -1; git log --oneline | wc -l; git shortlog -sne HEAD | head -20
+ - Bash: cd "$(git rev-parse --show-toplevel)"; blame() { git ls-files '*.go' | grep -v '^vendor/' | grep -vE "$1" | while read f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn; }; echo ALL; blame '^$' | head -12; echo; echo NOGEN; blame 'zz_generated|_gen\.go|^$' | head -0; git ls-files '*.go' | grep -v '^vendor/' | grep -iE 'gen|zz' 
+ - Bash: cd "$(git rev-parse --show-toplevel)"; run() { git ls-files '*.go' | grep -v '^vendor/' | grep -vE "$1" | while read f; do git blame -w --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn; }; echo "NON-TEST, NON-GEN"; run '_test\.go$|zz_generated' > /tmp/own.txt; awk '{s+=$1} END{print "total",s}' /tmp/own.txt; head -12 /tmp/own.txt; echo; echo "gen file lines:"; wc -l zz_generated_flags.go; git log --format='%an' -- zz_generated_flags.go | sort | uniq -c; echo; for n in "noahdietz" "JReyLBC" "sam.okafor" "tamal"; do echo "$n:"; git log --author="$n" --format='%h %ad %s' --date=short | head -3; git log --author="$n" --oneline | wc -l; done
+ - Bash: cd "$(git rev-parse --show-toplevel)"; awk '{n=$1; $1="";a[NR]=$0;c[NR]=n;s+=n} END{cum=0;for(i=1;i<=NR;i++){cum+=c[i]; if(i<=8)printf "%d %s %d %.1f%% cum %.1f%%\n",i,a[i],c[i],100*c[i]/s,100*cum/s} print NR" authors"}' /tmp/own.txt
+echo; echo LAST COMMIT:; for n in "Eric Paris" "Riobard" "Noah Dietz" "Jonathan Reyna" "therealmitchconnors" "Alex Ogier" "Tamal Saha"; do echo "$n $(git log --author="$n" -1 --format=%ad --date=short)"; done
+echo; echo PER-FILE top owner:; git ls-files '*.go' | grep -v '^vendor/' | grep -vE '_test\.go$|zz_generated' | while read f; do git blame -w --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | awk -v f="$f" '{
+ - Bash: cd "$(git rev-parse --show-toplevel)"; git log --since=2024-01-01 --no-merges --format='%an' | sort | uniq -c | sort -rn | head; git log -1 --format=%ad --date=short; git log --since=2024-01-01 --no-merges --oneline | wc -l
+FINAL ANSWER:
+Status: I've finished the blame analysis and am writing it up.
+
+**Short answer:** Live Go code is not concentrated in a few people, so losing one or two would not hurt. The bigger issue is that the top authors left years ago, so nobody active knows most of the code.
+
+**How I measured:** I ran `git blame` on every tracked `.go` file at HEAD. I ignored whitespace changes and the `interface{}` to `any` commit (6bf5b04). I excluded `vendor/`, `_test.go` files and the generated `zz_generated_flags.go`. That leaves 6,397 lines from 73 authors.
+
+| Author | Live lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 1042 | 16.3% | 2018-10 |
+| Riobard | 922 | 14.4% | 2014-03 |
+| Noah Dietz | 520 | 8.1% | 2018-11 |
+| Jonathan Reyna | 420 | 6.6% | 2017-01 |
+| therealmitchconnors | 394 | 6.2% | 2019-09 |
+| Alex Ogier | 383 | 6.0% | 2015-02 |
+| Tamal Saha | 308 | 4.8% | 2018-08 |
+
+- **Concentration:** The top 1 author owns 16.3%, the top 2 own 30.7%, and the top 7 own 62.4%. The other 66 authors share the remaining 37.6%.
+- **Ownership by file:** The big files are mostly Alex Ogier's (`flag.go`, 1,292 lines). Each flag type has its own owner:
+  - Slice types: Reyna (bool, uint, ip), Dietz (int32, int64, float32, float64) and Paris (string, int).
+  - Map types: Saha (`string_to_string.go`, `string_to_int.go`).
+  - Other files: Besogonov (`string_to_int64.go`), Ethan P. (`errors.go`) and Lena Voss (`flagset_helpers.go`).
+  - These are small, self-contained files.
+- **Activity:** None of the top 7 have committed since 2019. Since 2024 there have been 46 non-merge commits, spread thinly. Tomas Aschan has the most with 9, and nobody else has more than 4. The latest commit is 2026-04-08.
+
+**What this means for review:**
+- No single departure removes much knowledge, but the maintainers who wrote most of the core code are already gone. The code is effectively orphaned. Nobody active will remember why `flag.go` or the older scalar types work the way they do.
+- Use `git log` and `git blame` on the file under review to find the original reasoning. `/project-pilot:history` can help with that.
+- Most of the recent contributors listed above could review the leaf files, but I haven't checked what they changed.
+
+**Caveats:**
+- I did not apply a `.mailmap`. Some people appear under two names. For example, `bogem` and Albert Nigmatzianov are the same person, as are `mitchconnors` and `therealmitchconnors`. Their real share is somewhat higher than shown. This doesn't change the conclusion.
+- Blame counts surviving lines, not effort or review quality.
+- I did not compute each author's share within a single file. For example, I know Ogier is the top author of `flag.go`, but not by what margin.
+- The generated file (488 lines) is attributed to one commit. It is derived output, so I left it out.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git log --oneline | wc -l && git ls-files '*.go' | grep -v '^vendor/' | wc -l && git ls-files '*.go' | grep -v '^vendor/' | xargs grep -l -E '^// Code generated .* DO NOT EDIT' | head -50; echo ---; git shortlog -sne --all --no-merges | head -30; echo ---; git log -1 --format=%cd
+ - Bash: ls .mailmap 2>&1 | head -1; 
+files=$(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated_flags.go$')
+echo "$files" | wc -l
+for f in $files; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed "s|^author-mail ||;s|$| $f|"; done > /tmp/blame.txt
+wc -l /tmp/blame.txt
+echo "--- by author (email) lines"; awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -25
+echo "--- vendored/generated excluded; last commit date per top author"
+for e in $(awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -10 | awk '{print $2}'); do m=$(echo $e | tr -d '<>'); echo "$e $(git log --all --author="$m" -1 --format=%cd --date=sho
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ppi-1/repo
+git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated_flags.go$' > /tmp/gofiles.txt
+: > /tmp/blame.txt
+while IFS= read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author-mail /{print $2, f}' >> /tmp/blame.txt; done < /tmp/gofiles.txt
+wc -l < /tmp/blame.txt
+echo "--- lines by author"; awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -20
+echo "--- last commit"
+for e in $(awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -10 | awk '{print $2}'); do m=$(echo $e | tr -d '<>'); echo "$e $(git log --all --author="$m" -1 --format=%cd --date=short)"; d
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ppi-1/repo
+echo "--- cumulative share"; awk '{c[$1]++;t++} END{for(a in c)print c[a],a; }' /tmp/blame.txt | sort -rn | awk '{t+=$1;l[NR]=$0;n[NR]=$1} END{s=0;for(i=1;i<=NR;i++){s+=n[i]; if(i<=12||i==NR) printf "%d %s cum=%.1f%%\n",i,l[i],100*s/t}; print "authors",NR,"total",t}'
+echo "--- per-file top owner share"
+awk '{k=$1" "$2; c[k]++; f[$2]++} END{for(k in c){split(k,a," "); if(c[k]>m[a[2]]){m[a[2]]=c[k];o[a[2]]=a[1]}} for(x in m) printf "%s %s %.0f %d\n",x,o[x],100*m[x]/f[x],f[x]}' /tmp/blame.txt > /tmp/perfile.txt
+echo "files with top owner >80%:"; awk '$3>80' /tmp/perfile.txt | wc -l; echo "of"; wc -l < /tmp/perfile.txt
+echo "
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ppi-1/repo
+echo "--- active (commit since 2025-04-22) authors, blame lines"
+for m in $(git log --since=2025-04-22 --no-merges --format='%ae' | sort -u); do n=$(grep -c "<$m>" /tmp/blame.txt); echo "$n $m $(git log --author="$m" -1 --format='%an %cd' --date=short)"; done | sort -rn
+echo "--- Tomas Aschan lines"; grep -ci 'tomasaschan' /tmp/blame.txt
+echo "--- active share"
+act=$(for m in $(git log --since=2025-04-22 --no-merges --format='%ae' | sort -u); do grep -c "<$m>" /tmp/blame.txt; done | paste -sd+ - | bc); echo "$act of $(wc -l < /tmp/blame.txt)"
+echo "--- Voss/Okafor files"; grep -E 'lena.voss|sam.okafor' /tmp/blame.txt | aw
+FINAL ANSWER:
+**Bus factor:** 5 people cover over 50% of surviving Go code. That number is misleading, because almost all of those people have left.
+
+I used `git blame` (`-w -M -C`) on HEAD instead of the skill's commit counts. Blame counts lines that still exist, which is what you asked about. I skipped `vendor/` and `zz_generated_flags.go`. That leaves 75 Go files and 12,194 live lines from 77 authors. I did not launch the contributor-analyzer agent. I ran the git commands directly.
+
+**Who owns the live code** (last commit in parentheses):
+
+| Author | Lines | Share | Cumulative | Last commit |
+|---|---|---|---|---|
+| Eric Paris | 2020 | 16.6% | 16.6% | 2018 |
+| Alex Ogier | 1237 | 10.1% | 26.7% | 2015 |
+| Noah Dietz | 1228 | 10.1% | 36.8% | 2018 |
+| Jonathan Reyna | 1044 | 8.6% | 45.3% | 2017 |
+| Tamal Saha | 624 | 5.1% | 50.5% | 2018 |
+| Riobard | 538 | 4.4% | 54.9% | 2014 |
+| Mitch Connors | 522 | 4.3% | 59.2% | 2019 |
+| Georges Varouchas | 454 | 3.7% | 62.9% | 2025-06 |
+
+**Active people:** 12 people committed in the last 12 months, excluding dependabot. Together they own 1,229 lines, about 10% of the code.
+- **Largest active owners:** Georges Varouchas (454), Maximilian Frank (172), Hu Jun (136), Lena Voss (133), Patrick Ohly (108).
+- **Latest commits:** Sam Okafor (2026-04) and Lena Voss (2026-03) are the most recent. Both own few lines.
+- **Tomas Aschan:** 32 commits in 2 years but only 67 live lines.
+
+**Would losing one or two people be a problem?** No. The top 4 owners hold 45% of the code, but all four are long gone, and the library works without them. The real risk is that nobody active knows most of the code.
+- **Knowledge gap:** about 90% of the code has no active author. The biggest active owner holds 3.7%.
+- **Single-owner files:** 40 of 75 files have one person above 80% of lines. 11 are 100% one person.
+- **Core file:** `flag.go` has 1,292 lines. Ogier owns 33%, Paris 14% and Nigmatzianov 9%. All three are inactive since 2015–2018.
+- **Slice types** (`*_slice.go`): mostly Reyna, Dietz and Volosatov. All inactive since 2017–2018. Each file is generic and repetitive, so the risk is low.
+- **`string_to_string.go`:** 94% Tamal Saha (inactive since 2018).
+- **`bytes.go`:** 59% Eugene Agafonov (inactive since 2018).
+- **`flagset_helpers.go`:** Lena Voss owns 133 lines. This is the largest recent single-owner area and it is still active. Review it.
+
+**What this means for your PR reviews:**
+- You are probably the main person who knows the core. Read `flag.go`'s history (`git log -p` and blame) before approving changes to parsing or `FlagSet` behavior.
+- Ask Varouchas, Frank, Hu Jun or Voss for a second opinion on PRs that touch their files.
+- Rely on tests for the slice types and the other repetitive files. They are low risk.
+
+**Caveats:**
+- Blame counts line authorship. It does not measure understanding. A line moved or reformatted by someone else may be attributed to that person.
+- I did not check which files other files import, so I did not rank files by importance. I used file size and the `flag.go` role instead.
+- "Active" means a commit in the last 12 months. I did not check PR review activity or comments, which the git history does not show.
+- The `example.net` emails for Voss and Okafor look synthetic. I took them at face value.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>" ] && node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>" --merge-identities
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>'; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ours-1/repo; $SL --merge-identities --include '*.go' --top 12; echo ======; $SL --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -25; echo ======; git show --stat 6bf5b04 | head -20; git show --stat d16d05e | head -12
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ours-1/repo; node $S --merge-identities --include '*.go' --top 12; echo ======; node $S --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -25; echo ======; git show --stat 6bf5b04 | head -20; git show --stat d16d05e | head -12
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ours-1/repo; node $S --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -22; echo '------'; git show --stat 6bf5b04 | head -15; echo '------'; git show --stat d16d05e | head -12; echo '------'; git log --format='%h %an %ad %s' --date=short -1 --author='Eric Paris'; git log --format='%an %ad' --date=short | awk '{print $0}' | grep -E 'Eric Paris|Alex Ogier|Noah Dietz|Jonathan Reyna' | sort -k3 | awk '{n=$1" "$2; last[n]=$3} END{for(k in last)print k, "first-listed-date-sample", last[k]}'
+FINAL ANSWER:
+**Short answer:** the Go code is spread over many authors, but not evenly. Losing one or two people would not be a crisis. Losing the top five would remove half of the surviving lines.
+
+**Basis and scope**
+- Figures are surviving lines at HEAD for `*.go` files, counted with `git blame -w -M -C`. That is 75 files and 12,194 lines, all attributed.
+- Left out of every number: the generated `zz_generated_flags.go` (488 lines) and 2 vendored Go files (1,088 lines). One bot identity was excluded (0 Go lines).
+- No `.mailmap` exists, and the tool found no same-person duplicates. I ran with `--merge-identities`, so nothing was merged.
+
+**Who owns the live Go code**
+
+| Author | Lines | Share | Commits (share) |
+|---|---|---|---|
+| Eric Paris | 2,020 | 16.6% | 46 (18.1%) |
+| Alex Ogier | 1,237 | 10.1% | 33 (13.0%) |
+| Noah Dietz | 1,228 | 10.1% | 2 (0.8%) |
+| Jonathan Reyna | 1,044 | 8.6% | 1 (0.4%) |
+| Tamal Saha | 624 | 5.1% | 2 (0.8%) |
+| Riobard | 538 | 4.4% | 1 (0.4%) |
+| therealmitchconnors | 522 | 4.3% | 5 (2.0%) |
+| Georges Varouchas | 454 | 3.7% | 4 (1.6%) |
+| rpothier | 384 | 3.1% | 1 (0.4%) |
+| wu8685 | 383 | 3.1% | 2 (0.8%) |
+
+There are 77 more authors below these.
+
+**Concentration**
+- **Bus factor (lines-based):** it is 5. That is the smallest number of authors whose surviving lines reach 50% of the lines counted, and the five are Eric Paris, Alex Ogier, Noah Dietz, Jonathan Reyna and Tamal Saha, with 50.5%. Reaching 80% takes 15 authors. Both numbers cover the whole repository, Go files only.
+- **Losing one or two people:** Eric Paris and Alex Ogier together hold about 27% of the lines. The rest is spread across many contributors, so no single departure leaves an area with no one who wrote it.
+- **Single-commit holders:** Noah Dietz, Jonathan Reyna, Riobard, rpothier and Alex Besogonov each hold a large block from one or two commits. Their lines are probably a few large features. If any of them has left, check which files they cover with `--reviewers <path>`.
+- **Most useful reviewers:** Eric Paris and Alex Ogier are the only top owners with many commits behind their lines. Their commits date from 2015 to 2018, so confirm they are still active before relying on them.
+
+**Checks and caveats**
+- **Mechanical rewrites:** I checked them. The tool set aside 0 commits and flagged 3 that look mechanical:
+  - `6bf5b04` (Sam Okafor, the `interface{}` to `any` rewrite): I kept it in the main table. `git show --stat` shows it changed one or two lines per file across many files. Excluding it moves nobody by more than about 20 lines. Eric Paris goes from 2,020 to 2,041, and the bus factor stays 5 (50.7%).
+  - `d16d05e` (bogem, fmt to strconv; 32 lines) and `92abf19` (bogem; 1 line): these are real code changes, so I kept them.
+- **Copy detection:** figures use `-w -M -C`. It moved 618 lines in 16 files to other authors. Without `-C`, Alex Ogier would hold 6.9% (842 lines) instead of 10.1%, and Riobard 7.6% (923 lines) instead of 4.4%. So Ogier's and Riobard's positions depend on this setting. The tool attributes copied code to its original author, which is what you want when picking reviewers.
+- **What this cannot show:** code quality, review work, design done outside the code, or code that was deleted on purpose. Surviving lines measure what is still in the code, not how well anyone understands it.
+
+If you want it, I can run `--reviewers` on specific files, or `--group-by dir` to see whether any one directory depends on a single person.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__repo_summary,mcp__tool__blame_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__tool__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-hist-1/repo"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-hist-1/repo", "top": 30}
+ - mcp__tool__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-hist-1/repo"}
+ - Bash: head -3 zz_generated_flags.go; for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated'); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | awk '{c=$1; $1=""; t+=c; a[NR]=c; n[NR]=$0} END{for(i=1;i<=NR&&i<=15;i++){cum+=a[i]; printf "%5d %5.1f%% cum %5.1f%% %s\n",a[i],100*a[i]/t,100*cum/t,n[i]} print "total",t, "authors",NR}'; echo; git log -1 --format='%an %ad' ; git log --since='2025-05-01' --no-merges --format='%an' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Ownership is spread across many people, so losing one or two would not hurt. The risk is that almost nobody who wrote this code is still around.
+
+I ran `git blame` on every tracked `.go` file except `vendor/` and `zz_generated_flags.go`. The tool's default line counts credit Sam Okafor with 1,631 lines, mostly vendored `x/sys` and `x/term` plus the generated file, so I left those out. That leaves 12,194 live lines from 79 authors.
+
+| Author | Lines | Share | Cumulative | Last commit |
+|---|---|---|---|---|
+| Eric Paris | 2020 | 16.6% | 16.6% | 2018 |
+| Alex Ogier | 1237 | 10.1% | 26.7% | 2015 |
+| Noah Dietz | 1228 | 10.1% | 36.8% | 2018 |
+| Jonathan Reyna | 1044 | 8.6% | 45.3% | 2017 |
+| Tamal Saha | 624 | 5.1% | 50.5% | 2018 |
+| Riobard | 538 | 4.4% | 54.9% | 2014 |
+| therealmitchconnors | 522 | 4.3% | 59.2% | 2019 |
+| Georges Varouchas | 454 | 3.7% | 62.9% | 2025 |
+
+(The "Last commit" column comes from the `knowledge_risk` output. Georges Varouchas is the only author in the top eight who has committed since 2019.)
+
+- **Concentration:** The largest author owns 16.6% of live lines, and it takes five people to pass 50%. `bus_factor` agrees: 8 authors cover over 50% of non-merge commits, and it found no directory where one author made more than 80% of the commits. Losing one or two people would remove at most about 27% of the lines.
+- **Who wrote the core:** Eric Paris and Alex Ogier wrote most of `flag.go`, `flag_test.go` and the README. Albert Nigmatzianov is the third main author of `flag.go`.
+- **Who wrote the typed slice and map files:** Reyna wrote the bool, ip, uint and similar slice files. Dietz wrote the int32, int64, float32 and float64 slices. Saha wrote the `string_to_*` map types. Per-file owners are in the `knowledge_risk` output.
+- **Orphaned files:** The tool flags all 93 files as orphaned. That flag is not useful here, because its "inactive" cutoff is 6 months back from today (2026-04-22) and the last commit in the repo is 2026-04-08. Every author counts as inactive, including the recent committers.
+- **Who is actually around:** Authors with commits since May 2025 are Tomas Aschan (9), Sebastiaan van Stijn (4), Georges Varouchas (4), Sam Okafor (3), Maximilian Frank (3), and a handful with one commit each. Aschan is the most active reviewer-level contributor. Only Varouchas, with 454 lines, owns much surviving code among them.
+- **Small recent owners:** Lena Voss owns `flagset_helpers.go` (93% of it, 133 lines), added in March 2026.
+- **Generated code:** `zz_generated_flags.go` is generated by `hack/genflags`, so whoever understands the generator owns it. Sam Okafor committed it, and I did not check who wrote the generator.
+
+As the reviewer, you would be the main person who understands the whole codebase. Commit rate is also low: 1–3 commits a month since January 2026, none in November or December 2025. The practical risk is that nobody can answer "why was this designed this way" for the older code, not that one departure would break anything.
+
+I can go through the history of `flag.go` or the generated-flags change if that helps you start.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> && ls; node scripts/<plugin> <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin>/scripts && grep -n "argv\|--out\|writeFile\|dry" <plugin> | head -30
+ - Bash: T=$(mktemp -d); git clone -q <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-1/repo $T/repo && cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> && node scripts/<plugin> $T/repo --no-github --cache $T/cache.json >/dev/null 2>&1; cd $T/repo; jq '.meta, .unresolved, (.authors // .people // empty)' .github/ownership.json | head -80; jq 'keys' .github/ownership.json; echo $T
+ - Bash: cd <tmp> jq -c '.authors|(if type=="array" then .[] else to_entries[] end)' .github/ownership.json | head -40; jq -c '.zones[]|select(.significant)' .github/ownership.json | head -30; cat .github/CODEOWNERS | tail -20
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0; n[NR]=$1} END{for(i=1;i<=NR&&i<=15;i++){printf "%s  %.1f%%\n", c[i], 100*n[i]/t}; print "total lines", t}'; echo; git ls-files '*.go' | grep -v '^vendor/' | wc -l; git ls-files vendor | wc -l
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn > /tmp/blame.txt
+git log --since=2025-04-08 --format='<%ae>' | sort -u > /tmp/active.txt; wc -l < /tmp/active.txt
+awk 'NR==FNR{a["author-mail "$0]=1;next}{k=$2" "$3; act=(k in a); t+=$1; if(act)s+=$1; if(act)print} END{printf "active lines %d of %d = %.1f%%\n",s,t,100*s/t}' /tmp/active.txt /tmp/blame.txt
+git log -1 --format=%cd --date=short; git ls-files '*.go' | grep -v '^vendor/' | grep -i 'zz_\|generated\|gen' | head
+FINAL ANSWER:
+**Short answer:** most of the surviving Go code was written by people who have left. The part still written by active people is spread thin, with a few people carrying most of it.
+
+I counted surviving lines with `git blame` on the 76 non-vendored `.go` files (12,682 lines). Rename and move tracking was on, and whitespace was ignored. "Active" means a commit in the 12 months before the newest commit (2026-04-08).
+
+**Top authors of surviving lines**
+
+| Author | Lines | Share | Status |
+|---|---|---|---|
+| Eric Paris | 2020 | 15.9% | inactive, last commit 2018 |
+| Alex Ogier | 1237 | 9.8% | inactive, 2015 |
+| Noah Dietz | 1228 | 9.7% | inactive, 2018 |
+| JReyLBC | 1044 | 8.2% | not in the active list |
+| Tamal Saha | 624 | 4.9% | inactive, 2018 |
+| riobard | 538 | 4.2% | not in the active list |
+| **Sam Okafor** | 537 | 4.2% | active |
+| Mitch Connors | 522 | 4.1% | inactive, 2019 |
+| **Georges Varouchas** | 454 | 3.6% | active |
+
+**Concentration**
+- **Active authors:** 14 people account for 2,012 lines, which is **15.9%** of the Go code. The other 84% belongs to authors who are not active.
+- **Among active authors:** Sam Okafor, Georges Varouchas and Eth-p (295 lines) hold 1,286 of the 2,012 lines, about 64%. Nobody else active has more than 172 lines.
+- **Recent commit weighting:** the busfactor script's recency-weighted score gives Sam Okafor about 51% of the whole repo. The next two are Tomas Aschan (about 9%) and Georges Varouchas (about 9%). The script marks the repo root as bus factor 1.
+- **`.github/`:** the script flags this as a separate risk. 72% of its weight comes from Mark Sagi-Kazar, who is inactive, and Tomas Aschan is the only active author left there.
+
+**Would losing one or two people be a problem?**
+- **Losing Sam Okafor:** yes. Sam is the largest active author by both measures. Sam's recent commits also make up most of the recency-weighted score.
+- **Losing Sam and Georges:** this would remove about half of the Go lines that active people hold. Reviews would then fall to people with under 175 lines each.
+- **The bigger problem:** it already exists. The original authors of the core flag-parsing code are gone, so no active reviewer wrote most of it. Reviewing PRs there means reading the code fresh, not relying on a past author.
+
+**Caveats**
+- **Generated code:** `zz_generated_flags.go` is included in the counts. Whoever last regenerated it is credited with its lines, so some of Sam's and Georges's totals may be generator output and not hand-written code. I didn't separate it out.
+- **Inactive status:** I classed JReyLBC and riobard as not active because they have no commit in the window. I didn't check their histories. Anyone who reviews without committing would look like a stranger in these numbers.
+- **Repo history:** it has 255 commits since 2012 and is not an import or a young repo. So the low active share reflects real turnover.
+- **GitHub logins:** I ran the script with `--no-github`, so owners appear as emails. Some emails may belong to the same person, which would make the active concentration look lower than it is.
+
+I ran the script on a throwaway clone under `<tmp> so nothing was written to your repo. I haven't generated the HTML report or a CODEOWNERS file. I can do either if you want.

@@ -1,0 +1,31 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js" ] && echo yes; cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ours-1/repo && node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js --reviewers src/itsdangerous/signer.py src/itsdangerous/timed.py
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js"; for f in signer.py timed.py; do echo "=== $f"; $SL --reviewers src/itsdangerous/$f; done; echo "=== merged"; $SL --merge-identities -- src/itsdangerous/signer.py src/itsdangerous/timed.py
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; for f in signer.py timed.py; do echo "=== $f"; sl --reviewers src/itsdangerous/$f; done; echo "=== merged signer"; sl --merge-identities --reviewers src/itsdangerous/signer.py
+ - Bash: git log --author="Ibarra" --stat --format='%h %an %ad %s' --date=short -3 -- src/itsdangerous/signer.py src/itsdangerous/timed.py; git log --format='%h %an %ad %s' --date=short -5 -- src/itsdangerous/signer.py
+FINAL ANSWER:
+**Ask David Lord first, and Tomás Ibarra second.** Both counts come from `git blame -w -M`. They count lines that survive in the package today, not commits.
+
+| File | David Lord | Tomás Ibarra | Armin Ronacher |
+|---|---|---|---|
+| `signer.py` (358 lines attributed) | 212 (59.2%) | 100 (27.9%) | 19 (5.3%) |
+| `timed.py` (295 lines attributed) | 172 (58.3%) | 72 (24.4%) | 37 (12.5%) |
+
+- **David Lord:** he wrote most of both files and is the original maintainer. He was last active in `signer.py` on 2024-04-16 (marked inactive, no commit in the year before 2025-07-08). He was last active in `timed.py` on 2025-05-28 (marked active).
+- **Tomás Ibarra:** the lines are real new code, not a reformat. They come from two commits, each a pure addition of key-rotation helpers: `93695fd` (100 lines in `signer.py`, 2025-07-01) and `56dba8d` (72 lines in `timed.py`, 2025-07-02). They are marked active. If your change touches the rotation helpers, ask them first.
+- **Armin Ronacher:** third on both files and inactive since 2018, so he is not a practical reviewer.
+
+**Caveats**
+- **Bus factor:** it is 1 for both files, measured as the smallest number of authors holding at least 50% of the surviving lines. To reach 80% it takes 2 authors.
+- **Excluded:** pre-commit.ci bot lines are left out (8 lines in `signer.py`, 5 in `timed.py`). The bot's commit `ffeab7f` is what `git log` shows as the latest change to `signer.py`.
+- **Moved lines:** about 9–11% of each file (34 lines in `signer.py`, 32 in `timed.py`) was moved or copied from `itsdangerous.py` and `__init__.py`. The credit goes to whoever originally wrote those lines.
+- **Duplicate identities:** none were found, and no `.mailmap` was written.
+- **Reformat commits:** none were detected.
+- **Limits:** line counts say whose code is still here, not who understands it best or how good it is.
+META cost=0.07626390000000001 ms=21750 turns=7

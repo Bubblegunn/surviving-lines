@@ -1,0 +1,25 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-hist-3/repo/lib", "top": 20}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-hist-3/repo/lib", "top": 20}
+FINAL ANSWER:
+**Bus factor of `lib/` is 2 by commit count, but in practice it is closer to 1.**
+
+- **Commit count:** 66 commits, 25 authors. Troy Goode made 33 of them (exactly 50%), so one more author takes the total over 50%. That is where the 2 comes from.
+- **Wide tail:** the other 24 authors made 1–4 commits each, so few people have deep knowledge.
+- **Single file:** `lib/` contains only `lib/index.js`, 238 lines.
+- **Line ownership is misleading:** blame credits "Fiona Formatter" with 89.9% of the lines. That comes from the latest commit, `62628c0`, which reformatted the whole file to 4-space indent and double quotes. It reflects the reformat, not understanding of the code.
+- **Real knowledge:** it sits mostly with Troy Goode. He owns 8.4% of lines by blame, but he made half of all commits.
+- **Inactive authors:** all five blame owners have no commit since 2026-04-22. Troy Goode's last commit was 2026-04-10. Fiona Formatter's was 2026-04-12.
+- **Orphaned by the tool's rule:** `lib/index.js` is flagged as orphaned because 100% of its lines belong to inactive authors.
+
+**Answer:** losing Troy Goode alone removes the main source of knowledge about `lib/`. Losing Troy plus one other contributor drops it below half of the commit history.
+
+The tool's activity cutoff is only 6 months, and I did not check whether Troy is still around outside this repo. If you want, I can rerun it with a longer inactivity window, or look at who touches `lib/index.js` today, excluding the reformat commit.
+META cost=0.059170799999999996 ms=11429 turns=5

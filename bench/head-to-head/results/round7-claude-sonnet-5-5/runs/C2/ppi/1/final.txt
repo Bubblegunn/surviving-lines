@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/itsdangerous/signer.py src/itsdangerous/timed.py"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f blame (-w -M -C -C)"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; echo "-- commits (no merges)"; git log --no-merges --follow --pretty='%an' -- $f | sort | uniq -c | sort -rn; echo "-- last touch per author"; git log --no-merges --follow --pretty='%an|%ad' --date=short -- $f | awk -F'|' '!s[$1]++'; done; echo; git log --oneline | wc -l; git log -1 --format='%an %ad' --date=short; git log --since='6 months ago' --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head
+ - Bash: git log --no-merges --author='Ibarra' --stat --pretty='%h %ad %s' --date=short -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -20; echo ---; git log --since='1 year ago' --no-merges --pretty='%an' | sort | uniq -c | sort -rn; echo ---; git log -3 --author='David Lord' --pretty='%ad %s' --date=short
+FINAL ANSWER:
+Ask **David Lord**. Tomás Ibarra is the second choice, and the one to add if your change touches key rotation.
+
+Surviving lines by `git blame -w -M -C -C` (whitespace and moved or copied code ignored):
+
+| Author | signer.py (354 lines) | timed.py (298 lines) |
+|---|---|---|
+| David Lord | 212 (60%) | 172 (58%) |
+| Tomás Ibarra | 100 (28%) | 72 (24%) |
+| Armin Ronacher | 19 | 37 |
+| Others (Hsiaoming Yang, Arnout van Meer, Zach Hugnou, Alan Hamlett, and a few more) | 23 | 17 |
+| pre-commit-ci[bot] | 8 | 5 |
+
+- **David Lord:**
+  - He wrote about 60% of the code that survives in both files.
+  - He has the most commits on each file (10 on signer.py, 17 on timed.py).
+  - His blame share and commit count agree, so this is not a commit-count artifact.
+- **Tomás Ibarra:**
+  - Their one commit per file (`93695fd` and `56dba8d`, 1–2 July 2025) added 100 and 72 lines. These are the key rotation helpers, and nobody else has touched those lines.
+  - Commit count hides this, because it shows 1 commit each. Ask them if your change goes near rotation.
+- **Armin Ronacher:** wrote the original design, and 19 and 37 of those lines survive. His last touch on these files was in 2018, so he is not a practical reviewer.
+- **pre-commit-ci[bot]:** its lines are formatting fixes only. Ignore it.
+
+**Risks:**
+- **No one active:** the repo's last commit is 2025-07-08. Nobody, including David and Tomás, has committed in the past 12 months. I can't tell from git whether they still maintain this. Check the GitHub activity of David and Tomás before you tag them.
+- **Rotation code has one owner:** Tomás is the sole author of the rotation helpers, so that code has a bus factor of 1. David's share of the rest is also high, though others contributed small parts.
+- **Not a full bus-factor run:** the skill's project-wide analysis and contributor-analyzer agent were not run. I only analyzed these two files.
+META cost=0.0730752 ms=21396 turns=6

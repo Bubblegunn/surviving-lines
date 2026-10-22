@@ -1,0 +1,32 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso && git log --since='2026-03-29' --until='2026-04-12 23:59:59' --no-merges --format='%h|%an|%ae|%ad|%s' --date=short --shortstat; cat .mailmap 2>/dev/null
+ - Bash: git log --since='2026-03-20' --format='%h|%an|%ae|%cn|%ad|%s' --date=iso | head -20; git log --since='2026-03-29' --format='%h %p' | head; git shortlog -sne --all | head -20
+ - Bash: git ls-files | while read f; do git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^[0-9a-f]{40} ' | cut -c1-7 ; done | sort | uniq -c | sort -rn | grep -E '5317ebe|02afce3|b2005d9|62628c0'; echo ---; git ls-files | while read f; do git blame --ignore-rev 62628c0 -e -- "$f" 2>/dev/null | grep -oE '<[^>]*>' | head -0; done; git ls-files | while read f; do git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^author-mail'; done | sort | uniq -c | sort -rn | grep -E 'troy|vansh'
+ - Bash: git show b2005d9 --stat --format=%h | tail -2; git show b2005d9 | grep '^+' | head -20; git show 62628c0 --stat --format=%h
+ - Bash: grep -n '// checked' lib/index.js | wc -l; git blame --ignore-rev 62628c0 -- lib/index.js | grep -n 'checked' | cut -c1-60; git show 62628c0 -- lib/index.js | grep -n 'checked' | head
+ - Bash: git show b2005d9 -- lib/index.js | grep '^+ ' | sed 's/^+//;s/^ *//;s/"/'"'"'/g' | sort > /tmp/a.txt; sed 's/^ *//;s/"/'"'"'/g' lib/index.js | sort > /tmp/b.txt; comm -12 /tmp/a.txt /tmp/b.txt | wc -l; git show b2005d9 -- lib/index.js | grep -c '^+ '; git blame --ignore-rev 62628c0 -- lib/index.js | grep -c '^b2005d91'; git diff b2005d9 HEAD --stat -- lib | tail -1
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), and Troy Goode has the most lines left in the code today.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (04-10)<br>`b2005d9` lib: annotate handlers (04-10) | **47** (36 from `02afce3`, 11 from `b2005d9`) |
+| **Vansh Sharma** | `5317ebe` docs: `app.del()` → `app.delete()` in README (#411, 04-07) | **1** |
+
+**Excluded**
+- **Fiona Formatter**: her only commit, `62628c0` (04-12), re-indents and changes quotes in 4 files. It is formatting-only.
+- **Bots**: there are no bot commits in the window. The last dependabot commit, `ee714bd`, is older.
+
+**Merged identities**
+- Troy appears under two emails, `<email redacted>` and `troy@laptop.example`. I counted them as one person. The window commits use the laptop address.
+
+**How I counted lines**
+- I ran `git blame --ignore-rev 62628c0` on every tracked file, so lines Fiona only reformatted are credited back to the original author. Counts cover only lines from the window commits, not each person's older work.
+- `b2005d9` changed 12 lines, and blame credits 11 of them to it. Two other lines with the same `// checked` text show as older commits, so I treated the 11 as the figure. The reformat likely caused the mismatch. A separate content check found all 11 indented lines present.
+- Treat Troy's 47 as accurate to within about one line.
+META cost=0.09281239999999999 ms=57783 turns=7

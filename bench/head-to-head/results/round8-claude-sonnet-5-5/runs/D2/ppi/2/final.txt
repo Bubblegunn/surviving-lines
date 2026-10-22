@@ -1,0 +1,77 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | wc -l && git ls-files '*.go' | grep -c '^vendor/'; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -20; git log -1 --format=%cd; git shortlog -sne --all --no-merges | head -20
+ - Bash: for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -20
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | xargs wc -l | sort -rn | head -25; echo ---; git ls-files '*.go' | grep -v '^vendor/' | xargs grep -l 'Code generated' ; echo ---; git log -8 --format='%h %an %ad %s' --date=short; echo ---; for n in "Noah Dietz" "Jonathan Reyna" "Tamal Saha" "Riobard" "Sam Okafor" "Eric Paris" "Alex Ogier"; do echo "$n: $(git log --all --author="$n" --format='%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ') commits=$(git log --all --no-merges --author="$n" --oneline | wc -l)"; done
+ - Bash: files=$(git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated_flags.go); 
+run(){ for f in $files; do git blame -w -M -C --line-porcelain $1 HEAD -- "$f" 2>/dev/null | grep -a -E '^author-mail ' | sed 's/^author-mail //'; done | sort | uniq -c | sort -rn; }
+echo "== ignoring 6bf5b04, no generated =="; run "--ignore-rev 6bf5b04" > /tmp/own.txt; awk '{t+=$1} END{print "total",t}' /tmp/own.txt; head -22 /tmp/own.txt
+echo "== last commit per top email =="; for m in $(head -12 /tmp/own.txt | awk '{print $2}' | tr -d '<>'); do echo "$m $(git log --all --author="$m" --format='%ad|%an' --date=short | head -1) n=$(git log --all --no-merges --author="$m" --oneline | wc -l)"; done
+ - Bash: git show --stat --format='%h %an %s' 6bf5b04 | tail -5; git show --stat --format='%h %an %s' 490d961 | tail -8; git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_gen | grep '/' | head; echo; git log --all --no-merges --since=2025-10-22 --format='%an' | sort | uniq -c | sort -rn
+ - Bash: files=$(git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated_flags.go); 
+for f in $files; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed 's/^author-mail //'; done | sort | uniq -c | sort -rn > /tmp/own.txt; awk '{t+=$1} END{print "total",t}' /tmp/own.txt; head -20 /tmp/own.txt
+echo "== last commit =="; for m in $(head -10 /tmp/own.txt | awk '{print $2}' | tr -d '<>'); do echo "$m $(git log --all --author="$m" --format='%ad|%an' --date=short | head -1)"; done
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated_flags.go | while read -r f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed 's/^author-mail //'; done | sort | uniq -c | sort -rn > /tmp/own.txt; awk '{t+=$1} END{print "total",t}' /tmp/own.txt; head -20 /tmp/own.txt
+echo "== last commit =="; for m in $(head -10 /tmp/own.txt | awk '{print $2}' | tr -d '<>'); do echo "$m $(git log --all --author="$m" --format='%ad|%an' --date=short | head -1)"; done
+ - Bash: grep -E 'okafor|lena|dependabot|tomas|1550920|thaJeztah|gone.nl' /tmp/own.txt; echo "== per file (non-test, non-generated): top owner share =="; git ls-files '*.go' | grep -v '^vendor/' | grep -v -e zz_generated -e _test.go | while read -r f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep -a '^author-mail ' | sort | uniq -c | sort -rn | awk -v f="$f" '{t+=$1; if(NR==1){m=$1;a=$3}; n=NR} END{printf "%s %d %.0f%% %s n=%d\n",f,t,100*m/t,a,n}'; done | awk '{split($3,p,"%"); if(p[1]+0>=80) hi++; else mid++; tot++; print} END{print "files>=80% single owner:",hi,"of",tot}' | tail -30
+ - Bash: for f in flag.go bool.go count.go flagset_helpers.go; do [ -f $f ] && { echo $f; git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- $f | grep -a '^author-mail ' | sort | uniq -c | sort -rn | head -4; }; done; git log --all --author=okafor --format='%h %s' | head
+FINAL ANSWER:
+Bus factor is 5 by line count. Losing one or two people would not hurt much, but almost none of the authors are still around, so the real risk is that few people can answer questions about the code.
+
+The numbers come from `git blame` on the 12,194 Go lines in 43 non-test files and 33 test files. I excluded `vendor/` and the generated `zz_generated_flags.go`. I ignored the `gofmt` rewrite in `6bf5b04`, which would otherwise credit all 49 changed lines to Sam Okafor. I merged the "Albert Nigmatzianov" and "bogem" identities because they share an email.
+
+## Who wrote the surviving code
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 2,041 | 16.7% | 2018-10 |
+| Alex Ogier | 1,237 | 10.1% | 2015-02 |
+| Noah Dietz | 1,232 | 10.1% | 2018-11 |
+| Jonathan Reyna | 1,047 | 8.6% | 2017-01 |
+| Tamal Saha | 626 | 5.1% | 2018-08 |
+| Riobard | 538 | 4.4% | 2014-03 |
+| Mitch Connors | 522 | 4.3% | 2019-09 |
+| Georges Varouchas | 454 | 3.7% | 2025-06 |
+| rpothier | 385 | 3.2% | 2020-10 |
+| wu8685 | 384 | 3.1% | 2016-09 |
+| Lena Voss | 143 | 1.2% | 2026-03 |
+
+Lena Voss is the most recent author of real code. Their one commit added `flagset_helpers.go` (143 lines, the `Require*` helpers), and they own all of it.
+
+## How concentrated it is
+
+- **Project bus factor is 5 (more than 50% of lines).** It takes Paris, Ogier, Dietz, Reyna and Saha to pass 50% (50.7%). Losing any one or two removes at most 27%.
+- **No file depends on one person across the whole library.** Files are spread across many authors.
+- **14 of 43 non-test files have a single owner with 80% or more of the lines.** Most are small and self-contained:
+  - `func.go` (Varouchas), `int16.go`, `ipnet.go` (Paris), `text.go`, `string_to_int.go` and `string_to_int64.go`, each 100%
+  - `ipnet_slice.go`: 99%, rpothier
+  - `string_to_string.go`: 95%, Saha
+  - `time.go`: 88%, Mercari's Maximilian Frank
+  - `int_slice.go`: 85%, Paris
+- **The core is shared.** `flag.go` (1,292 lines) is 424 lines Ogier, 185 Paris, 117 Nigmatzianov, 73 `<email redacted>`, and others. `count.go` is the exception: Paris wrote 82 of its roughly 95 lines.
+
+## The larger risk is inactivity
+
+- **Most top authors are gone.** Over 70% of the surviving lines come from people who haven't committed in years. Ogier, whose design `flag.go` still follows, last committed in 2015.
+- **Activity in the last 12 months is thin.** There were 3 commits from Sam Okafor, 1 from Lena Voss and 1 from dependabot. Tomas Aschan merged PRs through 2025-10 but owns only 67 lines.
+- **The repo's last commit was 2026-04-08, about 6 months ago.** By the skill's 90-day "active" test, nobody currently counts as active.
+- **The unowned, load-bearing parts are `flag.go`, `golangflag.go` and the slice types.** Those are the areas where you will be the one answering questions on PRs.
+
+## Recommendations
+
+1. **Immediate:** Give your closest review attention to `flag.go`, `golangflag.go`, `count.go` and `string_slice.go`. Their authors are gone, so nobody can say why a quirk exists. Use `git log -L` and `git blame` on the line before approving a change that touches them.
+2. **Short-term:** For the 14 single-owner files, a short comment explaining intent would help, starting with `time.go`, `func.go` and the `string_to_*` files. They change rarely, so the cost is small.
+3. **Ongoing:** Recruit or name one or two co-maintainers, such as Lena Voss or Tomas Aschan. The recent contributors know the newer parts of the code, but that code is only a few hundred lines.
+
+## Caveats
+
+- **Blame measures current lines, not understanding.** A reviewer who only touched logic, or only reviewed PRs, doesn't show up here.
+- **`-M -C` detects moved and copied lines but not every rename.**
+- **I did not check how many files import each file.** The skill suggests that for ranking risk, but this library is flat (no subpackages), so I judged it low value.
+META cost=0.143083 ms=62252 turns=13

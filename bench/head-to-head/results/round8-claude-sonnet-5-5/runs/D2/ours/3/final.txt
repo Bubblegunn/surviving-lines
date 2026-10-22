@@ -1,0 +1,46 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" ] && node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --merge-identities
+ - Bash: S="<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js"; node $S --merge-identities --include '*.go' --top 12; echo ======; node $S --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -22; echo =====; git show --stat 6bf5b04 | tail -15
+ - Bash: S="<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js"; node $S --merge-identities --include '*.go' --top 5 --ignore-rev 6bf5b04 | head -12; echo '--- show'; git show --stat 6bf5b04 | tail -12
+FINAL ANSWER:
+Code is spread over many people, and the top author holds only about 17%. But the top five authors hold about half the lines, so losing one or two is a moderate problem, not a crisis.
+
+**Scope:** Go files only (`*.go`, 75 files, 12,194 lines attributed at HEAD, via `git blame -w -M -C`). It excludes `vendor/` (1,088 lines) and the generated `zz_generated_flags.go` (488 lines). One bot was excluded, with 0 Go lines. No `.mailmap` exists, and the tool found no same-person identities, so each name below is counted as one person.
+
+| Author | Lines | Share | Commits | Commit share |
+|---|---|---|---|---|
+| Eric Paris | 2,020 | 16.6% | 46 | 18.1% |
+| Alex Ogier | 1,237 | 10.1% | 33 | 13.0% |
+| Noah Dietz | 1,228 | 10.1% | 2 | 0.8% |
+| Jonathan Reyna | 1,044 | 8.6% | 1 | 0.4% |
+| Tamal Saha | 624 | 5.1% | 2 | 0.8% |
+| Riobard | 538 | 4.4% | 1 | 0.4% |
+| therealmitchconnors | 522 | 4.3% | 5 | 2.0% |
+| Georges Varouchas | 454 | 3.7% | 4 | 1.6% |
+| rpothier | 384 | 3.1% | 1 | 0.4% |
+| wu8685 | 383 | 3.1% | 2 | 0.8% |
+
+Another 79 authors hold the rest.
+
+**Concentration**
+- **Bus factor:** it is 5. This counts the fewest authors whose surviving lines reach 50% of the Go lines. Eric Paris, Alex Ogier, Noah Dietz and two others hold 50.5%. Reaching 80% takes 15 authors. Both figures are for the whole repo's Go code.
+- **Two people lost:** Eric Paris and Alex Ogier together hold about 27% of the lines. The other 73% is spread widely.
+- **Only two are steady contributors:** Eric Paris and Alex Ogier account for 79 of the 254 commits (31%), and nobody else has more than 5. Noah Dietz, Jonathan Reyna, Tamal Saha, Riobard, rpothier and wu8685 have 1–2 commits each, yet hold 4–10% of the lines. Their code survives, but they are probably one-off contributors. Their knowledge of it may be thin, and they may not still be around to ask.
+- **Treat this as line ownership only.** The tool can't show who understands the code, who reviewed it, or who designed it.
+
+**Caveats**
+- **Copy detection:** it moves 618 lines in 16 files from one author to another. It raises Alex Ogier from 6.9% to 10.1% (842 to 1,237 lines). It lowers Riobard from 7.6% to 4.4% (923 to 538 lines). Both figures sit in the same range as their neighbours, but their exact rank is soft.
+- **Mechanical rewrites:** I checked for them. The tool found no reformat commits to set aside automatically. It flagged three candidates:
+  - **`6bf5b04`:** this is the `interface{}` to `any` rewrite by Sam Okafor. It touched 39 files with 49 insertions and 49 deletions, and I confirmed it is mechanical. Setting it aside with `--ignore-rev` shifts a few lines to the earlier authors: Eric Paris goes to 2,041, Noah Dietz to 1,232, Jonathan Reyna to 1,047, and Alex Ogier doesn't change. The ranking is the same, so the table above keeps the commit.
+  - **`d16d05e` and `92abf19`:** both are by bogem, with 32 and 1 surviving lines. I did not inspect them. They are too small to change the picture.
+- **Possible gaps:** these are line counts from `git blame`. Code that was deleted counts for nobody.
+
+**For reviewing PRs:** `surviving-lines --reviewers <path>` gives the top three owners by surviving lines for any file or directory you're reviewing. I didn't run a per-directory breakdown. I can do that if you want to know where the ownership gaps are.
+META cost=0.0858157 ms=28184 turns=7

@@ -1,0 +1,47 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --identities; echo; cat .mailmap 2>/dev/null
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl; echo ======; sl --identities; echo ------; cat .mailmap 2>/dev/null
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl --identities; echo '------'; cat .mailmap 2>/dev/null; echo "mailmap exit: $?"; git show --stat 62628c0 | tail -5
+ - Write: {"file_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T3-ours-2/repo/.mailmap", "content": "# proposed by surviving-lines, confirm before relying on them\nTroy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js --top 5; echo "---"; git shortlog -sne HEAD | head -5
+FINAL ANSWER:
+Yes, two people appeared under more than one identity. I added both mappings to a new `.mailmap` at the repo root. The top author is now **Troy Goode**, with 810 surviving lines (40.8%) and 95 commits (30.2%).
+
+**Duplicates**
+- **Troy Goode** had two addresses: `<email redacted>` (93 commits) and `troy@laptop.example` (2 commits, 48 lines). The evidence is strong: same name on two addresses.
+- **Alejandro Caravaca Puchades** had the same address, `<email redacted>`, under two names: his full name (4 commits) and `alex94puchades` (1 commit, 4 lines).
+
+**What I wrote**
+
+The `.mailmap` has a comment line marking both entries as proposals to confirm, then these two lines:
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+```
+Both merges are guesses from names and addresses. Please confirm they are the same people. I re-ran the tool after writing the file, and `git log`, `git blame` and `git shortlog` also read `.mailmap`.
+
+**Top authors by surviving lines** (1,985 lines at HEAD, counted with `git blame -w -M -C`)
+
+| Author | Lines | Commits |
+|---|---|---|
+| Troy Goode | 810 (40.8%) | 95 (30.2%) |
+| Douglas Christopher Wilson | 629 (31.7%) | 143 (45.4%) |
+| Íñigo Marquínez Prado | 95 (4.8%) | 2 (0.6%) |
+
+- **Before the merge:** Troy was already first, with 762 lines (38.4%) under his main address.
+- **By commit count:** Douglas Christopher Wilson leads with 143 commits.
+- **Bus factor:** it is 2 (Troy and Douglas hold 72.5% of the lines). It takes 4 authors to reach 80%. Both figures are for the whole repo.
+
+**Left out of the numbers**
+- Bots: 1 identity (10 lines, 11 commits).
+- Reformat commit `62628c0`, "style: reformat js with 4-space indent and double quotes" by Fiona Formatter. It changed 1,016 lines in 4 files and only touched whitespace and quotes. Counting it would give Fiona 291 lines (14.7%), Douglas 454 and Troy 715 (36.0%). Troy would still be first.
+- Five other commits look mechanical but I did not set them aside: `739dc11`, `fcd2b56`, `00d6eec`, `344ce1e` and `9c2b59d`. Together they hold 44 surviving lines.
+
+These numbers say whose code is still in the repo. They don't measure quality, review work or design.
+META cost=0.0831799 ms=22303 turns=8

@@ -1,0 +1,49 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs && git config blame.ignoreRevsFile; git ls-files | head -50
+ - Bash: for mode in raw ignore; do echo "== $mode"; for f in $(git ls-files | grep -E '\.(js|json|md|yml)$|LICENSE'); do if [ $mode = ignore ]; then git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- $f; else git blame --line-porcelain -- $f; fi; done | grep '^author ' | sort | uniq -c | sort -rn | head -12; done; echo; echo "== lib/index.js + test only, ignoring reformat"; for f in lib/index.js test/*.js; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- $f; done | grep '^author ' | sort | uniq -c | sort -rn | head -10
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1i-hist-3/repo", "file": "lib/index.js"}
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code. The default blame view is misleading because of the reformat commit.
+
+**Why the default view is wrong:** `62628c0` ("style: reformat js with 4-space indent and double quotes") was committed by "Fiona Formatter". Plain `git blame` credits her with 1016 surviving lines, and the git-historian `blame_summary` shows 89.9% of `lib/index.js` as hers. Those lines were only re-indented and re-quoted. She did not write them.
+
+`.git-blame-ignore-revs` already lists that commit, but `blame.ignoreRevsFile` isn't set in git config, so git doesn't use the file. I re-ran blame with `--ignore-revs-file` and `-w -M -C`. The historian tool doesn't use the file either.
+
+**Surviving lines with the reformat ignored** (all tracked text files):
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 809 |
+| Douglas Christopher Wilson | 625 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+Troy Goode and Douglas Christopher Wilson together own about 70% of the top-12 lines.
+
+**Source and tests only** (`lib/index.js` and `test/*.js`):
+- Troy Goode has 676 lines.
+- Douglas Christopher Wilson has 392.
+- Everyone else has 30 or fewer. The next three are Alejandro Caravaca Puchades (30), Eric di Domenico (16) and Alberto Leal (15).
+
+`lib/index.js` is mostly Troy Goode's code. Its oldest line is from 2013-01-31. Douglas Christopher Wilson is the second main owner.
+
+Caveats:
+- The top-12 table is cut off at 12 authors, so the tail isn't shown.
+- Lines moved across files by `-M -C` are credited to whoever first wrote them.
+- The percentages in the table are my reading of these counts, not output from a tool.
+
+To make plain `git blame` ignore the reformat commit, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`. I haven't changed any config.
+META cost=0.0439173 ms=24821 turns=6

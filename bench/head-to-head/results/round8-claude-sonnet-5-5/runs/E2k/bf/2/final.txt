@@ -1,0 +1,29 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %aI'; git log --since=2026-03-29T00:00:00 --format='%h|%aI|%an|%ae|%s' --no-merges | head -100
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --since=2026-03-29T00:00:00 --format='%h|%aI|%an|%ae|%cn|%s' ; echo; git log --format='%an|%ae' | sort | uniq -c | sort -rn | head -20; echo; git show --stat --format='%h %an' b2005d9 02afce3 5317ebe 62628c0 | head -60; ls
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain "$f" 2>/dev/null | grep -E '^[0-9a-f]{40} ' | awk -v f="$f" '{print substr($1,1,7)}' ; done | sort | uniq -c | grep -E '5317ebe|02afce3|b2005d9|62628c0'
+echo ---plain blame
+for f in $(git ls-files); do git blame --line-porcelain "$f" | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E '5317ebe|02afce3|b2005d9|62628c0'
+ - Bash: git show b2005d9 | head -40
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12 (14 days up to the latest commit). Two people qualify.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage; `b2005d9` lib: annotate handlers | 48 (36 + 12) |
+| Vansh Sharma | `5317ebe` docs: app.del() → app.delete() in README | 1 |
+
+- **Troy Goode:** two author emails appear in the repo (`troy@laptop.example` and `<email redacted>`). I counted both as one person. Only the laptop email has commits in this window.
+  - `02afce3` added `test/vary.js`, 36 lines, all still present.
+  - `b2005d9` changed 12 lines in `lib/index.js` by adding `// checked` comments, and all 12 are still present.
+- **Vansh Sharma:** the one changed README line is still present.
+- **Excluded:** `62628c0` (Fiona Formatter, reformat to 4-space indent and double quotes) is formatting-only. The window has no bot commits. `dependabot[bot]` appears in the repo history, but not in this window.
+
+I counted surviving lines with `git blame --ignore-rev 62628c0 -w`. Without that, the reformat takes over almost all of Troy's `b2005d9` lines. Plain blame would credit Fiona with 1015 lines and Troy with only 1 line from `b2005d9`.
+META cost=0.06822929999999999 ms=20927 turns=6

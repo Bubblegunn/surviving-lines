@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do git blame -w -M --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | wc -l; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1i-bf-2/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: for p in lib test; do echo "== $p"; git ls-files -z -- $p | while IFS= read -r -d '' f; do git blame -w -M --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | head -5; done; echo == total; git ls-files -z | while IFS= read -r -d '' f; do git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author '; done | wc -l; echo == fiona; git log --format='%an <%ae> %ad %s' --date=short | grep -i formatter | head -3; git log --reverse --format='%an %ad' --date=short | head -1; git log -1 --format='%ad' --date=short
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do git blame -w -M --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author '; done | wc -l; git log --reverse --format='%an %ad' --date=short | head -1; git log -1 --format='%ad' --date=short; git log --format='%an <%ae> %s' | grep -i 'formatter' | head -3
+FINAL ANSWER:
+Surviving code, counted with `git blame` (1,997 lines across 19 tracked files). I ignored whitespace changes and the bulk reformat commit listed in `.git-blame-ignore-revs`. I also let blame follow lines moved between files.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~31% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Everyone else (about 30 more) | ~228 | ~11% |
+
+- **Troy Goode and Douglas Christopher Wilson own about 72% of the surviving lines.** Troy made the first commit on 2013-01-30, so the original code is mostly still there.
+- **`lib/` is mostly Troy's.** Of the lines in `lib/`, Troy has 159 and Douglas has 22.
+- **`test/` is split between Troy and Douglas.** Troy has 517 lines and Douglas has 374. After them, nobody has more than 18.
+- **Fiona Formatter doesn't appear.** That author's two commits are the reformat and the ignore-revs file. The ignore-revs file made blame skip the reformat, so those lines go to whoever wrote them. Without it, Fiona would show as the top owner.
+
+**Recent activity differs from this table.** I also ran the `busfactor` script, which weights commits by recency. It listed Ulises Gascón, Jon Church and Ignacio Mangas as the active owners. It did not list Troy or Douglas. Most of the code is therefore Troy's and Douglas's, but they have not touched it in over a year. Ulises, Jon and Ignacio are the ones currently maintaining it. The script's dry run only printed the top of its CODEOWNERS output. I didn't run the full bus-factor report, so I haven't checked how many areas have no active owner.
+
+**Caveats:**
+- Blame credits the last person to change a line. A small edit to someone's line can move it to the editor, so this undercounts original authors a little.
+- The script's "bulk first commit" note says the history was imported, because the first commit holds 8 of the 19 files. Ownership before that point is not visible.
+- The same person may appear under more than one name or email. I did not merge identities, so some people's totals may be low.
+
+I wrote nothing to the repo (the script ran with `--dry-run`). I can run it for real to generate `.github/CODEOWNERS` and the full risk report if you want those.
+META cost=0.0864656 ms=29273 turns=8

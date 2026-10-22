@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%ad|%s' --date=short --no-merges; echo ---; git log -1 --format='%ad %an'
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%cn|%ce|%P' ; cat .mailmap 2>/dev/null; git show --stat --format='%h %an' b2005d9 02afce3 5317ebe | cat; git show b2005d9 02afce3 | head -120; git show --stat 62628c0 | tail -5
+ - Bash: for c in b2005d9 02afce3 5317ebe; do echo "== $c"; git ls-files | while read f; do git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E "^$c" | grep -c . ; done | paste -sd+ - | bc; done
+echo; git ls-files | while read f; do git blame --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep -E '^\^?(b2005d9|02afce3|5317ebe)' | awk '{print $1}' ; done | sort | uniq -c
+ - Bash: git blame --ignore-rev 62628c0 -- lib/index.js | grep -n 'checked' | cut -c1-90; git blame --ignore-rev 62628c0 -- lib/index.js | grep -c 'checked'
+ - Bash: grep -c '// checked' lib/index.js; wc -l test/vary.js; git ls-files test/vary.js; grep -n 'app.delete' README.md | head -3; git blame --ignore-rev 62628c0 -- lib/index.js | grep b2005d91 | grep -vc checked
+FINAL ANSWER:
+Window is 2026-03-29 to 2026-04-12. Two people qualify.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| Troy Goode | `b2005d9` lib: annotate handlers; `02afce3` test: vary header coverage | 48 (12 in `lib/index.js` plus 36 in `test/vary.js`) |
+| Vansh Sharma | `5317ebe` docs: `app.del()` → `app.delete()` in README (#411) | 1 (`README.md:153`) |
+
+**Excluded:** Fiona Formatter's `62628c0` is formatting-only (indent and quotes), so I set it aside. I found no bot commits in the window.
+
+**Counting each person once:** each person has one author name and email, so no one appears under two identities. Vansh's commit was committed through GitHub (`<email redacted>`), but I credited the author.
+
+**Troy's lines:** Fiona's reformat rewrote lines in `lib/index.js`, so a plain `git blame` credits some of Troy's lines to Fiona. Running `git blame --ignore-rev 62628c0` still gets two of Troy's lines wrong. It credits them to older commits, and it credits two other lines to Troy. I used the content instead. All 12 `// checked` comments Troy added are still in `lib/index.js`, and all 36 lines of `test/vary.js` are still there.
+META cost=0.0800525 ms=30292 turns=7

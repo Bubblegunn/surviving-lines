@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: T=$(mktemp -d) && git clone -q <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-bf-1/repo $T/r && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs $T/r --no-github >/dev/null 2>&1; node -e '
+const j=JSON.parse(require("fs").readFileSync(process.argv[1]));console.log(JSON.stringify(j.meta,null,1));console.log(JSON.stringify(j.unresolved));console.log(JSON.stringify(j.authors||j.people||Object.keys(j),null,0).slice(0,1500));console.log(JSON.stringify(j.zones.filter(z=>z.significant),null,0).slice(0,4000))' $T/r/.github/ownership.json
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-bf-1/repo; git log --author=fiona --format='%h %an %ad %s' --date=short | head; git log -3 --format='%h %an <%ae> %ad %s' --date=short; echo ---; git ls-files | head -30; echo; for ign in "" "--ignore-rev $(git rev-parse HEAD)"; do echo "== blame ignoring: ${ign:-none}"; git ls-files '*.js' '*.json' '*.md' '*.yml' '*.yaml' | while read f; do git blame -w -M -C --line-porcelain $ign -- "$f" 2>/dev/null | grep -a '^author-mail'; done | sort | uniq -c | sort -rn | head -12; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-bf-1/repo; H=$(git rev-parse HEAD); git ls-files | grep -Ev 'LICENSE' | while read f; do git blame -w -M -C --line-porcelain --ignore-rev $H -- "$f" 2>/dev/null | grep -a '^author-mail'; done | sort | uniq -c | sort -rn | head -14; echo; git ls-files | while read f; do git blame -w --line-porcelain --ignore-rev $H -- "$f" 2>/dev/null | grep -a '^author-mail'; done | wc -l; git log --format='%ae' | grep -E 'troy|doug' | sort | uniq -c; git log --diff-filter=A --format='%h %ad' --date=short | tail -1
+FINAL ANSWER:
+Checking who owns surviving code with `git blame`, ignoring the formatting commit, and cross-checking against the busfactor tool. Result:
+
+**Surviving lines, 1995 total, formatting commit `62628c0` ignored**
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode (`<email redacted>`) | 757 | ~38% | 2019-05 |
+| Douglas Wilson | 612 | ~31% | 2021-09 |
+| Íñigo Marquínez | 95 | ~5% | inactive per tool |
+| Jon Church | 72 | ~4% | 2026-01 |
+| Sebastian Beltran | 67 | ~3% | 2025-07 |
+| Ulises Gascón | 52 | ~3% | 2026-01 |
+| Troy Goode (`troy@laptop.example`) | 48 | ~2% | 2026-04 |
+| Ignacio Mangas | 44 | ~2% | 2025-12 |
+
+**Main finding:** about 69% of surviving code was written by two people who haven't committed in years. That code is effectively unowned, even though they top any commit count.
+
+**Caveats**
+- **Formatter commit:** `62628c0` by "Fiona Formatter" rewrote the indentation and quotes. It owns 291 lines in plain `git blame`, and the tool ranks `fiona@formatter.example` the top root owner and the sole active owner of `test/`. That is a mechanical reformat, not authorship. The tool's `CODEOWNERS` is therefore skewed: `*` lists Fiona first and `test/` is a bus-factor-1 zone on Fiona.
+- **Troy's two emails:** I did not verify they belong to one person. If they do, Troy is still active and owns ~40% of the code. If not, the 2019 account is orphaned. I ran with `--no-github`, so the tool could not merge them. Please confirm.
+- **Import history:** the tool flags a bulk first commit (8 files, 2013-01-31), so the history looks imported. Blame credits whoever is in the commits, which may not be who originally wrote the code.
+- **Active window:** "Active" is measured against the newest commit (2026-04-12), not today (2026-10-22). Anyone whose last commit falls between about 2025-04 and 2025-10 will count as inactive by today's date.
+- **Method:** blame covers all tracked files except `LICENSE`, including docs and config, with `-w -M -C`.
+
+I ran the tool on a temp clone, so nothing in your repo changed. If you want `CODEOWNERS` generated, tell me whether to mark the Troy accounts as one person and whether to exclude `62628c0`.
+META cost=0.1035856 ms=30343 turns=8

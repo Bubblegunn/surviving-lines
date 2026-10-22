@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -50; echo ---; git shortlog -sn --all | wc -l; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -16; echo ---; git log --all --format='%aN <%aE>%n%cN <%cE>' | sort -u | awk '{print}' | grep -iE 'troy|doug|fiona|efe|example|laptop'
+ - Bash: git log --all --format='%aN|%aE' | sort -u > /tmp/a.txt; echo "emails w/ multiple names:"; cut -d'|' -f2 /tmp/a.txt | sort | uniq -d; echo "names w/ multiple emails:"; cut -d'|' -f1 /tmp/a.txt | sort | uniq -d; echo; git log --all --author='Efe\|Fiona' --format='%h %aN <%aE> %s'; git log --all --format='%h %aN %s' --author='Troy Goode' | grep -n laptop; git log --all --author='troy@laptop' --format='%h %s'
+ - Bash: printf 'Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n' > .mailmap; git shortlog -sne --all | head -4; git shortlog -sne --all | grep -iE 'troy|puchades'; git shortlog -sn --all | wc -l
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** had two emails, `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** had two names on the same email, `<email redacted>`. The other name was `alex94puchades` (1 commit, alongside 4 under the full name).
+
+I added a `.mailmap` at the repo root that merges both. It doesn't rewrite history, so no hashes change. `git shortlog` and `git log --use-mailmap` now count each person once. Distinct authors went from 64 to 62. I didn't commit the file.
+
+**Top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second, now at 122 instead of 120.
+
+I left `Efe <<email redacted>>` and `Fiona Formatter <fiona@formatter.example>` as they were. They may be the same person as you (`Efe Genc`), but I can't tell from the log. Tell me if you want them merged too.
+META cost=0.06821740000000001 ms=21990 turns=6

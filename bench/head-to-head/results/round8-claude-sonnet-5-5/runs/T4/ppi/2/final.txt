@@ -1,0 +1,34 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== all commits by author" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit date per author" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++' && echo && echo "== last 12 months" && git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== dependents" && grep -rlE "lib/index|require\(['\"]\.\./?lib['\"]\)|require\(['\"]\./lib" --include="*.js" . --exclude-dir=node_modules --exclude-dir=.git | head -20 && echo && echo "== file stats" && wc -l lib/index.js && ls lib && git log --one
+FINAL ANSWER:
+**Review lib/index.js with Troy Goode.** He is the only person with deep knowledge of this file who is still active.
+
+## Bus factor: lib/index.js
+
+| Metric | Value |
+|---|---|
+| Commits (no merges, all branches) | 62 |
+| Unique contributors | 25 |
+| Top contributor | Troy Goode, 29 commits (47%) |
+| Next contributors | Douglas C. Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3 |
+| Contributors in the last 12 months | Troy Goode (2026-04-10) and Fiona Formatter (2026-04-12) |
+| Size | 238 lines |
+
+- **Reviewer:** Troy Goode owns 47% of the commits, which is below the 80% single-owner threshold. But he is the only person with real history in the file who has committed recently, so the effective bus factor is **1**.
+- **Fiona Formatter:** this is the `style: reformat js with 4-space indent and double quotes` commit (62628c0). It is a mechanical change, so it does not make them a reviewer.
+- **Other contributors:** the rest are inactive. Douglas Wilson (the second most knowledgeable) last touched the file in 2017. Alejandro Caravaca Puchades and Simon Mansfield last touched it in 2015 and 2013.
+- **Dependents:** the grep found only 3 test files that import it (`test/error-response.js`, `test/example-app.js`, `test/issue-2.js`). The grep was narrow. If `package.json` points `main` at this file, it is the public entry point, so treat the risk as higher.
+
+## Recommendations
+1. **Now:** request Troy Goode as reviewer. If you can't, ask someone to review who has read `git log -p lib/index.js`, and run the full test suite.
+2. **Short term:** have a second active person review changes to this file, so knowledge spreads beyond one person.
+3. **Ongoing:** add comments or docs on the non-obvious behavior in this file. Almost everyone who understood it has left.
+
+I ran the git commands directly and did not launch the contributor-analyzer agent, since this was a single file. The report is for that file only, not the whole project.
+META cost=0.056518399999999996 ms=15198 turns=4

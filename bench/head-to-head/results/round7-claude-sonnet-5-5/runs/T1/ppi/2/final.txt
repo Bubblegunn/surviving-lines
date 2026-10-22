@@ -1,0 +1,67 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules | wc -l; git log --no-merges --format='%an' | sort | uniq -c | sort -rn | head -10; git rev-list --count HEAD
+ - Bash: for f in $(git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame_all.tsv; wc -l /tmp/blame_all.tsv; cut -f2 /tmp/blame_all.tsv | sort | uniq -c | sort -rn | head -15
+ - Bash: git show --stat --format='%h %an %ad %s' 62628c0 | head -15; git show --stat --format='%h %an %ad %s' b2005d9 | head -10
+for f in $(git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame_adj.tsv
+echo ---; cut -f2 /tmp/blame_adj.tsv | sort | uniq -c | sort -rn | head -12
+echo --- per file; awk -F'\t' '{c[$1][$2]++; t[$1]++} END{for(f in c){m=0;mn="";n=0;for(a in c[f]){n++;if(c[f][a]>m){m=c[f][a];mn=a}} printf "%s\t%d\t%s\t%d%%\t%d\n",f,t[f],mn,m*100/t[f],n}}' /tmp/blame_adj.tsv | sort -t$'\t' -k2 -nr
+echo --- last commit per author; git log --no-
+ - Bash: cd /tmp && sort blame_adj.tsv | uniq -c | awk '{n=$1; f=$2; $1="";$2=""; sub(/^ +/,""); print f"\t"$0"\t"n}' | awk -F'\t' '{k=$1; t[k]+=$3; if($3>m[k]){m[k]=$3;o[k]=$2}; c[k]++} END{for(k in t) printf "%s\t%d\t%s\t%d%%\t%d\n",k,t[k],o[k],m[k]*100/t[k],c[k]}' | sort -t$'\t' -k2 -nr
+echo; cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-ppi-2/repo; git log --no-merges --since=2026-07-22 --format='%an' | sort | uniq -c; git log -1 --format='%ad' 
+FINAL ANSWER:
+## Bus factor: whose code is still here
+
+I used `git blame` (surviving lines) instead of commit counts. I ignored the formatting commit `62628c0`, which would otherwise have given Fiona Formatter 291 lines. I also used `-w -M -C` so whitespace changes and moved lines count for the original author. Scope: 7 JS files, 1,202 lines.
+
+**Project bus factor: 1.** Troy Goode alone owns 56% of surviving lines. Troy and Douglas Christopher Wilson together own 89%.
+
+| Author | Surviving lines | Share | Commits (all history) | Last commit |
+|---|---|---|---|---|
+| Troy Goode | 676 | 56% | 95 | 2026-04-10 |
+| Douglas Christopher Wilson | 394 | 33% | 143 | 2021-09-07 |
+| Alejandro Caravaca Puchades | 30 | 2.5% | 4 | 2015-05-28 |
+| Eric di Domenico | 16 | 1.3% | 3 | 2013-10-05 |
+| Alberto Leal | 15 | 1.2% | 2 | 2014-05-12 |
+| About 25 others | 71 | 5.9% | | |
+
+**Commit counts point to the wrong person.** Douglas has the most commits (143), but Troy owns more of the code that survives.
+
+### Per file
+
+| File | Lines | Top owner | Share | Authors |
+|---|---|---|---|---|
+| `lib/index.js` (the only source file) | 238 | Troy Goode | 66% | 19 |
+| `test/test.js` | 731 | Douglas Christopher Wilson | 46% | 13 |
+| `test/example-app.js` | 81 | Troy Goode | 82% | 2 |
+| `test/error-response.js` | 66 | Troy Goode | 86% | 2 |
+| `test/issue-2.js` | 48 | Troy Goode | 83% | 2 |
+| `test/vary.js` | 36 | Troy Goode | 100% | 1 |
+| `test/support/env.js` | 2 | Douglas Christopher Wilson | 100% | 1 |
+
+### Risks
+
+- **Troy is the main owner of the library itself.** He owns 66% of `lib/index.js`. The other 18 authors share the remaining 34%, so no single one has much of it.
+- **Douglas is inactive.** His last commit is from 2021, and he owns 46% of `test/test.js`. Roughly half of the largest test file has no recent maintainer.
+- **The whole repo looks dormant.** There are no commits in the last 90 days. The newest commit is the 2026-04-12 reformat, and Troy's last real commit is 2026-04-10. That is about 6 months ago, so he may be inactive too.
+- **`test/vary.js` has a single author.** It is small (36 lines), so the risk is low.
+
+### Caveats
+
+- Blame cannot tell who understands the code today. It only shows who wrote the surviving lines.
+- Author names are not merged. "Alejandro Caravaca Puchades" and "alex94puchades" may be the same person, and so may other aliases. That would slightly raise a few small shares but would not change the top two.
+- The importance cross-reference had little to do. `lib/index.js` is the only source file, so every dependency runs through it.
+
+### Recommendations
+
+1. Treat `lib/index.js` as the critical file. Get a second person to review it who isn't Troy.
+2. Find an active reviewer for the parts of `test/test.js` that Douglas wrote.
+3. Check whether Troy is still reachable. If he isn't, the project's real bus factor is 0.
+
+I can also run blame with `--since` to see who owns the code written in the last year or two, or merge the author aliases if you want that.
+META cost=0.0842159 ms=27090 turns=7

@@ -1,0 +1,242 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I need to change how the cache store proxies work under lib/rack/attack/store_proxy. Who should I ask about that code, and who should review my PR?
+
+CRITERIA:
+1. The top owner is hakanensari with about 21% of the live lines (accept 18% to 24.5%), ranked first; Divya Rao (about 17%) and Gonzalo Rodriguez (about 17%) follow, each within 14% to 20.5%. FAIL if anyone else is ranked first, or if hakanensari is below 17%.
+2. Authors are credited, not the committer: Hye-jin Park has about 9% (accept 6.5% to 11.5%) and Divya Rao about 17%, although Gonzalo Rodriguez committed their patches. Gonzalo Rodriguez (merged with "Gonzalo" and his noreply address) is at most 21%. FAIL if Hye-jin Park is below 5%, or if Gonzalo Rodriguez is above 28%.
+3. Moved code keeps its author: Mei Tanaka (extracted methods into dalli_accessors.rb) has at most 6%, and the methods in dalli_accessors.rb are credited mostly (about 56%) to hakanensari. FAIL if Mei Tanaka is above 8%.
+4. github-actions[bot] (the rubocop autocorrect commit) is not ranked and holds at most 1%; Jaroslav Novak (added then deleted NullProxy) holds 0%. FAIL if the bot is ranked as an owner, or Jaroslav Novak is credited with 1% or more.
+5. The answer states its basis: shares are of live lines in the store_proxy directory (total 346, accept 320 to 375 lines), and it says it discounted the bot style rewrite and the deleted code. FAIL if the total line count is outside the range, or if neither exclusion is mentioned.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD ad22651043d2d8867174bbcd9a440a4928ada30a
+scope: lib/rack/attack/store_proxy/
+files counted: 7  excluded: 0
+ignore-revs (1):
+  ad22651043d2 github-actions[bot] | [bot] rubocop -A autocorrect (Style/StringLiterals, Style/HashSyntax)
+live lines in scope: 346
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 346
+RANKING (share of human live lines)
+ 1. hakanensari: 74 lines, 21.39%
+ 2. Divya Rao: 60 lines, 17.34%
+ 3. Gonzalo Rodriguez: 60 lines, 17.34%
+ 4. Hye-jin Park: 31 lines, 8.96%
+ 5. Brad Lindsay: 25 lines, 7.23%
+ 6. fatkodima: 24 lines, 6.94%
+ 7. Jonathan del Strother: 19 lines, 5.49%
+ 8. Brian Kephart: 16 lines, 4.62%
+ 9. Mei Tanaka: 12 lines, 3.47%
+10. Santiago Bartesaghi: 6 lines, 1.73%
+11. Ryan Laughlin: 5 lines, 1.45%
+12. madlep: 4 lines, 1.16%
+13. thomas morgan: 4 lines, 1.16%
+14. Alexey Zapparov: 3 lines, 0.87%
+15. Alexey Vasiliev: 1 lines, 0.29%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Jonathan del Strother: Jonathan del Strother <<email redacted>>=16; Jonathan del Strother <<email redacted>>=3
+people needed to cover >=50% of human live lines: 3; >=80%: 7
+FACT Gonzalo: 60 lines = 17.34%
+FACT Hye-jin Park: 31 lines = 8.96%
+FACT Divya Rao: 60 lines = 17.34%
+FACT Mei Tanaka: 12 lines = 3.47%
+FACT Jaroslav Novak: 0 lines = 0.00%
+FACT github-actions: 0 lines = 0.00%
+FACT fatkodima: 24 lines = 6.94%
+FACT file lib/rack/attack/store_proxy/dalli_accessors.rb: 41 lines, top author hakanensari 56%
+FACT file lib/rack/attack/store_proxy/dalli_proxy.rb: 49 lines, top author hakanensari 73%
+FACT file lib/rack/attack/store_proxy/mem_cache_store_proxy.rb: 25 lines, top author Jonathan del Strother 64%
+FACT file lib/rack/attack/store_proxy/memory_store_proxy.rb: 60 lines, top author Divya Rao 100%
+FACT file lib/rack/attack/store_proxy/redis_cache_store_proxy.rb: 49 lines, top author Brian Kephart 31%
+FACT file lib/rack/attack/store_proxy/redis_proxy.rb: 95 lines, top author Brad Lindsay 26%
+FACT file lib/rack/attack/store_proxy/redis_store_proxy.rb: 27 lines, top author hakanensari 56%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__search_commits", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-2/repo", "path": "lib/rack/attack/store_proxy"}
+ - mcp__tool__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-2/repo/lib/rack/attack/store_proxy"}
+FINAL ANSWER:
+Nobody who touched `lib/rack/attack/store_proxy` has committed in the last 6 months (since 2026-04-22). The history tool flags all 7 files as orphaned. Treat the names below as people to try, not confirmed current maintainers.
+
+**Who to ask**
+- **Gonzalo Rodriguez** has the most history here. They made 25 of 61 commits (41%) and their last commit was 2026-03-09. They own lines in `dalli_proxy.rb`, `redis_proxy.rb`, `redis_store_proxy.rb` and `mem_cache_store_proxy.rb`.
+- **Divya Rao** wrote 88% of `memory_store_proxy.rb`. Their last commit was 2026-01-28.
+- **Mei Tanaka** wrote all of `dalli_accessors.rb`, the recent Dalli read/write/increment/delete extraction. Their last commit was 2026-02-09.
+- **Hye-jin Park** is the top line owner of `redis_proxy.rb` (26%) and also has lines in `redis_cache_store_proxy.rb`. Their last commit was 2026-02-20.
+- **fatkodima** has 7 commits (11.5%), but the last was in 2019. Their remaining lines are few.
+
+**Who should review**
+- I can't name a current reviewer from git history alone. Check the repo's `CODEOWNERS`, the GitHub contributors page, or whoever merged recent PRs. The most recent commits to the repo are from the people above, but all are past the 6-month cutoff.
+- If you touch `redis_proxy.rb`, `redis_store_proxy.rb` or `redis_cache_store_proxy.rb`, ask the Redis-side authors (Hye-jin Park, Gonzalo Rodriguez) to look at it.
+- If you touch the Dalli code, ask Mei Tanaka or Gonzalo Rodriguez.
+- If you touch `memory_store_proxy.rb`, ask Divya Rao.
+- If nobody responds, expect to review it yourself against the spec files. Cover each store type your change touches: Dalli, Redis, `RedisStore`, `RedisCacheStore`, `MemCacheStore` and memory.
+
+I haven't checked `CODEOWNERS`, open PRs or who merged recently. I can do that next if you want.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib/rack/attack/store_proxy"}
+ - Bash: ls lib/rack/attack/store_proxy* ; echo ---; git log --all --no-merges --pretty=format:"%an|%ae" -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---; for f in lib/rack/attack/store_proxy/*.rb lib/rack/attack/store_proxy.rb; do echo "$f"; git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn; echo; done; echo ---RECENT; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib/rack/attack | sort | uniq -c | sort -rn; echo ---LAST; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/rack/attack/store_proxy | head -15
+FINAL ANSWER:
+## 🚌 Bus Factor: `lib/rack/attack/store_proxy/`
+Period: all history | Generated: 2026-10-22
+
+I ran the git-log commands directly and did not launch the contributor-analyzer agent. I did not compute the importance step (dependent-file counts).
+
+### Result: bus factor is fine, but the main owner is not recently active
+
+Across 72 commits to the directory, Gonzalo Rodriguez has 27 (about 37%). That is well under the 80% single-owner threshold, and 28 distinct author names have touched the code. One of them is the `github-actions[bot]` autocorrect commit, and one person (Jonathan del Strother) appears under two emails.
+
+### Per-file ownership
+
+| File | Top owner | Commits | Other contributors | Bus factor |
+|---|---|---|---|---|
+| `store_proxy.rb` | Gonzalo (7), hakanensari (6), Vincent Boisard (6) | 28 | 9 more | 3+ |
+| `redis_cache_store_proxy.rb` (the one you're changing) | Gonzalo (9) | 21 | fatkodima (2), Ryan Laughlin (2), 8 others | 3+ |
+| `redis_proxy.rb` | fatkodima (4), Gonzalo (4) | 14 | 5 more | 2+ |
+| `redis_store_proxy.rb` | Gonzalo (9) | 17 | Stan Hu (2), 6 others | 3+ |
+| `dalli_proxy.rb` | Gonzalo (5) | 10 | fatkodima, hakanensari, Mei Tanaka, Lucas Mansur | 3+ |
+| `mem_cache_store_proxy.rb` | 5 authors with 1 commit each | 5 | – | 4+ |
+| `memory_store_proxy.rb` | Divya Rao (1) | 2 | – | 1 (low risk, tiny file) |
+| `dalli_accessors.rb` | Mei Tanaka (1) | 1 | – | 1 (new file, extracted from `dalli_proxy.rb`) |
+
+### Activity check
+
+- No human commits in the last 90 days.
+- Gonzalo's last commit to this directory was 2026-03-09. The last commit of any kind was the bot on 2026-04-14.
+- Other contributors from 2026: Hye-jin Park (Jan and Feb), Mei Tanaka (Feb), Divya Rao (Jan), Jaroslav Novak (Mar).
+- The older contributors (Vincent Boisard, hakanensari, Ryan Laughlin) have not touched the code in years.
+- fatkodima is the second most consistent contributor. I did not pull their last commit date for this directory, so check before asking them.
+
+### Who to ask
+
+1. **Gonzalo Rodriguez** (<email redacted>). They are the top contributor to `redis_cache_store_proxy.rb`, `redis_store_proxy.rb`, `dalli_proxy.rb`, and the top author on `store_proxy.rb`. Treat them as the primary contact, but they have been quiet for about 7 months, so expect a slow reply.
+2. **fatkodima** (<email redacted>). They contributed to `redis_proxy.rb`, `redis_cache_store_proxy.rb`, `dalli_proxy.rb`, and `mem_cache_store_proxy.rb`. They are a good second opinion on the proxy interfaces.
+3. **Mei Tanaka**. They wrote `dalli_accessors.rb`. Ask them only if your change touches the Dalli read/write/increment/delete path.
+4. **hakanensari** or **Vincent Boisard**. Ask them about `store_proxy.rb` design history, such as the proxy wrapping logic. Both are long inactive here.
+
+### Who should review the PR
+
+- **Gonzalo Rodriguez** as the primary reviewer, since they have the most context on these files.
+- **fatkodima** as the second reviewer, since the knowledge is spread across them and Gonzalo. I'd avoid relying on one person.
+- If either is unavailable, a recent contributor such as Mei Tanaka or Hye-jin Park can review. They have less history in these files.
+
+Check `CODEOWNERS` (if the repo has one) and the repo's current maintainers on GitHub before you tag anyone. Git history shows who wrote the code. It does not show who currently has merge rights.
+
+### Recommendations
+
+- **Immediate:** Ask Gonzalo and fatkodima to review. If neither responds, look at the recent commits (`17f56ae`, `5160a1d`) to see the intent behind the TTL and `DalliAccessors` changes.
+- **Short-term:** Add tests or comments for the proxy behavior you change. The directory has little documentation, so your PR description should explain the intent.
+- **Ongoing:** The directory has no active maintainer. A new contributor who reviews and owns these files would lower that risk.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-pp-2/repo; ls lib/rack/attack/store_proxy; find . -iname CODEOWNERS -not -path './node_modules/*'; echo ---; git shortlog -sne --since="2 years ago" -- lib/rack/attack/store_proxy; echo ---; git log --format='%h %an %ad %s' --date=short -n 15 -- lib/rack/attack/store_proxy
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-pp-2/repo; git log --format='%an' -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn; echo ---; for f in lib/rack/attack/store_proxy/*; do echo "$f: $(git log --format='%an' -- $f | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done; ls .github 2>/dev/null; grep -il -E 'maintainer|review' README.md CONTRIBUTING.md .github/* 2>/dev/null
+FINAL ANSWER:
+There's no CODEOWNERS file, and nothing in the README, CONTRIBUTING or `.github` names reviewers. These suggestions come from git history only.
+
+**Who to ask**
+- **Gonzalo Rodriguez** is the main person. They have 28 of the commits under `lib/rack/attack/store_proxy`, far more than anyone else. They also lead on `redis_store_proxy.rb` (10), `redis_cache_store_proxy.rb` (9) and `dalli_proxy.rb` (5). Their most recent commit was 2026-03-09 (removing `NullProxy`).
+- **Hye-jin Park** is the person to ask about the newer Redis work. They added `multi_increment`, `ttl` and `exists?` to `RedisProxy` (2026-01-14) and the TTL on `RedisCacheStoreProxy` (2026-02-20).
+- **fatkodima** has 4 commits, tied with Gonzalo on `redis_proxy.rb` and second on `redis_cache_store_proxy.rb`.
+
+Some files have only one or two authors:
+- **Mei Tanaka** is the only author of `dalli_accessors.rb`, which was extracted in 2026-02.
+- **Divya Rao** wrote `memory_store_proxy.rb`.
+
+**Who should review**
+- **Gonzalo Rodriguez** is the best fit as the main reviewer. They know the most history across all the proxies.
+- If your change touches the Redis proxies, add **Hye-jin Park** or **fatkodima** as a second reviewer.
+- If it touches Dalli, add **Mei Tanaka**.
+
+These are inferences from commit counts. I can't tell from the repo who is still active or who the maintainers are. Check the recent PR history on GitHub for current reviewers, or ask for people with merge rights.
+
+I can also run a `git blame` on specific files or lines you plan to change, or look at the history of past decisions in these files, if you want.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-base-2/repo; ls lib/rack/attack/store_proxy; find . -iname CODEOWNERS -not -path './node_modules/*'; git shortlog -sne HEAD -- lib/rack/attack/store_proxy; git log --since='1 year ago' --format='%an %ad' --date=short -- lib/rack/attack/store_proxy | head -15
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-base-2/repo; ls -a .github 2>/dev/null; grep -ril "maintainer" README.md *.gemspec 2>/dev/null; git log --format='%an' --since='1 year ago' -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn
+FINAL ANSWER:
+There's no CODEOWNERS file, so the names below come from git history only.
+
+**Who to ask**
+- **Gonzalo Rodriguez** (<email redacted>) is the best person to ask about design. They have 26 commits (plus 2 under another email) in `lib/rack/attack/store_proxy`, far more than anyone else, and they made the latest human change, on 2026-03-09.
+- **Hye-jin Park** has the most recent activity. They made 2 commits in the last year (2026-01-14 and 2026-02-20), so they're a good person to ask about how the code works now.
+- **Jaroslav Novak, Mei Tanaka and Divya Rao** each made 1 commit in the past year. They're worth asking if your change touches the same files they edited.
+- **fatkodima** (4 commits) is a long-term contributor and a possible reviewer.
+
+**Who should review**
+- Ask Gonzalo Rodriguez first. Add Hye-jin Park as a second reviewer if you can, because they know the current state of the code.
+- Ignore the github-actions[bot] commits. They're only rubocop autocorrects.
+
+**Caveats**
+- Commit counts show who has touched the code. They don't show who currently maintains it.
+- I didn't check whether any of these people are still active on the project. The `example.org` addresses on some of them may be placeholders.
+- Before you pick reviewers, check the maintainer list in the README or on the GitHub repo. I found no maintainer list in the README or gemspec.
+
+I can run `git log` on specific files, for example `redis_cache_store_proxy.rb`, to see who knows the part you're changing.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib/rack/attack/store_proxy"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin>/scripts/<plugin> <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-bf-2/repo --dry-run --no-github
+ - Bash: git log --no-merges --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn | head -20; git log -1 --format=%ad --date=short
+ - Bash: git log --no-merges --since=2025-04-14 --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb; echo ---; git log --all --format='%an <%ae>' | grep -iE 'tanaka|park' | sort | uniq -c; echo ---; git log --no-merges --format='%an <%ae>' -- lib/rack/attack/ | sort | uniq -c | sort -rn | head -8; echo ---; ls lib/rack/attack/store_proxy
+FINAL ANSWER:
+Short answer: ask Gonzalo Rodriguez. For review, use Santiago Bartesaghi, who is the safer choice. The tool's CODEOWNERS suggestion for this path looks unreliable, so check it before you use it.
+
+**Who to ask**
+- **Gonzalo Rodriguez** (`<email redacted>`, GitHub `grzuy`) wrote most of `store_proxy/`. He has about 60 commits across `lib/rack/attack/` and was still committing in March 2026. He is the best person to ask about why the proxies are shaped the way they are.
+- **Santiago Bartesaghi** (`<email redacted>`) also touched this path, most recently in December 2024. The tool lists him as a fallback owner of the repo, alongside `grzuy`.
+
+**Who should review**
+- Gonzalo and Santiago.
+- Aaron Suggs (42 commits in `lib/rack/attack/`) and fatkodima (16, including four recent-era commits to `store_proxy/` in October 2019) know the history. Neither shows up in the tool's active-owner list, so I don't know if they're still around.
+
+**Caveats**
+- The tool's dry-run only produced a rule for `/lib/rack/attack/`. It names Mei Tanaka, Hye-jin Park and Santiago.
+- Mei and Hye-jin have only 1 and 2 commits in the whole repo. None of those commits touch `store_proxy/` in the `git log` I ran for that path.
+- Their weight probably comes from broad changes across `lib/`, so treat their ownership of this code as unverified. I'd skip them as reviewers unless you know they own the area.
+- The tool was run with `--no-github`, so it didn't map emails to GitHub accounts. Gonzalo's commits use two author names (`Gonzalo Rodriguez` and `Gonzalo`). I haven't confirmed that all his weight was merged into one person.
+- Ownership here is inferred from commit counts, not from who actually reviews code.
+- I used `--dry-run`, so no files were written to the repo.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>'; $SL --reviewers lib/rack/attack/store_proxy --merge-identities; echo ======; $SL --history lib/rack/attack/store_proxy --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>; node $S --reviewers lib/rack/attack/store_proxy --merge-identities; echo ======; node $S --history lib/rack/attack/store_proxy --merge-identities
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool> --history lib/rack/attack/store_proxy --merge-identities
+FINAL ANSWER:
+**Ask and review (by surviving lines, `lib/rack/attack/store_proxy`):**
+
+1. **Gonzalo Rodriguez**: 59 lines (17.8%), 24 commits, last commit 2026-03-09, active. Ask them first. They have the most commits by far and have worked on the code since 2018.
+2. **Divya Rao**: 53 lines (16.0%), 1 commit, last commit 2026-01-28, active. Good second reviewer.
+3. **hakanensari**: 74 lines (22.3%), the top line holder, but inactive. Their one commit was on 2014-04-15, and it was the first commit to the path. Reviewing is unlikely to work, but their lines are the original design.
+
+**Hye-jin Park** is active and has 31 lines (9.3%) from 2 commits. Treat Hye-jin as the fourth option. They are in the "active only" top three, which skips hakanensari. Brad Lindsay (25 lines, 7.5%) is also inactive.
+
+**Basis and caveats**
+- **Scope:** 7 of 7 files, 332 of 346 lines attributed, as of 2026-04-14. Figures use `git blame -w -M -C`.
+- **Excluded:** 1 bot (14 lines, 1 commit).
+- **Identity merge:** `--merge-identities` merged Jonathan del Strother's two addresses (<email redacted>, 16 lines; <email redacted>, 3 lines) for 19 lines combined. This is a guess from names and addresses. I did not write `.mailmap`.
+- **Bus factor:** 3 for the 50% threshold (hakanensari, Gonzalo Rodriguez and Divya Rao hold 56.0% of the surviving lines). It takes 7 authors to reach 80%. Both numbers are for the `store_proxy` directory only.
+- **Copy detection:** The figures include copy detection, which moved 31 lines in 3 files to other authors.
+  - hakanensari: 74 lines with it, 55 without (16.6%).
+  - Gonzalo Rodriguez: 59 lines with it, 52 without (15.7%).
+  - Mei Tanaka: 11 lines with it (3.3%), 42 without (12.7%). If Mei Tanaka is still around, they are worth a look. Without copy detection they would rank second.
+- **Moved code:** 37 lines (10.7%) were written in other paths and moved here, mostly from `dalli_proxy.rb`, `store_proxy.rb` and `redis_store_proxy.rb`. Credit goes to whoever wrote them, not to whoever moved them.
+- **Mechanical rewrites:** I checked and set aside none. One more commit looks mechanical and I kept it: `20d6682` ("style: fix Lint/HandleExceptions rubocop", Gonzalo Rodriguez, 2 surviving lines). It barely changes the numbers.
+- **Limits:** Line counts do not show code quality, review work, design discussion or deleted code. Use them to find who knows the code, not to rank people.

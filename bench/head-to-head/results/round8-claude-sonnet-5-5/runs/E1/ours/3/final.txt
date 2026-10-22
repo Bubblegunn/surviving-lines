@@ -1,0 +1,63 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --merge-identities --group-by dir
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl; echo ======; sl --merge-identities --group-by dir
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities --group-by dir 2>&1 | head -80
+FINAL ANSWER:
+## Bus factor: Troy Goode is the single point of dependence
+
+I measured this from surviving lines using `git blame -w -M -C`, run at HEAD. It covered 18 of 18 files and attributed 1,985 of 1,995 lines. The history has 315 non-merge commits. "Bus factor" here means the smallest number of authors whose surviving lines together reach 50% of the lines counted.
+
+**Whole repository: bus factor 2**
+- Two authors hold 70.1% of the lines. Reaching 80% takes 5 authors.
+- **Troy Goode, 762 lines (38.4%)** from `<email redacted>`, with 93 commits (29.5%).
+- **Douglas Christopher Wilson, 629 lines (31.7%)**, with 143 commits (45.4%).
+- The next people are far behind:
+  - Íñigo Marquínez Prado: 95 lines (4.8%).
+  - Jon Church: 72 lines (3.6%).
+  - Sebastian Beltran: 67 lines (3.4%).
+  - Ulises Gascón: 52 lines (2.6%).
+  - Ignacio Mangas: 44 lines (2.2%).
+- 53 more authors hold the rest.
+
+**Identity merge (a guess):**
+- Troy Goode also appears as `troy@laptop.example`, with 48 lines and 2 commits.
+- If these are one person, Troy has 810 lines (40.8%). The tool rates the evidence as strong, but it comes only from the shared name and addresses, so it is unconfirmed.
+- The same applies to `alex94puchades`, who may be Alejandro Caravaca Puchades. That is a small holding.
+- I did not write a `.mailmap`, since you only asked a question. The proposed line for the second guess is `Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>`.
+
+**Single-owner areas (per directory, with Troy's two addresses merged):**
+
+| Path | Bus factor | Holder |
+|---|---|---|
+| `lib/` (1 file, 238 lines) | **1** | Troy Goode, 159 lines (66.8%). Next is Douglas Wilson with 22 lines (9.2%). |
+| `test/` (7 files, 966 lines) | **1** | Troy Goode, 517 lines (53.5%). Douglas Wilson has 374 (38.7%). |
+| root (6 files, 415 lines) | 2 | Troy Goode 134 (32.3%) and Douglas Wilson 115 (27.7%). Together they hold 60.0%. |
+| `.github/` (4 files, 366 lines) | 2 | Douglas Wilson 118 (32.2%) and Íñigo Marquínez Prado 95 (26.0%). Together they hold 58.2%. |
+
+- Without the merge, Troy's `<email redacted>` address alone holds 667 lines (33.6%) in the plain count. The per-directory split of the two addresses is not shown separately.
+- The core library file `lib/` and the test suite depend on Troy.
+- Douglas Wilson is the second dependency. He is the main holder of `.github/` and a close second in `test/`.
+- The CI and workflow code (`.github/`) has no single-person dependence, but only about three people hold it.
+
+**What was left out or adjusted:**
+- **Reformat commit set aside:** `62628c0`, "style: reformat js with 4-space indent and double quotes" by Fiona Formatter, 291 lines in the plain count.
+  - It touches whitespace and quotes only, so I left it out of the figures.
+  - If it were counted, Fiona Formatter would hold 291 lines (14.7%). Wilson would drop to 454 (22.9%), and Troy's gmail address to 667 (33.6%). The bus factor would still be 2.
+- **Bots excluded:** 1 identity, with 10 lines and 11 commits.
+- **Mechanical-rewrite check:** the tool examined 139 commits that hold surviving lines and set aside 1, which is `62628c0`.
+  - It flagged 5 more as possibly mechanical and I kept them in the counts. They are `739dc11` (license reformat), `fcd2b56` (ESLint switch), `00d6eec`, `344ce1e` and `9c2b59d`. They hold 44 lines in total, so they would not change the conclusions.
+- **Copy detection:** `-M -C` (the default). The tool printed no note that it moved anyone's share by more than 2 points.
+
+**Limits:**
+- These figures show whose code is still here. They do not show who understands it.
+- Review, design work and deliberately deleted code leave no lines behind.
+- The tool also does not weight by how much a file is contested.
+
+**Recommendation:** have a second person review and touch `lib/` and the core tests, starting with Wilson or Jon Church. Troy's last commit date matters too. I did not run `--reviewers lib` to check who is still active, but I can.
+META cost=0.07925120000000001 ms=20984 turns=6

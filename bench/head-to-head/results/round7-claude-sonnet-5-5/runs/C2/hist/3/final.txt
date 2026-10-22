@@ -1,0 +1,33 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-3/repo", "file": "src/itsdangerous/signer.py"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-3/repo", "file": "src/itsdangerous/timed.py"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-3/repo", "path": "src/itsdangerous"}
+ - Bash: for f in signer timed; do echo "== $f plain"; git blame -w --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; echo "== $f -w -M -C -C"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git log --format='%h %ad %an | %s' --date=short -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -40; echo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git log --all --oneline | wc -l
+ - Bash: git show --stat --format='%h %an %s' 0635526 | head -15; for f in signer timed; do echo "== $f ignore split+pyupgrade/format"; git blame -w -M -C -C -C --ignore-rev 0635526 --ignore-rev 7104e55 --ignore-rev 0e255fc --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git show --stat --format='%h %an %ad %s' 93695fd 56dba8d | head -20
+FINAL ANSWER:
+Ask **David Lord** first. If your change touches the key-rotation helpers, also ask **Tomás Ibarra**.
+
+**Who wrote the surviving code**
+
+| File | David Lord | Tomás Ibarra | Armin Ronacher | Others |
+|---|---|---|---|---|
+| `signer.py` (366 lines) | 212 (58%) | 100 (27%) | 19 (5%) | Hsiaoming Yang 13, Arnout van Meer 11, bot 8, Thomas Waldmann 2, Markus Unterwaditzer 1 |
+| `timed.py` (300 lines) | 172 (57%) | 72 (24%) | 37 (12%) | Zach Hugnou 5, bot 5, Alan Hamlett 3, and 3 others at 2 lines each |
+
+- **David Lord:** David wrote most of the typing, timezone-aware datetimes, and later fixes. Plain `git blame` shows 67% and 66% for David. That is too high, because it credits David for code Armin wrote before David's 2018 "split into modules" commit (`0635526`). I re-ran blame with `-w -M -C -C -C`, which follows moved lines and ignores whitespace changes. That gave the numbers above.
+- **Tomás Ibarra:** Tomás wrote the key-rotation helpers. They arrived as two pure-addition commits, `93695fd` (signer, +100 lines) and `56dba8d` (timed, +72 lines), in July 2025. All of those lines are still in the files.
+- **Armin Ronacher:** Armin designed the original fallback-signer logic (October 2018). It is still there, but David has since edited most of it. Armin's last commit was in 2018.
+- **Bot:** `pre-commit-ci` only reformatted code.
+
+**Who to ask**
+- **Default:** David Lord. They have 342 commits (the most), wrote the largest share of both files, and have shaped the design since 2018.
+- **Rotation helpers:** Tomás Ibarra. Only Tomás wrote that code.
+- **Availability:** The historian tool marks everyone as "inactive" and every file as "orphaned". That is an artifact of the repo's last commit being 2025-07-08 and today being 2026-10-22. Git cannot tell you who is reachable now. Check that yourself, for example through CODEOWNERS or the issue tracker.
+META cost=0.0974317 ms=34082 turns=8

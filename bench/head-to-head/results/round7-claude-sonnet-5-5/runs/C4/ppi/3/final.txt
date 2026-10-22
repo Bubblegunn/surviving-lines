@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/ and test/ \u2014 ownership by surviving lines (git blame), compare owners"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-ppi-3/repo
+for d in lib test; do
+echo "== $d: files=$(git ls-files $d | wc -l)"
+git ls-files $d | while read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn > /tmp/own_$d.txt
+awk -v d=$d '{n=$1; t+=n; $1=""; a[NR]=$0; c[NR]=n} END{for(i=1;i<=NR&&i<=8;i++) printf "%5.1f%% %s (%d)\n", 100*c[i]/t, a[i], c[i]; print "total lines", t, "authors", NR}' /tmp/own_$d.txt
+done
+git log -1 --format=%cd; git log --since="90 days ago" --format=%an | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+**Short answer:** ask José Valim first, then Kaito Mori for `lib/`. José also owns most of `test/`, so the two directories are mostly owned by the same person.
+
+I counted surviving lines with `git blame -w -M -C` at HEAD, so whitespace changes and moved lines don't change the credit.
+
+| | `lib/` (17 files, 1,496 lines, 31 authors) | `test/` (22 files, 1,853 lines, 18 authors) |
+|---|---|---|
+| José Valim | 57% | 57% |
+| Kaito Mori | 17% | 9% |
+| Rafael Mendonça França | 4% | 10% |
+| Carlos Antonio da Silva | 3% | 6% |
+| Lucas Mazza | 2% | 5% |
+| Weblate | 5% | – |
+| Jan De Poorter | 2% | 4% |
+| Others | ~10% (Vestimir Markov 3%, the rest each under 2%) | ~9% |
+
+- **`lib/`:** José owns just over half. Kaito Mori is the clear second owner. Weblate's 5% is probably translation files, so nobody needs to be asked about it. The remaining 28 authors each hold a few percent or less.
+- **`test/`:** José's share is the same as in `lib/`. After him, the ownership is spread more evenly than in `lib/`: Rafael, Kaito, Carlos and Lucas each hold 5–10%.
+- **Who is still active:** the last 90 days of commits are mostly Carlos (8) and Rafael (6), then Kaito (3 under "Kaito Mori" plus 1 under "kmori", which is likely the same person). José has no commits in that window. He owns the most code but is not currently active in this repo.
+- **Practical advice:** for current questions, ask Carlos or Rafael, who touch the code now. Ask Kaito about `lib/` internals. Ask José about original design intent, if you can reach him.
+
+**Caveats:**
+- I did not run the skill's full report. That means no commit-count bus factor, no importer-count ranking and no per-module breakdown.
+- I did not merge author aliases such as "Kaito Mori" and "kmori". Counting them together would raise Kaito's share slightly.
+- Line counts show who wrote the code. They don't show who understands it best.
+META cost=0.0549091 ms=15189 turns=4

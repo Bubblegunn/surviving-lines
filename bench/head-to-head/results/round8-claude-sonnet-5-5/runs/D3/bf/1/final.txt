@@ -1,0 +1,31 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-bf-1/repo; ls lib/rack/attack/store_proxy; ls .github CODEOWNERS docs 2>/dev/null | head; echo ---ALL; git shortlog -sne HEAD -- lib/rack/attack/store_proxy; echo ---12mo; git shortlog -sne --since="12 months ago" HEAD -- lib/rack/attack/store_proxy; echo ---recent; git log -n 15 --format='%h %ad %an %s' --date=short -- lib/rack/attack/store_proxy
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+FINAL ANSWER:
+Sources: `git shortlog` and `git log` on `lib/rack/attack/store_proxy`. The repo has no CODEOWNERS file.
+
+**Who to ask**
+- **Gonzalo Rodriguez**: the long-term owner. They have 28 commits on this path in total (26 as `<email redacted>`, 2 as `<email redacted>`). That is far more than anyone else. Their latest commit is `242a25f` (2026-03-09), which removed `NullProxy`.
+- **Hye-jin Park**: ask about the Redis proxies. They added `multi_increment`, `ttl` and `exists?` to `RedisProxy` (`7d56ade`) and `ttl` to `RedisCacheStoreProxy` (`17f56ae`).
+- **Mei Tanaka**: ask about the Dalli proxies. They extracted `DalliAccessors` (`5160a1d`).
+- **Divya Rao**: ask about `MemoryStoreProxy`, which they added (`018baf9`).
+- **Jaroslav Novak**: added `NullProxy` (`d851100`), which Gonzalo later removed as unused.
+
+All of these except Gonzalo made their commits between January and March 2026.
+
+**Who to ask for review**
+- Make Gonzalo Rodriguez the main reviewer. They know the whole directory and are still active.
+- Add whichever of Hye-jin, Mei or Divya owns the proxy you change.
+- Older contributors (fatkodima, Vincent Boisard, and others) have 1 to 4 commits each and nothing recent. They are not good reviewers.
+
+**Caveats**
+- Commit counts show who wrote the code. They don't show who has merge rights or who the project wants as reviewers. I did not check GitHub for that.
+- If your change touches the shared interface across proxies, use Gonzalo as reviewer. The recent work on individual proxies came from different people.
+
+I can run the `busfactor` skill to generate a CODEOWNERS file and a risk report for the whole repo if you want one.
+META cost=0.0541705 ms=13714 turns=3

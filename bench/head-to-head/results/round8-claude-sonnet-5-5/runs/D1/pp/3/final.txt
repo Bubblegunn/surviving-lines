@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git log --oneline | wc -l; wc -l cJSON.c cJSON.h
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1} END{for(i=1;i<=NR;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/n}; print n" total"}'
+echo ---
+git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain cJSON.c cJSON.h >/dev/null 2>&1; for f in cJSON.c cJSON.h; do git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -3
+echo --- mailmap/emails
+git log --format='%an <%ae>' -- cJSON.c cJSON.h | sort | uniq -c | sort -r
+FINAL ANSWER:
+Max Bruckner wrote about 75% of the surviving lines in `cJSON.c` and `cJSON.h`. I counted lines with `git blame -w -M -C` over both files (3,601 lines: 3,298 in `.c`, 303 in `.h`). The blame skips the clang-format commit `413c6d1`, using the repo's `.git-blame-ignore-revs`. Without that, the reformat would be credited to whoever ran it. The `-w` flag ignores whitespace-only changes, and `-M -C` credit lines moved or copied between places to their original author.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Tomás Ibarra (also `tomasi`) | 142 | 3.9% |
+| 4 | Alan Wang | 131 | 3.6% |
+| 5 | Dave Gamble | 111 | 3.1% |
+| 6 | Mike Jerris | 76 | 2.1% |
+| 7 | caglarivriz | 31 | 0.9% |
+| 7 | PeterAlfredLee | 31 | 0.9% |
+| 9 | Nicolas Badoux | 29 | 0.8% |
+| 10 | Zach Hindes | 23 | 0.6% |
+| 11 | miaoerduo | 22 | 0.6% |
+| | Everyone else (about 30 people) | about 157 | about 4.4% |
+
+- **Merged identities:** `tomasi` (74 lines) and `Tomás Ibarra` (68 lines) share the email `<email redacted>`, so I combined them. `git log` also shows Alan Wang as "Alanscut" under the same email (`<email redacted>`). Blame only shows the name "Alan Wang", so no merge was needed there.
+- **Dave Gamble:** He created cJSON, and only 3.1% of his code survives. Max Bruckner rewrote most of it. Commit counts show the same split, with 324 commits for Max and 67 for Dave.
+- **Bot and odd names:** `github-actions[bot]` has 5 lines, and `root` and `Use` appear as author names. I did not merge them. They are small and the real person behind them is unknown.
+- **Method sensitivity:** Plain `git blame -w` without `-M -C` gives Max 2,685 and Alan Wang 137. The ranking does not change.
+- **Limits of line counts:** A one-line fix and a boilerplate line count the same. A line someone reformatted or lightly edited goes to the last editor, not the original author. Some of Max's share likely comes from touching lines that others first wrote.
+META cost=0.0689638 ms=21935 turns=4

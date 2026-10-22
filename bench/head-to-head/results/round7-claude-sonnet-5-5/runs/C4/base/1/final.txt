@@ -1,0 +1,33 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1} END{for(i=1;i<=NR&&i<=8;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/n} print "total", n}'; done
+FINAL ANSWER:
+Ask José Valim first about `lib/`. Kaito Mori is the second choice. `test/` is not owned by the same people, but the top author is the same.
+
+Shares are of surviving lines per `git blame`. I ran it with `-w -M` and the repo's `.git-blame-ignore-revs`, so whitespace changes, moved lines and the rubocop reformat don't count.
+
+**`lib/`** (1,496 lines)
+- José Valim: about 57%
+- Kaito Mori: about 17%
+- Weblate: about 5%. This is an automated translation bot, not a person. Skip it.
+- Rafael Mendonça França: about 4%
+- Vestimir Markov: about 3%
+- Carlos Antonio da Silva: about 3%
+
+**`test/`** (1,853 lines)
+- José Valim: about 56%
+- Rafael Mendonça França: about 10%
+- Kaito Mori: about 9%
+- Lucas Mazza: about 8%
+- Carlos Antonio da Silva: about 6%
+- Jan De Poorter: about 4%
+
+José owns a bit more than half of both directories. Below him the two split. Kaito is the clear second owner of `lib/`. `test/` is spread more evenly, with Rafael, Lucas and Carlos holding larger shares there than in `lib/`.
+
+Blame shows who last touched a line, not who knows the code. José's share may include large early commits that later edits only partly replaced. Check recent `git log` activity before you pick someone.
+META cost=0.0464523 ms=12227 turns=3

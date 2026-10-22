@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser | head -50 && echo --- && git shortlog -sne HEAD -- src/Parser && echo --- && git shortlog -sne HEAD -- src/Parser/Lexer.php && echo --- && git log --format='%h %an %ad %s' --date=short -- src/Parser/Lexer.php | head -30
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");a=$0} /^author-mail /{m=$2} /^\t/{c[a" "m]++} END{for(k in c) print f"\t"c[k]"\t"k}'; done | sort -t$'\t' -k1,1 -k2,2nr > /tmp/blame.tsv; echo "== per author total"; awk -F'\t' '{t[$3]+=$2} END{for(k in t) print t[k]"\t"k}' /tmp/blame.tsv | sort -nr; echo "== Lexer/Escape"; grep -E 'Lexer.php|Escape.php' /tmp/blame.tsv; echo; git log --format='%h %an %ad %s' --date=short -- src/Parser/Escape.php; grep -n -i 'escape' src/Parser/Lexer.php | head -20
+ - Bash: awk -F'\t' '{print $1"\t"$2"\t"$3}' /tmp/blame.tsv | sed 's#src/Parser/##'; echo ---; grep -rn 'Escape' src --include=*.php | grep -v '^src/Parser/Escape.php' | head; echo ---; git log --format='%h %an %ad %s' --date=short -5 -- src/Parser/Lexer.php src/Parser/Escape.php src/Parser/EntryParser.php | head; git log -1 --format='%an %ad' --date=short -- src/Parser/Lines.php
+ - Bash: grep -rn 'Escape' src | grep -v '^src/Parser/Escape.php' | head; git log --format='%h %an %ad %s' --date=short -- src/Parser/Quirks.php src/Parser/Compat.php src/Parser/Unicode | head
+FINAL ANSWER:
+Graham Campbell wrote Lexer.php, so ask them about the lexing. Ask Aiko Tanaka about escape handling.
+
+**Surviving lines in `src/Parser`** (`git blame -w -M -C` on HEAD, 1,618 lines)
+
+| Author | Lines | Share | Files |
+|---|---|---|---|
+| Graham Campbell (3 emails) | 782 | 48% | `Lexer`, `EntryParser`, `Lines`, `Parser`, `Value`, `Entry`, `ParserInterface` |
+| Aiko Tanaka (2 emails) | 637 | 39% | `Escape.php`, `Unicode/CharTable.php` |
+| `root <root@localhost>` | 117 | 7% | `Quirks.php` |
+| `Your Name <<email redacted>>` | 69 | 4% | `Compat.php` |
+| Vance Lucas, Jonas Staudenmeir, JT Smith, StyleCI Bot | 13 | <1% | `Lines.php` (Vance Lucas 10, JT Smith 1), `Entry.php` (Jonas Staudenmeir 1), `EntryParser.php` (StyleCI Bot 1) |
+
+**Lexer.php**
+- Graham wrote all 58 lines. The code dates from 2020 ("Improved parsing performance", "Tweaked lexing"). The latest change is 2026-08-24, #614 (static analysis baseline).
+- Graham is the person to ask about the lexing design.
+
+**Escape handling**
+- `Escape.php` is Aiko Tanaka's: 206 lines, added 2026-08-26 in "Add escape sequence handling" and "Escape: more sequences". Nobody else has touched it.
+- `Unicode/CharTable.php` is also entirely Aiko's, added the same day.
+
+**Findings for the audit**
+- **Escape code is not wired in.** `grep -rn Escape src` finds no callers outside `Escape.php`, and `Lexer.php` has no escape logic. Check whether `Escape` is dead code or is used from outside `src`. Also check whether the Lexer still handles escapes itself somewhere else.
+- **New code with one author.** Everything Aiko wrote is from one day, 2026-08-26. Nobody else has reviewed it.
+- **Unknown authors.** `Quirks.php` is by `root@localhost` (commit "fix"). `Compat.php` is by `<email redacted>` ("compat shims"). Git can't tell you who they are, so ask Aiko or Graham. Both files are on the Parser surface.
+- **Same-person assumption.** I treated the different Graham and Aiko emails as the same person. I didn't verify that.
+META cost=0.08360010000000001 ms=24998 turns=6

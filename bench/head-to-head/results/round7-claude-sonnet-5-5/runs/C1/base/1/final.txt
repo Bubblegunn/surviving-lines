@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | wc -l && git ls-files '*.go' | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -12
+ - Bash: git ls-files '*.go' | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn | head -14; git ls-files '*.go' | xargs cat | wc -l; git log --format='%an' | sort | uniq -c | sort -rn | head -8; ls .mailmap 2>&1
+ - Bash: git log --author='Lindqvist' --author='Priya' --format='%h %an <%ae> %ad %s' --date=short --shortstat | head -40
+ - Bash: git show --stat --format='%h %s%n%b' 1b9a535 | head -15; git show --stat --format= 3ee6902 07c50c7 822af32 | head
+ - Bash: git log -2 --format='%h %an <%ae> %s' 822af32 | head -3; git log -1 --format='%h %an <%ae>' d43be5f; git ls-files '*.go' | grep -v '^vendor/' > /tmp/gofiles.txt; wc -l < /tmp/gofiles.txt; printf '822af32\nd43be5f\n' > /tmp/ignore.txt; xargs -n1 git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- < /tmp/gofiles.txt 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -9; xargs cat < /tmp/gofiles.txt | wc -l
+ - Bash: for f in $(cat /tmp/gofiles.txt); do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" 2>&1; done | grep -E '^(author |fatal|error)' | sort | uniq -c | sort -rn | head -10
+ - Bash: git rev-parse 822af32 d43be5f > /tmp/ignore.txt && for f in $(cat /tmp/gofiles.txt); do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" 2>&1; done | grep -E '^(author |fatal|error)' | sort | uniq -c | sort -rn | head -10; cat $(cat /tmp/gofiles.txt) | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C`, 14,511 lines in 77 non-vendored `.go` files):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,085 | ~14% |
+| 2 | Noah Dietz | 1,256 | ~9% |
+| 3 | Alex Ogier | 1,222 | ~8% |
+| 4 | Jonathan Reyna | 1,077 | ~7% |
+| 5 | Marcus Lindqvist | 961 | ~7% |
+
+Tamal Saha (602 lines, ~4%) is 6th. Riobard, therealmitchconnors and Georges Varouchas follow.
+
+I changed the counting in three ways:
+- **Vendored code excluded.** `vendor/github.com/example/ansi/ansi.go` is 802 lines added under Priya Raman's name. It is a third-party library, not her code. Counted, she would rank 5th.
+- **Mechanical commits skipped.** I ignored `822af32` (the license-header bot) and `d43be5f` (the `go fix ./...` run by Dana Whitfield) so they don't take credit for lines they only touched.
+- **Marcus Lindqvist merged.** His lines appear under two emails, `<email redacted>` and `mlindqvist@corp.example`, and there is no `.mailmap`. I assumed these are the same person, which I haven't confirmed. If they are separate, he still places 5th with about 639 lines (~4%), and Tamal Saha stays 6th.
+
+Marcus's 961 lines come from two commits dated 2026-10-21: `shellcomp.go` and `shellcomp_test.go`. That is new code written the day before this check, not a long history in the repo. Check his earlier contributions before counting him as an established maintainer.
+
+Surviving lines don't reflect review work or recent activity. Eric Paris also has the most commits (103), and Tomas Aschan (64 commits) is second. Tomas doesn't make the top ten here, so his work is probably mostly small changes that were later overwritten. I can pull commit and review activity over the last two years if you want that view too.
+META cost=0.10031340000000001 ms=47128 turns=9

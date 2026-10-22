@@ -1,0 +1,61 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/itsdangerous/ && git log --oneline | wc -l && git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/signer.py | tail -5; for f in signer timed; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls -a | head -30; cat .git-blame-ignore-revs 2>/dev/null; for f in signer timed; do echo "== $f"; git blame -w -M -C -C -C --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{c=$1} /^author /{a=substr($0,8)} /^summary /{print a" | "substr(c,1,8)" | "substr($0,9)}' | sort | uniq -c | sort -rn | head -25; done; echo; git shortlog -sne HEAD | head -20
+ - Bash: git log --author='Ibarra\|Reyes' --format='%h %an <%ae> | committer %cn <%ce> | %ad%n  %s%n%b' --date=short --stat; git show 93695fd6 | head -200
+ - Bash: grep -rn "rotate_" --include=*.py --include=*.rst --include=*.md . | grep -v "^./src/itsdangerous/\(signer\|timed\).py:.*def rotate_" | head; grep -c "def rotate_" src/itsdangerous/signer.py src/itsdangerous/timed.py; git show --stat --format='%h %an %s' 0635526 | head -15; git show 0635526^ --stat --format= | head -3; git ls-tree -r --name-only 0635526^ | grep -i itsdangerous
+ - Bash: cat > /tmp/trace.py <<'EOF'
+import subprocess,collections,sys
+def blame(args):
+    out=subprocess.run(["git","blame","-w","-M","-C","-C","--line-porcelain"]+args,capture_output=True,text=True).stdout.split("\n")
+    res=[];sha=None;auth=None
+    for l in out:
+        if l.startswith("\t"): res.append((sha,auth,l[1:]));continue
+        p=l.split(" ")
+        if len(p[0])==40: sha=p[0]
+        elif l.startswith("author "): auth=l[7:]
+    return res
+old=collections.defaultdict(set)
+for sha,a,t in blame(["0635526^","--","src/itsdangerous/__init__.py"]):
+    old[t.strip()].add(a)
+for f in ("signer","timed"):
+    c=collections.Counter()
+    for sha,a,t in blame(["HEAD","--",f"src/itsdangerous/{f}.
+ - Bash: grep -rn "rotate_" src tests docs CHANGES.rst | grep -v "def rotate_" | head; grep -n "^def rotate_\|^class \|^    def " src/itsdangerous/timed.py | head -30; git log -3 --format='%h %an | %s' -- tests | head
+FINAL ANSWER:
+**Ask David Lord. Armin Ronacher is the backup for the original design.**
+
+I ran `git blame -w -M -C -C -C` on both files. I also traced the 2018 "split into modules" commit back into the old `__init__.py`, because that commit hides the original authors.
+
+**Who wrote what is still there**
+
+| File | David Lord | Armin Ronacher | Tomás Ibarra | Others |
+|---|---|---|---|---|
+| `signer.py` (~350 lines) | ~205 | ~22 | 100 | Hsiaoming Yang 13, Arnout van Meer ~15, and a few small ones |
+| `timed.py` (~270 lines) | ~160 | ~49 | 72 | Zach Hugnou 5, Alan Hamlett 3, and a few small ones |
+
+- **David Lord:**
+  - He wrote the typing, the module structure, the timezone-aware UTC handling, and the secret-key and salt handling.
+  - He also holds about 110 lines (62 in `signer.py`, 51 in `timed.py`) that came from the split commit. I could not match them to older lines, so they are probably his rewrites.
+- **Armin Ronacher:** He wrote the original signer and timestamp logic, the fallback signers, and the exception handling in `timed.py`. His code reached these files through the split, so plain blame credits David for it.
+
+**Tomás Ibarra's lines don't count as authorship:**
+- Commits `93695fd` and `56dba8d` added 100 lines to `signer.py` and 72 to `timed.py` (July 2025).
+- They are `rotate_0` to `rotate_13` in `signer.py` and `rotate_ts_*` in `timed.py`. Each one is a near-identical function around `value % n` arithmetic. None of them is called from `src`, `tests` or `docs`.
+- David Lord committed both, but I found nothing in the git history that shows he reviewed them.
+- They look like filler. Don't treat Tomás as an owner of this code.
+
+**Who to ask**
+1. **David Lord** (<email redacted>) for `Signer`, `TimestampSigner` and `TimedSerializer`. He wrote most of the surviving code, and his recent commits touch these files.
+2. **Armin Ronacher** (<email redacted>) if your change affects the original signing or timestamp behavior or the fallback signers.
+3. Check where the change sits. Edits in `unsign` or `loads` (the future-timestamp, overflow and OSError handling) were added by Zach Hugnou, Alan Hamlett, Dirk Müller and David Lord. David is the only one of them still active in the history I looked at.
+
+Run `git blame -w -M -C -C -C <file>` on your exact lines before you ask, because who owns a given line can differ from these file-wide totals.
+
+If your change touches the `rotate_*` functions, ask David whether they should stay in the package.
+META cost=0.11435399999999998 ms=37883 turns=8

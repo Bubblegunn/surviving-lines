@@ -1,0 +1,29 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib/rack/attack/store_proxy; echo ---ALL; git shortlog -sne HEAD -- lib/rack/attack/store_proxy; echo ---LAST12MO; git shortlog -sne --since="12 months ago" HEAD -- lib/rack/attack/store_proxy; echo ---RECENT; git log -n 15 --format='%h %ad %an %s' --date=short -- lib/rack/attack/store_proxy; echo ---CODEOWNERS; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Bash: git ls-files | grep -i -E 'codeowners|maintainer|contributing'; git log -n 8 --format='%h %ad %an %s' --date=short -- . ':!lib/rack/attack/store_proxy' | head -8
+FINAL ANSWER:
+No CODEOWNERS or maintainers file exists, so this comes from git history of `lib/rack/attack/store_proxy`.
+
+**Ask about the code**
+- **Gonzalo Rodriguez** has the most history there: 26 commits under `<email redacted>`, plus 2 more under a second address. They also made the latest non-bot change (`242a25f`, 2026-03-09, removed NullProxy). They also bumped the gem version to 6.8.0 and updated the CI and Appraisals files, so they look like the active maintainer.
+- **Hye-jin Park** made the recent Redis work: `RedisProxy` `multi_increment`/`ttl`/`exists?` (`7d56ade`) and the `RedisCacheStoreProxy` ttl (`17f56ae`). Ask them if your change touches Redis.
+- **Mei Tanaka** wrote the `DalliAccessors` extraction (`5160a1d`). Ask them if you touch the Dalli code.
+- **Divya Rao** added `MemoryStoreProxy` (`018baf9`). Ask them if you touch the memory store.
+
+**Reviewer**
+- Request **Gonzalo Rodriguez** as the main reviewer. They have the most context, and they are the only one of these people who also shows up in recent work outside `store_proxy`.
+- Add whoever wrote the proxy you change as a second reviewer. Use the list above.
+- `fatkodima` has 4 commits there but none in the last 12 months. I would not rely on them.
+
+**Caveats**
+- Recent history is lopsided. Mei, Divya, Hye-jin and Jaroslav appear only in the last 12 months. I can't tell from git whether they are maintainers or contributors. Several of their addresses use `example.org`, so check the maintainer list in the gem's GitHub repo before you request reviews.
+- `CONTRIBUTING.md` exists, and I didn't read it. It may name a review process.
+
+I can run `git blame` on the specific file you plan to change to get a narrower answer.
+META cost=0.0625809 ms=17835 turns=4

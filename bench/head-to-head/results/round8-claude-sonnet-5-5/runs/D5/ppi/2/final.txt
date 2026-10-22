@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser 2>&1 | head -50; git log --oneline | wc -l
+ - Bash: echo "== total"; for f in src/Parser/*.php; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR;i++){split(c[i],a," "); n=$1; printf "%s  %.1f%%\n", c[i], a[1]*100/t}; print "total lines", t}'
+echo "== per file"; for f in src/Parser/*.php; do echo "-- $f"; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3; done
+echo "== last commit per author (in src/Parser)"; git log --pretty='%an|%ad' --date=short -- src/Parser | awk -F'|' '!s[$1]++'
+FINAL ANSWER:
+Share of surviving lines in `src/Parser`, from `git blame -w -M -C`. There are 961 lines across 10 files.
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+**Per file**
+- Graham Campbell owns 8 of the 10 files. Those are `EntryParser`, `Lexer`, `Lines`, `Parser`, `ParserInterface`, `Regex`, `Value` and `Entry`. In most of them he wrote essentially all surviving lines.
+- Dmitri Volkov wrote `CommentStripper.php`. Only the StyleCI Bot lines differ.
+- Fatima Zahra wrote `EscapeDecoder.php`. Only the StyleCI Bot lines differ.
+
+**Who should review**
+- **Default reviewer: Graham Campbell.** They last committed on 2026-02-27, so they are still active. They are the only person who knows most of this code.
+- **Changes to comment handling:** add Dmitri Volkov.
+- **Changes to escape handling:** add Fatima Zahra.
+- Marta Kowalska has no surviving lines in `src/Parser`, but committed there on 2026-02-11. A second reviewer is needed, and Marta is a candidate. Their commits may have been reverts, renames or code that was later replaced, so check before relying on them.
+- Don't use the StyleCI Bot, Vance Lucas, Jonas Staudenmeir or JT Smith. They have too few lines. Jonas and JT also have no commits there since 2024 and 2022.
+
+**Bus factor:** 1. Graham Campbell alone owns more than 50% of the parser code. If they leave, most of it has no maintainer who knows it.
+
+**Limits**
+- Blame counts the author of each line's last change. A reformat or rename can move credit away from the original author. `-w -M -C` reduces this but does not remove it.
+- This counts lines, not review skill or design knowledge.
+- I did not run the commit-count analysis from the bus-factor skill. You asked about surviving code, so blame answers that question more directly.
+META cost=0.06759910000000001 ms=17533 turns=6

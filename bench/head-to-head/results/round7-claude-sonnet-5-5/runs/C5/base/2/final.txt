@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git log --format='%an' -- src/Parser | sort | uniq -c | sort -rn && echo --- && git ls-files src/Parser | while read f; do echo "== $f"; git blame -w -M -C --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: git log --format='%h %ad %an <%ae> %s' --date=short -- src/Parser/Lexer.php src/Parser/Escape.php src/Parser/Unicode src/Parser/Compat.php src/Parser/Quirks.php | head -30; echo ---; git log -3 --format='%h %ad %an %s' --date=short -- src/Parser/Lexer.php; git shortlog -sne HEAD | head
+FINAL ANSWER:
+Surviving lines in `src/Parser`, by `git blame -w -M -C`:
+
+| File | Surviving author(s) |
+|---|---|
+| `Lexer.php` | Graham Campbell, 58 of 58 lines |
+| `Escape.php` | Aiko Tanaka, 206 of 206 lines (198 as "Aiko Tanaka", 8 as "aiko tanaka", the same person under different capitalization) |
+| `Unicode/CharTable.php` | Aiko Tanaka, 431 of 431 lines |
+| `Parser.php`, `ParserInterface.php`, `EntryParser.php`, `Entry.php`, `Value.php` | Graham Campbell. `EntryParser.php` has 1 StyleCI line and `Entry.php` has 1 line from Jonas Staudenmeir. |
+| `Lines.php` | Graham Campbell (126), Vance Lucas (10), JT Smith (1) |
+| `Compat.php` | "Your Name" `<<email redacted>>`, 69 lines. This is a placeholder git identity. |
+| `Quirks.php` | "root" `<root@localhost>`, 117 lines. This is also not a real identity. |
+
+**Who to ask**
+- **`Lexer.php`:** Graham Campbell. The last change was 2026-08-24 (`301c079`, static analysis cleanup). Before that it was last touched in 2021, and the lexing logic dates from 2020.
+- **Escape handling:** Aiko Tanaka wrote all of `Escape.php` and `Unicode/CharTable.php`. Both were added on 2026-08-26 in `d08cf83`, `4b9b803` and `09f7c5c`. Graham Campbell has no lines in them.
+- **How `Lexer.php` and `Escape.php` connect:** `Lexer.php` has no lines from Aiko Tanaka. I did not check how the two files call each other. Ask Aiko Tanaka about that.
+
+**For the audit**
+- The newest code is the least reviewed: `Escape.php`, `CharTable.php`, `Compat.php` and `Quirks.php`. It was all added on 2026-08-26, most of it in one day. `Compat.php` and `Quirks.php` came from commits `b39e8d9` ("compat shims") and `7007c6e` ("fix").
+- Nobody can be asked about `Compat.php` or `Quirks.php`, because the commits have no real author. Aiko Tanaka may know where they came from. `Quirks.php` is a candidate for review because `7007c6e` has an uninformative message. I haven't read either file or the diffs yet.
+- The `Lexer.php` and `Parser.php` code is old and has stayed stable. That means it has been in use for a long time, but it is not evidence that it has been audited.
+- I did not check whether Aiko Tanaka is still active. Only the commit emails are available, and `<email redacted>` looks like a placeholder. Confirm the contact before you plan around them.
+
+I can read the `Escape.php`, `Quirks.php` and `Compat.php` diffs next and flag anything risky, if you want.
+META cost=0.05918350000000001 ms=16710 turns=4

@@ -1,0 +1,35 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL --merge-identities -- lib; echo ======; $SL -- lib
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities -- lib; echo ======; sl -- lib
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; ls lib; sl -- lib | head -30; git show --stat fcd2b56 | head -20
+FINAL ANSWER:
+**Bus factor of `lib/`: 1.** This is line-based. It is the smallest number of authors whose surviving lines reach 50% of the lines counted. `lib/` has one file, `lib/index.js`, with 238 surviving lines. The figures use `git blame -w -M -C` at HEAD, and the bus factor is for `lib/` only.
+
+**Who holds the lines**
+- Troy Goode holds 159 lines (66.8%), counting two addresses as one person. This merge is a guess from names and addresses. Unmerged, `<email redacted>` holds 147 lines (61.8%) and `troy@laptop.example` holds 12 (5.0%). The merge rests on the identical name, and I haven't written it to `.mailmap`.
+- Douglas Christopher Wilson holds 22 lines (9.2%).
+- alex94puchades holds 16 lines (6.7%). The other address under that name (Alejandro Caravaca Puchades, same email) is probably the same person. Merging would raise the count a little.
+- Raymond Feng holds 7 lines (2.9%).
+- LuisEGR and max.laverse hold 6 lines each (2.5%).
+- The remaining 17 authors hold 3 lines or fewer each.
+
+**How many people need to leave**
+- Troy alone holds more than 50%, so the answer is one person. Even with the two addresses counted separately, `<email redacted>` is above 50% (61.8%).
+- Reaching 80% of the lines takes 3 authors with the merge, or 4 without it. Past Troy the code is spread thinly. The next author holds only 9.2%, so nobody else knows much of it.
+- The bus factor only measures how concentrated the surviving lines are. It doesn't measure who understands the code.
+
+**What was left out or adjusted**
+- Commit 62628c0 ("style: reformat js with 4-space indent and double quotes", by Fiona Formatter) only changed whitespace and quotes. The tool set it aside, so it isn't in the table.
+- Without that correction, Fiona Formatter would hold 32 lines (13.4%). Troy would hold 138 (58.0%) with the merge, or 126 (52.9%) unmerged. The bus factor stays 1 either way.
+- The tool checked for mechanical rewrites and set aside 62628c0.
+- It flagged fcd2b56 (Troy's 2015 "switch to ESLint; clean up") as probably mechanical and did not set it aside. I ran `git show --stat` on it. It touched `lib/index.js` (30 changed lines) along with tests and `package.json`. It is a cleanup, not a pure reformat, and 6 of its lines survive. I kept it in the counts.
+- Bots were excluded from the counts. No lockfiles, generated files or vendored code are in `lib/`.
+
+**What the numbers can't show:** code quality, review work, design discussions or deleted code. Someone who reviewed or discussed the code can still understand it without owning any lines.
+META cost=0.0727234 ms=21338 turns=6

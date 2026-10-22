@@ -1,0 +1,47 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-1/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-1/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-1/repo"}
+ - Bash: git show -s --format='%h %an <%ae> %ad %s' 62628c0 && for f in lib/index.js test/test.js; do echo "== $f (ignoring 62628c0)"; git blame -w --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+Bus factor is **2**: Douglas Christopher Wilson and Troy Goode together wrote 73% of the non-merge commits. Wilson wrote 143 of 326 (43.9%) and Goode wrote 95 (29.1%). No single person owns a whole directory, but a few areas depend mostly on one person.
+
+**Ownership by directory (share of commits)**
+
+| Directory | Top author | Share |
+|---|---|---|
+| root | Wilson | 51% |
+| `lib` | Goode | 50% |
+| `test` | Goode | 44% |
+| `.github` | Wilson | 37% |
+
+The tool's silo rule is more than 80% of a directory's commits by one author, with at least 3 commits. No directory meets it.
+
+**Blame on source files**
+
+The raw blame result is misleading. One reformat commit, `62628c0` ("style: reformat js with 4-space indent and double quotes", 2026-04-12), is credited to "Fiona Formatter", which looks like a formatter identity. That commit makes it the main owner of `lib/index.js` and `test/test.js`. I re-ran blame ignoring that commit:
+- **`lib/index.js`:** Troy Goode owns about 159 of 238 lines (67%). Wilson owns 22, Alejandro Caravaca Puchades 12, and Raymond Feng 7. This is the closest thing to a single-person dependency in the core code.
+- **`test/test.js`:** Wilson owns 365 of 731 lines (50%) and Goode owns 253 (35%). It is split between two people.
+
+**Single-owner files outside the core code**
+- **`test/vary.js`:** 100% Troy Goode.
+- **`test/issue-2.js`:** 83% Troy Goode.
+- **Workflows in `.github`:**
+  - `scorecard.yml`: 93% Íñigo Marquínez Prado.
+  - `codeql.yml`: 95% Sebastian Beltran.
+  - `dependabot.yml`: 100% Ulises Gascón.
+- **Wilson's files:** `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, and most of `HISTORY.md`, `LICENSE`, `package.json` and `ci.yml`. His last commit was 2021-09-07, so nobody has maintained these recently.
+
+**Caveats**
+- The tool flags all 18 files as orphaned. That finding carries little information. The cutoff was 2026-04-22 and the last commit in the repo is 2026-04-12, so every author counts as inactive.
+- Wilson is the only author who is clearly inactive for a long time (since 2021) and still owns many files.
+- Goode last committed on 2026-04-10, and `dependabot[bot]` is the only other frequent contributor.
+- The counts use commits and blame lines, not review or domain knowledge. They may understate people who reviewed or merged pull requests.
+META cost=0.0823792 ms=18559 turns=7

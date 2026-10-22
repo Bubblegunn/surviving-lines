@@ -1,0 +1,73 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__file_history,mcp__git-historian__blame_summary,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-3/repo", "file": "lib/index.js", "limit": 200}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-3/repo", "file": "lib/index.js"}
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git shortlog -sn --no-merges -- lib/index.js; git show --stat b2005d9 | head -20
+FINAL ANSWER:
+**Short answer:** Troy Goode created `lib/index.js` and still owns most of it. The plain `blame` result is misleading. It credits "Fiona Formatter" with 89.9% of lines, but that is only the 2026-04-12 reformat commit (`62628c0`, 214 lines changed, 4-space indent and double quotes).
+
+I re-ran `git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9`. That ignores the reformat and the 2026-04-10 `lib: annotate handlers` commit (`b2005d9`, 12 lines, also by Troy Goode). It gives the ownership below.
+
+**Who is in the file today (238 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 157 | 66% |
+| Douglas Christopher Wilson | 22 | 9% |
+| Alejandro Caravaca Puchades | 12 | 5% |
+| Raymond Feng | 9 | 4% |
+| max.laverse | 6 | 3% |
+| LuisEGR | 6 | 3% |
+| alex94puchades | 4 | 2% |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each | 4% combined |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each | 3% combined |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each | 2% combined |
+
+The file has 62 commits and 18 authors with surviving lines.
+
+**How it developed**
+
+- **2013-01 (Troy Goode):** `first commit` added 78 lines. In the following days he made header lookup case-insensitive, made `origin: false` disable CORS, and got the file past JSLint. He added pause/resume of the request in February.
+- **2013-03 to 2013-10 (Troy Goode, Damien Klinnert, Simon Mansfield, Eric di Domenico, Mathias Buus):**
+  - Allow-Methods is now sent only on OPTIONS requests.
+  - `origin` was checked early, and the credentials header was moved.
+  - `origin` can now be a callback (Eric di Domenico).
+  - The `wrapping up` commit (`4f13c63`, 147 lines added, 102 deleted) is Troy Goode's biggest rewrite.
+  - Mathias Buus's commit removed the Express-only request/response methods, and 2.1.0 added Connect support.
+- **2014 (Troy Goode, Typicode, Alberto Leal, Shane Tomlinson, Igor Soarez):**
+  - Expose-Headers support.
+  - `PATCH` added to the default methods.
+  - Method names are uppercased before comparison.
+  - Express 4 support in 2.3.2, and the 2.4.0 pause/resume cleanup.
+  - `Vary: Origin` for specific origins (Igor Soarez), then the switch to the `vary` module.
+- **2015 (Alejandro Caravaca Puchades, max.laverse, Raymond Feng, DracoBlue, jordandenison, Eran Tiktin):**
+  - Alejandro Caravaca Puchades, who also committed as `alex94puchades`, added regexp and array support for `origin`.
+  - max.laverse added passing preflight to `next()`.
+  - Raymond Feng's `applyHeaders` optimization removed a closure.
+  - DracoBlue added exposed headers on OPTIONS.
+  - Troy Goode moved the file to ESLint.
+- **2016 to 2018 (Douglas Christopher Wilson):**
+  - Wilson maintained the file, and 22 of his lines survive.
+  - He fixed `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders`.
+  - He fixed a crash when the options delegate had no `methods`.
+  - Saad Tazi fixed a crash on frozen options.
+  - Tomek Kopczuk's `Vary: Origin` for regexps change is now fully overwritten by later edits.
+  - Benjamin Eidelman added the Safari preflight workaround.
+  - Tom Arad fixed `maxAge: 0`.
+- **2021 to 2026:**
+  - LuisEGR removed unused function parameters in 2021, and 6 of those lines survive.
+  - Troy Goode returned in April 2026 for `lib: annotate handlers`, then `Fiona Formatter` reformatted the whole file.
+
+**Caveats**
+
+- All of the 2013 to 2018 history is real maintainer work. The 2026 commits (`b2005d9` and `62628c0`) come from a different pattern: one annotate commit and one repo-wide style commit.
+- `blame_summary` counts only surviving lines. Contributors whose code was later replaced do not appear, for example Tomek Kopczuk, Damien Klinnert, DracoBlue and jordandenison.
+- Run `blame` with `--ignore-rev 62628c0` for ownership questions. Add `-w` and `-M` too, so the reformat does not hide the true authors.
+- The name `Fiona Formatter` appears only on the reformat commit.
+META cost=0.06314890000000001 ms=30492 turns=6

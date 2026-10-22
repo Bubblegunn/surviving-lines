@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git shortlog -sne HEAD -- lib && echo --- && git log --format='%an' -- lib | wc -l && echo --- && for f in lib/*; do echo "$f: $(git log --format='%an' -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done
+ - Bash: wc -l lib/index.js && git blame -w -C -M --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8 && echo --- && git blame -w -C -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8 && echo --- && git log --format='%ad %an' --date=short -- lib | head -8 && git log --since='2 years ago' --format='%an' -- lib | sort | uniq -c
+FINAL ANSWER:
+**Bus factor: 1.** `lib/` has one file, `lib/index.js` (238 lines), and Troy Goode wrote most of it.
+
+Blame ignoring the formatting commit `62628c0`:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 159 | 67% |
+| Douglas Christopher Wilson | 22 | 9% |
+| Alejandro Caravaca Puchades | 12 | 5% |
+| Raymond Feng | 7 | 3% |
+| LuisEGR, max.laverse, alex94puchades, others | about 6 or fewer each | rest |
+
+- **Authorship:** Troy has 33 of the 67 commits that touch `lib/` (34 counting a second identity, `troy@laptop.example`). If Troy leaves, about two thirds of the code has no author left. No one else owns more than 9%.
+- **Recent activity:** In the last 2 years only two commits touched `lib/`. One is Troy's (2026-04-10). The other is a reformat by "Fiona Formatter" (2026-04-12), which only changed style. The last substantive change from anyone else was LuisEGR in 2021-07.
+- **Active contributors:** Practically one person is maintaining the code. Doug Wilson's last change was in 2017.
+
+Blame measures authorship, not understanding, and it can't show who still knows the code. It also ignores readers and reviewers. The file is small, so someone could learn it quickly. The risk is the lack of anyone with context, not the code's size.
+
+To raise the bus factor, get a second maintainer to review or make real changes in `lib/index.js`. Short docs on design decisions would also help.
+META cost=0.0554202 ms=15662 turns=4

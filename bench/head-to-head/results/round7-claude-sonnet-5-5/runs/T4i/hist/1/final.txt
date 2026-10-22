@@ -1,0 +1,31 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history,mcp__git-historian__bus_factor", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-1/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-1/repo", "file": "lib/index.js", "limit": 30}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4i-hist-1/repo", "path": "lib"}
+FINAL ANSWER:
+No one active owns `lib/index.js`. The tool flags it as orphaned: every author with lines in it has had no commit since 2026-04-22.
+
+**Don't trust the blame numbers.** Fiona Formatter "owns" 89.9% of the lines, but only because of the `62628c0` reformat (4-space indent, double quotes). That commit touched 214 lines and changed no logic. Troy Goode's `b2005d9` ("annotate handlers") also touched many lines. Judge ownership from the semantic commits in the file history, not from blame.
+
+**Who knows the logic:**
+- **Troy Goode** is the original author (2013) and the main maintainer through 2016. His latest commit is `b2005d9` on 2026-04-10, so he is the closest to a current owner. He is flagged inactive only because that commit is just over 6 months old.
+- **Douglas Christopher Wilson** wrote the 2017 `Vary` header fixes, the options-delegate fix and the frozen-options handling. These are the subtle correctness parts of the file. His last commit was in 2021.
+- **Alejandro Caravaca Puchades** wrote the regex and array `origin` matching in 2015. His lines have since been rewritten.
+
+**Suggestion:**
+1. Ask Troy Goode first. He is the only one with a commit this year.
+2. If you can't reach Troy, pick whoever else currently maintains the repo. Don't pick Fiona. Her only change was formatting.
+3. Whoever reviews should check three areas, which have had real bugs before:
+   - `Vary` header handling
+   - dynamic `origin` and `allowedHeaders`
+   - preflight behavior, including the Safari workaround
+
+I can't see current repo access or CODEOWNERS from git history. If the project has a CODEOWNERS file or a list of maintainers, that overrides this.
+META cost=0.0678889 ms=16629 turns=6

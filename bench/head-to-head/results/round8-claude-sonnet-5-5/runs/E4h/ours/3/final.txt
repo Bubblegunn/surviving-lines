@@ -1,0 +1,53 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners --merge-identities
+FINAL ANSWER:
+**Suggested CODEOWNERS** (nobody gets a line for `.github/` or the root files):
+
+```
+/lib/   <email redacted>
+/test/  <email redacted>
+```
+
+| Path | Top holder by surviving lines | Owner? |
+|---|---|---|
+| `/lib/` | Troy Goode, 159 of 238 lines (66.8%) | Yes. |
+| `/test/` | Troy Goode, 517 of 966 lines (53.5%) | Yes, but close to the threshold. |
+| `/.github/` | Douglas Christopher Wilson, 118 of 366 lines (32.2%) | No. Nobody holds half. |
+| Root files | Troy Goode 134 of 415 lines (32.3%), Douglas Christopher Wilson 115 (27.7%) | No. Nobody holds half. I left out an owner line, because a root pattern would also match every directory. |
+
+**Bus factor** is the smallest number of authors whose surviving lines together reach 50% of the lines counted.
+- `lib`: 1 (Troy Goode alone).
+- `test`: 1 (Troy Goode alone).
+- `.github`: 2 (Wilson and Íñigo Marquínez Prado, 58.2%).
+- Root files: 2 (Goode and Wilson, 60.0%).
+- Whole repository: 2 (Goode and Wilson, 58.9% of 1,985 lines, without the reformat correction). With the correction the tool prints the same pair and did not give a separate figure.
+- The "to reach 80%" figure was not in this output.
+
+**Identity merge (a guess):**
+- I counted Troy Goode's two addresses as one person because the name is identical: `<email redacted>` (762 lines, 93 commits) and `troy@laptop.example` (48 lines, 2 commits).
+- The merge was done in memory only. I wrote no `.mailmap`, and the merge stays a guess until you confirm it.
+- The tool gave no per-directory split for the two addresses.
+- If the laptop address is a different person, `/test/` could fall to about 48.5% (469 lines). That is below half, so `/test/` would then have no owner.
+- `/lib/` would stay above about 46.6% in the worst case, which is below half too. The two addresses' lines may sit anywhere in the repository, so this is a bound, not a measurement.
+- Alejandro Caravaca Puchades and alex94puchades (same address) are not merged in `lib`. That does not change any owner.
+
+**Left out and scope:**
+- The reformat commit `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter, 291 lines) is ignored. Without that correction, Troy Goode would hold 36.0% of the repository's lines. I did not check the per-directory effect of that.
+- One bot identity is excluded (10 lines, 11 commits).
+- The tool attributed 1,985 of 1,995 lines in all 18 files, with no sampling. It used `git blame -w -M -C`, and the output named no `copy detection` note.
+- The tool checked for mechanical rewrites: it examined 139 commits and set aside 1 (`62628c0`). It kept 5 that look mechanical:
+  - `739dc11`, "docs: reformat license" (Wilson, 17 lines).
+  - `fcd2b56`, "issue #42: (WIP) switch to ESLint; clean up" (Goode, 16 lines).
+  - `00d6eec`, "build: use yaml eslint configuration" (Wilson, 9 lines).
+  - `344ce1e`, "build: <email redacted>" (Wilson, 1 line).
+  - `9c2b59d`, "build: <email redacted>" (Wilson, 1 line).
+- I did not inspect the five kept commits with `git show --stat`. `fcd2b56` is Goode's, so it could matter for the `/test/` margin. If you want it excluded, I can re-run with `--ignore-rev`.
+
+Surviving lines show who wrote the code that is left, not who should review changes to it. Review these lines before you commit them.
+META cost=0.0669037 ms=19275 turns=4

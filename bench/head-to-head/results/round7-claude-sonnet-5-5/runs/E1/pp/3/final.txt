@@ -1,0 +1,57 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files | grep -vE '^(node_modules|\.git)/' | head -80; echo ---; git rev-list --count HEAD; git log -1 --format=%ad
+ - Bash: for f in $(git ls-files | grep -vE '^\.git/'); do echo "== $f ($(git log --all --no-merges --oneline -- $f | wc -l) commits, $(wc -l <$f) lines)"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; done; echo; echo "-- last commit per author"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++' | head -6; echo "-- blame lib/index.js"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo "-- blame test/*.js"; git blame --line-porcelain test/*.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo "-- lib commits since 2y"; git log --no-merges --since="2 year
+ - Bash: git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++' | grep -E "Douglas|Ulises|Troy|Alejandro"; git log --no-merges --since="1 year ago" --pretty=format:"%an" | sort | uniq -c | sort -rn | head -8; git log --no-merges --since="1 year ago" --pretty=format:"%h %an %s" -- lib test | head; git blame -w -C -C -M --line-porcelain 62628c0^ -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -4
+FINAL ANSWER:
+Bus factor: **2** for the project as a whole. Only **Troy Goode** is currently active on the core code. Douglas Christopher Wilson owns the most history but has been inactive since 2021-09-07.
+
+Scope: 354 commits, 15 tracked files, history through 2026-04-12. The repo is small, so I read per-file history directly instead of sampling.
+
+## Contributors
+
+| Contributor | Commits (non-merge) | Last commit | Status |
+|---|---|---|---|
+| Douglas Christopher Wilson | 143 | 2021-09-07 | Inactive (about 5 years) |
+| Troy Goode | 95 | 2026-04-10 | Active |
+| dependabot[bot] | 11 | 2026-03-02 | Bot |
+| Everyone else | 1–4 each | n/a | Occasional |
+
+Troy Goode and Douglas Christopher Wilson account for about 238 of the 354 commits. Nobody else has more than 4.
+
+## Single-owner risk
+
+| File | Top contributor | Share of commits | Risk |
+|---|---|---|---|
+| `lib/index.js` (the only source file, 238 lines) | Troy Goode | 29 of 62 (47%) | **High**. Everything depends on it, and the next-largest contributors have 4 commits each. |
+| `test/vary.js` | Troy Goode | 1 of 1 | Medium |
+| `test/issue-2.js` | Troy Goode | 10 of 12 (83%) | Medium |
+| `test/example-app.js` | Troy Goode | 10 of 13 (77%) | Medium |
+| `test/test.js` (731 lines, main suite) | Douglas Christopher Wilson | 8 of 11 (73%) | **High**. The owner is inactive. |
+| `package.json` | Douglas Christopher Wilson | 68 of 113 (60%) | Medium. Troy Goode has 37 commits, so two people know it. |
+| `.github/workflows/ci.yml` | Douglas Christopher Wilson | 10 of 16 (63%) | Low. Ulises Gascón and Ignacio Mangas have also touched it. |
+| `README.md` | Troy Goode | 29 of 66 (44%) | Low |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js` | Douglas Christopher Wilson | 1 of 1 | Low (tiny config files) |
+| `.github/dependabot.yml` | Ulises Gascón | 1 of 1 | Low |
+| `.github/workflows/codeql.yml`, `scorecard.yml` | dependabot[bot] | 4 of 5 and 7 of 9 | Low. Updates are automated, and no person owns them. |
+
+## Findings
+
+- **Active code knowledge depends on Troy Goode.** In the last year they made 2 of the 4 non-bot commits that touched `lib/` or `test/`. The other two came from Fiona Formatter (a formatting-only commit) and Phillip Barta/Vansh Sharma/Jon Church-style one-off contributions, none of whom own any file.
+- **Douglas Christopher Wilson is a historical single point of knowledge.** They own `test/test.js`, most of `package.json` history and the CI setup. The history is still readable, but nobody active has deep context there.
+- **`lib/index.js` has real contributors beyond these two.** Before the reformat commit, `git blame` shows Troy Goode 160 lines, Douglas Christopher Wilson 22, Alejandro Caravaca Puchades 12 and Raymond Feng 7. So the implementation is mostly Troy Goode's, with a thin tail of other authors.
+- **Plain `git blame` is misleading right now.** The latest commit (`62628c0`, Fiona Formatter, a 4-space/double-quote reformat) shows 214 of 238 lines in `lib/index.js` as Fiona Formatter's. Ignore that attribution. To fix it, add the commit to `.git-blame-ignore-revs` and run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+- **Limits of this analysis.** I used commit counts and blame, not review activity, so people who reviewed code without committing are not counted. I did not run the import-dependents check, because the repo has one source file and everything depends on it. Contributor names may be split across aliases. For example, I saw "Alejandro Caravaca Puchades", "Alejandro García Fernández" and "Alejandro Oviedo", which may or may not be the same person. I did not merge them.
+
+## Recommendations
+
+1. Immediate: get a second active maintainer to review changes to `lib/index.js`. Troy Goode is the only current owner of the core code.
+2. Short term: have someone active read through `test/test.js` and own it. It is the largest file and its main author is gone.
+3. Ongoing: add `.git-blame-ignore-revs` for `62628c0` so ownership data stays usable. Document release and CI steps, because Douglas Christopher Wilson set up most of that and has left.
+META cost=0.0627825 ms=47384 turns=7

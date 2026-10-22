@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"<root>")}' | sort | uniq -c; git shortlog -sne HEAD | head -30; git log --format='%h %an <%ae> %s' | grep -iE 'format|style|lint|prettier|reindent|whitespace' | head -20; ls -a; git rev-list --count HEAD
+ - Bash: git ls-files; echo; for f in $(git ls-files); do case $f in *.png|*.ico) continue;; esac; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{c[f"\t"a"\t"m]++} END{for(k in c)print c[k]"\t"k}'; done | sort -t$'\t' -k2,2 -k1,1nr > /tmp/blame.tsv; wc -l /tmp/blame.tsv; git log --format='%h %an <%ae> %s' -8 -- lib
+ - Bash: cd /tmp && awk -F'\t' '{f=$2; z=(f ~ /^lib\//)?"lib":(f ~ /^test\//)?"test":(f ~ /^\.github\//)?".github":"root"; a=$3; if($4 ~ /bot\]/||a ~ /\[bot\]/)a="BOT"; n[z" "a]+=$1; t[z]+=$1; zz[z]=1} END{for(k in n){split(k,p," ");print k"\t"n[k]"\t"t[p[1]]}}' blame.tsv | sort -k1,1 -t$'\t' ; echo ---; awk -F'\t' '{print $2"\t"$3"\t"$1}' blame.tsv | grep -E '^(HISTORY|package|README|LICENSE|\.eslint|\.gitignore|\.github)' | sort | head -60
+ - Bash: cd /tmp && awk -F'\t' '{f=$2; z=(f ~ /^lib\//)?"lib":(f ~ /^test\//)?"test":(f ~ /^\.github\//)?".github":"root"; a=$3; m=$4; if(a ~ /bot\]/||m ~ /bot\]/)next; if(m ~ /troy/)a="Troy Goode"; n[z"|"a]+=$1; t[z]+=$1} END{for(k in n){split(k,p,"|");printf "%s\t%d\t%d\t%.0f%%\n",k,n[k],t[p[1]],100*n[k]/t[p[1]]}}' blame.tsv | sort -t$'\t' -k1,1 -k2,2nr | awk -F'\t' '{c[substr($1,1,index($1,"|")-1)]++; if(c[substr($1,1,index($1,"|")-1)]<=4)print}'; echo; grep -c bot blame.tsv; awk -F'\t' '$2 ~ /^(package|HISTORY|README|LICENSE|\.eslintrc|\.gitignore)/{print $2,$3,$1}' blame.tsv | sort -k1,1 | head -0; cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-bf-2/repo; git ls-files lib | xargs g
+ - Bash: cd /tmp && wc -l blame.tsv; head -5 blame.tsv | cat -A | cut -c1-150; grep -i -E 'fiona|bot' blame.tsv
+ - Bash: cd /tmp && awk -F'\t' '{f=$1; z=(f ~ /^lib\//)?"lib":(f ~ /^test\//)?"test":(f ~ /^\.github\//)?".github":"root"; a=$2; m=$3; if(a ~ /bot\]/)next; if(m ~ /troy/)a="Troy Goode"; n[z"|"a]++; t[z]++} END{for(k in n){split(k,p,"|");printf "%s\t%d/%d\t%.0f%%\n",k,n[k],t[p[1]],100*n[k]/t[p[1]]}}' blame.tsv | sort -t'|' -k1,1 | sort -t$'\t' -k1,1 -s | awk -F'|' '{print}' | sort -t'|' -k1,1 -s | awk -F'\t' '{split($1,p,"|"); if(++c[p[1]]<=100 && $3+0>=15)print}'; echo; awk -F'\t' '$1!~/^(lib|test|\.github)\//' blame.tsv | cut -f1,2 | sort | uniq -c | sort -k2,2 -k1,1nr | head -30
+ - Bash: wc -l lib/index.js; echo A; git blame -w --ignore-rev 62628c0 -e lib/index.js | grep -o '<[^>]*>' | sort | uniq -c | sort -nr | head -5; echo B; git blame -e lib/index.js | grep -o '<[^>]*>' | sort | uniq -c | sort -nr | head -4; git show --stat 62628c0 | tail -12
+FINAL ANSWER:
+Only `lib` and `test` have an owner. `.github` and the root files have none.
+
+These shares come from `git blame` on the current files. I skipped the formatting commit `62628c0` (Fiona Formatter), which had rewritten 214 of the 238 lines in `lib/index.js`. I left out dependabot and counted Troy Goode's two emails (`<email redacted>` and `troy@laptop.example`) as one person. I ran `git blame` directly instead of the skill's `ownership.mjs`, because that script scores decayed commit weight, not surviving lines.
+
+| Path | Top person | Surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 (67%) | yes |
+| `test/` | Troy Goode | 517/966 (54%) | yes |
+| `.github/` | Douglas Christopher Wilson | 118/366 (32%) | no |
+| root files | Troy Goode | 134/415 (32%) | no |
+
+- **`.github/`:** Wilson has 32%, Íñigo Marquínez Prado 26% and Sebastian Beltran 17%.
+- **Root files:** Troy Goode has 32%, Wilson 28% and Jon Church 17%. Per file, Troy Goode holds `README.md` at 116 of about 270 lines, which is under half. Wilson holds `HISTORY.md` at 50 of 64 lines and `.eslintrc.yml` at 7 of 7.
+
+Suggested CODEOWNERS. I didn't look up GitHub logins for these names (`--no-github`), so replace the placeholder with the real handle:
+
+```
+# Last match wins. Replace @troygoode with Troy Goode's actual GitHub login.
+/lib/   @troygoode
+/test/  @troygoode
+# .github/ and root files: no one holds half the lines, so no owner is named.
+```
+
+- **Inactive authors:** I did not check whether Troy Goode is still active. Most of the surviving lines come from older commits, so confirm that before using these rules.
+- **`test/` margin:** The 54% is close to the cutoff, so a few edits could change it.
+- **Not written:** I didn't write a CODEOWNERS file.
+META cost=0.12394679999999998 ms=42996 turns=10

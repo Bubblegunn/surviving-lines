@@ -1,0 +1,51 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-3/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-3/repo"}
+ - Bash: git log -3 --format='%h %an <%ae> %ad %s' && git show --stat --format= 62628c0 | tail -8 && cat .mailmap 2>/dev/null; for f in lib/index.js test/test.js; do echo $f; git blame -w -C -C -M --ignore-rev 62628c0 --line-porcelain $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+Bus factor is low, but a raw blame run points at the wrong person for the core code, so I corrected for that.
+
+**Raw numbers**
+- 326 non-merge commits, 64 authors, 2013-01-30 to 2026-04-12.
+- Global bus factor is **2**. Douglas Christopher Wilson has 143 commits (43.9%) and Troy Goode has 95 (29.1%). Together that is 73%.
+- No directory is a formal silo (no directory where one author made more than 80% of the commits). The closest are `lib/` and `test/`, where Troy Goode has 50% and 44%.
+
+**Blame distortion: "Fiona Formatter"**
+- The `knowledge_risk` tool says Fiona Formatter owns 50.9% of current lines. That is wrong. Commit `62628c0` (2026-04-12, "reformat js with 4-space indent and double quotes") rewrote 1016 lines in four files, so blame credits all of them to Fiona.
+- I re-ran blame ignoring that commit, with whitespace and move detection. The real ownership is:
+  - `lib/index.js`: Troy Goode 159 lines, Douglas Wilson 22, Alejandro Caravaca Puchades 12, Raymond Feng 7.
+  - `test/test.js`: Douglas Wilson 339, Troy Goode 317, Alejandro Caravaca Puchades 18, Eric di Domenico 14.
+- I only re-checked these two files. I did not re-check `test/example-app.js` or `test/error-response.js`, which Fiona also shows as owner.
+
+**Single-contributor dependencies**
+
+| Area | Dependent on | Basis |
+|---|---|---|
+| `lib/index.js` (core library, 238 lines) | Troy Goode | About 67% of lines after ignoring the reformat; 50% of `lib/` commits |
+| `test/test.js` | Douglas Wilson and Troy Goode | About 47% and 43%, so shared between two people |
+| `test/vary.js`, `test/issue-2.js` | Troy Goode | 100% and 83% |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, `.gitignore`, `LICENSE`, `HISTORY.md` | Douglas Wilson | 78–100%, last touched 2021-09-07 |
+| `.github/workflows/scorecard.yml` | Íñigo Marquínez Prado | 93%, last commit 2024-05-14 |
+| `.github/workflows/codeql.yml` | Sebastian Beltran | 95%, last commit 2025-07-23 |
+| `.github/dependabot.yml` | Ulises Gascón | 100% |
+| `.github/workflows/ci.yml` | Douglas Wilson, 49% | Only 3 owners, and all are inactive |
+
+**Activity**
+- The tool flags all 18 files as orphaned. That follows from its rule: every author's last commit is before 2026-04-22, six months before today (2026-10-22). Even the most recent commits (April 2026) now count as inactive.
+- Douglas Wilson has been inactive in the repo longest, with no commit since 2021-09-07. That includes `ci.yml` and `package.json`, where he is the largest owner.
+- Recent activity is low: 4 commits in 2026-04 and none in 2026-02 or 2025-08 through 2025-10.
+
+**Who**
+- The main person to worry about is **Troy Goode** for the core code (`lib/index.js`) and recent tests. He is the only author who is both a top owner and active recently (last commit 2026-04-10).
+- **Douglas Christopher Wilson** is the second key person. He holds the history of the config, CI and release files, but has not committed since 2021.
+
+**Caveat:** commit counts are not the same as expertise, and author names come from `.mailmap`. The 64 authors include dependabot and many one-off contributors.
+META cost=0.0861092 ms=28980 turns=7

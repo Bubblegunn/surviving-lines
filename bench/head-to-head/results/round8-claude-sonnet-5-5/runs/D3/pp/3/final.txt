@@ -1,0 +1,24 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy; echo ---; git shortlog -sne HEAD -- lib/rack/attack/store_proxy; echo ---; git log --since=18.months --format='%an' -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn; echo ---; git log -8 --format='%h %ad %an %s' --date=short -- lib/rack/attack/store_proxy; ls .github CODEOWNERS 2>&1 | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+FINAL ANSWER:
+No CODEOWNERS file exists, so this comes from git history only. Git shows who touched the code, not who is actually responsible for it. Confirm with the maintainers.
+
+**Ask about the code**
+- **Gonzalo Rodriguez**: the top historical contributor to `lib/rack/attack/store_proxy`, with 28 commits across two identities. They also made the latest hand-written change there (`242a25f`, removing `NullProxy`, 2026-03-09).
+- **Hye-jin Park**: the most active recently. They wrote the Redis changes (`17f56ae` adding ttl to `RedisCacheStoreProxy`, and `7d56ade` adding `multi_increment`, `ttl` and `exists?` to `RedisProxy`).
+- **Mei Tanaka**: wrote `5160a1d`, which extracted `DalliAccessors`. Ask them if you touch the Dalli proxies.
+- **Divya Rao**: added `MemoryStoreProxy` (`018baf9`). Ask them if you touch the memory store.
+
+**Reviewers**
+- **Gonzalo Rodriguez**: best overall fit.
+- **Hye-jin Park**: add them as a second reviewer. They know the recent Redis and cache-store changes.
+- Add Mei Tanaka or Divya Rao if your PR changes the Dalli or memory store code.
+
+I didn't check whether these people are still active on the project. Check that before you request reviews.
+META cost=0.05332579999999999 ms=12838 turns=3

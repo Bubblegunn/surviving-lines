@@ -1,0 +1,48 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/ and test/ ownership, share of surviving lines"}
+ - Bash: for d in lib test; do echo "== $d"; git ls-files "$d" | while read -r f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{for(i=1;i<=NR&&i<=8;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/t} print "total lines", t}'; done; git log -1 --format=%cd; ls; cat .git-blame-ignore-revs | head
+ - Bash: for d in lib test; do echo "== $d"; git ls-files "$d" | while read -r f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{for(i=1;i<=4;i++){split(c[i],a," "); printf "%s  %.1f%%\n", c[i], a[1]*100/t} print "total", t}'; done; echo; for n in "José Valim" "Kaito Mori" "Rafael Mendonça França" "Carlos Antonio da Silva"; do echo "$n: $(git log --author="$n" -1 --format=%cd --date=short)"; done
+FINAL ANSWER:
+**Short answer:** For `lib/`, ask Kaito Mori. José Valim wrote most of it, but his last commit here was 2015-07-17. `test/` has the same top author but a different second tier.
+
+Shares are of lines still alive in HEAD, from `git blame -w -M -C` with `.git-blame-ignore-revs` applied. Each directory is 100% of its own lines.
+
+**`lib/` (1,496 lines)**
+
+| Author | Share | Last commit |
+|---|---|---|
+| José Valim | 56.7% | 2015-07-17 |
+| Kaito Mori | 17.0% | 2026-10-10 |
+| Weblate (translation bot) | 5.3% | n/a |
+| Rafael Mendonça França | 3.8% | 2026-08-27 |
+| Others (Vestimir Markov, Carlos Antonio da Silva, Jan De Poorter, Lucas Mazza, …) | about 17% | not checked |
+
+**`test/` (1,853 lines)**
+
+| Author | Share | Last commit |
+|---|---|---|
+| José Valim | 57.5% | 2015-07-17 |
+| Rafael Mendonça França | 9.8% | 2026-08-27 |
+| Kaito Mori | 8.6% | 2026-10-10 |
+| Carlos Antonio da Silva | 6.4% | 2026-10-10 |
+| Others (Lucas Mazza, Jan De Poorter, Nando Vieira, …) | about 18% | not checked |
+
+**Is `test/` owned by the same people?**
+- **Same top author:** José Valim owns about 57% of both directories.
+- **Different second tier:**
+  - Kaito Mori is clearly second in `lib/` (17%), but only third in `test/` (8.6%).
+  - Rafael Mendonça França and Carlos Antonio da Silva are bigger in `test/`.
+  - Rafael is the best fit if you want someone who knows both directories and has committed recently.
+
+**Bus factor:** about 1 by this measure. Valim's lines alone are more than half of each directory, and he hasn't committed in over 10 years. The active maintainers are Kaito Mori, Carlos Antonio da Silva and Rafael Mendonça França, and each holds only a small share of the lines. That lowers the risk for new changes but not for understanding the original design.
+
+**Caveats:**
+- The rubocop reformat commit (46fafb7) is in the ignore file, so it doesn't hide the original authors.
+- Blame follows moves and copies within the repo (`-M -C`). Author names are matched as written, so one person with two name spellings would be split.
+- I didn't run the skill's per-file importance cross-check or its agent step, because you asked about line shares.
+META cost=0.06287580000000001 ms=16782 turns=5

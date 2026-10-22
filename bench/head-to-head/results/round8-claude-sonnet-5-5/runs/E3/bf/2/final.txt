@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author /$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; split($0,a,"\t"); ext=substr(a[1],2); if(!(ext in s)){s[ext]=1; print ext"\t"c"\t"a[2]}}' ; echo ---; git ls-files | wc -l
+FINAL ANSWER:
+Her dosya türünde en çok yaşayan satıra sahip kişi (`git blame -w`, 18 izlenen dosya):
+
+| Uzantı | En çok satır | Satır |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| uzantısız (LICENSE vb.) | Douglas Christopher Wilson | 17 |
+
+- **`.js`:** Son commit (`62628c0`, 4 boşluk ve çift tırnak reformat) tırnak değişikliği yüzünden bazı satırları yeniden sahiplendi. `-w` yalnızca boşluk farkını yok sayar. "Fiona Formatter" 291 satırla ikinci, Douglas Wilson 245 satırla üçüncü. Tırnak değişikliği de yok sayılırsa Troy Goode'un farkı büyür, ama ben bunu ölçmedim.
+- **`.yml`:** Douglas Wilson 117 satırla önde, Íñigo Marquínez Prado 95 satırla ikinci. Fark küçük.
+- **Dosya sayısı:** Taramaya `.js`, `.md`, `.yml`, `.json` dışında birkaç tek dosyalık tür de girdi.
+META cost=0.046927800000000006 ms=16929 turns=2

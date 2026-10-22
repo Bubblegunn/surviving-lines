@@ -1,0 +1,26 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; git log --since='2026-03-29 00:00' --format='%h|%an|%ae|%ad|%s' --date=iso --no-merges
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --since='2026-03-29' --format='%h|%an|%ae|%cn|%ce|%ad' --date=short; echo; git shortlog -sne --all | head -30; cat .mailmap 2>/dev/null; git show --stat --format='%h %an' b2005d9 02afce3 5317ebe 62628c0 | head -40
+ - Bash: git ls-files | while read f; do git blame --ignore-rev 62628c0 --line-porcelain -w -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -8
+echo ---window commits only
+for c in b2005d9 02afce3 5317ebe; do echo $c; done
+git ls-files | while read f; do git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -aE '^[0-9a-f]{40} ' | awk '{print $1}'; done | sort | uniq -c | grep -E '^ *[0-9]+ (b2005d9|02afce3|5317ebe)' 
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), after setting aside the formatting commit and bots.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (2026-04-10)<br>`b2005d9` lib: annotate handlers (2026-04-10) | 746 in total (47 from the two window commits: 36 from `02afce3`, 11 from `b2005d9`) |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README (2026-04-07) | 1 |
+
+- **Troy Goode** appears under two emails: `<email redacted>` and `troy@laptop.example`. I counted them as one person. Both window commits use the laptop email. The 746 lines are all of Troy's surviving lines under both emails. Of the 12 lines `b2005d9` added, 11 survive.
+- **Vansh Sharma** has only the one README line, and it is still there.
+- **Excluded:** `62628c0` by Fiona Formatter (2026-04-12) is a formatting-only commit: 4-space indent and double quotes. No bot commits fall in the window. The repo's last `dependabot[bot]` commits are older.
+- **Line counts:** I ran `git blame` on every tracked file and skipped the formatting commit, so the reformatted lines stay credited to their original authors instead of Fiona.
+META cost=0.0415997 ms=38072 turns=5

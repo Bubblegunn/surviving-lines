@@ -1,0 +1,46 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-base-1/repo; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; ls -a; cat .mailmap .git-blame-ignore-revs 2>/dev/null; git log --format='%h %an <%ae> %s' | grep -iE 'format|style|lint|prettier|indent|quote|whitespace|bot' | head -40; git shortlog -sne HEAD | head -40; git rev-list --count HEAD
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-base-1/repo; for c in 8277075 53405aa 739dc11 815c7c6 0c843f9 dd7f043 fcd2b56 f038e77 0176afa; do echo "== $c"; git show --stat --format='%an %s' $c | head -12; git show -w --shortstat --format= $c; done; git show --stat --format= 62628c0
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-base-1/repo; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{d=(index(f,"/")?substr(f,1,index(f,"/")-1):"(root)"); print d"\t"f"\t"a"\t"m}'; done > /tmp/blame.tsv
+python3 -I - <<'E'
+import collections
+c=collections.defaultdict(collections.Counter); fc=collections.defaultdict(collections.Counter)
+for l in open('/tmp/blame.tsv'):
+    d,f,a,m=l.rstrip('\n').split('\t')
+    if 'bot' in a.lower() or 'bot' in m.lower(): continue
+    if a.startswith('Troy Goode'): a='Troy Goode'
+    c[d][a]+=1; fc[f][a]+=1
+for d,x in c
+FINAL ANSWER:
+Only `lib/` has an owner at 50% or more of the surviving lines. That owner is Troy Goode, with 67%.
+
+Method: I ran `git blame -w` and ignored `62628c0`, the 4-space and double-quote reformat. The `-w` flag also drops whitespace-only changes. I excluded dependabot lines. I merged Troy Goode's two emails into one person. I counted lines per top-level directory.
+
+| Path | Surviving lines | Top authors | Owner |
+|---|---|---|---|
+| `lib/` | 238 | Troy Goode 67%, Douglas Wilson 9% | Troy Goode |
+| `test/` | 966 | Troy Goode 47%, Douglas Wilson 41% | none |
+| `.github/` | 366 | Douglas Wilson 30%, Íñigo Marquínez Prado 26%, Sebastian Beltran 17% | none |
+| root files | 415 | Troy Goode 32%, Douglas Wilson 28%, Jon Church 17% | none |
+
+- **`test/`:** Troy Goode is 3 points short of half, so I name no owner.
+- **Root files:** nobody holds half of the combined total. Per file, Douglas Wilson holds at least 50% of `.eslintrc.yml`, `.gitignore`, `HISTORY.md`, `LICENSE` and `package.json`. Troy Goode holds only 42% of `README.md`.
+- **`.github/`:** each workflow has a different main author, and none of them holds half of the directory.
+
+Suggested CODEOWNERS. I don't know Troy Goode's GitHub handle, so `@troygoode` is a placeholder. Check it before use.
+
+```
+# Only paths where one person holds >= 50% of surviving lines
+/lib/    @troygoode
+
+# test/, .github/ and root files: no majority owner, so no line
+```
+
+If you want a catch-all, add `* @your-team` as a first line. A later, more specific line overrides it, so `lib/` would still go to Troy Goode.
+META cost=0.0827426 ms=24210 turns=5

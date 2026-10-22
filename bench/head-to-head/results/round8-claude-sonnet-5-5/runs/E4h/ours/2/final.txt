@@ -1,0 +1,55 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners | grep -E "^(test|lib|\.|\.github) |Troy|CODEOWNERS|^/|^#|identity"
+FINAL ANSWER:
+## Suggested CODEOWNERS
+
+```
+/lib/   <email redacted>
+/test/  <email redacted>   # only if you accept the merge below
+```
+
+Don't add a line for `/.github/` or for the root files.
+
+| Path | Top author | Lines | Owner? |
+|---|---|---|---|
+| `/lib/` | Troy Goode | 159 of 238 (66.8%) merged; 147 (61.8%) for <email redacted> alone | Yes. Over half either way. |
+| `/test/` | Troy Goode | 517 of 966 (53.5%) merged; 481 (49.8%) for <email redacted> alone | Only if the merge is right. |
+| `/.github/` | Douglas Christopher Wilson | 118 of 366 (32.2%) | No. Nobody holds half. |
+| Root files | Troy Goode | 134 of 415 (32.3%) | No. Nobody holds half. Douglas Christopher Wilson has 115 (27.7%). |
+
+**Identity merge.** The merge is a guess from names and addresses. The tool rates the evidence as strong, so I led with the merged figures. It counts <email redacted> and troy@laptop.example as one person. Unmerged, `/test/` drops to 49.8% and falls just under half. The laptop address holds 36 lines in `/test/` and 12 in `/lib/`. I did not write a `.mailmap`. This needs your confirmation.
+
+**Left out of the counts**
+- **Reformat commit:** `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter) changed only whitespace and quotes. The tool ignored it. Counted plainly, it would hold 291 lines (14.7%).
+- **Bot:** one bot identity (10 lines, 11 commits) is excluded.
+- **Unattributed lines:** 1,985 of 1,995 lines were attributed.
+- **Scope:** all 18 files were counted, with no sampling.
+
+**Mechanical-rewrite check.** The check examined 139 commits and set aside only `62628c0`. Five more commits look mechanical and were kept in the counts:
+- `739dc11` (license reformat, 17 lines)
+- `fcd2b56` (ESLint switch, 16 lines)
+- `00d6eec` (YAML ESLint config, 9 lines)
+- `344ce1e` (<email redacted> bump, 1 line)
+- `9c2b59d` (<email redacted> bump, 1 line)
+
+I did not inspect them with `git show --stat`.
+
+**Bus factor**, by surviving lines at 50%:
+- **`/lib/`:** 1 (Troy Goode alone).
+- **`/test/`:** 1 merged. Unmerged it is 2, with Douglas Christopher Wilson as the second.
+- **Root files:** 2 (Troy Goode and Douglas Christopher Wilson, 60.0%).
+- **`/.github/`:** 2 (Douglas Christopher Wilson and Íñigo Marquínez Prado, 58.2%).
+
+I did not compute the 80% bus factor.
+
+**Copy detection.** The figures use `git blame -w -M -C`. The tool printed no copy-detection note that moved anyone's share by more than 2 points.
+
+**Limits.** Surviving lines show who wrote the code that is left. They don't show who should review changes to it. They also don't capture review work, design work or deleted code.
+META cost=0.07125039999999999 ms=20099 turns=5

@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -Ev '(^|/)(node_modules|package-lock\.json|yarn\.lock)' | while read -r f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | wc -l; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1i-bf-1/repo --dry-run --no-github 2>&1 | head -60
+FINAL ANSWER:
+Troy Goode wrote the most code that survives today, with Douglas Christopher Wilson second. I counted this with `git blame -w -M -C`, using the repo's `.git-blame-ignore-revs` so the 4-space/double-quote reformat doesn't take credit for every line.
+
+Surviving lines by author, across 19 tracked files:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| everyone else | 17 or fewer each |
+
+I listed only the top 20 authors. Together they hold about 1,940 lines.
+
+- **Commits and blame disagree.** Douglas has 143 commits against Troy's 122, but Troy owns about 29% more surviving lines. Douglas's commits are mostly small edits. Troy's code is still the core.
+- **Troy's lines may be an import artifact.** The `busfactor` script flagged the history as imported: the first commit, dated 2013-01-31, lands 8 of the 19 files at once. Blame may therefore credit Troy for code that was only moved into this repo, not written there.
+- **I don't know who is still active.** I ran the `busfactor` script as a dry run, so it wrote no `ownership.json` and I have no roster of active versus departed authors. If Troy or Douglas has left the project, much of the code would have no reviewer. Check that before relying on these numbers.
+- **The generated CODEOWNERS fallback looks wrong.** It lists `fiona@formatter.example` as a fallback owner, which looks like a placeholder or formatter identity, not a real person. I wrote no files.
+- **Blame measures authorship, not knowledge.** A line counts for whoever last changed it, so a mechanical refactor can overstate someone's share.
+
+I can run the script for real (it writes `.github/CODEOWNERS` and `ownership.json`) to get the inactive-author list. Say if you want that.
+META cost=0.0687868 ms=29126 turns=6

@@ -1,0 +1,22 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in $(git ls-files); do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none)";; esac; git blame --line-porcelain -w -M -C HEAD -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //" | sed "s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; print c"\t"$0}' | head -100
+FINAL ANSWER:
+Surviving lines by `git blame` (HEAD, with `-w -M -C`), top owner per extension:
+
+| Extension | Top owner | Lines | Notes |
+|---|---|---|---|
+| `.js` | Troy Goode | 581 | Next: Fiona Formatter 291 (the 4-space/double-quote reformat commit), Douglas Christopher Wilson 219 |
+| `.md` | Troy Goode | 116 | Next: Jon Church 72, Douglas Christopher Wilson 67 |
+| `.yml` | Douglas Christopher Wilson | 127 | Next: Íñigo Marquínez Prado 95, Sebastian Beltran 63 |
+| `.json` | Douglas Christopher Wilson | 20 | Next: Troy Goode 12 |
+| `.gitignore` | Douglas Christopher Wilson | 4 | Troy Goode has 1 |
+| no extension | Douglas Christopher Wilson | 17 | Troy Goode has 5 |
+
+The `.js` count is probably understated for the original authors. The latest commit (`62628c0`, a style reformat) was blamed to "Fiona Formatter" for 291 lines. `-w` ignores whitespace-only changes, but the quote changes still count as edits. Troy Goode stays on top either way. Without that commit, Troy's lead would likely be larger.
+META cost=0.0486695 ms=9121 turns=3

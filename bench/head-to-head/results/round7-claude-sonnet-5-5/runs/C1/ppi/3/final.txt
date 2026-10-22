@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "Top five authors by surviving lines of Go code (git blame), with rough percentage share. For picking co-maintainers."}
+ - Bash: git ls-files '*.go' | wc -l && git ls-files -z '*.go' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -12
+ - Bash: git ls-files -z '*.go' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | wc -l; git ls-files -z '*.go' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -E '^(author|author-time) ' | paste - - | sort | awk -F'\t' '{print $1}' | sort | uniq -c | sort -rn | head -3; for a in "Eric Paris" "Noah Dietz" "Alex Ogier" "Jonathan Reyna" "Marcus Lindqvist" "Priya Raman"; do echo "$a: $(git log --author="$a" --format='%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done
+ - Bash: git log --author="Marcus Lindqvist" --author="Priya Raman" --format='%h %an %ad %s' --date=short --shortstat | head -20; git log --author="Eric Paris" --oneline | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines, from `git blame -w -M -C` on HEAD. The scope is 78 tracked `.go` files with 15,313 lines in total.
+
+| # | Author | Surviving lines | Share | Last commit |
+|---|--------|----------------|-------|-------------|
+| 1 | Eric Paris | 2,194 | ~14% | 2018-10-24 |
+| 2 | Noah Dietz | 1,240 | ~8% | 2018-11-07 |
+| 3 | Alex Ogier | 1,214 | ~8% | 2015-02-15 |
+| 4 | Jonathan Reyna | 1,062 | ~7% | 2017-01-25 |
+| 5 | Marcus Lindqvist | 956 | ~6% | 2026-10-21 |
+
+Priya Raman is 6th with 802 lines (~5%), and Tamal Saha is 7th with 596 (~4%).
+
+- **Ownership is spread thin.** The top five together own only about 43% of the lines. No one person owns more than about 14%, so the project-level bus factor is high by this measure.
+- **Four of the five look inactive.** Eric Paris, Noah Dietz, Alex Ogier and Jonathan Reyna have no commits since 2018 or earlier. Marcus Lindqvist is the only one active recently, and Priya Raman's commit is also from 2026-10-21. I didn't check whether the others are reachable or still interested.
+- **Marcus's lines are all recent.** His commits are the completion helpers and tests added on 2026-10-21. He knows that code, but the rest of the repo is not his.
+- **Priya's lines are vendored code.** Her one commit (`vendor: add example/ansi v1.2.0`) added about 800 lines of third-party code. This doesn't change the top five, but it shows blame can count lines someone copied in rather than wrote.
+- **Noah and Jonathan each show a single commit date.** I didn't check whether those were bulk imports or reformatting, so their shares may overstate real authorship.
+
+I used blame instead of the skill's default commit counts, because you asked about surviving lines. I did not run the per-file or per-module bus-factor breakdown from the skill template.
+
+For co-maintainers, the blame data points to Marcus as the only recently active candidate among the top five. If you want people who are active now, I can rank by commits over the last 1–2 years instead.
+META cost=0.0756921 ms=30064 turns=6

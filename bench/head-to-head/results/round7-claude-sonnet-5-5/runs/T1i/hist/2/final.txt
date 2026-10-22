@@ -1,0 +1,41 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__repo_summary,mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git config blame.ignoreRevsFile
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1i-hist-2/repo
+echo "== raw blame (reformat commit counts) =="
+git ls-files | grep -Ev '\.(png|jpg|gif|ico|woff2?|lock)$|package-lock' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null; done | grep '^author ' | sort | uniq -c | sort -rn | head -15
+echo "== ignoring reformat commit =="
+git ls-files | grep -Ev '\.(png|jpg|gif|ico|woff2?|lock)$|package-lock' | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null; done | grep '^author ' | sort | uniq -c | sort -rn | head -15
+echo "== last commit per author =="
+git log --format='%aN|%ad' --date
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the surviving code, once the formatting commit is excluded. I counted lines per author at HEAD with `git blame -w -M -C`, so whitespace changes and moved code don't count as authorship. I ran it over all tracked text files.
+
+The repo's formatting commit (`62628c0`, "reformat js with 4-space indent and double quotes") rewrote many lines and gave them to Fiona Formatter. `.git-blame-ignore-revs` lists that commit, but `blame.ignoreRevsFile` isn't set in this repo, so plain `git blame` still credits it. I ran the count both ways:
+
+| Author | Raw blame | Ignoring the reformat commit |
+|---|---|---|
+| Troy Goode | 715 | 810 |
+| Douglas Christopher Wilson | 454 | 629 |
+| Fiona Formatter | 293 | not in the top 15 |
+| Íñigo Marquínez Prado | 95 | 95 |
+| Jon Church | 72 | 72 |
+| Sebastian Beltran | 67 | 67 |
+| Ulises Gascón | 52 | 52 |
+| Ignacio Mangas | 44 | 44 |
+
+- **Real owners:** Troy Goode (810 lines) and Douglas Christopher Wilson (629 lines) together own most of the code that survives. Everyone else owns 100 lines or fewer.
+- **Formatter:** Fiona Formatter's 293 lines are only the reformat. They reflect no real authorship, and the ignore-revs file hands those lines back to the people who wrote them.
+- **Inactive authors:** Íñigo Marquínez Prado owns 95 lines and last committed on 2024-05-14. Sebastian Beltran owns 67 lines and last committed on 2025-07-23.
+- **Troy Goode's date:** Troy Goode's last commit is dated 2026-04-10, which doesn't fit a project of this age. I didn't investigate it.
+
+To make normal `git blame` skip the formatting commit, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
+I didn't run the `knowledge_risk` tool, because it uses plain blame and would credit the reformat commit.
+META cost=0.0677815 ms=23092 turns=5

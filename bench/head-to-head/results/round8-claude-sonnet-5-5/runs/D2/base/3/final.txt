@@ -1,0 +1,55 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | wc -l; git ls-files '*.go' | grep '^vendor/' | wc -l; git log --oneline | wc -l; ls; head -5 gen* 2>/dev/null | head; grep -rl 'Code generated' --include=*.go . 2>/dev/null | grep -v vendor | head
+ - Bash: head -3 zz_generated_flags.go; git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated > /tmp/gofiles.txt
+run(){ while read f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain -- "$f" | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{ if ($0!="\t") print m, (f ~ /_test\.go$/ ? "test":"src")}'; done < "$1"; }
+run /tmp/gofiles.txt | sort | uniq -c | sort -rn > /tmp/blame.txt
+awk '{t+=$1} END{print "total",t}' /tmp/blame.txt
+awk '{a[$2]+=$1; t+=$1} END{for(k in a) printf "%6d %5.1f%% %s\n",a[k],100*a[k]/t,k}' /tmp/blame.txt | sort -rn | head -25
+echo ---src only; awk '$3=="src"{a[$2]+=$1; t+=$1} END{for(k in a) printf "%6d %5.1f%% %s\n",a[k],100*a[k]/t,k}' /tmp/blame.txt | sort -r
+ - Bash: awk '{a[$2]+=$1; t+=$1} END{for(k in a) print a[k], k, t}' /tmp/blame.txt | sort -rn | awk '{c+=$1; printf "%d %s cum=%.1f%%\n",NR,$2,100*c/$3}' | head -6
+echo; for e in <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted>; do echo "$e: $(git log --author="$e" --format='%an|%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done
+echo; git log --since=2024-10-22 --format='%an' | sort | uniq -c | sort -rn | head; git log -3 --format='%h %an %ad %s' --date=short --author=lena.voss
+FINAL ANSWER:
+Surviving Go code is spread across many people, so losing one or two authors would not be a problem. The people who matter for review today are not the top line owners.
+
+**Method.** I ran `git blame -w -M -C` on every non-vendored `.go` file, ignoring the `gofmt` rewrite commit `6bf5b04`, and counted lines still attributed to each author. That is 10,587 lines in 75 files. I left out `zz_generated_flags.go` (generated) and `vendor/` (2 files).
+
+**Who wrote the live code (tests included):**
+
+| Author | Lines | Share | Cumulative |
+|---|---|---|---|
+| Eric Paris | 1,802 | 17.0% | 17.0% |
+| Noah Dietz | 1,084 | 10.2% | 27.3% |
+| Alex Ogier | 1,074 | 10.1% | 37.4% |
+| Jonathan Reyna | 919 | 8.7% | 46.1% |
+| Tamal Saha | 555 | 5.2% | 51.3% |
+| Mitch Connors | 451 | 4.3% | 55.6% |
+
+Next are Riobard (3.8%), Georges Varouchas (3.6%), R. Pothier (3.2%) and optimuswu (3.1%), with a long tail below that.
+
+**Concentration.**
+- The top author owns 17%. Six people are needed to pass 50%.
+- Losing the top two would remove about 27% of the live lines. Losing the top three would remove about 37%.
+- Counting non-test code only, it is a bit more concentrated. Eric Paris has 17.3%, Alex Ogier 12.5%, Noah Dietz 8.2% and Riobard 7.5%.
+
+**Why the line counts overstate the risk.**
+- **Most of the top authors are gone.**
+  - Alex Ogier's commits end in 2015, Eric Paris's in 2018, and Tamal Saha's in 2018.
+  - Noah Dietz, Jonathan Reyna and Mitch Connors each have a single commit or a short burst, from 2017 to 2019.
+  - Their code is therefore already orphaned. Losing them again changes nothing.
+- **The people actually maintaining it hold little of the surviving code.**
+  - Tomas Aschan has 32 commits, the most since Oct 2024, but doesn't appear in the top authors by surviving lines.
+  - Other recent contributors are Sebastiaan van Stijn, Hu Jun, Georges Varouchas, Ethan P., Sam Okafor, and Maximilian Frank.
+  - Lena Voss wrote the latest feature (`Require*` helpers, #512, Mar 2026) and holds about 1.2% of lines.
+- **The real risk is the maintainer.** If Tomas Aschan left, nobody else has a comparable review history. That matters more than the line counts.
+
+**Caveats.**
+- Blame follows moves and whitespace changes, but it can't see who really designed a piece of code.
+- If you want the generated accessors counted, they come from `hack/genflags`, which I haven't looked at. I excluded them because blame there would only show whoever last ran the generator.
+- Some people appear under several emails. For example, Albert Nigmatzianov is also "bogem". I merged by email address only, so a few people's shares may be understated.
+META cost=0.0687422 ms=28124 turns=4

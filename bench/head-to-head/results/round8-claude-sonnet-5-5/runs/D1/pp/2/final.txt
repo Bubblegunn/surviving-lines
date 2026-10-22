@@ -1,0 +1,49 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; for f in cJSON.c cJSON.h; do echo "== $f"; wc -l < $f; done; git log --oneline | wc -l; git rev-parse --is-shallow-repository
+ - Bash: run(){ for f in cJSON.c cJSON.h; do git blame -w -M -C -C --line-porcelain "$@" -- $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR;i++){split(c[i],a," "); n=$1; sub(/^ *[0-9]+ /,"",c[i]); printf "%6.2f%%  %5d  %s\n", a[1]*100/t, a[1], c[i]} print "total", t}'; }
+echo "--- with ignore-revs"; run --ignore-revs-file .git-blame-ignore-revs | head -25
+echo "--- without"; run | head -8
+ - Bash: cnt(){ for f in cJSON.c cJSON.h; do git blame --line-porcelain "$@" -- $f | grep '^author ' ; done | sort | uniq -c | sort -rn | head -4; }
+echo "plain, no ignore"; cnt
+echo "plain, ignore"; cnt --ignore-revs-file .git-blame-ignore-revs
+git show --stat --format='%h %an %s' 413c6d1 | head; git log -1 --format=%H 413c6d1; git config blame.ignoreRevsFile; ls .mailmap 2>&1
+ - Bash: tbl(){ for f in cJSON.c cJSON.h; do git blame --line-porcelain "$@" -- $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{n=$1; $1=""; r[NR]=n"|"$0; t+=n} END{for(i=1;i<=6;i++){split(r[i],a,"|"); printf "%6.2f%% %5d %s\n", a[1]*100/t,a[1],a[2]} print "total",t}'; }
+echo "A: ignore-revs only"; tbl --ignore-revs-file .git-blame-ignore-revs
+echo "B: -w + ignore-revs"; tbl -w --ignore-revs-file .git-blame-ignore-revs
+echo "C: -w -M -C -C + ignore (earlier)"; tbl -w -M -C -C --ignore-revs-file .git-blame-ignore-revs
+cat .mailmap; git log --author='Priya' --oneline | head; git log --format='%an' | sort | uniq -c | sort -rn | head -4
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w --line-porcelain --ignore-revs-file .git-blame-ignore-revs -- $f | grep -E '^author(-mail)? ' | paste - - ; done | sed 's/^author //; s/\tauthor-mail / /' | sort | uniq -c | sort -rn | awk '{n=$1; t+=n; $1=""; r[NR]=n"|"$0} END{for(i=1;i<=NR;i++){split(r[i],a,"|"); printf "%6.2f%% %5d %s\n", a[1]*100/t,a[1],a[2]} print "total",t}' | head -40
+FINAL ANSWER:
+Surviving-line authorship is done. I ran `git blame` over both files and counted the author of each current line.
+
+**Result: 3,601 lines (cJSON.c 3,298 + cJSON.h 303)**
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,685 | 74.56% |
+| 2 | Kevin Branigan | 149 | 4.14% |
+| 3 | Alan Wang (two emails merged) | 137 | 3.80% |
+| 4 | Dave Gamble | 108 | 3.00% |
+| 5 | tomasi | 74 | 2.05% |
+| 6 | Tomás Ibarra | 68 | 1.89% |
+| 7 | Zach Hindes | 59 | 1.64% |
+| 8 | Mike Jerris | 49 | 1.36% |
+| 9 | PeterAlfredLee | 32 | 0.89% |
+| 10 | caglarivriz | 31 | 0.86% |
+| | ~30 others | ~209 | ~5.8% |
+
+**Method choices that change the numbers**
+- **Reformat commit:** `413c6d1` (Priya Nair's clang-format run) rewrote about 2,300 lines. Plain blame gives her 63% of the code (2,265 lines), which is wrong. I used `-w` plus `--ignore-revs-file .git-blame-ignore-revs`, and she drops out of the list.
+- **Ignore-revs alone isn't enough:** with only the ignore file, Priya still holds 388 lines. These look like lines clang-format re-wrapped, which git can't map back to the original author. Adding `-w` gives those lines to the original authors. I haven't checked those 388 lines one by one.
+- **Moved code:** adding `-M -C -C` moves about 15 lines between authors. For example, Dave Gamble goes from 108 to 111. The ranking doesn't change.
+
+**Caveats**
+- **Possible duplicate identity:** `tomasi` and `Tomás Ibarra` may be the same person. They have different emails and aren't merged in `.mailmap`. If they are one person, they total 142 lines (3.94%), which ranks 3rd, just ahead of Alan Wang.
+- **Dave Gamble:** he wrote the original cJSON, but only 3% of his lines survive. Max Bruckner's rewrites replaced most of them.
+- **What blame measures:** it shows who last touched each line. A one-character fix to someone's line moves that line to the fixer. Original authors are slightly undercounted, and heavy maintainers slightly overcounted.
+META cost=0.0906354 ms=42142 turns=6

@@ -1,0 +1,29 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo; git ls-files '*.go' | xargs wc -l | tail -1
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C` on HEAD, all tracked `*.go` files, 15,313 lines total):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~14% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Alex Ogier | 1,214 | ~8% |
+| 4 | Jonathan Reyna | 1,062 | ~7% |
+| 5 | Marcus Lindqvist | 956 | ~6% |
+
+Together they hold about 44% of the lines. Priya Raman is next with 802 lines (~5%), then Tamal Saha with 596.
+
+Caveats:
+- Test files are included. Counting only non-test code could change the order.
+- Authors are matched by name only. I did not check for a `.mailmap` or for one person committing under two identities.
+- The two most recent commits (license headers, `go fix`) touched many lines. `-w` ignores whitespace changes, but any line they actually rewrote may be credited to Efe Genc instead of the original author. Efe Genc doesn't appear in the top 15.
+- Line count measures how much code survives, not who still understands it. For picking co-maintainers, also check recent review and merge activity.
+
+I can rerun this excluding tests, or add recent-activity counts per person.
+META cost=0.0473624 ms=12574 turns=3

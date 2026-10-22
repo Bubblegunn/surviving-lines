@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser 2>&1; git ls-files src/Parser | head -50
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- $f | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn; echo ---; git log --format='%an' -- src/Parser | sort | uniq -c | sort -rn; echo ---; git log -3 --format='%an %ad' --date=short -- src/Parser
+FINAL ANSWER:
+Surviving lines in `src/Parser` (961 total, `git blame -w -M -C` on HEAD):
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+**Reviewer:** Graham Campbell is the main reviewer. He wrote most of the surviving code and has 31 of the 39 commits to this directory. Add Dmitri Volkov or Fatima Zahra as a second reviewer. Each owns about 7% of the lines, and Dmitri committed here on 2026-03-10.
+
+- **Not reviewers:** StyleCI Bot only reformatted code. Marta Kowalska has one commit here, but none of her lines survive.
+- **Per-file ownership:** I counted the whole directory. Ownership may differ per file, so I can break it down by file if your change touches only one (for example `Lexer.php`).
+META cost=0.054095199999999996 ms=15940 turns=4

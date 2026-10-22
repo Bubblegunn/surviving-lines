@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100 && git ls-files src | wc -l
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{c[$1" | "$2]++; a[$2]++; t[$1]++; T++} END{for(k in c) print "F",k,c[k]; for(k in a) print "A",k,a[k]; for(k in t) print "T",k,t[k]; print "TOTAL",T}' | sort; git log --format='%an <%ae>' | sort | uniq -c
+FINAL ANSWER:
+**Bus factor is 1.** One author, Andrew Gallant, wrote 2554 of the 4205 lines in `src/` that still exist, which is 60.7%.
+
+I used `git blame -w -M -C` on HEAD across the 8 files in `src/`. The `-w` flag stops the line-ending fix in `error.rs` from taking ownership of those lines. I merged author names that were clearly the same person: `Niv Kaminer` and `nivkner`, `Ola Berg` and `ola.berg`, `Alisha` and `Alisha Aneja`.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Andrew Gallant | 2554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| Ola Berg | 113 | 2.7% |
+| Sebastian Thiel | 74 | 1.8% |
+| Ashley | 68 | 1.6% |
+| about 35 others | 513 | 12.2% |
+
+- **Generated file:** Niko Alvarez's 883 lines are all `src/errno_table.rs`, added in one commit ("Add generated errno table"). That ownership is mostly nominal.
+- **Without `errno_table.rs`:** Andrew's share rises to 2554 of 3322 lines, or 76.9%. Reaching 80% takes Andrew plus Ola Berg, so two people.
+- **Per file:**
+  - `dent.rs`: Andrew owns 83%.
+  - `error.rs`: Andrew owns 65%. Garrett Berg (34 lines) and Niv Kaminer (30) are the next largest.
+  - `lib.rs`: Andrew owns 66%, with a long tail of small contributors.
+  - `tests/recursive.rs`: Andrew owns 88%.
+  - `tests/util.rs` and `tests/mod.rs`: Andrew owns 100%.
+  - `util.rs`: Ola Berg owns 55%, Andrew 36%. This is the only file where someone else is the majority owner.
+- **Risk areas:** the test suite (`tests/recursive.rs`, `tests/util.rs`) and `dent.rs` have almost no second owner. `lib.rs` has many contributors, but each owns only a few lines.
+
+Treat these as line-ownership numbers, not activity. Blame doesn't show who currently reviews or maintains the code, and several authors appear under placeholder-looking emails (`example.net`, `example.com`), so identities may be wrong.
+META cost=0.0670635 ms=21575 turns=4

@@ -1,0 +1,34 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git shortlog -sne HEAD -- lib | head -20 && echo --- && for f in lib/*; do echo "$f: $(git log --format='%an' -- $f | sort | uniq -c | sort -rn | head -1)"; done
+ - Bash: wc -l lib/index.js && git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo --- && git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -3 && echo --- && git log --format='%an|%ad' --date=short -- lib | awk -F'|' '{print $2" "$1}' | head -8 && git log --format='%an' --since=2024-10-22 -- lib | sort | uniq -c
+FINAL ANSWER:
+**Bus factor: 1.** Troy Goode is the one person you can't lose.
+
+`lib/` holds a single file, `lib/index.js` (238 lines).
+
+**Who owns the lines (`git blame -w -M -C`):**
+- Troy Goode has 138 lines, 58%. He also has 33 of the 62 commits to `lib/`.
+- Fiona Formatter has 32 lines, 13%. These come from the latest `style:` reformat commit (4-space indent, double quotes). That is cosmetic, so it is not real knowledge of the code.
+- Douglas Christopher Wilson has 18 lines, 8%.
+- Alejandro Caravaca Puchades has 12 lines, 5%, counting the separate `alex94puchades` blame entry.
+- 13 other contributors have 1–7 lines each.
+
+**Why it is 1:** if Troy leaves, 58% of the surviving code has no author left. Once you set aside the reformat, nobody else has more than 8% of the lines. Doug is the next most knowledgeable person, but he has only 18 lines.
+
+**Activity is thin:**
+- Only 2 commits touched `lib/` in the last 2 years: Troy's, and the reformat by Fiona.
+- Before April 2026, the last real change was in 2021 (LuisEGR), and before that 2018.
+- The code is stable, so a low bus factor hurts less than it would on an active module. But nobody besides Troy has recent context if a bug or a design question comes up.
+
+**Caveats:**
+- Blame follows who last touched a line, not who understands the design. A review-heavy maintainer wouldn't show up here.
+- I checked only this git history, with no PR or review data.
+
+To raise the number, have someone else review or own the next `lib/index.js` change. Adding inline comments or a design note would also help.
+META cost=0.058485 ms=13230 turns=4

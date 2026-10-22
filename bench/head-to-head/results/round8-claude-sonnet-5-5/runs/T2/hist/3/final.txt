@@ -1,0 +1,33 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-hist-3/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-hist-3/repo", "path": "lib"}
+FINAL ANSWER:
+**Bus factor of `lib/`: 2 by commit count. By current line ownership, it is already 0.**
+
+**By commits** (66 commits, 25 authors, merges excluded):
+- Troy Goode has 33 commits (50%). Alejandro Caravaca Puchades and Douglas Christopher Wilson have 4 each (6.1%).
+- The tool defines bus factor as the fewest authors who together cover more than 50% of commits. Troy has exactly 50%, so it takes Troy plus one more author to pass that line.
+- If Troy and one other author left, the people who remain would hold less than half of the commit history.
+- `lib/` is not flagged as a knowledge silo. The silo rule needs one author above 80%, and no one is close.
+
+**By who owns the code today** (blame at HEAD):
+- `lib/` has one file, `lib/index.js`, with 238 lines. The tool marks it as orphaned.
+- "Inactive" means no commit since 2026-04-22.
+- Fiona Formatter owns 214 lines (89.9%). Their last commit was 2026-04-12, so they count as inactive.
+- Troy Goode owns 20 lines (8.4%) and is also inactive, with a last commit on 2026-04-10.
+- Raymond Feng (last commit 2015) owns 2 lines. Douglas Christopher Wilson (last commit 2021) and Eric di Domenico (last commit 2013) own 1 line each.
+- Inactive authors own 100% of the lines.
+
+**Caveats:**
+- Fiona Formatter is probably a formatter or bot identity. It likely comes from the latest commit, `style: reformat js with 4-space indent and double quotes`. That commit rewrote nearly every line, so blame credits those lines to it instead of to the people who wrote the logic.
+- The tool's 90% orphaned figure is therefore misleading. To see who understands the code, I'd re-run blame while ignoring that commit (`git blame --ignore-rev 62628c0`). The commit-count view above is the better guide until then.
+- Troy Goode appears inactive by the 6-month cutoff, even though they have the most commits. So the practical position is that the largest source of knowledge has already left. The remaining contributors each wrote only a few commits.
+
+I can re-run the ownership analysis with the reformat commit ignored if you want.
+META cost=0.04992679999999999 ms=10763 turns=4

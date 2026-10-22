@@ -1,0 +1,67 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -80; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --follow --diff-filter=A --format='%h %ad %an %s' --date=short -- lib/index.js
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js; git rev-list --count HEAD
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show --stat --format='%h %an' b2005d9 | head
+FINAL ANSWER:
+`lib/index.js` was created by Troy Goode, and most of the code in it today is still theirs. The file has 238 lines and 55 commits (the first on 2013-01-30), with 25 distinct authors in the log.
+
+## Who shaped it
+
+**Troy Goode** wrote the file and maintained it throughout. They have 29 of the 55 commits.
+- **2013:** first commit, case-insensitive header lookup, `origin: false` disabling CORS, request pause/resume for async middleware, and `origin` as a callback (a contribution from Eric di Domenico, merged in October 2013).
+- **2014:** Express 4+ support (v2.3.2, v2.4.0), `Access-Control-Expose-Headers`, and use of the `vary` module.
+- **2015–2016:** ESLint switch and the 2.8.0 fixes (#66, #73).
+- **2026:** `lib: annotate handlers`.
+
+**Other contributors who changed behavior:**
+- **Simon Mansfield and Damien Klinnert (2013):** only send `Allow-Methods` on OPTIONS, send credentials on all methods, and handle an undefined `Origin`.
+- **Mathias Buus (2013):** non-Express request/response support, which allows plain Connect use.
+- **Typicode and Alberto Leal (2014):** added PATCH to the default methods, and stopped overriding the `origin` callback.
+- **Shane Tomlinson (2014):** uppercase method names before comparing.
+- **Igor Soarez (2014):** `Vary: Origin` for specific origins.
+- **Raymond Feng (2015):** optimized `applyHeaders` by removing the closure.
+- **Eran Tiktin (2015):** fixed `Vary` for `*`.
+- **max.laverse and DracoBlue (2015):** pass the preflight to `next()`, and expose headers on OPTIONS.
+- **Alejandro Caravaca Puchades (2015):** RegExp and array support for `options.origin`.
+- **Tomek Kopczuk and Saad Tazi (2017):** `Vary: Origin` for RegExp origins, and a fix for frozen options.
+- **Douglas Christopher Wilson (2017):** `Vary` for dynamic `allowedHeaders`, a fix for a missing `methods` option, and lint and build maintenance.
+- **Benjamin Eidelman (2017):** Safari workaround for the default preflight response.
+- **Tom Arad (2018):** fix for `maxAge: 0`.
+- **LuisEGR (2021):** removed unused function parameters.
+
+**Style-only commits:**
+- **Chima Alaebo (2017):** removed an unreachable code branch.
+- **Hannah Wolfe (2016):** named the anonymous middleware function.
+- **"Fiona Formatter" (2026-04-12):** reformatted to 4-space indent and double quotes.
+
+## Whose code survives
+
+I ran `git blame -w -M -C` with the formatting commit `62628c0` ignored, so that commit doesn't claim lines it only re-quoted. Of the 238 lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 (about two thirds) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Without the `--ignore-rev` flag, "Fiona Formatter" shows 32 lines, but those only reflect the reformat.
+
+Two things to know when reading these numbers:
+- **Two aliases of the same person:** Alejandro Caravaca Puchades and alex94puchades appear to be one person, so together they hold about 16 lines. I inferred this from the names and the shared RegExp/array `origin` work. I did not check the email addresses.
+- **Lines that are still in the file:** Blame counts the commit that last touched each line. Some lines are Goode's from 2013 that later commits re-wrapped or edited.
+
+Not in the counts: Tomek Kopczuk, DracoBlue and jordandenison. Their changes were later rewritten or removed.
+META cost=0.07019600000000001 ms=18012 turns=5

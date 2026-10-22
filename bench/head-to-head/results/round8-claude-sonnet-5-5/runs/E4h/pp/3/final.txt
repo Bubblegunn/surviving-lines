@@ -1,0 +1,59 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-tree --name-only HEAD; echo ---; git shortlog -sne HEAD | head -40; echo ---; ls .mailmap 2>&1; git show --stat --format='%h %an %s' 62628c0 | tail -5
+ - Bash: git log --format='%h %an <%ae> %s' | grep -iE 'format|style|lint|prettier|indent|whitespace|bot' | head -20; echo ---; git ls-files | grep -v '^test/\|^lib/\|^.github/'; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head
+ - Bash: blame() { for f in "$@"; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done; }
+agg() { sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR&&i<=5;i++){split(a[i],p," "); printf "%s  %.1f%%\n", a[i], p[1]*100/t} print "total",t}'; }
+for d in lib test .github; do echo "== $d"; blame $(git ls-files $d) | agg; done
+echo "== root"; blame .eslintrc.yml .gitignore HISTORY.md LICENSE README.md package.json | agg
+for f in .eslintrc.yml .gitignore HISTORY.md LICENSE README.md package.json; do echo "-- $f"; blame $f | agg | head -3; done
+ - Bash: for d in .github lib test; do echo "$d bot:"; for f in $(git ls-files $d); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep '^author ' ; done | grep -ci bot; done
+for f in package.json README.md; do git blame --line-porcelain HEAD -- $f | grep -c '^author .*bot'; done
+FINAL ANSWER:
+Ownership comes from `git blame` on HEAD, with `-w -M -C` and `--ignore-rev 62628c0`. That ignores the formatting-only reformat commit. Troy Goode's two emails are counted as one person. I excluded dependabot lines from the denominators.
+
+| Path | Top author | Share | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 66.8% (159 of 238) | yes |
+| `test/` | Troy Goode | 53.5% (517 of 966) | yes |
+| `.github/` | Douglas Christopher Wilson | 32.2% (118 of 366) | no |
+| Root files, combined | Troy Goode | 32.3% | no |
+
+Nobody holds half of `.github/` or of the root files as a group. The next-largest `.github/` shares are Íñigo Marquínez Prado (26%) and Sebastian Beltran (17%). The root files split further by file:
+
+| Root file | Top author | Share | Owner? |
+|---|---|---|---|
+| `.eslintrc.yml` | Douglas Christopher Wilson | 100% | yes |
+| `.gitignore` | Douglas Christopher Wilson | 80% | yes |
+| `HISTORY.md` | Douglas Christopher Wilson | 78% | yes |
+| `LICENSE` | Douglas Christopher Wilson | 77% | yes |
+| `package.json` | Douglas Christopher Wilson | 50.0% (20 of 40 non-bot lines) | yes, exactly at the threshold |
+| `README.md` | Troy Goode | 41.9% | no |
+
+Suggested CODEOWNERS:
+
+```
+# Troy Goode: >= 50% of surviving lines
+/lib/    @troygoode
+/test/   @troygoode
+
+# Douglas Christopher Wilson: >= 50% of surviving lines (root files)
+/.eslintrc.yml   @dougwilson
+/.gitignore      @dougwilson
+/HISTORY.md      @dougwilson
+/LICENSE         @dougwilson
+/package.json    @dougwilson
+
+# No owner: no one holds half
+# /.github/
+# /README.md
+```
+
+- **GitHub handles:** I inferred `@troygoode` and `@dougwilson` from the commit names. Please check them, because git history doesn't record handles.
+- **`package.json`:** Wilson's 50.0% depends on excluding the 2 dependabot lines. Counting them, he has 47.6%, so drop that line if you want a stricter reading.
+META cost=0.08357540000000001 ms=26520 turns=6

@@ -1,0 +1,78 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; git rev-list --count HEAD; echo ---; find . -type f \( -name "*.js" -o -name "*.ts" \) -not -path "*/node_modules/*" -not -path "*/.git/*" | head -80
+ - Bash: for f in lib/index.js test/vary.js test/test.js test/error-response.js test/example-app.js test/issue-2.js test/support/env.js README.md package.json; do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -4; done; echo; echo "last commit per top author:"; for a in "Douglas Christopher Wilson" "Troy Goode" "Ulises Gascón"; do echo "$a: $(git log --author="$a" -1 --format=%cd)"; done; echo; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" | sort | uniq -c | sort -rn; echo; grep -rl "lib/index\|require(\"\.\./lib\|require('\.\./lib\|\.\./lib" test | wc -l
+ - Bash: wc -l lib/index.js; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; git log --all --pretty=format:"%an" -- test/vary.js lib/index.js | sort | uniq -c
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history (354 non-merge commits, last commit 2026-04-12) | Generated: 2026-10-22
+
+### Project-Level Bus Factor: 2
+
+Two people (Troy Goode and Douglas Christopher Wilson) account for about 238 of 354 commits (67%). If both left, most of the codebase would have no maintainer who knows it. There are about 25 other authors, but most made 1–4 commits.
+
+Limits of this analysis:
+- The repo has only 7 JS source files, so the per-file counts are small.
+- I counted commits, not lines changed.
+- Dependents were checked only for `lib/index.js`.
+
+### Overview
+
+| Metric | Value |
+|--------|-------|
+| Source files analyzed | 7 (1 in `lib/`, 6 in `test/`) |
+| Bus factor 1 | 2 (29%): `test/vary.js`, `test/support/env.js` |
+| Bus factor 2 | 3 (43%): `error-response.js`, `example-app.js`, `issue-2.js` |
+| Bus factor 3+ | 2 (29%): `lib/index.js`, `test/test.js` |
+| Critical single-owner files | 0 |
+
+### Critical Risk Areas
+
+No file has bus factor 1 and high importance. `lib/index.js` is the main risk, because it is the only library file and 3 test files depend on it.
+
+| File | Top owner | Share | Owner active? | Risk |
+|------|-----------|-------|---------------|------|
+| `lib/index.js` (core) | Troy Goode | 29 of ~60 commits (~48%); 138 of 238 current lines (58%) | ✅ Active (2026-04-10) | [MEDIUM] |
+| `test/vary.js` | Troy Goode | 100% (1 commit) | ✅ Active | [LOW] |
+| `test/support/env.js` | Douglas Christopher Wilson | 100% (1 commit) | ❌ Inactive since 2021-09 | [LOW] |
+
+Many authors have contributed to `lib/index.js` (about 25), so it does not strictly depend on one person. In practice, Troy Goode is the only one who knows it well. Most others made one commit each.
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary owner | Ownership % | Bus factor |
+|--------|-------------|---------------|-------------|------------|
+| `lib/` | ~25 | Troy Goode | ~48% commits / 58% lines | 2 (Troy Goode, Douglas Christopher Wilson) |
+| `test/` | ~6 | Troy Goode / Douglas Christopher Wilson | split about evenly | 2 |
+| `package.json` / CI / release | 4 | Douglas Christopher Wilson | 68 of ~108 (63%) | 2 |
+| `README.md` | ~6 | Troy Goode | 29 of ~40 (~72%) | 1–2 |
+
+### Knowledge Heat Map
+
+```
+repo/
+├── lib/       [██████░░░░] 🟡 Bus Factor: 2 (Troy Goode 58% of lines, active)
+├── test/      [█████░░░░░] 🟡 Bus Factor: 2 (Troy Goode / Douglas Christopher Wilson)
+├── README.md  [███████░░░] 🟡 Bus Factor: 1–2 (Troy Goode ~72%)
+└── package.json / release [██████░░░░] 🔴 Douglas Christopher Wilson 63%, INACTIVE since 2021
+```
+
+### Who is the single dependency?
+
+**Troy Goode** is the main person. They are the top contributor to `lib/index.js` (the whole runtime), `README.md`, and most test files. They are also the only top contributor still active (last commit 2026-04-10).
+
+**Douglas Christopher Wilson** (143 commits) is inactive since September 2021. They are the top contributor to `package.json` and `test/test.js`. Their knowledge is effectively gone. No one else has taken over the packaging and release history.
+
+### Recommendations
+
+1. **Immediate**: Add a second reviewer who is not Troy Goode to `lib/index.js`. Ulises Gascón is the most recent active contributor outside the top two (last commit 2026-01).
+2. **Short-term**: Document in the README or a CONTRIBUTING file how releases and `package.json` are managed, since that knowledge sits with an inactive owner.
+3. **Ongoing**: Add comments or tests for the less obvious behaviors in `lib/index.js` (such as the `vary` handling). Rotate who reviews and merges PRs.
+
+Note: Dependabot, the "Fiona Formatter" reformat commit, and the merge commits were excluded from ownership. The 4-space reformat commit does not change who knows the code. Because of that commit, line counts from `git blame` give less weight to the original authors.
+META cost=0.07483429999999999 ms=23011 turns=6

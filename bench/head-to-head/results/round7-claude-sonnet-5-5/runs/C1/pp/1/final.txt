@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR&&i<=10;i++) print c[i]; print t, "total"}'
+FINAL ANSWER:
+Top five by surviving lines in tracked `.go` files, from `git blame -w -M` at HEAD (15,313 lines total):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,004 | ~13% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Jonathan Reyna | 1,062 | ~7% |
+| 4 | Marcus Lindqvist | 956 | ~6% |
+| 5 | Riobard | 909 | ~6% |
+
+These five together own about 40%. Next are Alex Ogier (839), Priya Raman (802), Tamal Saha (596), therealmitchconnors (500) and wu8685 (408).
+
+Caveats:
+- Ownership is spread thin. Even the top author has only 13%, so no one dominates.
+- Blame groups by author name, not email, and I did not check `.mailmap`. If one person committed under two names, their share is split and they could rank higher.
+- The count includes `_test.go` files. It also includes bulk edits like the recent `go fix` and license-header commits. `-w` ignores whitespace-only changes, but other mechanical rewrites can still shift credit.
+- Surviving lines don't show who is still active. Check recent commit dates before inviting anyone. I can run that next, or exclude tests and generated code.
+META cost=0.05251550000000001 ms=13770 turns=3

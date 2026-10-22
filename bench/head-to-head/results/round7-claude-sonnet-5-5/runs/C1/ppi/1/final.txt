@@ -1,0 +1,29 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' > /tmp/gofiles.txt; wc -l < /tmp/gofiles.txt; for f in $(cat /tmp/gofiles.txt); do git blame -w -M -C --ignore-rev d43be5f --ignore-rev 822af32 --line-porcelain -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; echo; git ls-files '*.go' | grep -v '^vendor/' | xargs cat | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C`, 77 tracked `.go` files, 14,511 lines, no `vendor/`):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,085 | ~14% |
+| 2 | Noah Dietz | 1,256 | ~9% |
+| 3 | Alex Ogier | 1,222 | ~8% |
+| 4 | Jonathan Reyna | 1,077 | ~7% |
+| 5 | Marcus Lindqvist | 961 | ~7% |
+
+Together they hold about 45% of the lines. The rest is spread across many people: Tamal Saha has 602, Riobard 568, and everyone else has fewer.
+
+- **Method:** You asked for surviving lines, so I ran `git blame` instead of the skill's per-file commit counts. Commit counts overweight small commits. I skipped the skill's contributor-analyzer agent, importance cross-referencing and report template.
+- **Ignored commits:** I told blame to ignore the two recent mechanical commits, `d43be5f` (`go fix`) and `822af32` (license headers). Without that, whoever ran them would show up as the author of many lines they didn't write.
+- **Not checked:** Authors are matched by name only. If someone committed under two names or emails, their share is split and undercounted.
+- **Not checked:** I didn't check who is still active. Line share shows who wrote the code, not who is around to maintain it. For co-maintainers, check recent activity with `git shortlog -sn --since=1y` before deciding.
+
+I can run that activity check or break the lines down by file if you want.
+META cost=0.06131059999999999 ms=15385 turns=5

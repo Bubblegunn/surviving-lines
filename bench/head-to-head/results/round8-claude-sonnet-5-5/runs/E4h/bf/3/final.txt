@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | awk -F/ '{print (NF==1?"<root>":$1)}' | sort | uniq -c; git shortlog -sne HEAD | head -40; git log --format='%h %an <%ae> %s' | grep -iE 'style|format|prettier|lint|indent|bot' | head -20
+ - Bash: git ls-files | while read f; do case "$f" in *.png|*.jpg|*.gif|*.ico|package-lock.json) continue;; esac; d=${f%%/*}; [ "$d" = "$f" ] && d="<root>"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v d="$d" '/^author /{a=substr($0,8)} /^author-mail /{m=substr($0,13)} /^\t/{print d"\t"a"\t"m}'; done | sort | uniq -c | sort -k2,2 -k1,1nr > /tmp/blame.txt; awk -F'\t' '{print}' /tmp/blame.txt | head -60; git show --stat --format='%h %s' b2005d9 02afce3 | head -20
+ - Bash: cd /tmp && awk -F'\t' '{split($1,p," "); n=p[1]; sub(/^ *[0-9]+ /,"",$1); d=$1; c=n; e=$3; if($2 ~ /bot\]/) next; k=e; if(e=="<troy@laptop.example>")k="<<email redacted>>"; if(e=="<<email redacted>>")k=e; t[d]+=c; s[d SUBSEP k]+=c; nm[k]=$2} END{for(x in s){split(x,q,SUBSEP); printf "%s\t%s\t%d/%d\t%.1f%%\n",q[1],nm[q[2]],s[x],t[q[1]],100*s[x]/t[q[1]]}}' blame.txt | sort -t$'\t' -k1,1 -k4,4nr | awk -F'\t' '{c[$1]++; if(c[$1]<=3)print}'
+FINAL ANSWER:
+Only `lib` and `test` have an owner at 50% or more. `.github` and the root files have none.
+
+I counted surviving lines with `git blame`, not the busfactor script's decayed commit weights, because you asked for lines. Details:
+- **Ignored commits:** `62628c0` (the Fiona Formatter reformat) was skipped with `--ignore-rev`, so the lines it touched go to whoever wrote them before. I also used `-w -M -C` to follow moves and whitespace changes.
+- **Bots:** I left out `dependabot[bot]` lines.
+- **One person, one count:** Troy Goode's two emails (`<email redacted>` and `troy@laptop.example`) are merged. Alejandro Caravaca Puchades and `alex94puchades` share one email, so I merged those too.
+- **Two commits kept:** I kept `b2005d9` (lib annotations) and `02afce3` (test coverage). They change content and are not formatting-only.
+- **Binary files and lockfiles:** I excluded these from the count.
+
+| Zone | Top holder | Share of surviving lines | Next |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 66.8% | Douglas Christopher Wilson 9.2% |
+| `test/` | Troy Goode | 517/966 = 53.5% | Douglas Christopher Wilson 38.7% |
+| `.github/` | none | top is Douglas Christopher Wilson, 118/366 = 32.2% | Íñigo Marquínez Prado 26.0%, Sebastian Beltran 17.2% |
+| root files | none | top is Troy Goode, 134/415 = 32.3% | Douglas Christopher Wilson 27.7%, Jon Church 17.3% |
+
+Suggested `.github/CODEOWNERS`:
+
+```
+# Last match wins; least specific first.
+# No rule for the root files or .github/: nobody holds 50% of the lines.
+
+/lib/   <email redacted>
+/test/  <email redacted>
+```
+
+- **Owner identifiers:** I used Troy's git email because I haven't looked up GitHub handles. Replace it with `@<handle>` before committing, since CODEOWNERS needs a handle or a GitHub-registered email.
+- **`test/` is a weak call:** Troy is 53.5% and Douglas Christopher Wilson is 38.7%. Troy clears your threshold, but not by much.
+- **Activity not checked:** I didn't check whether Troy is still active. If Troy hasn't committed recently, naming them as owner would block reviews on `lib/` and `test/`.
+- **Nothing written:** I haven't created the CODEOWNERS file or run the busfactor script.
+META cost=0.081167 ms=26715 turns=6

@@ -1,0 +1,44 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files src | head -100 && ls -a | head -30 && cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo "== total by author"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo "== per file"; sort /tmp/blame.tsv | uniq -c | sort -k2,2 -k1,1rn; git log --format='%an <%ae>' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Bus factor is **1**: Andrew Gallant wrote 60.7% of the lines currently in `src/`. If you leave out the generated errno table, that rises to 76.9%.
+
+I used `git blame -w -M -C` on `HEAD` for every tracked file under `src/`. That ignores whitespace-only changes and follows lines moved or copied between files, so the "Fix line endings in error.rs" commit doesn't take credit for lines it only touched. The total is 4,205 lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| Sebastian Thiel | 74 | 1.8% |
+| Ashley | 68 | 1.6% |
+| Aron Griffis | 59 | 1.4% |
+| Ola Berg (two identities: 58 + 55) | 113 | 2.7% |
+| About 30 other authors | 454 | 10.8% |
+
+- **Why 1:** Gallant alone is over 50%. Counting by commits gives the same answer: he has 135 of about 190.
+- **Niko Alvarez:** All 883 lines are `src/errno_table.rs`, the generated errno table added in a7c0151. Without it, `src/` has 3,322 lines and Gallant owns 76.9%. That table is closer to build output than to hand-written code, so I'd treat the 76.9% as the real figure.
+- **Larger groups:** It takes 2 authors to cover 80% of all lines (Gallant plus Alvarez, 81.8%). Without the errno table it takes 3 (Gallant, Thiel, Ashley).
+
+Share of each file owned by its top author:
+
+| File | Top author | Share |
+|---|---|---|
+| `tests/util.rs` | Gallant | 100% (252 lines) |
+| `errno_table.rs` | Alvarez | 100% (883 lines) |
+| `tests/recursive.rs` | Gallant | 87.7% (1016 of 1158) |
+| `dent.rs` | Gallant | 82.7% (291 of 352) |
+| `lib.rs` | Gallant | 65.7% (786 of 1196) |
+| `error.rs` | Gallant | 64.5% (169 of 262) |
+| `util.rs` | ola.berg | 55% (55 of 100) |
+
+- **Spread out:** `lib.rs` has about 30 contributors, but none of them has more than 45 lines.
+- **Only file without a Gallant majority:** `util.rs`, a small file, where he owns 36%.
+- **Identities:** I counted authors by name, not by email. Ola Berg appears twice in the table and the first two columns of the author totals (58 + 55 lines). Niv Kaminer and nivkner (45 lines combined) and Ashley and Ashley Mannix (72) may also be the same people. Merging any of these doesn't change the top two.
+- **Test data:** Several author emails are `example.com`, `example.net` or `example.org`. The history looks partly synthetic, so treat the smaller contributors with some caution.
+META cost=0.06448609999999999 ms=25734 turns=3

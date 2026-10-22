@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne HEAD | head -50; echo ---; git ls-files | awk -F/ '{print (NF>1)?$1:"(root)"}' | sort | uniq -c; echo ---; git log --format='%h %an <%ae> %s' | grep -iE 'format|style|prettier|lint|indent|quote' | head -30; ls -a; cat .mailmap 2>/dev/null
+ - Bash: git log -8 --format='%h %an %s' --numstat | head -60; echo; git ls-files; git log --format='%h %an' --author='Fiona' 
+ - Bash: git ls-files | while read f; do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{print f, m}'; done > /tmp/blame.txt
+norm(){ sed -e 's/<troy@laptop.example>/<<email redacted>>/'; }
+cat /tmp/blame.txt | norm | awk '{split($1,p,"/"); d=(length(p)>1)?p[1]:"(root)"; c[d" "$2]++; t[d]++} END{for(k in c){split(k,a," "); printf "%s %s %d/%d %.0f%%\n",a[1],a[2],c[k],t[a[1]],100*c[k]/t[a[1]]}}' | sort -k1,1 -k3 -t' ' | sort -k1,1 -k4,4nr | awk '{print}' | head -60
+echo; echo ROOT by file; awk '{print $1,$2}' /tmp/blame.txt | norm | awk '$1 !~ /\//' | sort | uniq -c
+FINAL ANSWER:
+Troy Goode holds at least half of `lib` and `test`. Nobody holds half of `.github` or the root files.
+
+I used `git blame` on HEAD with `-w -M -C`. I ignored `62628c0` (Fiona Formatter's reformat of 214 lines in `lib/index.js` and about 800 in `test/`) with `--ignore-rev`. I counted Troy Goode's two emails (`<email redacted>` and `troy@laptop.example`) as one person. I dropped `dependabot[bot]` lines, which is under 2% in any path and doesn't change a result.
+
+| Path | Top holder | Share of surviving lines |
+|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 67% |
+| `test/` | Troy Goode | 517/966 = 54% |
+| `.github/` | Douglas Christopher Wilson | 118/366 = 32% (next: Íñigo Marquínez Prado 26%) |
+| root files | Troy Goode | 134/415 = 32% (next: Douglas Christopher Wilson 28%, Jon Church 17%) |
+
+The root files are `README.md`, `HISTORY.md`, `package.json`, `LICENSE`, `.eslintrc.yml` and `.gitignore`. Troy's root share comes mostly from `README.md`.
+
+Suggested `CODEOWNERS`. I only have emails, so replace them with GitHub handles if you prefer:
+
+```
+/lib/   <email redacted>
+/test/  <email redacted>
+
+# No owner: nobody holds >= 50%
+# /.github/
+# /*   (root files)
+```
+
+Troy's `lib` and `test` lines are old, from 2013 to 2014. Douglas Christopher Wilson is the main author of the recent history (143 commits). He holds only 9% of `lib` and 39% of `test`, so the 50% rule doesn't give him either path. If you want a more current owner, a looser threshold or a recency-weighted blame would be the way to get one.
+META cost=0.0835288 ms=24144 turns=5

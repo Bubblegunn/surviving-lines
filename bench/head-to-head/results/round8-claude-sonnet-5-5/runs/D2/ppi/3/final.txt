@@ -1,0 +1,53 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | wc -l && git ls-files '*.go' | grep -v '^vendor/' | head -80 && git log --oneline | wc -l && git shortlog -sne --all --no-merges | head -30 && grep -rl 'Code generated' --include=*.go . 2>/dev/null | grep -v '^./vendor/' | head
+ - Bash: head -5 zz_generated_flags.go; ls vendor 2>/dev/null | head; 
+run(){ for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated); do git blame -w -M --ignore-rev 6bf5b04 --line-porcelain "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sed 's/^bogem$/Albert Nigmatzianov/' | sort | uniq -c | sort -rn; }
+echo ALL-NONGEN; run | head -25
+echo; echo NONTEST; 
+for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated | grep -v _test.go); do git blame -w -M --ignore-rev 6bf5b04 --line-porcelain "$f" | grep -a '^author ' | sed 's/^author //'; done | sed 's/^bogem$/Albert Nigmatzianov/' | sort | uniq -c | sort -rn | head -25
+echo; echo ACTIVE; git lo
+ - Bash: for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v zz_generated); do git blame -w -M --ignore-rev 6bf5b04 --line-porcelain "$f" | grep -a '^author ' | sed 's/^author //'; done | sed 's/^bogem$/Albert Nigmatzianov/' | sort | uniq -c | sort -rn | awk '{n=$1; $1=""; a[NR]=$0; c[NR]=n; t+=n} END{for(i=1;i<=NR;i++){cum+=c[i]; if(i<=8||a[i]~/Okafor|Voss/) printf "%d %s %d %.1f%% cum %.1f%%\n",i,a[i],c[i],100*c[i]/t,100*cum/t}; print "total",t,"authors",NR}'
+echo; git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | grep -E 'Eric Paris|Noah Dietz|Jonathan Reyna|Riobard|Alex Ogier|Tamal|therealmitch'
+echo; git log --author='Okafor' --format='%h %ad %s' --date=short | head
+FINAL ANSWER:
+**Short answer:** losing one or two people is not a problem. The surviving code is spread across many authors, and the people who wrote most of it are already gone. The real risk is that nobody active knows the core code well.
+
+**Method.** The skill counts commits, but you asked about live code, so I used `git blame` on surviving lines. I used `-w -M` and ignored the `interface{}` → `any` commit `6bf5b04`, which would otherwise credit one person with a repo-wide rewrite. I excluded `vendor/` and the generated `zz_generated_flags.go`. That leaves 75 Go files, including tests, and about 12,200 live lines from 77 authors. I merged the `bogem` and Albert Nigmatzianov identities by hand.
+
+**Who owns the live lines**
+
+| # | Author | Lines | Share | Cumulative | Last commit |
+|---|--------|------:|------:|-----------:|-------------|
+| 1 | Eric Paris | 2032 | 16.7% | 16.7% | 2018-10 |
+| 2 | Noah Dietz | 1232 | 10.1% | 26.8% | 2018-11 |
+| 3 | Jonathan Reyna | 1047 | 8.6% | 35.4% | 2017-01 |
+| 4 | Riobard | 923 | 7.6% | 42.9% | 2014-03 |
+| 5 | Alex Ogier | 837 | 6.9% | 49.8% | 2015-02 |
+| 6 | Tamal Saha | 626 | 5.1% | 54.9% | 2018-08 |
+| 7 | therealmitchconnors | 522 | 4.3% | 59.2% | 2019-09 |
+
+Excluding tests, the order is similar. Eric Paris has 1053 lines, Riobard 923 (almost all in non-test code), Noah Dietz 520 and Jonathan Reyna 420. Riobard is the one author whose code is mostly not tests.
+
+**Bus factor**
+- **Project-level:** it takes 6 people to pass 50% of the live lines. That is healthy by the usual threshold.
+- **Losing the top 1 or 2:** you lose 16.7% or 26.8% of the lines. Other authors still touched most files.
+- **The top 7 authors have not committed since 2019 or earlier.** The people who wrote 59% of the lines are already gone, so the bus factor problem has already happened for those lines.
+- **Current activity is thin.** The recent committers are Sam Okafor (2026-04), Lena Voss (2026-03), dependabot, Tomas Aschan (2025-10) and Sebastiaan van Stijn (2025-09). Lena Voss owns 143 lines (1.2%). Sam Okafor has only 3 commits, and their lines are mostly in the generated file or the ignored gofmt commit. The people maintaining the code now wrote little of it.
+
+**Caveats**
+- I did not do the skill's per-file importance step (counting how many files import each file). The library is mostly one flat `pflag` package, so an import count says little. I did not compute per-file ownership or a module breakdown.
+- Identity is by author name only. Other aliases may split someone's lines, and the same person may appear under more than one name.
+- Blame measures who last touched a line, not who understands it.
+
+**For your PR reviews**
+- Check changes to `flag.go` and the core parsing and usage code carefully. That code was written mostly by inactive authors, and no active maintainer has deep history in it.
+- Ask Lena Voss, Tomas Aschan and Sebastiaan van Stijn for second reviews where you can. They are the active people with some history in the code.
+- Add tests before refactoring old code. The tests are often the only record of intended behavior.
+META cost=0.0968759 ms=34634 turns=7

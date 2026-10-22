@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | wc -l; git ls-files '*.go' | grep -c '^vendor/'; git ls-files '*.go' | grep -v '^vendor/' | xargs wc -l | tail -1; git log --oneline | wc -l; git shortlog -sne HEAD | head -20
+ - Bash: cd "$(git rev-parse --show-toplevel)"; blame() { git ls-files '*.go' | grep -v '^vendor/' | grep -vE "$1" | while read f; do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn; }; echo ALL; blame '^$' | head -12; echo; echo NOGEN; blame 'zz_generated|_gen\.go|^$' | head -0; git ls-files '*.go' | grep -v '^vendor/' | grep -iE 'gen|zz' 
+ - Bash: cd "$(git rev-parse --show-toplevel)"; run() { git ls-files '*.go' | grep -v '^vendor/' | grep -vE "$1" | while read f; do git blame -w --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn; }; echo "NON-TEST, NON-GEN"; run '_test\.go$|zz_generated' > /tmp/own.txt; awk '{s+=$1} END{print "total",s}' /tmp/own.txt; head -12 /tmp/own.txt; echo; echo "gen file lines:"; wc -l zz_generated_flags.go; git log --format='%an' -- zz_generated_flags.go | sort | uniq -c; echo; for n in "noahdietz" "JReyLBC" "sam.okafor" "tamal"; do echo "$n:"; git log --author="$n" --format='%h %ad %s' --date=short | head -3; git log --author="$n" --oneline | wc -l; done
+ - Bash: cd "$(git rev-parse --show-toplevel)"; awk '{n=$1; $1="";a[NR]=$0;c[NR]=n;s+=n} END{cum=0;for(i=1;i<=NR;i++){cum+=c[i]; if(i<=8)printf "%d %s %d %.1f%% cum %.1f%%\n",i,a[i],c[i],100*c[i]/s,100*cum/s} print NR" authors"}' /tmp/own.txt
+echo; echo LAST COMMIT:; for n in "Eric Paris" "Riobard" "Noah Dietz" "Jonathan Reyna" "therealmitchconnors" "Alex Ogier" "Tamal Saha"; do echo "$n $(git log --author="$n" -1 --format=%ad --date=short)"; done
+echo; echo PER-FILE top owner:; git ls-files '*.go' | grep -v '^vendor/' | grep -vE '_test\.go$|zz_generated' | while read f; do git blame -w --ignore-rev 6bf5b04 --line-porcelain HEAD -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | awk -v f="$f" '{
+ - Bash: cd "$(git rev-parse --show-toplevel)"; git log --since=2024-01-01 --no-merges --format='%an' | sort | uniq -c | sort -rn | head; git log -1 --format=%ad --date=short; git log --since=2024-01-01 --no-merges --oneline | wc -l
+FINAL ANSWER:
+Status: I've finished the blame analysis and am writing it up.
+
+**Short answer:** Live Go code is not concentrated in a few people, so losing one or two would not hurt. The bigger issue is that the top authors left years ago, so nobody active knows most of the code.
+
+**How I measured:** I ran `git blame` on every tracked `.go` file at HEAD. I ignored whitespace changes and the `interface{}` to `any` commit (6bf5b04). I excluded `vendor/`, `_test.go` files and the generated `zz_generated_flags.go`. That leaves 6,397 lines from 73 authors.
+
+| Author | Live lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 1042 | 16.3% | 2018-10 |
+| Riobard | 922 | 14.4% | 2014-03 |
+| Noah Dietz | 520 | 8.1% | 2018-11 |
+| Jonathan Reyna | 420 | 6.6% | 2017-01 |
+| therealmitchconnors | 394 | 6.2% | 2019-09 |
+| Alex Ogier | 383 | 6.0% | 2015-02 |
+| Tamal Saha | 308 | 4.8% | 2018-08 |
+
+- **Concentration:** The top 1 author owns 16.3%, the top 2 own 30.7%, and the top 7 own 62.4%. The other 66 authors share the remaining 37.6%.
+- **Ownership by file:** The big files are mostly Alex Ogier's (`flag.go`, 1,292 lines). Each flag type has its own owner:
+  - Slice types: Reyna (bool, uint, ip), Dietz (int32, int64, float32, float64) and Paris (string, int).
+  - Map types: Saha (`string_to_string.go`, `string_to_int.go`).
+  - Other files: Besogonov (`string_to_int64.go`), Ethan P. (`errors.go`) and Lena Voss (`flagset_helpers.go`).
+  - These are small, self-contained files.
+- **Activity:** None of the top 7 have committed since 2019. Since 2024 there have been 46 non-merge commits, spread thinly. Tomas Aschan has the most with 9, and nobody else has more than 4. The latest commit is 2026-04-08.
+
+**What this means for review:**
+- No single departure removes much knowledge, but the maintainers who wrote most of the core code are already gone. The code is effectively orphaned. Nobody active will remember why `flag.go` or the older scalar types work the way they do.
+- Use `git log` and `git blame` on the file under review to find the original reasoning. `/project-pilot:history` can help with that.
+- Most of the recent contributors listed above could review the leaf files, but I haven't checked what they changed.
+
+**Caveats:**
+- I did not apply a `.mailmap`. Some people appear under two names. For example, `bogem` and Albert Nigmatzianov are the same person, as are `mitchconnors` and `therealmitchconnors`. Their real share is somewhat higher than shown. This doesn't change the conclusion.
+- Blame counts surviving lines, not effort or review quality.
+- I did not compute each author's share within a single file. For example, I know Ogier is the top author of `flag.go`, but not by what margin.
+- The generated file (488 lines) is attributed to one commit. It is derived output, so I left it out.
+META cost=0.1035465 ms=46727 turns=7

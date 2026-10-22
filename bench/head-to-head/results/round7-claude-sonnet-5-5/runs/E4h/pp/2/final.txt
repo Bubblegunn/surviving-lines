@@ -1,0 +1,55 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-pp-2/repo; git ls-files | cut -d/ -f1 | sort | uniq -c | sort -rn | head -30; git shortlog -sne --all | head -40; git log --oneline | wc -l; git log --format='%h %an %s' | grep -iE 'format|style|lint|prettier|indent|whitespace|reformat'; ls .git-blame-ignore-revs 2>&1
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-pp-2/repo; git log -8 --format='%h %an <%ae> %s' --stat | head -60; git log --format='%an|%ae' | sort -u | awk -F'|' '{print tolower($1)}' | sort | uniq -d; git ls-files | grep -v '^test/\|^lib/\|^.github/'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-pp-2/repo; git show b2005d9 | head -30
+blame(){ for f in $(git ls-files "$@"); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR&&i<=5;i++) print a[i]; print "total",t}'; }
+for d in lib test .github; do echo "== $d"; blame $d; done
+echo "== root"; blame .eslintrc.yml .gitignore HISTORY.md LICENSE README.md package.json
+for f in .eslintrc.yml .gitignore HISTORY.md LICENSE README.md package.json; do echo "-- $f"; blame $f | head -3; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-pp-2/repo; for f in README.md package.json HISTORY.md; do echo "-- $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | awk '{t+=$1;if(NR<=3)print} END{print "total",t}'; done; git blame -w --line-porcelain .github -- 2>/dev/null | head -0; for f in $(git ls-files .github); do git blame -w --line-porcelain $f | grep '^author '; done | grep -c bot
+FINAL ANSWER:
+Troy Goode owns `lib/` and `test/`. Douglas Christopher Wilson owns four of the six root files. Nobody holds half of `.github/`, `README.md` or `package.json`.
+
+I counted lines with `git blame -w -M -C`. I excluded the formatting-only commit `62628c0` (the 4-space and double-quote reindent) with `--ignore-rev`. I merged Troy Goode's two identities (`<email redacted>` and `troy@laptop.example`) into one person. I did not count `dependabot[bot]` lines.
+
+| Path | Top author | Share of surviving lines |
+|---|---|---|
+| `lib/` | Troy Goode | 159 of 238 (67%) |
+| `test/` | Troy Goode | 517 of 966 (54%) |
+| `.github/` | Douglas Christopher Wilson | 118 of 366 (32%) |
+| `.eslintrc.yml` | Douglas Christopher Wilson | 7 of 7 |
+| `.gitignore` | Douglas Christopher Wilson | 4 of 5 |
+| `HISTORY.md` | Douglas Christopher Wilson | 50 of 64 (78%) |
+| `LICENSE` | Douglas Christopher Wilson | 17 of 22 (77%) |
+| `README.md` | Troy Goode | 116 of 277 (42%) |
+| `package.json` | Douglas Christopher Wilson | 20 of 42 (48%) |
+
+The `.github/` share excludes the 8 Dependabot lines. Taken as one group, the root files also have no majority owner (Troy Goode holds about 32%). I split them per file because the top author differs between files.
+
+Suggested CODEOWNERS:
+
+```
+# lib/ and test/: Troy Goode holds more than half of the surviving lines
+/lib/   @troygoode
+/test/  @troygoode
+
+# Root files where Douglas Christopher Wilson holds more than half
+/.eslintrc.yml  @dougwilson
+/.gitignore     @dougwilson
+/HISTORY.md     @dougwilson
+/LICENSE        @dougwilson
+
+# No owner: nobody holds half
+# /.github/     Wilson 32%, Íñigo Marquínez Prado 26%, Sebastian Beltran 17%
+# /README.md    Goode 42%, Jon Church 26%, Linus Unnebäck 9%
+# /package.json Wilson 48% (just under the threshold), Goode 29%
+```
+
+- **GitHub handles:** git only has name and email, so `@troygoode` and `@dougwilson` are guesses. Check them, or use the emails (`<email redacted>`, `<email redacted>`), which CODEOWNERS also accepts.
+- **`lib/` and `test/` margins:** the `test/` margin is thin. It is still 52% without Troy's newest commit, `02afce3`. The `lib/` result holds without his comment-only commit `b2005d9`, which adds `// checked` comments, at 62%. I kept both commits because neither is formatting-only.
+META cost=0.08862040000000002 ms=33928 turns=5

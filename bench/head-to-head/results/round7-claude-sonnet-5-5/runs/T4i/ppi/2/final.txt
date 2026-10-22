@@ -1,0 +1,49 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | head -5; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | head -3; echo ---; git blame --line-porcelain lib/index.js 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head; echo ---; grep -rl "lib/index\|require(\"\.\./lib\|require(\"\./lib\|require('\./lib" --include="*.js" --include="*.json" . 2>/dev/null | grep -v node_modules | head -20; git log --oneline -- lib/index.js | wc -l
+ - Bash: git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -6; echo ---; git log --no-merges --since="1 year ago" --pretty=format:"%an|%ad|%s" --date=short -- lib/index.js; echo ---; git log --pretty=format:"%an" --since="90 days ago" | sort | uniq -c; git log -1 --format=%ad --date=short
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Period:** all history | **Last commit in repo:** 2026-04-12
+
+I ran the git commands directly and did not launch the contributor-analyzer agent. This is one file, so I scoped the report to it.
+
+### Ownership
+
+| Measure | Result |
+|---|---|
+| Commits touching the file | 63, by 25 authors |
+| Top committer | Troy Goode, 29 commits (46%) |
+| Next committers | Douglas Christopher Wilson (4), Alejandro Caravaca Puchades (4), Simon Mansfield (3) |
+| Lines by `git blame`, ignoring reformat commits | Troy Goode 109, Douglas Christopher Wilson 36, Raymond Feng 8, LuisEGR 6, Tom Arad 5 |
+| Bus factor for this file | About 2 to 3 |
+
+No one owns more than 80% of the commits, so this is not a single-owner file.
+
+### Who should review
+
+1. **Troy Goode** is the primary owner. They made the most recent substantive commit, "lib: annotate handlers", on 2026-04-10.
+2. **Douglas Christopher Wilson** is the second reviewer. They hold the second-largest share of surviving lines (36), which gives a second view of the file. Their last commit to this file was in 2017.
+
+Both are fine for review in terms of knowledge, but activity is uncertain. The repo has no commits by anyone in the last 90 days besides the 2026-04-12 reformat and Troy's 2026-04-10 commit. Check that Troy and Douglas are still around before you request their review.
+
+### Dependents (importance)
+
+`package.json`, `test/error-response.js` and `test/example-app.js` reference the file. The package entry point is in `package.json`, so every consumer of the library goes through this file. Treat it as high importance even though the dependent count is small.
+
+### Caveats
+
+- "Fiona Formatter" is the author of the reformat commit (`62628c0`) and is not a real owner. Ignore that name when you pick a reviewer.
+- `git blame --ignore-revs-file .git-blame-ignore-revs` still showed 57 lines for Fiona Formatter. The ignore file may not cover the reformat commit's full hash or its follow-up. I did not investigate this.
+
+### Recommendations
+
+- **Now:** request review from Troy Goode and Douglas Christopher Wilson.
+- **Short-term:** make sure at least one currently active maintainer has read the file. Ownership is spread over many people, but most of them committed once.
+META cost=0.0617435 ms=18076 turns=5

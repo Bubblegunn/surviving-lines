@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -100; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | head -20; echo ---; for f in $(git ls-files | grep -v -e LICENSE -e HISTORY.md -e README.md); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | xargs cat | wc -l; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Troy Goode owns the most surviving code, not Douglas Christopher Wilson, who has the most commits (143 vs 122).
+
+Surviving lines, by `git blame` over all 19 tracked files (1,995 lines):
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1% |
+| about 60 other contributors | 170 | ~8% |
+
+Two authors hold roughly 73% of the lines.
+
+How I counted:
+- **Reformat commit ignored:** I used `-w -M -C` and `--ignore-revs-file .git-blame-ignore-revs`. Without that, the 4-space and double-quote reformat (`62628c0`) would credit most lines to whoever ran it.
+- **Moved code followed:** `-M -C` credits moved or copied lines to their original author.
+- **Code only:** If you leave out `LICENSE`, `HISTORY.md` and `README.md`, the order stays the same. Troy has 689 lines, Douglas has 545, and Íñigo is third with 95.
+- **Not measured:** Blame shows who last wrote each line. A line rewritten for a small fix goes to the person who touched it last, not the person who designed it.
+META cost=0.054753500000000004 ms=19073 turns=4

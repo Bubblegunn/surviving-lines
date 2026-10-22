@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && git rev-list --count HEAD && git ls-files src | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn
+ - Bash: git ls-files src | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author-mail ' | tr 'A-Z' 'a-z' | sed "s|^|$f |"; done | awk '{c[$1" "$3]++; t[$1]++; a[$3]++; T++} END{for(f in t){m=0;for(k in c){split(k,p," ");if(p[1]==f&&c[k]>m){m=c[k];w=p[2]}} printf "FILE %s lines=%d top=%s %.0f%%\n",f,t[f],w,100*m/t[f]} for(x in a)printf "TOT %d %.1f%% %s\n",a[x],100*a[x]/T,x}' | sort -k1,1 -k2,2nr | head -40; git log -1 --format=%ad; ls .mailmap 2>&1 | tail -1
+FINAL ANSWER:
+**Bus factor is 1.** I counted lines that survive at HEAD with `git blame -w -M -C`, over 8 files and 4,206 lines in `src/`. `<email redacted>` owns 60.7% (2,554 lines), which is more than half on their own.
+
+| Author | Lines | Share |
+|---|---|---|
+| <email redacted> | 2,554 | 60.7% |
+| <email redacted> | 883 | 21.0% |
+| <email redacted> | 113 | 2.7% |
+| 31 others | 656 | about 15.6% |
+
+- **Top author, excluding `errno_table.rs`:** `errno_table.rs` is the generated errno table, and `niko` wrote all 883 lines of it. Without it, `jamslam` owns 76.9% of 3,323 lines. `niko` drops out, and the next author is `ola.berg` at 3.4%.
+- **Per file:** `jamslam` is the top author in 6 of the 8 files.
+
+  | File | `jamslam` share |
+  |---|---|
+  | `tests/recursive.rs` | 88% |
+  | `dent.rs` | 83% |
+  | `lib.rs` | 66% |
+  | `error.rs` | 65% |
+  | `tests/mod.rs` | 100% |
+  | `tests/util.rs` | 100% |
+
+  `util.rs` is the exception: `ola.berg` has 55% of its 100 lines. `errno_table.rs` is `niko`'s alone.
+- **Long tail:** 33 authors appear, but 31 of them each have 2% or less. They are mostly small fixes and don't carry knowledge of the code.
+- **Merged emails:** `<email redacted>` and `<email redacted>` were separate mailboxes in blame. I merged them, and there is no `.mailmap` in the repo. I did not check whether other authors use more than one email.
+
+I did not run the `busfactor` skill's `ownership.mjs`. It weights commits with a time decay and does not count surviving lines, so it would not answer your question. I also can't tell from blame whether `jamslam` or `niko` is still active. The skill's orphaned-zone check needs that, so tell me if you want it.
+META cost=0.0720175 ms=28523 turns=6

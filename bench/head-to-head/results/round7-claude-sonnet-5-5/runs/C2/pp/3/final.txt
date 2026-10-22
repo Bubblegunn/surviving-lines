@@ -1,0 +1,65 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --oneline | wc -l && git log --follow --oneline -- src/itsdangerous/signer.py | wc -l && git log --follow --oneline -- src/itsdangerous/timed.py | wc -l && ls .git-blame-ignore-revs 2>&1; for f in signer timed; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: for f in signer timed; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f.py | awk '/^[0-9a-f]{40} /{c=$1} /^author /{a=substr($0,8)} /^\t/{print c, a}' | sort | uniq -c | sort -rn | head -15; done; echo; git log --format='%h %an | %cn | %ad | %s' --date=short --shortstat -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -150
+ - Bash: git show -s --format=fuller 93695fd 56dba8d 0635526; git show --stat --format=%h 0635526 | head; for f in signer timed; do echo "== $f -C -C -C"; git blame -w -M -C -C -C --line-porcelain src/itsdangerous/$f.py | awk '/^author /{print substr($0,8)}' | sort | uniq -c | sort -rn; done
+ - Bash: git show --stat --format=%h 0635526 | tail -8; git ls-tree --name-only 0635526^ -r | grep -i -E 'itsdangerous' | head; 
+git blame -w -M -C -C -C --line-porcelain src/itsdangerous/signer.py src/itsdangerous/timed.py >/dev/null 2>&1
+python3 - <<'EOF'
+import subprocess,collections,re
+def sh(*a): return subprocess.run(a,capture_output=True,text=True).stdout
+P='0635526'
+# find old source file
+old=None
+for p in sh('git','ls-tree','--name-only','-r',P+'^').split():
+    if p.endswith('__init__.py') and 'itsdangerous' in p: old=p
+    if p.endswith('itsdangerous.py'): old=p
+print('old',old)
+# blame old file at parent: line text -> author
+bl=sh('git','blame','-w','-M','-C','--line-porcelain',P+'^','--'
+ - Bash: python3 - <<'EOF'
+import subprocess,collections,re
+def sh(*a): return subprocess.run(a,capture_output=True,text=True).stdout
+P='0635526'; old='src/itsdangerous/__init__.py'
+bl=sh('git','blame','-w','-M','-C','--line-porcelain',P+'^','--',old)
+oldmap=collections.defaultdict(list); a=None
+for l in bl.split('\n'):
+    if l.startswith('author '): a=l[7:]
+    elif l.startswith('\t'): oldmap[l[1:].strip()].append(a)
+tot=collections.defaultdict(collections.Counter)
+for f in ['signer','timed']:
+    bl=sh('git','blame','-w','--line-porcelain','src/itsdangerous/%s.py'%f)
+    c=a=None
+    for l in bl.split('\n'):
+        m=re.match(r'^([0-9a-f]{40}) ',l)
+        if m:c=m.group(1)
+        elif l.startsw
+ - Bash: git log --format='%an|%ad' --date=short | awk -F'|' '{n[$1]++; if(!($1 in last))last[$1]=$2; first[$1]=$2} END{for(a in n)print n[a], a, first[a], "->", last[a]}' | sort -rn | head -12
+FINAL ANSWER:
+**Ask David Lord, and use Tomás Ibarra as a second reviewer if the change touches the key-rotation helpers.**
+
+I ran `git blame -w -M -C` on both files. I then traced lines blamed to the 2018 "split into modules" commit (`0635526`) back to the original `__init__.py`. That commit only moved code, so blame credits those lines to the person who did the move instead of the author. I counted non-blank lines in the current files.
+
+| Author | `signer.py` | `timed.py` | What they wrote |
+|---|---|---|---|
+| David Lord | ~119 | ~93 | The typing rewrite, UTC datetimes, `secret_key` compat, and most of the structure |
+| Tomás Ibarra | ~70 | ~50 | Key-rotation helpers (`93695fd`, `56dba8d`), July 2025 |
+| Armin Ronacher | ~33 | ~49 | The original signer and timestamp logic, plus the 2018 fallback signers |
+| David Lord, new code in the 2018 split | ~23 | ~28 | Code he wrote during the split, not moved from `__init__.py` |
+| Others | a handful of lines each | a handful of lines each | Small contributions, including pre-commit bot formatting |
+
+The counts are approximate because the line matching is by text, so they are not exact.
+
+**Who to ask**
+- **David Lord** wrote the most of what survives and is the only long-term active person. He was also the committer on nearly everything, including Tomás's patches, so he has reviewed all of it. He has about 342 commits from 2016 to 2025-07.
+- **Tomás Ibarra** wrote the rotation helpers, which is about 70 lines in `signer.py` and 50 in `timed.py`. They have only 2 commits in the repo (2025-07-01 and 2025-07-02), so check that they still respond. Their commit email is `tomas@ibarra.example`, which is a placeholder-style address.
+- **Armin Ronacher** wrote the original core, but their last commit is from 2018. Don't count on a review from them.
+- The other authors (Waldmann, Arnout van Meer, Hsiaoming Yang and so on) contributed a few lines each, many of them long ago.
+
+If your change touches only the rotation code, ask Tomás first and David second. For anything else in these two files, ask David.
+META cost=0.12086269999999998 ms=36808 turns=8

@@ -1,0 +1,29 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M --line-porcelain -e HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -15; git ls-files '*.go' | xargs cat | wc -l; cat .mailmap 2>/dev/null | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M --line-porcelain -e HEAD -- "$f" | grep -E '^author (.*)|^author-mail ' | paste - - ; done | sort | uniq -c | sort -rn | head -25; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | grep -iE 'priya|lindqvist|marcus'
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M --line-porcelain -e HEAD -- "$f" | grep '^author-mail '; done | grep -ciE 'marcus.lindqvist@users|lindqvist'; git log --format='%h %an <%ae> %ad %s' --date=short --author=lindqvist --author=Priya | head
+ - Bash: git show --stat --format='%h %s' 1b9a535 | head; git ls-files '*.go' | grep -iE 'vendor|example' | head
+FINAL ANSWER:
+Top five by surviving Go lines, from `git blame -w -M` at HEAD. I excluded `vendor/`.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2004 | ~14% |
+| 2 | Noah Dietz | 1240 | ~8.5% |
+| 3 | Jonathan Reyna | 1062 | ~7% |
+| 4 | Marcus Lindqvist | 1020 | ~7% |
+| 5 | Riobard | 909 | ~6% |
+
+Alex Ogier is next with 839 lines (~6%). The total is about 14.5k lines, so no one holds a large share.
+
+Three things affect the ranking:
+- **Vendored code:** "Priya Raman" would rank 6th with 802 lines. All of it is `vendor/github.com/example/ansi/ansi.go`, added in `1b9a535` ("vendor: add example/ansi v1.2.0"). She did not write it, so I dropped it.
+- **Marcus Lindqvist's total:** Git shows three identities for him: `<email redacted>` (634 lines), `mlindqvist@corp.example` (322) and `<email redacted>` (64). There is no `.mailmap`, so I merged them by name. All three commits touch the completion feature on 2026-10-21. Without the merge, his largest single identity would not make the top five. Confirm they are the same person.
+- **Recency:** These are line counts only. Most of the older authors' code may be years old, and `git blame` does not show who is still active. Eric Paris and Alex Ogier in particular may not be reachable. A recent-activity check (`git log --since`) would be a better filter for co-maintainers. I can run one if you want.
+META cost=0.07501689999999998 ms=29560 turns=6

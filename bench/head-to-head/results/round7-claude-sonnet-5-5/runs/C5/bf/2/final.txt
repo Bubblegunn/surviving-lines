@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "src/Parser; focus on Lexer.php and escape handling"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -60; git log --format='%h %an <%ae> %ad %s' --date=short -- src/Parser | head -40; git log --format='%an <%ae>' | sort | uniq -c | sort -rn; git log --oneline | wc -l; git rev-list --max-parents=0 HEAD | xargs git show --stat --format='%h %ad' --date=short | tail -3
+ - Bash: ls src/Parser; for f in src/Parser/*.php; do echo "== $f"; git log --format='%an' --follow -- $f | sort | uniq -c | sort -rn | head -4; git log -3 --format='  %h %ad %an %s' --date=short --follow -- $f; done; echo; git show --stat --format='%h %an %s' 7007c6e b39e8d9 09f7c5c 4b9b803 d08cf83 | grep -v '^$'; echo; git blame -w -M --line-porcelain src/Parser/Lexer.php | grep '^author ' | sort | uniq -c | sort -rn | head; git blame -w -M --line-porcelain src/Parser/Escape*.php 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Graham Campbell is the person to ask about `Lexer.php`. Aiko Tanaka is the person for escape handling. This is inferred from commit history, so it is a starting point.
+
+**Who wrote `src/Parser`**
+- **Graham Campbell** wrote almost all of it. He has about 430 commits across 5 emails, and his latest is 2026-08-24, so he is active. He is the sole author of `Lexer.php`, `Parser.php`, `EntryParser.php`, `Lines.php` and `Value.php`, apart from a few minor edits below.
+- **Aiko Tanaka** wrote `Escape.php` (206 lines, 2 commits) and `Unicode/CharTable.php` (431 lines). All 3 commits are from 2026-08-26, in PR #1 (`feature/escapes`), which Graham merged. They appear under 3 spellings of the same name and email, differing only in case.
+- Minor edits came from Jonas Staudenmeir (a PHP 8.4 commit in 2024), JT Smith (a typo fix in 2022) and Dan Heggø (a small edit in `Parser.php` and `EntryParser.php`). None of them is a useful contact.
+
+**`Lexer.php`**
+- Graham made all 7 commits, and `git blame` attributes all 58 lines to him. The last change was 2026-08-24, a static-analysis cleanup (#614).
+- Ask him why it is built the way it is. The 2026-08-23 and 08-24 commits are the most relevant for an audit:
+  - `8bf174e`: "Fix memory-safety crash on invalid UTF-8 variable names (#602)"
+  - `dd5b391`: "Remove quadratic value parsing (#604)"
+  - `4426075`: comments no longer start multiline values (#615)
+  - `226b4ed`: diagnostics and messages (#607)
+
+**Escape handling**
+- `Escape.php` is entirely Aiko's, and Graham reviewed and merged it. Ask Aiko about the design and Graham about the review.
+- This code is about two months old, and Aiko's only commits are that one-day burst. Confirm Aiko is still reachable before you rely on them. I can't tell from git.
+
+**Risks for the audit**
+- **Bus factor 1:** the tool flags `/src/Parser/` as bus factor 1, owned by Graham and Aiko. It reports no orphaned zones.
+- **Code with no real author:**
+  - `Quirks.php` (117 lines) was committed by `root <root@localhost>` with the message "fix".
+  - `Compat.php` (69 lines) was committed by `Your Name <<email redacted>>` with the message "compat shims".
+  - Both are from 2026-08-26, are the newest code in the directory, and have no contact. They look like commits made with a default git identity. Treat them as unreviewed and ask Graham where they came from.
+- **Short history:** the repo has 616 commits going back years, so thin history is not a caveat here. Most of the recent security-relevant change landed in the last week of the history (2026-08-23 to 08-26), which is a reason to review it first.
+
+I ran the ownership script with `--dry-run`, so nothing was written to the repo.
+META cost=0.0896578 ms=25282 turns=6

@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && git ls-files src | head -50
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo TOTAL; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo PERFILE; sort /tmp/blame.tsv | uniq -c | sort -k2,2 -k1,1rn; echo MAILMAP; git shortlog -sne HEAD | head; git log --oneline | wc -l
+FINAL ANSWER:
+Bus factor is **1**. Andrew Gallant wrote 2,554 of the 4,205 lines still in `src/` (60.7%), which is more than half.
+
+I used `git blame -w -M -C` on HEAD, so whitespace-only and moved lines don't count. That includes the "Fix line endings in error.rs" commit. I merged authors by name only; there is no `.mailmap`.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| Ola Berg (+ `ola.berg`) | 113 | 2.7% |
+| Sebastian Thiel | 74 | 1.8% |
+| Ashley | 68 | 1.6% |
+| Aron Griffis | 59 | 1.4% |
+| Niv Kaminer (+ `nivkner`) | 45 | 1.1% |
+| 30 other authors | ~409 | ~9.7% |
+
+- **Generated file:** All 883 of Niko Alvarez's lines are `src/errno_table.rs`, from the commit "Add generated errno table". If you exclude that file, Andrew's share is 76.9% (2554 of 3322), and nobody else has more than 3.4%. Reaching 80% takes two authors (Andrew and Ola Berg) either way.
+- **Per-file concentration:** Andrew's share of each file:
+
+  | File | Andrew's share |
+  |---|---|
+  | `src/tests/util.rs` | 100% |
+  | `src/tests/mod.rs` | 100% |
+  | `src/tests/recursive.rs` | 87.7% |
+  | `src/dent.rs` | 82.7% |
+  | `src/lib.rs` | 65.8% |
+  | `src/error.rs` | 64.5% |
+
+  `src/util.rs` is the exception. It has only about 100 lines, and Ola Berg owns the majority of them.
+- **Alias merges:** I merged "Ola Berg" with "ola.berg", and "Niv Kaminer" with "nivkner". "Alisha" and "Alisha Aneja" are probably one person (9 lines combined), but I left them separate. "Ashley" and "Ashley Mannix" may be one person too, and I left them separate. None of these merges changes the result.
+META cost=0.07449819999999999 ms=26180 turns=4

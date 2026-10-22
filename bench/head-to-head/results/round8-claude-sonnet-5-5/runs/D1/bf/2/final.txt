@@ -1,0 +1,41 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -E '^cJSON\.(c|h)$'; git rev-parse --is-shallow-repository
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -a '^author ' | sed 's/^author //' > /tmp/blame_$f.txt; done
+echo "== combined"; cat /tmp/blame_cJSON.c.txt /tmp/blame_cJSON.h.txt | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR;i++){split(c[i],a," "); n=a[1]; sub(/^ *[0-9]+ /,"",c[i]); printf "%5d %5.1f%%  %s\n", n, n*100/t, c[i]}; print t" total"}'
+for f in cJSON.c cJSON.h; do echo "== $f"; sort /tmp/blame_$f.txt | uniq -c | sort -rn | head -8; wc -l < /tmp/blame_$f.txt; done
+echo "== emails"; git log --format='%an <%ae>' -- cJSON.c cJSON.h | sort | uniq -c | sort -rn | head -30; ls .mailmap 2
+ - Bash: cat .mailmap; git log --format='%an <%ae>' | grep -iE 'tomas|tomasi|Lee|^Use|Priya' | sort | uniq -c
+FINAL ANSWER:
+Ölçüm: `git blame -w -M -C`, `.git-blame-ignore-revs` ile (clang-format commit'i `413c6d1` sayılmıyor). Dosyalar `cJSON.c` (3298 satır) ve `cJSON.h` (303 satır), toplam 3601 satır. Her satır, o satırı HEAD'deki haliyle son yazan kişiye sayılır.
+
+| # | Yazar | Satır | Pay |
+|---|---|---|---|
+| 1 | Max Bruckner | 2699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Tomás Ibarra (`tomasi` + `Tomás Ibarra`) | 142 | 3.9% |
+| 4 | Alan Wang | 131 | 3.6% |
+| 5 | Dave Gamble | 111 | 3.1% |
+| 6 | Mike Jerris | 76 | 2.1% |
+| 7 | PeterAlfredLee (`PeterAlfredLee` + `Lee`) | 41 | 1.1% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | Nicolas Badoux | 29 | 0.8% |
+| 10 | Zach Hindes | 23 | 0.6% |
+| 11 | miaoerduo | 22 | 0.6% |
+| — | ~35 diğer katkıcı | 147 | 4.1% |
+
+Dosya bazında:
+- **`cJSON.c`:** Bruckner 2587 satır (78%), sonra Branigan 149, Wang 112, tomasi 66, Gamble 62.
+- **`cJSON.h`:** Bruckner 112 satır (37%), Jerris 51, Gamble 49, Wang 19, Hindes 17. Header'da payları daha dengeli.
+
+Notlar:
+- **Kimlik birleştirme:** Aynı kişinin farklı isimlerini elle birleştirdim. `tomasi` ile `Tomás Ibarra` aynı kullanıcı (`<email redacted>`). `Lee` ile `PeterAlfredLee` aynı e-postayı (`<email redacted>`) kullanıyor. Bu iki eşleştirme tahmin değil, e-posta eşleşmesine dayanıyor. `.mailmap` yalnızca `Alanscut` ile `Alan Wang` eşleştirmesini içeriyor.
+- **Gamble'ın payı:** Dave Gamble özgün yazar. Payı 3.1%, çünkü kodun büyük kısmı sonradan yeniden yazıldı. Orijinal tasarımın etkisi bu sayıdan büyük. Blame yalnızca satır metnine bakıyor.
+- **Bruckner'ın payı:** Bruckner'ın 75%'i, başkasının fikrini yeniden yazdığı satırları da içeriyor. Bu satırlar blame'de ona yazılır. Başka bir sayım yöntemi (örneğin token bazlı) payı biraz düşürebilir. Sıralama büyük olasılıkla değişmez.
+- **Ignore-revs etkisi:** `-w -M -C` ve ignore-revs olmadan Bruckner'ın payı çok daha yüksek çıkardı, çünkü clang-format commit'i neredeyse her satırı ona yazardı.
+META cost=0.0764541 ms=33507 turns=5

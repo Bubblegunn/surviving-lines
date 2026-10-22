@@ -1,0 +1,29 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib directory"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-bf-3/repo --dry-run --no-github 2>&1 | head -80; git -C <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-bf-3/repo status --short | head
+ - Bash: git ls-files lib | head -30; echo ---; git log --no-merges --format='%ae|%ad' --date=short -- lib | awk -F'|' '{c[$1]++; if(!($1 in l)) l[$1]=$2; f[$1]=$2} END{for(a in c) print c[a], a, "last="l[a], "first="f[a]}' | sort -rn | head -20; echo ---; git log -1 --format=%ad --date=short; git rev-list --count HEAD; git rev-list --max-parents=0 HEAD | xargs -n1 git show --stat --format='%ad %an' --date=short | tail -12
+ - Bash: git log --no-merges --format='%h %ad %an <%ae> %s' --date=short --numstat -- lib | head -12; git log --no-merges --format=%ae -- lib | sort -u | wc -l; git log --since=2025-04-12 --no-merges --format='%an|%ae' -- lib | sort | uniq -c; git shortlog -sne HEAD | grep -i -E 'troy|fiona'
+FINAL ANSWER:
+**`lib/` bus factor is 1, and it is close to orphaned.** It holds one file, `lib/index.js`, with 25 distinct authors over its history.
+
+- **Troy Goode** is the only real owner. They made 34 of the 62 commits to `lib/` (32 under `<email redacted>`, 2 under `troy@laptop.example`), mostly in 2013–2016, and they wrote the first version. Their latest commit, on 2026-04-10, changes 12 lines to annotate handlers.
+- **Fiona Formatter** shows as active, but their one commit (2026-04-12) is a 214-line reformat to 4-space indent and double quotes. That is mechanical, so I don't count it as knowledge of the logic.
+- **The other 23 authors** each made 1–5 small fixes, and the latest of those was in 2021. They are all effectively gone, and none of them owned the design.
+
+If Troy leaves, nobody understands the core logic. That takes one departure.
+
+Fiona's mechanical commit is why the tool shows a second active person. Without it, the active window would contain only Troy.
+
+**Tool output cautions:**
+- With `--dry-run`, the tool printed no rule for `lib/`, so it falls under the `*` fallback. That fallback names Fiona first, which overstates their knowledge.
+- The tool says the history "was imported" from a bulk first commit. That looks wrong here. The root commit (2013-01-30, Troy) has 8 files, which was the whole tree on day one, not an import. Ownership from 2013 onward is therefore real.
+- These numbers are commit counts, which only approximate who understands the code. A reviewer who never commits would not show up.
+
+I ran with `--dry-run --no-github`, so nothing was written to the repo. I did the per-file numbers with `git log` directly, because dry-run does not emit `ownership.json`.
+META cost=0.07960980000000001 ms=26306 turns=7

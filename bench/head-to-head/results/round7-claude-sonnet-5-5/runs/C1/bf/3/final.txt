@@ -1,0 +1,31 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.go' | while read f; do git blame --line-porcelain -w -M -C -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | head -15; echo; git ls-files '*.go' | xargs wc -l | tail -1; ls .mailmap 2>&1 | head -1
+ - Bash: git ls-files '*.go' | while read f; do git blame --line-porcelain -w -M -C -- "$f" | grep -a -E '^author(-mail)? ' | paste - -; done | sort | uniq -c | sort -rn | head -20; git ls-files '*.go' | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines, using `git blame -w -M -C` over all 78 tracked `.go` files (15,313 lines total):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~14% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Alex Ogier | 1,214 | ~8% |
+| 4 | Jonathan Reyna | 1,062 | ~7% |
+| 5 | Marcus Lindqvist | 956 | ~6% |
+
+**The fifth place depends on an identity merge.**
+- Git lists Marcus Lindqvist under two emails: `<email redacted>` (634 lines) and `mlindqvist@corp.example` (322 lines).
+- I merged them because the name is identical. I haven't confirmed it's the same person, and the repo has no `.mailmap`.
+- If they are different people, fifth place goes to Priya Raman (802 lines, ~5%). Marcus would then have 634 lines (~4%).
+
+**Limits of the numbers:**
+- Surviving lines show who wrote the code today. They don't show who is active now or who reviews well.
+- Several of these authors may no longer be active. Before you pick co-maintainers, check recent commit and review activity, for example with `git shortlog -sn --since=2024-01-01`.
+- Line counts also include test and generated-style files. I didn't separate those out.
+
+I can run the recent-activity check or add a `.mailmap` if you want either.
+META cost=0.0470216 ms=19671 turns=3

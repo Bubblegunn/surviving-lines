@@ -1,0 +1,40 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; node $S -- src; echo ======; node $S --merge-identities -- src
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; node $S --merge-identities -- src; echo ======; git show --stat c584a1d | tail -15; echo =====; node $S --ignore-rev c584a1d -- src | head -8; echo; cat .mailmap 2>/dev/null | head
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js
+git show --stat c584a1d | tail -15
+echo -----
+node $S --ignore-rev c584a1d -- src | head -8 || true
+echo -----
+ls .mailmap 2>&1 || true
+FINAL ANSWER:
+Ownership of `src/` is highly concentrated: Andrew Gallant holds 76.9% of the surviving lines, so the bus factor is 1.
+
+I counted with `git blame -w -M -C` at HEAD. That covers 7 files and 3,322 lines. Bus factor here means the smallest number of authors whose surviving lines together reach 50% of the lines counted.
+
+| Author | Lines | Share | Commits | Commit share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,554 | 76.9% | 55 | 51.9% |
+| Ola Berg | 113 | 3.4% | 2 | 1.9% |
+| Sebastian Thiel | 74 | 2.2% | 1 | 0.9% |
+| Ashley | 68 | 2.0% | 1 | 0.9% |
+| Aron Griffis | 59 | 1.8% | 1 | 0.9% |
+
+28 more authors hold the remaining lines, each with 45 lines (1.4%) or fewer.
+
+- **Bus factor:** 1 to reach 50%, scoped to `src/`. To reach 80% it takes 2 authors, on the same scope.
+- **Excluded:** `src/errno_table.rs` (883 lines) is left out of every number because it is a generated file. `--keep-generated` would count it.
+- **Reformat commit:** `c584a1d` ("style: switch to rustfmt", by Gallant) touched most of the files in `src/` and has 122 surviving lines. The tool did not set it aside automatically, so I checked it by re-running with `--ignore-rev c584a1d`. Gallant then has 2,547 lines (76.7%). The conclusion does not change.
+- **Copy detection:** the figures use `-w -M -C`. Without copy detection, Gallant has 2,705 lines (81.4%). Garrett Berg drops from 34 lines (1.0%) to 0, and Niv Kaminer from 45 lines (1.4%) to 15 (0.5%).
+- **Mechanical rewrites:** I checked for them. `c584a1d` is the only candidate, and it is the commit above.
+- **Possible duplicate identity:** Ashley (`<email redacted>`, 68 lines) and Ashley Mannix (`<email redacted>`, 4 lines) may be the same person. The evidence is weak and rests only on name and address, so I kept them separate. If they are one person, that is 72 lines (2.2%), which does not change the bus factor. There is no `.mailmap` in the repo, and I did not write one.
+
+Surviving lines show whose code is still there. They do not show who understands it, who reviewed it, or which code was deleted on purpose.
+META cost=0.0764354 ms=23136 turns=7

@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '(package-lock\.json|\.min\.|^node_modules/)' | wc -l; git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1i-pp-2/repo; git ls-files | grep -vE '^(package-lock\.json|\.git-blame-ignore-revs)$' | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | xargs wc -l | tail -1
+FINAL ANSWER:
+Ownership by surviving lines (`git blame -w -M -C`, ignoring the reformat commit `62628c0` via `.git-blame-ignore-revs`). It covers about 1,900 lines across all tracked files except the lockfile.
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| ~11 others | 6–17 each |
+
+- **Troy Goode** owns about 43% and **Douglas Christopher Wilson** about 33%. Together they own about three quarters of the code.
+- Ignoring whitespace and the 4-space reformat commit matters. Without it, the reformat would credit most JS lines to whoever ran it.
+- `-M -C` follows code moved or copied between files, so moves don't count as new authorship.
+- Blame groups by author name only. If one person committed under several names or emails, their lines are split across rows. A `.mailmap` would merge them.
+- Line count is not the same as importance. A few lines in the core handlers may matter more than many lines in tests or docs.
+
+I can break this down per file or directory (for example `lib/` against `test/`) if you want.
+META cost=0.055670700000000004 ms=12305 turns=4

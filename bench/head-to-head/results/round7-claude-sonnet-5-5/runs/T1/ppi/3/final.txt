@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.js' '*.ts' '*.mjs' '*.cjs' | grep -v node_modules | wc -l && git log --oneline | wc -l && git shortlog -sne --all --no-merges | head -15
+ - Bash: git ls-files '*.js' '*.ts' '*.mjs' '*.cjs' && git log -3 --format='%h %an %ad %s' --date=short && git log --format='%an' -1 62628c0 && echo --- && for f in $(git ls-files '*.js' '*.ts' '*.mjs' '*.cjs'); do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -5; done
+ - Bash: echo "ALL (ignoring reformat):" && for f in $(git ls-files '*.js' '*.ts' '*.mjs' '*.cjs'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -12; echo; echo "Last commit per author:"; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -12
+FINAL ANSWER:
+**Bus factor is 1: Troy Goode owns most of the surviving code.**
+
+I used `git blame` on the 7 tracked JS files and counted the lines each author still owns. I skipped the formatting-only commit `62628c0`, which Fiona Formatter made on 2026-04-12. I also ignored whitespace changes and tracked moved lines. Without that, Fiona would show as owner of almost every line.
+
+**Surviving lines (all 7 files)**
+
+| Author | Lines | Share (approx.) | Last commit |
+|---|---|---|---|
+| Troy Goode | 676 | about 55% | 2026-04-10 |
+| Douglas Christopher Wilson | 394 | about 32% | before May 2025 |
+| Alejandro Caravaca Puchades | 30 | 2–3% | not checked |
+| Eric di Domenico | 16 | about 1% | not checked |
+| Alberto Leal | 15 | about 1% | not checked |
+| About 20 others | under 10 each | the rest | not checked |
+
+I took the shares from the 12 authors listed above and didn't total every author, so treat the percentages as approximate.
+
+**By file**
+- `lib/index.js` is the core file. Troy owns 159 lines and Douglas 22. Alejandro owns 12, Raymond Feng 7 and max.laverse 6. Troy is the sole real owner.
+- `test/test.js` is the largest test file. It is split between Douglas (339) and Troy (317), and it is the only file with real shared ownership.
+- `test/error-response.js`, `test/example-app.js`, `test/issue-2.js` and `test/vary.js` are mostly or entirely Troy's. `test/vary.js` is 100% Troy.
+- `test/support/env.js` is 2 lines, both Douglas's.
+
+**Risks**
+- Troy alone is more than 50% of the code. If Troy leaves, the core file has no knowledgeable maintainer.
+- Troy's last commit was 2026-04-10, about 6 months before today (2026-10-22). That is past the skill's 90-day "active" threshold, so Troy counts as inactive.
+- Douglas is the second owner, but I didn't see a recent commit from them. They don't appear among the 12 most recent committers, whose latest commit dates back to 2025-05-17. They look inactive too.
+- The people committing recently (Ulises Gascón, Jon Church, Vansh Sharma and dependabot) own almost none of the surviving code. Recent activity and code ownership are different groups here.
+
+**Limits**
+- The count covers only 7 JS files, so the "by module" and dependents steps in the skill add little. Only `lib/index.js` has real dependents.
+- Two "Troy Goode" git identities exist, with different emails. Blame merged them by name. If you want them separated, I'd need to check by email.
+- I didn't use the contributor-analyzer agent. The blame data above answered the question directly.
+
+**Recommendations**
+1. Have someone active review `lib/index.js`, then take over `test/vary.js` and `test/error-response.js`.
+2. Add a short doc on how the handler annotations in `lib/` work. Troy's latest commit (`b2005d9`) added them.
+3. Add a `.git-blame-ignore-revs` file listing `62628c0`. Then GitHub and local blame stop attributing the code to the formatting commit.
+META cost=0.0705404 ms=23931 turns=6

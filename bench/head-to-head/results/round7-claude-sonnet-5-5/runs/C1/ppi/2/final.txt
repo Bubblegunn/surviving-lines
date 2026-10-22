@@ -1,0 +1,31 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files '*.go' | grep -v '^vendor/' | wc -l; git log --no-merges --format='%an' | sort | uniq -c | sort -rn | head -8
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | awk '{c=$1; n[NR]=$0; t+=c} END{print "total",t}'; for a in "Eric Paris" "Noah Dietz" "Alex Ogier" "Jonathan Reyna" "Marcus Lindqvist"; do echo "$a: $(git log --no-merges --author="$a" --format='%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done
+FINAL ANSWER:
+Surviving Go lines at HEAD, from `git blame -w -M -C` over 77 tracked `.go` files (14,511 lines, vendor excluded):
+
+| # | Author | Lines | Share | Commit dates |
+|---|--------|-------|-------|-------------|
+| 1 | Eric Paris | 2,194 | ~15% | 2015-03 to 2018-10 |
+| 2 | Noah Dietz | 1,240 | ~8.5% | 1 commit, 2018-11 |
+| 3 | Alex Ogier | 1,214 | ~8.4% | 2012-04 to 2015-02 |
+| 4 | Jonathan Reyna | 1,062 | ~7.3% | 1 commit, 2017-01 |
+| 5 | Marcus Lindqvist | 956 | ~6.6% | 1 commit, 2026-10-21 |
+
+The top five hold about 46% of surviving lines. Ownership is spread out, with no single dominant author. Next are Tamal Saha (~4%), Riobard (~3.8%), and therealmitchconnors (~3.4%).
+
+Before you pick co-maintainers from this list:
+
+- **Line share is not maintainer activity.** Eric Paris and Alex Ogier have the most commits (46 and 33). Their last commits were in 2018 and 2015, so they look inactive.
+- **Noah Dietz and Jonathan Reyna each have one commit.** Each commit probably added a large block of code, such as a feature or a bulk change. That block counts as a large share of lines, but it doesn't show ongoing involvement.
+- **Marcus Lindqvist's 956 lines come from one commit made yesterday.** I haven't looked at what it contains. It could be a rewrite, a bulk move, or generated code. Check the commit before you treat it as authorship.
+- **Commit count points to different people.** Besides Paris and Ogier, the top commit authors are Albert Nigmatzianov (21), Tomas Aschan (13), and Sebastiaan van Stijn (13). They have sustained history but fewer surviving lines.
+
+I didn't run the skill's commit-count-per-file workflow or its dependents and active-owner checks. Those answer a different question (per-file bus factor). I can run them if you want a risk map. I can also check the Marcus Lindqvist commit, or rank candidates by activity in the last 12 months.
+META cost=0.06192539999999999 ms=22965 turns=5

@@ -1,0 +1,37 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git shortlog -sne --all | head -30; git log --oneline | wc -l; git log --format='%h %an <%ae> %s' | head -20; ls -a; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git ls-files; git log --format='%h %an %s' | grep -iE 'style|format|lint|prettier|indent|whitespace|semi|quote' ; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{sub(/^author /,"");print f"\t"$0}'; done > /tmp/blame.tsv; awk -F'\t' '{split($1,p,"/"); d=(index($1,"/")?p[1]:"(root)"); c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d\t%.1f%%\n",a[1],a[2],c[k],100*c[k]/t[a[1]]}}' /tmp/blame.tsv | sort -k1,1 -k3,3nr
+ - Bash: git show --stat --format='%h %an <%ae> %ad %s' b2005d9 02afce3 | head -20; git show b2005d9 -w --stat --format=%h | tail -3; git show b2005d9 | head -40; grep -c . /tmp/blame.tsv; awk -F'\t' '$1=="lib/index.js"' /tmp/blame.tsv | sort | uniq -c | sort -nr | head -3; git log --format='%an|%ae' | grep -i troy | sort | uniq -c
+FINAL ANSWER:
+Blame ran at HEAD with the style reformat `62628c0` (Fiona Formatter) ignored and whitespace changes ignored, so it doesn't take ownership of every line. I excluded dependabot. Troy Goode is one person: they have two commit emails, `<email redacted>` and `troy@laptop.example`, and I counted them together.
+
+| Path | Top author | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159 of 238 (66.8%) | yes |
+| `test/` | Troy Goode | 517 of 967 (53.5%) | yes |
+| `.github/` | Douglas Christopher Wilson | 118 of 374 (31.6%) | no |
+| root files | Troy Goode | 134 of 417 (32.1%) | no |
+
+In `.github/`, the next largest shares are Íñigo Marquínez Prado at 25.4% and Sebastian Beltran at 16.8%. In the root files, Douglas Christopher Wilson has 27.6% and Jon Church 17.3%.
+
+Suggested CODEOWNERS:
+
+```
+# lib/ and test/: one person holds at least half of the surviving lines
+/lib/   @troygoode
+/test/  @troygoode
+
+# .github/ and root files: no owner. Nobody holds 50%.
+```
+
+- **GitHub handle:** `@troygoode` is my guess from the email `<email redacted>`. Check it before you use it.
+- **`lib/` and the recent commits:** the recent `lib: annotate handlers` commit adds only `// checked` comments, and I counted those lines. `lib/` stays above 60% for Troy Goode without them.
+- **Root files:** I grouped them together. A single file such as `README.md` or `package.json` might still have a majority owner. I can run blame per file if you want that.
+META cost=0.09062869999999999 ms=28088 turns=6

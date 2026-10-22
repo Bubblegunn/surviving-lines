@@ -1,0 +1,43 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print (NF==1?"<root>":$1)}' | sort | uniq -c; git shortlog -sne HEAD | head -40; git log --format='%h %an <%ae> %s' | head -15; git log --oneline | wc -l; cat .mailmap 2>/dev/null
+ - Bash: git ls-files; git show --stat b2005d9 02afce3 62628c0 | cat; git show b2005d9 02afce3 | head -80
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");print f"\t"$0}'; done | awk -F'\t' '{split($1,p,"/"); d=(length(p)==1?"<root>":p[1]); c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d\t%.1f%%\n",a[1],a[2],c[k],100*c[k]/t[a[1]]}}' | sort -k1,1 -k3,3nr | awk -F'\t' '{n[$1]++; if(n[$1]<=4)print}'; echo; for f in $(git ls-files | grep -v /); do echo $f; git blame --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep -c '^author '; done | paste - - 
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");print f"\t"$0}'; done > /tmp/blame.tsv; awk -F'\t' '{split($1,p,"/"); d=(length(p)==1?"<root>":p[1]); print d"\t"$2}' /tmp/blame.tsv | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{t[$2]+=$1; l[NR]=$0; d[NR]=$2} END{for(i=1;i<=NR;i++){split(l[i],a," "); n[d[i]]++; if(n[d[i]]<=3) print l[i], "total="t[d[i]]}}'; echo; grep -c bot /tmp/blame.tsv; grep -E 'Troy|Fiona' /tmp/blame.tsv | cut -f2 | sort | uniq -c
+ - Bash: awk -F'\t' '$2!="Fiona Formatter" && $2!~/\[bot\]/{split($1,p,"/"); d=(length(p)==1?"<root>":p[1]); c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d/%d\t%.1f%%\n",a[1],a[2],c[k],t[a[1]],100*c[k]/t[a[1]]}}' /tmp/blame.tsv | sort -t$'\t' -k1,1 -k4,4nr | awk -F'\t' '{n[$1]++; if(n[$1]<=3)print}'
+FINAL ANSWER:
+Blame is done and the numbers are in. Last step is the answer.
+
+Method: `git blame` on current lines, skipping the reformat commit `62628c0`. Blame still gave 237 lines to the formatter, so I dropped those lines too. I also dropped dependabot. Both of Troy Goode's identities (`<email redacted>` and `troy@laptop.example`) count as one person. Each directory's share is computed over its remaining lines.
+
+| Path | Top author | Share | Second |
+|---|---|---|---|
+| `lib/` | Troy Goode | 109/181 = 60.2% | Douglas Wilson 19.9% |
+| `test/` | Troy Goode | 411/786 = 52.3% | Douglas Wilson 38.8% |
+| `.github/` | Douglas Wilson | 108/366 = 29.5% | Íñigo Marquínez Prado 25.7% |
+| root files | Troy Goode | 122/415 = 29.4% | Douglas Wilson 27.7% |
+
+Suggested CODEOWNERS:
+
+```
+# Troy Goode holds >=50% of surviving lines
+/lib/   @troygoode
+/test/  @troygoode
+
+# No owner: nobody holds 50% of surviving lines
+# /.github/   (top: Douglas Wilson 29.5%)
+# /*          (root files; top: Troy Goode 29.4%)
+```
+
+`@troygoode` is a guess at the GitHub handle from the name, so check it. I only have commit emails, not handles.
+
+- **`.github/` and root files:** No one holds half, so I name no owner. Authorship is spread across many people. Add a team handle if you want a default reviewer.
+- **`test/` is borderline:** Troy's 52.3% includes 36 lines from `test/vary.js`. His commit `02afce3` ("vary header coverage") added that file. If you don't count that file, Troy drops to about 50%. He still just reaches half.
+- **`lib/` is safer:** Troy's 60.2% includes 12 `// checked` comment lines from `b2005d9`. Those are real edits, not formatting, so I counted them. Without them he is still above 50%.
+- **Reformat commit:** Blame can't map some reflowed lines back to their original authors. Dropping the formatter's lines removes those lines from the count entirely. It doesn't credit them to anyone.
+META cost=0.0722479 ms=43982 turns=7

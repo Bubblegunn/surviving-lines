@@ -1,0 +1,41 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --oneline | wc -l && git ls-files | wc -l && for f in $(git ls-files | grep -vE 'package-lock|\.(png|jpg|ico|gif|svg)$'); do git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+ - Bash: for f in $(git ls-files | grep -vE 'package-lock|\.(png|jpg|ico|gif|svg)$'); do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -8; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | grep -E 'Troy|Douglas|Íñigo|Jon Church|Sebastian|Ulises|Fiona'; git log -1 --format='%an %ad' 62628c0; git log --reverse --format=%ad --date=short | head -1; git ls-files
+FINAL ANSWER:
+Ownership is based on `git blame` over the 18 tracked files. It counts lines that exist today, follows moves and copies (`-M -C`), and ignores whitespace-only changes (`-w`).
+
+I excluded commit `62628c0`, the "reformat js with 4-space indent and double quotes" commit by Fiona Formatter. Without that exclusion, Fiona Formatter would own 291 lines, only because they re-indented other people's code.
+
+**Surviving lines, with the reformat excluded (about 1,900 lines):**
+
+| Author | Lines | Last commit | Status |
+|---|---|---|---|
+| Troy Goode | 810 | 2026-04-10 | active |
+| Douglas Christopher Wilson | 629 | 2021-09-07 | inactive for about 5 years |
+| Íñigo Marquínez Prado | 95 | 2024-05-14 | inactive for about 2.5 years |
+| Jon Church | 72 | 2026-01-16 | active |
+| Sebastian Beltran | 67 | 2025-07-23 | recent |
+| Ulises Gascón | 52 | 2026-01-22 | active |
+| Ignacio Mangas | 44 | not checked | |
+| Others | about 130 | not checked | |
+
+- **Troy Goode owns the most surviving code, about 43%.** This is the author who started the project in 2013.
+- **Douglas Christopher Wilson owns about a third of the code but hasn't committed since 2021.** They have the most commits (143, against 122 for Troy), but a large part of what they wrote is still in place.
+- **Roughly 40% of the lines belong to people who haven't committed in more than 2 years.** That is Douglas and Íñigo, with some of the "others" probably in the same group. This is the part `git shortlog` hides.
+- **Fiona Formatter owns nothing of substance.** Their one commit is mechanical, and plain `git blame` credits them with 291 lines.
+
+**Limits**
+- Blame shows who last wrote a line. It doesn't show who understands the code. A reviewer who never commits looks like a stranger here.
+- I didn't check last-commit dates for Ignacio Mangas or the smaller contributors.
+- I didn't break ownership down by file or directory. Most of the code is in `lib/index.js` and `test/`, and the split there could differ from the totals above.
+
+I haven't run the `busfactor` script, so no `.github/CODEOWNERS` was written and the repo is unchanged. Its time-decayed scoring would rank recent contributors higher than this blame count does. I can run it with `--dry-run` if you want a CODEOWNERS draft and a per-directory bus-factor report.
+META cost=0.07282439999999998 ms=21596 turns=7

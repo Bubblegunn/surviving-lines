@@ -1,0 +1,67 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__file_history,mcp__git-historian__blame_summary,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-1/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E5-hist-1/repo", "file": "lib/index.js", "limit": 200}
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -w --ignore-revs-file /dev/null -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git show b2005d9 --stat --format='%an %s%n%b' | head; git show 62628c0 --stat --format='%an %s' | head
+FINAL ANSWER:
+Plain `git blame` credits Fiona Formatter with 90% of `lib/index.js`. That is misleading. Her commit `62628c0` (2026-04-12) only changed indentation and quote style, and it touched all 214 lines it changed. I re-ran blame with that commit ignored and with whitespace and moved lines ignored (`-w -M -C --ignore-rev 62628c0`). The result below shows who wrote the surviving code.
+
+**Who shaped it (62 commits, 2013–2026)**
+- **Troy Goode** created the file in "first commit" `bcd03d9` on 2013-01-30. He wrote most of the early design:
+  - case-insensitive header lookup
+  - `origin: false` to disable CORS
+  - request pause/resume
+  - the `Access-Control-Expose-Headers` option
+  - Express 4 and Connect support
+  - the move to the `vary` module
+  - the ESLint switch
+  
+  Most of the 2013 rewrite ("wrapping up", `4f13c63`) is his. He is still the main author.
+- **Contributors from 2013–2015:**
+  - Simon Mansfield: origin checks and credentials header handling.
+  - Damien Klinnert: `Allow-Methods` only on OPTIONS.
+  - Eric di Domenico: origin as a callback.
+  - Mathias Buus: non-Express request/response methods.
+  - Igor Soarez and Eran Tiktin: the `Vary: Origin` headers.
+  - max.laverse: passing preflight to `next()`.
+  - Alejandro Caravaca Puchades (also `alex94puchades`): RegExp and array values for `origin`.
+  - Raymond Feng: removed the closure in `applyHeaders`.
+- **Douglas Christopher Wilson (Express maintainer), 2017:** the second-largest surviving share. His changes were:
+  - fixing `Vary` for dynamic `allowedHeaders`
+  - the options-delegate fix
+  - lint and ESLint upgrades
+- **Later fixes:**
+  - Tomek Kopczuk (`Vary: Origin` for RegExp)
+  - Saad Tazi (frozen options)
+  - Benjamin Eidelman (Safari preflight workaround)
+  - Tom Arad (`maxAge: 0`)
+  - Chima Alaebo (lint)
+  - LuisEGR (lint, 2021)
+- **2026:** Troy Goode's `lib: annotate handlers` (`b2005d9`, 12 lines) and Fiona Formatter's reformat.
+
+**Whose code survives today (238 lines)**
+
+| Author | Lines (reformat ignored) | Lines (plain blame) |
+|---|---|---|
+| Troy Goode | 159 (about 67%) | 20 |
+| Douglas Christopher Wilson | 22 | 1 |
+| Alejandro Caravaca Puchades | 12 | not listed |
+| Raymond Feng | 7 | 2 |
+| max.laverse | 6 | not listed |
+| LuisEGR | 6 | not listed |
+| alex94puchades | 4 | not listed |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each | not listed |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each | Eric di Domenico: 1 |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each | not listed |
+| Fiona Formatter | 0 | 214 |
+
+Ignoring the 2026 reformat shows Troy Goode as the author of about two thirds of the surviving lines, with Wilson and Puchades next. I also ran blame with `b2005d9` ignored. Troy's count dropped to 157 and Raymond Feng's rose to 9, which means that commit only rewrote lines they had written earlier.
+
+Fiona Formatter's name on these lines comes only from the reformat, and none of the logic is hers. Plain `git blame` or `git log` will keep showing her unless you add `62628c0` to `.git-blame-ignore-revs`. GitHub's blame view and `git blame` both read that file if you set `blame.ignoreRevsFile`.
+META cost=0.08437050000000001 ms=21182 turns=6

@@ -1,0 +1,48 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: if [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" ]; then node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js"; else echo MISSING; fi
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js"; $SL --group-by ext --merge-identities; echo ======; $SL --include '*.go' --merge-identities; echo ======; $SL --include '*.go' --merge-identities --ignore-rev 6bf5b04 | head -30; echo =====; git show --stat 6bf5b04 | head -20; ls .mailmap 2>&1
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; node $SL --group-by ext --merge-identities; echo ======; node $SL --include '*.go' --merge-identities; echo ======; node $SL --include '*.go' --merge-identities --ignore-rev 6bf5b04 | head -30; echo =====; git show --stat 6bf5b04 | head -20; ls .mailmap 2>&1
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; node $SL --group-by ext --merge-identities --ignore-rev 6bf5b04 | sed -n 1,16p; echo '-----'; git show --stat 6bf5b04 | tail -n 8; echo '-----'; ls .mailmap 2>&1; node $SL --reviewers . 2>&1 | head -20
+FINAL ANSWER:
+Surviving Go lines are spread out. The top five authors hold about half, and they have all been inactive for years, so losing one or two active people matters little.
+
+**Scope:** `HEAD`, `.go` files only: 75 files, 12,194 lines, counted with `git blame -w -M -C`. Ownership is by surviving lines, not commits.
+
+| Author | Lines | Share |
+|---|---|---|
+| Eric Paris | 2,020 | 16.6% |
+| Alex Ogier | 1,237 | 10.1% |
+| Noah Dietz | 1,228 | 10.1% |
+| Jonathan Reyna | 1,044 | 8.6% |
+| Tamal Saha | 624 | 5.1% |
+| Riobard | 538 | 4.4% |
+| therealmitchconnors | 522 | 4.3% |
+| Georges Varouchas | 454 | 3.7% |
+| rpothier | 384 | 3.1% |
+| wu8685 | 383 | 3.1% |
+
+67 more authors hold the rest.
+
+**Concentration:**
+- **Bus factor for Go files:** 5. Five authors reach 50.5% of the lines. That is the smallest number of authors whose lines together pass 50%.
+- **Bus factor to reach 80%:** 16 authors. This figure covers the whole repo (all file types), because the Go-only run did not print it.
+- **Losing one or two people:** Eric Paris plus Alex Ogier hold 26.7% of the Go lines (3,257). That is a real loss, but not a crisis.
+- **Activity:** the tool's recency check, as of 2026-04-08, counts a person as active if they committed in the previous 365 days. The top five by lines (Paris, Ogier, Dietz, Reyna, Saha) all last committed between 2015 and 2018, so they count as inactive. The most active people with real holdings are Georges Varouchas (454 lines, 3.6%, last commit 2025-06-27), Ethan P. (295 lines, 2.3%) and Maximilian Frank (172 lines, 1.3%). Most of the code has no active owner, and nobody active holds a large share. For review, expect to build knowledge yourself.
+
+**Caveats:**
+- **Few commits, many lines:** Noah Dietz has 9.6% of lines from 2 commits, and Jonathan Reyna has 8.2% from 1 commit. Those are one-time drops, probably a feature or a vendored-style import. I did not inspect those commits.
+- **Copy detection:** these figures use `-C`. Repo-wide, it moved 618 lines in 16 files between authors. Alex Ogier has 11.1% with it and 8.0% without. Riobard has 4.2% with it and 7.2% without. Georges Varouchas has 3.6% with it and 1.9% without. Their Go-only shares may shift a bit more than the table shows.
+- **Mechanical rewrites:** the tool set aside 0 commits and listed 5 candidates. I checked `6bf5b04`, the `interface{}` to `any` rewrite by Sam Okafor. It touched 39 files with 49 lines added and 49 removed. Excluding it with `--ignore-rev` moves lines back to earlier authors, and the top of the table barely changes: Eric Paris goes from 2,020 to 2,041 lines (16.7%). The table above keeps that commit. I did not inspect the other four candidates (`fd456b3`, `d16d05e`, `5494e14`, `92abf19`), so they are also still in the counts.
+- **Identities:** there is no `.mailmap`, and the tool found no same-person addresses to merge. If someone appears under two names, the numbers split them.
+- **Left out:** `vendor/` (1,094 lines), `zz_generated_flags.go` (488 lines), `go.sum` (4 lines), and one bot identity (6 lines).
+- **Non-Go files:** `.sh` is 100% Eric Paris (103 lines). `.yaml` is 98.4% Mark Sagi-Kazar (64 lines). These are small, but each has a single owner.
+
+These numbers say whose code is still here. They say nothing about quality, review work or who understands the code.
+META cost=0.11111700000000001 ms=38858 turns=8

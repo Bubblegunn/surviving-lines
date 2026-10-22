@@ -1,0 +1,43 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; for f in cJSON.c cJSON.h; do echo "== $f"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | awk '{c=$1; $1="";$2=""; n[NR]=$0; k[NR]=c; t+=c} END{for(i=1;i<=NR;i++){s+=k[i]; if(i<=15) printf "%2d %-28s %5d %5.1f%%\n",i,n[i],k[i],100*k[i]/t}; print "total",t}'; git blame --line-porcelain cJSON.c cJSON.h >/dev/null; wc -l cJSON.c cJSON.h | tail -1
+FINAL ANSWER:
+Ranking is by surviving lines in `cJSON.c` and `cJSON.h` combined (3,601 lines at HEAD).
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 131 | 3.6% |
+| 4 | Dave Gamble | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi | 74 | 2.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | PeterAlfredLee | 31 | 0.9% |
+| 10 | Nicolas Badoux | 29 | 0.8% |
+| 11 | Zach Hindes | 23 | 0.6% |
+| 12 | miaoerduo | 22 | 0.6% |
+| 13 | Sang-Heon Jeon | 13 | 0.4% |
+| 14 | Jiri Zouhar | 13 | 0.4% |
+| 15 | Pawel Winogrodzki | 11 | 0.3% |
+
+About 25 more authors have 10 lines or fewer each. Together they hold roughly 4% of the lines.
+
+**Method**
+- I ran `git blame -w -M -C` and passed `--ignore-revs-file .git-blame-ignore-revs`. That file lists the clang-format commit `413c6d1`. Without it, that commit would have taken credit for most of the two files.
+- `-w` skips whitespace-only changes. `-M` and `-C` follow lines that were moved or copied within a file or between files.
+- Per file, Max Bruckner holds 2,587 of the `cJSON.c` lines and 112 of the `cJSON.h` lines. Dave Gamble, the original author, holds 62 and 49.
+
+**Caveats**
+- `tomasi` and `Tomás Ibarra` may be the same person. If so, they total 142 lines (3.9%) and rank 3rd. I didn't merge them because `.mailmap` doesn't, and I don't want to guess.
+- A line counts for whoever last changed it, so Dave Gamble's design work is understated. His original code was largely rewritten or reformatted later.
+- Lines count equally, whether it's a comment, a brace, or a hard algorithm.
+- The `-C` flag can occasionally credit a line to the wrong commit. Treat the small percentages as approximate.
+META cost=0.0603593 ms=17050 turns=4

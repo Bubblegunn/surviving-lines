@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -10; git shortlog -sne --no-merges HEAD | head
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | wc -l; git log --format='%an <%ae>' | grep -iE 'ines|inès' | sort | uniq -c
+FINAL ANSWER:
+Authorship is concentrated in one person, Andrew Gallant. Of the 4,366 surviving lines in the 10 tracked `.rs` files, 2,838 (65%) are theirs. I counted lines with `git blame -w -M -C` at HEAD, so whitespace changes and moved or copied lines don't change who gets credit.
+
+| Rank | Author | Surviving lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,838 | 65.0% |
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau (two spellings merged) | 217 (120 + 97) | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+
+Further down are Aron Griffis (59), mcharsley (45), Marvin Löbel (41) and Martin Sehnoutka (38). Together with ranks 4 and 5, everyone outside the top three holds about 15% of the lines.
+
+- **Name merge:** Inès Moreau appears under "Inès Moreau" and "Ines Moreau" in blame. Git history shows three identities with two different emails plus a noreply address. I assumed they are the same person. Without the merge, they would be 120 and 97 lines, and Sebastian Thiel would rank third.
+- **Commit counts differ:** Andrew Gallant also has the most commits (128). Sam Okoro has only 2 commits but 646 surviving lines, so those commits were large.
+- **Not done:** The skill's full workflow also covers per-file bus factor, whether owners are still active, and import-based importance. I skipped those because you asked only about overall authorship share. I can run them if you want.
+META cost=0.063419 ms=17749 turns=6

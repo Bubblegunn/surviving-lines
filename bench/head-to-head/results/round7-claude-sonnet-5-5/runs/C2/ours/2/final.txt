@@ -1,0 +1,52 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js" ] && echo yes; git rev-parse --is-shallow-repository; ls src/itsdangerous/
+ - Bash: S='node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js'; $S --reviewers src/itsdangerous/signer.py; echo ======; $S --reviewers src/itsdangerous/timed.py; echo ======; $S --merge-identities --reviewers src/itsdangerous/signer.py src/itsdangerous/timed.py 2>&1 | head -60
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/itsdangerous/signer.py; echo ======; sl --reviewers src/itsdangerous/timed.py; echo ======; sl --merge-identities --reviewers src/itsdangerous/signer.py 2>&1 | head -40
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/itsdangerous/timed.py; echo; echo =====; sl --merge-identities --reviewers src/itsdangerous/signer.py 2>&1 | head -30; echo ====; sl --merge-identities --reviewers src/itsdangerous/timed.py 2>&1 | head -30
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities --reviewers src/itsdangerous/signer.py 2>&1 | head -14; sl --merge-identities --reviewers src/itsdangerous/timed.py 2>&1 | head -14; git log --author="Ibarra" --stat --format='%h %ad %s' --date=short | head -20; ls .mailmap .git-blame-ignore-revs 2>&1
+FINAL ANSWER:
+**Ask David Lord first. Tomás Ibarra is the second reviewer if your change touches the rotation helpers.**
+
+These are surviving-line counts from `git blame -w -M` at HEAD, from `surviving-lines --reviewers`. No identity merging was suggested, and there is no `.mailmap` or `.git-blame-ignore-revs` file in the repo.
+
+**`signer.py`** (358 of 366 lines attributed)
+
+| Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| David Lord | 212 | 59.2% | 10 | 2024-04-16, inactive |
+| Tomás Ibarra | 100 | 27.9% | 1 | 2025-07-01, active |
+| Armin Ronacher | 19 | 5.3% | 2 | 2018-10-26, inactive |
+
+**`timed.py`** (295 of 300 lines attributed)
+
+| Author | Lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| David Lord | 172 | 58.3% | 16 | 2025-05-28, active |
+| Tomás Ibarra | 72 | 24.4% | 1 | 2025-07-02, active |
+| Armin Ronacher | 37 | 12.5% | 3 | 2018-10-27, inactive |
+
+- **David Lord** holds the most surviving lines in both files. "Inactive" means no commit in the year before 2025-07-08. In `signer.py` his last commit is 2024-04-16, so he is inactive there. In `timed.py` he is active, with a commit on 2025-05-28. I kept the order by lines, as the tool does.
+- **Tomás Ibarra** has one commit in each file, both recent and both pure additions:
+  - `93695fd` (2025-07-01) added 100 lines, "signer: add key rotation helpers".
+  - `56dba8d` (2025-07-02) added 72 lines, "timed: add rotation helpers for timestamp signer".
+
+  They own those rotation helpers entirely. They are the right person if your change touches that code.
+- **Armin Ronacher** is third in both files, but inactive since 2018. He is probably not reachable.
+
+**Bus factor** is the smallest number of authors whose surviving lines reach a given share of the lines counted. For each file on its own, the factor is 1 at 50%, because David Lord alone holds 59.2% of `signer.py` and 58.3% of `timed.py`. Reaching 80% takes 2 authors in each file.
+
+**Left out or moved**
+- **Bots:** 1 bot identity is excluded: 8 lines in `signer.py` and 5 lines in `timed.py`.
+- **Moved or copied code:** 34 of 366 lines (9.3%) in `signer.py` and 32 of 300 lines (10.7%) in `timed.py` were written in other paths. The largest sources are `itsdangerous.py` and `src/itsdangerous/__init__.py`. Credit goes to whoever wrote them, not to whoever moved them. The tool counts that credit under the original authors.
+- **Reformat commits:** none were detected.
+- **Unattributed lines:** some lines were not attributed (8 in `signer.py`, 5 in `timed.py`).
+
+These counts show whose code is still here. They don't show who understands it well, and review or design work leaves no lines behind.
+META cost=0.0920984 ms=29383 turns=9

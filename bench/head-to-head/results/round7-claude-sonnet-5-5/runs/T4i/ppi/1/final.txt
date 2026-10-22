@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '{c[$1]++; if(!($1 in last)) last[$1]=$2} END{for(a in c) print c[a], a, "last:", last[a]}' | sort -rn; echo ---; git log --follow --no-merges --pretty=format:"%an" -- lib/index.js | wc -l; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head; echo ---; git log -1 --pretty=format:"%an %ad" --date=short; echo; grep -rl "index" --include=*.js . --exclude-dir=node_modules --exclude-dir=.git | head -20
+ - Bash: grep -n '"main"' package.json; grep -rln "lib/index\|require(\"\.\./lib\")\|require(\"\.\./\")\|require(\"\.\.\")\|require(\"\./lib\")" . --include="*.js" --exclude-dir=node_modules --exclude-dir=.git | head; git log --since=2025-10-22 --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c; git log -3 --pretty=format:"%h %an %ad %s" --date=short --author="Fiona" -- lib/index.js; git shortlog -sn --since=2025-10-22 --no-merges HEAD | head
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** Last commit on this file: 2026-04-10. Recent activity: 1 commit in the last 12 months.
+
+| Metric | Value |
+|---|---|
+| Commits on the file (no merges) | 61 |
+| Unique contributors | 25 |
+| Top contributor | Troy Goode, 29 commits (about 48%) |
+| Lines owned per `git blame -w -M -C` | Troy Goode 138, Fiona Formatter 32, Douglas Christopher Wilson 18, Alejandro Caravaca Puchades 12, Raymond Feng 7 |
+| Dependents | It is the package `main` entry (`package.json:18`). `test/test.js`, `test/error-response.js` and `test/example-app.js` import it. |
+| Risk | **Medium.** The file is critical because it is the entry point. Ownership is not single-person (48%, below the 80% threshold), but it is concentrated in one active maintainer. |
+
+**Who to ask**
+1. **Troy Goode**: primary owner, 138 lines by blame, and still active. Request this review first.
+2. **Douglas Christopher Wilson**: second-largest line owner among people with real logic changes, but his last commit to this file was 2017-10-04. Treat him as unlikely to respond.
+3. **Alejandro Caravaca Puchades** has 12 lines, but his last commit was 2015-05-28. He is probably not reachable.
+
+**Caveats**
+- Fiona Formatter's 32 lines come from the 2026-04-12 reformat commit (`62628c0`), not from logic changes. Do not use that name as a reviewer.
+- Nearly all other contributors have no activity on this file since 2021 or earlier.
+- I scoped this to the one file instead of running the full project-wide analysis with the contributor-analyzer agent. The project-level bus factor number is therefore not computed.
+- Dependent count came from a grep for imports of this file in the repo. It did not trace transitive dependents.
+
+**Recommendation:** Ask Troy Goode for review. Because few other people know this file, run the tests (`test/test.js` covers the entry point) before you request the review.
+META cost=0.06125630000000001 ms=19048 turns=5

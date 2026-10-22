@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | head -12; echo; git ls-files '*.go' | xargs cat | wc -l
+ - Bash: ls .mailmap 2>&1; git shortlog -sne HEAD | head -25
+ - Bash: git shortlog -sne HEAD | grep -E "Noah|Marcus|Priya|Jonathan|Mitch|Tamal"; git log --author="Marcus Lindqvist" --author="Priya Raman" --author="Noah Dietz" --author="Jonathan Reyna" --format='%h %an %ad %s' --date=short | head -20
+ - Bash: git ls-files '*.go' | grep -E '^(vendor|example)/' | xargs wc -l | tail -1; git ls-files '*.go' | grep -vE '^(vendor|example)/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sed 's/^author //;s/therealmitchconnors/Mitch Connors/' | sort | uniq -c | sort -rn | head -8; git ls-files '*.go' | grep -vE '^(vendor|example)/' | xargs cat | wc -l
+FINAL ANSWER:
+Status: I ran `git blame` on every tracked `.go` file at HEAD and counted surviving lines per author. Here are the results.
+
+I excluded `vendor/`, which is 802 lines of third-party `ansi.go` added by Priya Raman. That leaves 14,511 lines. I used `-w -M -C` so whitespace edits and moved lines don't change authorship.
+
+| # | Author | Surviving lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~15% |
+| 2 | Noah Dietz | 1,240 | ~8.5% |
+| 3 | Alex Ogier | 1,214 | ~8.4% |
+| 4 | Jonathan Reyna | 1,062 | ~7.3% |
+| 5 | Marcus Lindqvist | 956 | ~6.6% |
+
+Next are Tamal Saha (~4%), Riobard (~3.8%) and Mitch Connors (~3.4%). I merged Mitch's two identities, `Mitch Connors` and `therealmitchconnors`.
+
+Caveats before you pick anyone:
+- **Line count doesn't match commit activity.** Noah Dietz (2 commits, 2018) and Jonathan Reyna (1 commit, 2017) wrote the generated-style slice flag types (`BoolSlice`, `UintSlice`, `Int32Slice` and similar). Those are large but repetitive. Neither has committed since.
+- **Marcus Lindqvist's lines are 2 commits from yesterday** (2026-10-21), the shell completion helpers and their tests. They show up under two emails (`<email redacted>` and `mlindqvist@corp.example`). Check that both are the same person.
+- **The commit-count leaders rank lower by lines.** Tomas Aschan (63 commits), Albert Nigmatzianov (24 + 6 as `bogem`) and Sebastiaan van Stijn (13) don't make the top five. They may be better candidates if you want people who maintain the project over time.
+- **There is no `.mailmap`.** Other authors may also appear under more than one name. For example, `Albert Nigmatzianov` and `bogem` share an email, but I haven't merged them.
+
+I can rerun this with time-windowed activity, such as commits in the last 2 years, or with tests and non-test code counted separately.
+META cost=0.0850439 ms=32607 turns=7

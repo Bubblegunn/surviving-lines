@@ -1,0 +1,37 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --reviewers lib/index.js --merge-identities; echo ----; node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --reviewers lib/index.js
+ - Bash: git show --stat fcd2b56 | head -20; git check-ignore -v .mailmap; ls .mailmap 2>&1; cat .git-blame-ignore-revs
+FINAL ANSWER:
+**Suggested reviewers for `lib/index.js`, ranked by surviving lines (`git blame -w -M -C`):**
+
+1. **Troy Goode**: 159 of 238 lines (66.8%). Last commit 2026-04-10, active.
+2. **Douglas Christopher Wilson**: 22 lines (9.2%). Last commit 2017-10-04, inactive.
+3. **alex94puchades**: 16 lines (6.7%). Last commit 2015-05-28, inactive.
+
+Troy is the obvious first reviewer. The other two haven't committed in years, so check they're still reachable before assigning them. Both stay in the ranking despite being inactive.
+
+**Identity merge (a guess):**
+- Troy Goode appears under two addresses. The 159 lines count `<email redacted>` (147 lines, 61.8%) and `troy@laptop.example` (12 lines, 5.0%) as one person. The evidence is the same name, which is strong but still unconfirmed.
+- Unmerged, `<email redacted>` still ranks first, but with 147 lines and 61.8%.
+- I didn't write a `.mailmap`, since you only asked a question.
+
+**Bus factor:**
+- On `lib/index.js` alone, it is 1. Troy alone holds 66.8% of the lines. It is 3 authors to reach 80% with the merge, or 4 without it. The factor is the smallest number of authors whose surviving lines reach 50% (or 80%) of the lines counted.
+- It shows how concentrated the remaining code is, not who understands it.
+
+**What the figures leave out:**
+- Nothing is dropped from the count. All 238 lines in the single file are attributed. No bots, lockfiles, generated files or vendored code were involved.
+- Commit `62628c0` (the 4-space and double-quote reformat) is in `.git-blame-ignore-revs`, so the tool skips it. Without that, the reformat would have taken the lines.
+- Copy detection is the default `-w -M -C`. The output flagged no person as moving more than 2 points because of it.
+- I checked for mechanical rewrites across 36 commits holding surviving lines. None were set aside. The tool flagged `fcd2b56` ("switch to ESLint; clean up", Troy, 2015), which holds 7 surviving lines in this file.
+- `git show --stat` shows it touched 10 files (65 insertions, 98 deletions), including 30 changed lines in `lib/index.js`. It mixes a lint config, package changes and manual cleanup, so I kept it in the numbers. If you want it excluded anyway, the counts would shift slightly, mostly for Troy.
+
+**What the numbers can't show:**
+- They say nothing about line quality, review, design work or pairing. Deleted code counts for nobody.
+META cost=0.0648904 ms=16458 turns=5

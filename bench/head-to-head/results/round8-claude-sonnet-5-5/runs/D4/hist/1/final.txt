@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D4-hist-1/repo", "path": "src", "top": 50}
+FINAL ANSWER:
+**Bus factor for `src/` is 1.** One author, Andrew Gallant, owns 53.1% of the surviving lines. That is more than half, so losing them alone removes majority ownership.
+
+This comes from `git blame` at HEAD over all 8 tracked files in `src/`, about 4,200 lines.
+
+| Rank | Author | Lines | Share | Cumulative |
+|---|---|---|---|---|
+| 1 | Andrew Gallant | 2,231 | 53.1% | 53.1% |
+| 2 | Niko Alvarez | 883 | 21.0% | 74.1% |
+| 3 | Kaito Mori | 262 | 6.2% | 80.3% |
+| | 29 others | ~830 | ~19.7% | |
+
+Andrew Gallant is the main owner of 5 of the 8 files:
+- `src/dent.rs`: 98%
+- `src/tests/util.rs`: 100%
+- `src/tests/mod.rs`: 100%
+- `src/tests/recursive.rs`: 82.7%
+- `src/lib.rs`: 54.2%
+
+**Caveats**
+- **The generated file inflates Niko Alvarez's share.** `src/errno_table.rs` (883 lines, 100% Niko) was added in the commit "Add generated errno table". If you exclude it, Andrew Gallant's share rises to about 67% of the hand-written lines. The bus factor stays 1, and the concentration is higher than the table shows.
+- **`error.rs` has a single owner.** It belongs entirely to Kaito Mori (262 lines).
+- **Two identities appear to be one person.** "Ola Berg" (66 lines) and "ola.berg" (75 lines) are listed separately, so the mailmap doesn't merge them. Combined that is about 3.4%. It doesn't change the result.
+- **Everyone is flagged inactive.** The cutoff was no commit since 2026-04-22, and no author has committed since then. The tool therefore marks all 8 files as orphaned. Andrew Gallant's last commit was 2026-04-09, and Niko Alvarez's was 2026-03-20. Treat "orphaned" as "no recent activity from anyone", not as a finding about specific people.
+
+I can rerun it excluding the generated file, or merge the two Ola Berg identities, if you want cleaner numbers.
+META cost=0.057423100000000005 ms=15800 turns=3

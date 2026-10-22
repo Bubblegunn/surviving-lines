@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -10
+ - Bash: git show --stat --format='%h %an %s' c862f48 | head -15; git show --stat --format='%h %an %s' a45246e | head -8; ls .git-blame-ignore-revs .mailmap 2>&1
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | awk '{t+=$1; print} END{print t" total"}'; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | grep -i 'ines\|inès'
+FINAL ANSWER:
+Authorship is concentrated in one person. Andrew Gallant owns 2,838 of the 4,366 surviving Rust lines (65%) across the 10 tracked `.rs` files.
+
+I counted lines with `git blame -w -M -C` on HEAD. The `-w` flag means the whitespace-only line-ending rewrite in `c862f48` doesn't count as authorship.
+
+Next by share:
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau, including the "Ines Moreau" spelling | 217 | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+- **Inès Moreau:** Git lists "Inès Moreau" (120 lines) and "Ines Moreau" (97 lines) as separate authors, so I combined them. The two names use different emails, and a third commit uses the name "ines". That is my inference that they are one person, and there is no `.mailmap` to confirm it. If they are different people, the split is 120 and 97, and Sebastian Thiel moves up to rank 3.
+- **Other splits:** "Ashley" (68) and "Ashley Mannix" (4) may also be one person. So may "nivkner" (15) and "Niv Kaminer" (30). I did not merge those.
+- **Bot:** `github-actions[bot]` accounts for 10 lines, from the SPDX header commit.
+- **Long tail:** The remaining 30 or so authors each have 45 lines or fewer.
+
+Gallant and Okoro together hold about 80% of the lines.
+META cost=0.0618103 ms=14063 turns=5

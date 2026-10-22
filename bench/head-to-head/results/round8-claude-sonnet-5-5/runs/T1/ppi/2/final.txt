@@ -1,0 +1,63 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$' | grep -v node_modules | wc -l; git log --oneline | wc -l; git show --stat --oneline 62628c0 | tail -3; git shortlog -sne HEAD | head -15
+ - Bash: for f in $(git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$' | grep -v node_modules); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done > /tmp/blame_lines.tsv; wc -l /tmp/blame_lines.tsv; cut -f2 /tmp/blame_lines.tsv | sort | uniq -c | sort -rn | head -20
+ - Bash: sed -i '' 's/alex94puchades/Alejandro Caravaca Puchades/' /tmp/blame_lines.tsv
+echo "== per file =="; awk -F'\t' '{c[$1" | "$2]++; t[$1]++} END{for(k in c){split(k,a," \\| "); printf "%s\t%s\t%d\t%d%%\n",a[1],a[2],c[k],c[k]*100/t[a[1]]}}' /tmp/blame_lines.tsv | sort -k1,1 -k3,3nr | awk -F'\t' '!s[$1]++ {print} ' 
+echo "== file totals =="; cut -f1 /tmp/blame_lines.tsv | sort | uniq -c
+echo "== last commit per top owner =="; for n in "Troy Goode" "Douglas Christopher Wilson" "Alejandro Caravaca Puchades"; do echo "$n: $(git log --all --author="$n" -1 --format='%ad' --date=short) first: $(git log --all --author="$n" --reverse --format='%ad' --date=short | head -1)"; done
+echo "== files =="; git
+ - Bash: awk -F'\t' '{c[$1"\t"$2]++; t[$1]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d\t%.0f\n",a[1],a[2],c[k],c[k]*100/t[a[1]]}}' /tmp/blame_lines.tsv | sort -t$'\t' -k1,1 -k3,3nr | awk -F'\t' '{n[$1]++; if(n[$1]<=3) printf "%-26s %-30s %4d lines %3d%%\n",$1,$2,$3,$4}'
+echo; echo "== recent activity (last 365d) =="; git log --since="1 year ago" --no-merges --format='%an' | sort | uniq -c | sort -rn | head
+echo "== last commit date per author =="; git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | grep -E "Goode|Wilson|Caravaca|Eric di|Alberto Leal|Saad|Ulises|Jon Church"
+FINAL ANSWER:
+## Who owns the code today
+
+Ownership here is surviving lines from `git blame` at HEAD, not commit counts. I ran `blame` with `-w -M -C` and `--ignore-rev 62628c0`. That commit is the 4-space/double-quote reformat. It touched 1016 lines, so without the exclusion it would own most of the repo.
+
+Scope is the 7 tracked JS files, 1,202 lines. `lib/index.js` has 238 lines and `test/test.js` has 731. I merged `alex94puchades` into Alejandro Caravaca Puchades. I did not merge the two `Troy Goode` emails, because `blame` already reports them under one name.
+
+| Owner | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 676 | 56% | 2026-04-10 |
+| Douglas Christopher Wilson | 394 | 33% | 2021-09-07 |
+| Alejandro Caravaca Puchades | 34 | 3% | 2015-05-28 |
+| 17 other authors | 98 | 8% | all inactive except those in the recent-activity list below |
+
+Every other author owns 16 lines or fewer.
+
+### Per file
+
+| File | Top owner | Next owner |
+|---|---|---|
+| `lib/index.js` (the library) | Troy 67% | Doug 9%, Alejandro 7% |
+| `test/test.js` | Doug 46% | Troy 43% |
+| `test/error-response.js` | Troy 86% | Doug 14% |
+| `test/example-app.js` | Troy 83% | Doug 17% |
+| `test/issue-2.js` | Troy 83% | Doug 17% |
+| `test/vary.js` | Troy 100% | none |
+| `test/support/env.js` (2 lines) | Doug 100% | none |
+
+### Bus factor: 1
+
+Troy alone owns more than 50% of the surviving code, so the project-level bus factor is 1. Troy is also the only large owner who is still active.
+
+- **Troy Goode:** active, with commits as recently as 2026-04-10. He owns 67% of `lib/index.js`.
+- **Douglas Christopher Wilson:** last commit was 5 years ago. He owns 33% of the code, mostly the tests. If you take Troy out, Doug is the next-largest owner, and he is inactive.
+- **Recently active contributors:** Jon Church, Ulises Gascón, Ignacio Mangas and dependabot. None of them owns more than a few lines.
+
+### Caveats
+
+- **Commit counts disagree.** Doug has the most commits (143, against Troy's 120). He owns far less of the code that remains, because much of his work has since been rewritten.
+- **Sampling and importance checks:** I analysed every file, not a sample. I skipped the import-count check because there are only 2 source directories and `lib/index.js` is the sole library file.
+- **Non-JS files are excluded:** the README, package.json, CI config and similar files are not counted.
+- **`-M -C` can misattribute moved code.** It follows lines across files, and in a small repo it can credit them to the original author.
+
+If you want, I can break out ownership of `lib/index.js` by function.
+META cost=0.0938461 ms=29654 turns=8

@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git shortlog -sne HEAD | head -30; git log --format='%h %an <%ae> %s' | grep -iE 'format|style|prettier|lint|bot' | head -20
+ - Bash: git ls-files; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=substr($0,13)} /^\t/{print f"\t"a"\t"m}'; done > /tmp/blame.tsv; awk -F'\t' '{split($1,p,"/"); d=(index($1,"/")?p[1]:"(root)"); c[d"\t"$2"\t"$3]++; t[d]++} END{for(k in c){split(k,x,"\t"); printf "%s\t%s\t%s\t%d\t%.0f%%\n",x[1],x[2],x[3],c[k],100*c[k]/t[x[1]]}}' /tmp/blame.tsv | sort -k1,1 -k4,4nr | awk -F'\t' '{n[$1]++} n[$1]<=6'
+ - Bash: cd /tmp && awk -F'\t' '$3!~/bot\]/{split($1,p,"/"); d=(index($1,"/")?p[1]:"(root)"); e=$3; if(e~/troy@laptop/)e="<<email redacted>>"; c[d"\t"e"\t"$2]++; t[d]++} END{for(k in c){split(k,x,"\t"); printf "%s\t%s\t%s\t%d\t%.1f%%\n",x[1],x[3],x[2],c[k],100*c[k]/t[x[1]]}}' blame.tsv | sort -t$'\t' -k1,1 -k4,4nr | awk -F'\t' '{n[$1]++} n[$1]<=3'; awk -F'\t' '{print $1}' blame.tsv | sort | uniq -c | sort -rn | head -20; grep -c . blame.tsv
+FINAL ANSWER:
+Only `lib/` and `test/` have an owner who holds at least half the surviving lines. Both go to Troy Goode. `.github` and the root files have no majority owner.
+
+I counted lines with `git blame`, not the skill's decayed commit-weight script, because your rule is about surviving lines. I ignored the formatting commit `62628c0` (Fiona Formatter) and used `-w -M -C` so whitespace changes and moved code keep their original author. I left dependabot lines out of the totals. I merged Troy Goode's two emails (`<email redacted>` and `troy@laptop.example`) into one person.
+
+| Path | Top holders (share of surviving lines) | Owner |
+|---|---|---|
+| `lib/` | Troy Goode 66.8%, Douglas Wilson 9.2%, Alejandro Caravaca Puchades 5.0% | Troy Goode |
+| `test/` | Troy Goode 53.5%, Douglas Wilson 38.7% | Troy Goode |
+| `.github/` | Douglas Wilson 32.2%, Íñigo Marquínez Prado 26.0%, Sebastian Beltran 17.2% | none |
+| root files | Troy Goode 32.3%, Douglas Wilson 27.7%, Jon Church 17.3% | none |
+
+Root files are `README.md`, `HISTORY.md`, `package.json`, `LICENSE`, `.eslintrc.yml` and `.gitignore`.
+
+I don't have GitHub handles for anyone, so replace `@troygoode` with Troy's real handle. I also did not check whether Troy is still active. If they have left, `lib/` and `test/` are orphaned and you shouldn't name them.
+
+```
+# .github/CODEOWNERS  (last match wins: least specific first)
+
+# Root files: no one holds >=50% (Troy Goode 32%, Douglas Wilson 28%)
+# .github/:   no one holds >=50% (Douglas Wilson 32%, Íñigo Marquínez Prado 26%)
+
+/lib/   @troygoode
+/test/  @troygoode
+```
+
+Troy's share of `test/` is 53.5%, only just over half. Douglas Wilson holds 38.7%, so this rule is borderline.
+
+I haven't written any file. `.github/CODEOWNERS` is not in the repo yet, and I can create it if you want.
+META cost=0.0799524 ms=27742 turns=6

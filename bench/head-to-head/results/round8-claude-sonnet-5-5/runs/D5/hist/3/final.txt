@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 3}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D5-hist-3/repo/src/Parser", "path": "src/Parser", "top": 50}
+ - Bash: ls src/Parser && for f in src/Parser/*; do git blame --line-porcelain -w -M -C "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Surviving lines in `src/Parser` (961 lines, 10 files)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 809 | 84.2% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| JT Smith | 2 | 0.2% |
+| Jonas Staudenmeir | 2 | 0.2% |
+
+Plain `git blame` gives the table above. With copy and move detection (`git blame -w -M -C`), 10 of Graham's lines go to Vance Lucas, which is about 1.0%. That would leave Graham at 799 lines (83.1%). Those 10 lines look like code copied in from another file, but I haven't checked which.
+
+**Who should review**
+
+No one who wrote this code is active. Every author's last commit is before 2026-04-22, which was my 6-month cutoff. Per file:
+
+- **Graham Campbell** owns 8 of 10 files at 98–100%: `Parser`, `Lexer`, `EntryParser`, `Entry`, `Value`, `Lines`, `Regex` and `ParserInterface`. His last commit was 2026-02-27. He is the best reviewer for general parser changes, if he is reachable.
+- **Dmitri Volkov** owns 92.9% of `CommentStripper.php`. His last commit was 2026-03-10, the most recent of anyone. Ask him for comment-handling changes.
+- **Fatima Zahra** owns 94.7% of `EscapeDecoder.php`. Her last commit was 2026-01-22. Ask her for escape-handling changes.
+
+All 10 files count as orphaned: inactive authors own 100% of every file. If the reviewers above are no longer around, the review has to come from someone with no prior ownership. In that case, require tests for the change.
+
+I also didn't check whether the "inactive" authors are still on the team under other commit emails.
+META cost=0.0559819 ms=15187 turns=4

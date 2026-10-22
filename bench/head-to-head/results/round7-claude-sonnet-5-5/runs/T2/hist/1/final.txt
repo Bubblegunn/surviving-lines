@@ -1,0 +1,27 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-hist-1/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-hist-1/repo", "path": "lib"}
+FINAL ANSWER:
+**Bus factor of `lib/` is 2.** Two authors cover more than 50% of its 66 commits. `lib/` has 25 authors in total, and it is one file, `lib/index.js` (238 lines).
+
+- **Troy Goode:** 33 commits, exactly 50%. That is not above 50%, so Troy alone doesn't reach the threshold. Adding the second-ranked author does.
+- **Everyone else:** each has 4 commits or fewer. The next three are Alejandro Caravaca Puchades (4), Douglas Christopher Wilson (4) and Simon Mansfield (3).
+- **Knowledge silo flag:** none. No author has more than 80% of the commits.
+
+**Line ownership is worse than the commit count suggests.** `knowledge_risk` flags `lib/index.js` as orphaned, because 100% of its lines belong to authors who haven't committed since 2026-04-22.
+
+- **"Fiona Formatter":** owns 89.9% of the lines (214 of 238), and their last commit was 2026-04-12.
+- **Troy Goode:** owns 8.4%, and their last commit was 2026-04-10.
+- **Raymond Feng:** owns 0.8%, last commit 2015.
+
+The 89.9% figure is probably misleading. Commit `62628c0` ("style: reformat js with 4-space indent and double quotes") rewrote nearly every line, so blame credits the formatter, not the people who wrote the logic. I didn't confirm that "Fiona Formatter" is the author of that commit. If so, the real knowledge sits with Troy Goode and the earlier authors.
+
+**Answer:** by commit history, it takes 2 departures. Troy leaving is the main risk. By current blame, nobody active owns the file. Troy's last commit was in April 2026, so they may already count as gone. Run `git blame -w -C` or `git blame --ignore-rev 62628c0` on `lib/index.js` to see ownership without the reformat.
+META cost=0.0580478 ms=13294 turns=5

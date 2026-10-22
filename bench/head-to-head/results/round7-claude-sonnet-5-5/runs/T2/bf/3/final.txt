@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib directory"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-bf-3/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --no-github >/dev/null 2>&1; git status --short; node -e '
+const j=require("./.github/ownership.json");console.log(JSON.stringify(j.meta,null,1));console.log(JSON.stringify(j.unresolved));
+for(const z of j.zones||[]){if(/^\/?lib|^\/$|^\.?\/?$/.test(z.path||z.zone||""))console.log(JSON.stringify(z,null,1))}
+console.log(Object.keys(j))'; ls lib; git log --format='%an %ad' --date=short -- lib | sort | uniq -c | sort -rn | head
+ - Bash: git log --format='%h %ae %an %ad %s' --date=short -- lib | head -8; echo; git log --format='%ae %ad' --date=short --author=troy@laptop | sort | sed -n '1p;$p'; git log --format='%ae|%ad|%s' --date=short -n3; git log --format='%ae' -- lib | sort | uniq -c | sort -rn | head -5; rm .github/CODEOWNERS .github/ownership.json; git status --short
+FINAL ANSWER:
+**Bus factor of `lib/` is 1, and the tool's figure of 2 active owners overstates it.**
+
+`lib/` is a single file, `lib/index.js`. The tool shows two active owners at about 48% each, but that count is misleading.
+
+- **Fiona Formatter** (`fiona@formatter.example`): one commit, on 2026-04-12. It is the mechanical "reformat js with 4-space indent and double quotes" change. It touched every line but shows no understanding of the logic.
+- **Troy Goode:** he appears under two emails.
+  - `troy@laptop.example` has 2 commits from 2026-04-10 ("annotate handlers" and a test change). The tool counts it as active.
+  - `<email redacted>` has 33 commits from 2013 to 2015, the original design. The tool counts it as inactive.
+  - It is almost certainly the same person, since the name matches. I ran with `--no-github`, so the tool did not merge the two emails. Merged, Troy holds most of the real knowledge. Without that merge, his weight is split and the file looks shared between two people.
+- **Everyone else is inactive.** The most recent is LuisEGR in 2021, who made a lint-only change. Douglas Wilson, Tom Arad, Chima Alaebo and Benjamin Eidelman last touched it between 2017 and 2018.
+
+**If people leave:**
+- If Troy leaves, nobody active has written logic in `lib/`. The file becomes orphaned, because only the formatter commit remains active.
+- If only Fiona leaves, nothing changes.
+- So one departure is enough: Troy.
+
+**Caveats:**
+- The history was imported (the root commit holds 8 files), so ownership reflects work since the import, not the original authors.
+- This is inferred from commit volume, not measured knowledge. Reviewers who never commit are invisible to it.
+- To confirm, add `{"troy@laptop.example": {"login": "<handle>"}}` and the Gmail address to the cache, and mark Fiona's email as not a real owner. Then re-run. I did that for neither, so the numbers above are from the unmerged run.
+
+The script wrote `.github/CODEOWNERS` and `.github/ownership.json` into your repo, and I deleted both. `git status` is clean.
+META cost=0.0866388 ms=28170 turns=7

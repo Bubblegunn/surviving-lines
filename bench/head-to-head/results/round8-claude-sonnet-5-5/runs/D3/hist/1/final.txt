@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-1/repo/lib/rack/attack/store_proxy", "path": "lib/rack/attack/store_proxy"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-1/repo/lib/rack/attack/store_proxy"}
+FINAL ANSWER:
+Git history says nobody active owns this code. I haven't checked for a CODEOWNERS file or the repo's contributing docs.
+
+**Who to ask**
+- **Gonzalo Rodriguez** is the best contact. They made 25 of the 61 commits (41%) in `store_proxy/`, more than anyone else, and they touched most of the files. Their last commit was 2026-03-09.
+- **Divya Rao** wrote most of `memory_store_proxy.rb` (88%), last commit 2026-01-28.
+- **Mei Tanaka** wrote all of `dalli_accessors.rb`, last commit 2026-02-09. That is the recent "Extract Dalli read/write/increment/delete" change.
+- **Hye-jin Park** is the largest single owner of `redis_proxy.rb` (26%), last commit 2026-02-20. They also own some of `redis_cache_store_proxy.rb`, which has the TTL change.
+
+**Reviewers**
+- By the tool's rule (no commits in the last 6 months, so since 2026-04-22), all 7 files are orphaned. Every author with lines in the directory counts as inactive, including the four above.
+- Their last commits are 7 to 9 months old, so they may not respond or may have moved on. Still, Gonzalo Rodriguez is the best person to request, and Mei Tanaka or Divya Rao would be next if you touch their files.
+- The bus factor is 2 and there are 23 authors, so no single person is a silo. Because of that, a review from any current maintainer of the repo should be enough.
+- Find current maintainers with `git log --since="6 months ago" --format='%an' | sort | uniq -c | sort -rn`, or check the repo's CODEOWNERS and the maintainer list on GitHub.
+
+**Caveats**
+- `hakanensari` is the main owner of `dalli_proxy.rb` and `redis_store_proxy.rb`. Their last commit was in 2014, so don't try to contact them.
+- If you change the `Redis` or `Dalli` proxy behavior, run the full test suite for each store. No one currently owns that code, so tests are your main protection.
+META cost=0.056673699999999994 ms=13400 turns=4

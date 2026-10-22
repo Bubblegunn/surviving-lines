@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -vE '(package-lock\.json|\.(png|jpg|gif|ico|svg)$)' | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | wc -l; git log --reverse --format='%ad' --date=short | head -1; git log -1 --format='%ad' --date=short
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1-bf-2/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git ls-files; echo ---; git log --format='%ae|%an|%ad' --date=short | awk -F'|' '{c[$1]++; if(!($1 in l)) l[$1]=$3; n[$1]=$2} END{for(e in c) print l[e], c[e], e, n[e]}' | sort -r | head -20; echo ---; for f in $(git ls-files | grep -E '\.(js|md|yml|json)$'); do echo "$f: $(git blame -w -M -C --line-porcelain -- $f | grep -a '^author ' | sort | uniq -c | sort -rn | head -3 | awk '{printf "%s %s %s; ", $1,$3,$4}')"; done
+ - Bash: git ls-files | grep -vE '\.(png|jpg|gif|ico|svg)$' | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -12; git ls-files | xargs cat | wc -l
+FINAL ANSWER:
+Surviving code is mostly Troy Goode's and Douglas Wilson's, going by `git blame` on the current files. I counted blame lines, not commits.
+
+**Method.** I ran `git blame` with `-w -M -C` on every tracked text file, about 1,990 lines. I also ignored commit `62628c0`, the 4-space and double-quote reformat. Without that, Fiona Formatter shows 291 lines (about 15%), but those are formatting changes and not authorship. Troy Goode's two emails are merged in the counts below.
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 810 | ~41% | 2026-04-10 |
+| Douglas C. Wilson | 629 | ~32% | 2021-09-07 |
+| Íñigo Marquínez | 95 | ~5% | 2024-05-14 |
+| Jon Church | 72 | ~4% | 2026-01-16 |
+| Sebastian Beltran | 67 | ~3% | 2025-07-23 |
+| Ulises Gascón | 52 | ~3% | 2026-01-22 |
+| Ignacio Mangas | 44 | ~2% | 2025-12-01 |
+| Others | ~220 | ~11% | |
+
+**By area:**
+- **`lib/index.js` and the tests:** these are mostly Troy Goode's. For example, `lib/index.js` has 138 lines from Troy and 18 from Douglas, and `test/test.js` has 284 from Troy, 182 from Douglas and the rest from others.
+- **CI and `.github/workflows`:** this is spread across Douglas, Ignacio Mangas, Ulises Gascón, Sebastian Beltran and Íñigo Marquínez.
+- **`README.md`:** mostly Troy (116 lines), then Jon Church (72) and Linus Unnebäck (26).
+- **`HISTORY.md` and `package.json`:** mostly Douglas.
+
+**Caveats:**
+- **Douglas's code is unmaintained.** He is the second-largest owner, but his last commit was in 2021. If he is no longer active, about a third of the code has no active author.
+- **Troy is nearly a single point of failure for `lib/index.js` and most tests.** Troy's two emails, `<email redacted>` and `troy@laptop.example`, look like the same person, but I merged them by assumption.
+- **History before 2013-01-30 may be missing.** The root commit adds 8 of the 18 tracked files at once, so early authors may be credited to the import.
+- **Blame shows who last changed a line, not who understands it.** A reviewer who never commits won't appear here.
+
+The `busfactor` script also produced a CODEOWNERS draft with `--dry-run --no-github`, and I wrote nothing to the repo. Its fallback owners were Fiona, Ulises and Jon Church. That draft is skewed by Fiona's reformat commit and covers only `.github/` and the fallback, so I wouldn't use it as is. I can regenerate it with the reformat excluded if you want a CODEOWNERS file.
+META cost=0.08985389999999999 ms=32810 turns=8

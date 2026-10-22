@@ -1,0 +1,54 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/ \u2014 based on git blame of surviving lines, not commit counts"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files 'src/' | grep -v -E '\.(png|jpg|lock)$' > /tmp/bf_files.txt; wc -l /tmp/bf_files.txt; head -50 /tmp/bf_files.txt; git shortlog -sne HEAD | head -20
+ - Bash: ls .git-blame-ignore-revs 2>/dev/null; for f in $(cat /tmp/bf_files.txt); do git blame -w --line-porcelain HEAD -- $f | grep -E '^author (.*)$' | sed "s|^author |$f\t|"; done > /tmp/bf_blame.tsv; wc -l /tmp/bf_blame.tsv
+echo "== per file"; awk -F'\t' '{c[$1" | "$2]++} END{for(k in c) print k" | "c[k]}' /tmp/bf_blame.tsv | sort -t'|' -k1,1 -k3,3nr
+echo "== total"; cut -f2 /tmp/bf_blame.tsv | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Bus factor of `src/` is **1**. Andrew Gallant wrote 2486 of the 4205 surviving lines (59.1%), which is more than half on his own.
+
+I used `git blame -w --line-porcelain` on HEAD for all 8 tracked files in `src/`. The skill's default counts commits per file, so I replaced that step with blame. `-w` ignores whitespace-only changes. I merged `Ola Berg` and `ola.berg` into one author.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Andrew Gallant | 2486 | 59.1% |
+| Niko Alvarez | 883 | 21.0% |
+| nivkner | 146 | 3.5% |
+| Ola Berg (both spellings) | 141 | 3.4% |
+| Sebastian Thiel | 96 | 2.3% |
+| Marvin Löbel | 83 | 2.0% |
+| 24 other authors | 370 | 8.8% |
+
+**Generated file:** `src/errno_table.rs` has 883 lines attributed to Niko Alvarez, and the table is generated. Excluding it, Andrew Gallant owns 2486 of 3322 lines (74.8%). The bus factor stays 1 either way.
+
+**Ownership by file:**
+
+| File | Lines | Top author | Share | Bus factor |
+|---|---|---|---|---|
+| `src/lib.rs` | 1,098 | Andrew Gallant | 59% | 1 (25 authors in total) |
+| `src/tests/recursive.rs` | 1,158 | Andrew Gallant | 83% | 1 |
+| `src/errno_table.rs` | 883 | Niko Alvarez | 100% | 1 (generated) |
+| `src/dent.rs` | 352 | Andrew Gallant | 98% | 1 |
+| `src/error.rs` | 262 | Andrew Gallant | 98% | 1 |
+| `src/tests/util.rs` | 252 | Andrew Gallant | 100% | 1 |
+| `src/util.rs` | 100 | ola.berg | 75% | 1 |
+| `src/tests/mod.rs` | 4 | Andrew Gallant | 100% | 1 |
+
+**Reading the result:**
+- `src/lib.rs` is spread across many authors, but Andrew Gallant still has the majority. The next largest author, nivkner, has 13%.
+- `dent.rs` and `error.rs` are almost entirely his. Only 4 to 7 lines in each come from someone else.
+- `src/util.rs` is the one file he doesn't own. Ola Berg wrote 75 of its 100 lines.
+
+**Not checked:**
+- I didn't check whether the owners are still active, because that needs commit dates rather than blame.
+- I didn't count how many files import each module, so I haven't ranked the files by risk.
+- I didn't run the contributor-analyzer agent. Blame answered the question directly.
+
+I can add the activity check and the importer counts if you want them.
+META cost=0.0773841 ms=23834 turns=6

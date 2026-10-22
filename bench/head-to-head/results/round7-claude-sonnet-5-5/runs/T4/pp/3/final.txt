@@ -1,0 +1,19 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head; echo ---; git shortlog -sne --since="18 months ago" -- lib/index.js | head; echo ---; git shortlog -sne -- lib/index.js | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib | head -20; echo ---; git log --oneline -- lib/index.js | head; echo ---; git shortlog -sne HEAD | head; echo ---; git log --oneline | wc -l
+ - Bash: echo all-time; git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -6; echo last-24-months; git log --since="24 months ago" --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -6; echo recent; git log -8 --format='%h %ad %an %s' --date=short -- lib/index.js
+FINAL ANSWER:
+Repo has no CODEOWNERS file, so I based this on git history.
+
+- **Troy Goode** is the best reviewer. They have the most commits to `lib/index.js` (30). They also made the latest change that touched logic, `b2005d9 lib: annotate handlers` (2026-04-10).
+- **Douglas Christopher Wilson** is a good second reviewer. They have 4 commits to the file, and 143 commits across the repo. Their last commit to `lib/index.js` was in 2017, so their knowledge of the file's current state may be old.
+- **Fiona Formatter** only made the formatting commit `62628c0` (2026-04-12). Don't use them as a logic reviewer.
+
+Before you open the PR, run `git log --since="6 months ago" --format='%an' | sort | uniq -c | sort -rn`. That shows who is still active in the repo, since the file history is mostly old.
+META cost=0.0604944 ms=26081 turns=5

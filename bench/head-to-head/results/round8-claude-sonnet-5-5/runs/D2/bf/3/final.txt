@@ -1,0 +1,61 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log -1 --format='%ad' --date=short && git rev-list --count HEAD && git log --format='%ad' --date=short | tail -1 && git ls-files '*.go' | grep -v '^vendor/' | wc -l && git ls-files '*.go' | grep -c '^vendor/'
+git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | head -20
+echo ---recent
+git log --since='2025-04-08' --no-merges --format='%aE' | sort | uniq -c | sort -rn | head
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn > /tmp/blame.txt
+awk '{t+=$1} END{print "total",t, "authors",NR}' /tmp/blame.txt
+grep -iE 'tomasaschan|gone.nl|vaguecoder|ohly|kuckertz|lena' /tmp/blame.txt
+git log --since='2025-04-08' --no-merges --format='%aE' | sort -u | wc -l
+git log --no-merges --format='%aE|%ad' --date=short | grep -iE 'alex.ogier|eparis|noahdietz|JReyLBC' | awk -F'|' '{print $1, $2}' | sort -k1,1 -k2,2r | awk '!s[$1]++'
+ - Bash: git log --since='2025-04-08' --no-merges --format='%aE' | sort -u > /tmp/active.txt
+awk 'NR==FNR{a[tolower($1)]=1;next}{m=$3;gsub(/[<>]/,"",m); if(a[tolower(m)]){s+=$1; print $1,m}} END{print "active lines",s}' /tmp/active.txt /tmp/blame.txt
+ - Bash: git log --since='2025-04-08' --no-merges --format='%ae' | sort -u > /tmp/active.txt; cat /tmp/active.txt | head -3
+awk 'NR==FNR{a[tolower($1)]=1;next}{m=$3;gsub(/[<>]/,"",m); if(a[tolower(m)]){s+=$1; print $1,m}} END{print "active lines",s}' /tmp/active.txt /tmp/blame.txt
+ - Bash: cd /tmp && head -2 blame.txt | cat -A | head -2; wc -l active.txt; grep -c . blame.txt; grep -F -f active.txt blame.txt
+ - Bash: D=$(mktemp -d) && git ls-files '*.go' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed 's/author-mail <\(.*\)>/\1/'; done | sort | uniq -c | sort -rn > $D/b.txt
+git log --since='2025-04-08' --no-merges --format='%ae' | sort -u > $D/a.txt
+awk 'NR==FNR{a[tolower($1)]=1;next}{t+=$1; if(a[tolower($2)]){s+=$1; print $1,$2}} END{print "active",s,"of",t}' $D/a.txt $D/b.txt
+echo; head -12 $D/b.txt; awk '{t+=$1;c+=$1; if(NR==1||NR==2||NR==3||NR==5||NR==10)print NR, c, c/12682}' $D/b.txt
+FINAL ANSWER:
+**Short answer:** yes, it's a problem. The bigger problem is that most of the code belongs to people who have left, not that a few current people hold it.
+
+**What I measured.** I ran `git blame` (ignoring whitespace, following moves) over the 76 non-vendored Go files. That gave 12,682 surviving lines. "Active" means committed in the 12 months before the newest commit (2026-04-08). The history is 354 commits from 2012 to 2026.
+
+**Who wrote the live code**
+
+| Author | Live lines | Share | Active? |
+|---|---|---|---|
+| <email redacted> | 2,020 | 15.9% | no, last commit 2018 |
+| alex.ogier | 1,237 | 9.8% | no, last commit 2015 |
+| noahdietz | 1,228 | 9.7% | no, last commit 2018 |
+| JReyLBC | 1,044 | 8.2% | no, last commit 2017 |
+| tamal@appscode, riobard, mitchconnors, rpothier, and others | each 380–620 | | no |
+| **sam.okafor** | 537 | 4.2% | yes |
+| **georges.varouchas** | 454 | 3.6% | yes |
+| **eth-p** | 295 | 2.3% | yes |
+| mfrank (mercari), hujun.work | 172, 136 | 1.4%, 1.1% | yes |
+| lena.voss, patrick.ohly, tomasaschan | 133, 108, 67 | about 1% each | yes |
+
+- **Orphaned code:** only about 2,000 of 12,682 lines (15.9%) are written by anyone active. Roughly 84% of the Go code has no active author. The top four authors by surviving lines are all inactive, and together they wrote about 43% of it.
+- **Concentration among active people:** it is high. sam.okafor, georges.varouchas and eth-p account for about 1,290 of the 2,012 active lines (64%). The tool's fallback owner rule names sam.okafor, tomasaschan and georges.varouchas.
+- **If you lose one or two people:** losing sam.okafor and georges.varouchas would remove about half of the active knowledge. Nobody active has a deep line count anywhere. No active author owns more than 4.2% of the code.
+
+**What this means for reviewing**
+- You will often be reviewing code that nobody currently working on the project wrote. Those areas are orphaned, not just low bus factor.
+- Tell the people who do know the code (the three above) about this, and spread their knowledge before one of them leaves.
+- I did not get per-directory results. The tool's dry run printed only the fallback rule, and I didn't run it in write mode because that would add files to your clean repo. I can run it in write mode if you want per-directory orphaned and bus-factor-1 zones in `.github/ownership.json`.
+
+**Caveats**
+- Line counts are a proxy for knowledge. A refactor or a gofmt-style sweep can inflate someone's share. The latest commit, an `interface{}` to `any` rewrite, is one example.
+- "Active" is measured against 2026-04-08, the newest commit, not today (2026-10-22). Someone who has been quiet since then, or a reviewer who never commits, would be misclassified.
+- I didn't merge duplicate emails for the same person. I used raw blame emails, so some people may be split across two identities.
+- I ran with `--no-github`, so the output shows bare emails and no GitHub handles.
+META cost=0.10634280000000002 ms=51245 turns=10

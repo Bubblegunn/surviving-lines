@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src; echo ======; $SL --identities
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl -- src; echo ======; sl --merge-identities -- src; echo ======; sl --identities
+ - Bash: sl() { node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities -- src; echo "-----"; sl --identities; echo "-----"; git show --stat c584a1d | head -30; echo "-----"; sl --ignore-rev c584a1d -- src | head -22
+FINAL ANSWER:
+**Bus factor for `src/` is 1.** Andrew Gallant holds 2,554 of the 3,322 surviving lines (76.9%). Reaching 80% takes 2 authors.
+
+Both bus-factor numbers are line-based and cover `src/` only. The bus factor is the smallest number of authors whose surviving lines add up to at least 50%. It measures how concentrated the remaining code is, not who understands it.
+
+| author | lines | share | commits | commit share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,554 | 76.9% | 55 | 51.9% |
+| Ola Berg | 113 | 3.4% | 2 | 1.9% |
+| Sebastian Thiel | 74 | 2.2% | 1 | 0.9% |
+| Ashley | 68 | 2.0% | 1 | 0.9% |
+| Aron Griffis | 59 | 1.8% | 1 | 0.9% |
+| Niv Kaminer | 45 | 1.4% | 2 | 1.9% |
+
+28 more authors hold the rest, each with about 1% or less. Gallant's line share is higher than his commit share, but not by more than 5 times, so the gap is not suspicious by itself.
+
+**Method:** `git blame -w -M -C` over 7 of 7 files in `src/` (no sampling), 106 non-merge commits, 3,322 lines attributed.
+
+**Left out of every number:**
+- `src/errno_table.rs`: 883 lines, left out as a generated file. `--keep-generated` would count it.
+- Bots: none were reported as excluded.
+
+**Rustfmt commit `c584a1d` ("style: switch to rustfmt", Gallant):** the tool checked for mechanical rewrites in 75 commits that hold surviving lines. It set none aside and flagged this one as a candidate. `git show --stat` shows it reformatted 9 files, mostly in `src/`. I re-ran with `--ignore-rev c584a1d`:
+- Gallant: 2,547 lines (76.7%) instead of 2,554 (76.9%).
+- Aron Griffis: 63 lines instead of 59.
+- Niv Kaminer: 46 lines instead of 45.
+
+The bus factor stays 1 either way. I kept the commit in the headline numbers because it moves almost nothing.
+
+**Copy detection:** the figures use `-w -M -C`. Without `-C`, Gallant would hold 81.4% (2,705 lines) instead of 76.9%. Niv Kaminer would hold 0.5% (15 lines) instead of 1.4% (45 lines). Garrett Berg would drop from 1.0% (34 lines) to 0. So 151 lines in 3 files were credited to other authors because they were copied from elsewhere. That makes 76.9% the lower estimate for Gallant.
+
+**Possible duplicate identities** (guesses from names and addresses, nothing merged, no `.mailmap` written):
+- **Ashley / Ashley Mannix:** weak suggestion. The unmerged figures are Ashley 68 lines and Ashley Mannix 4 lines. Merged, it would be 72 lines (2.2%). The only evidence is that "Ashley" appears in `<email redacted>`. The `.mailmap` line would be `Ashley Mannix <<email redacted>> <<email redacted>>`.
+- **Same person under different names or addresses:** Alisha / Alisha Aneja share one address. So do nivkner / Niv Kaminer and ola.berg / Ola Berg. Igor Gnatenko is one name on two addresses (strong). These come from the repo-wide identity check, not just `src/`. Gnatenko has 0 surviving lines, so none of this changes the `src/` ranking.
+
+None of these merges could change the bus factor, because no merged person comes close to Gallant's 76.9%.
+
+These numbers can't show review, design work, code deleted on purpose, or code quality. Someone who reviewed or designed a lot of this code but wrote few lines won't show up.
+
+I can write the suggested lines to `.mailmap` if you want. For Ashley, I'd confirm first that it's one person.
+META cost=0.08356290000000001 ms=24981 turns=6

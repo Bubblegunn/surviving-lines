@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | wc -l; git log --oneline | wc -l
+ - Bash: git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' > /tmp/files.txt; cat /tmp/files.txt | tr '\n' ' '; echo; while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done < /tmp/files.txt > /tmp/blame.tsv; echo "TOTAL"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -20; wc -l /tmp/blame.tsv
+ - Bash: cd /tmp; echo "lib/index.js"; awk -F'\t' '$1=="lib/index.js"{print $2}' blame.tsv | sort | uniq -c | sort -rn | head -6; echo "test/"; awk -F'\t' '$1 ~ /^test\//{print $2}' blame.tsv | sort | uniq -c | sort -rn | head -6; echo "lines per file"; cut -f1 blame.tsv | sort | uniq -c | sort -rn | head -8; echo "all-time commits"; cd - >/dev/null; git shortlog -sn --no-merges HEAD | head -5
+ - Bash: head -2 /tmp/blame.tsv | od -c | head -5; wc -l /tmp/blame.tsv
+ - Bash: D=$(mktemp -d); while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' | awk -v f="$f" '{print f "\t" $0}'; done < /tmp/files.txt > $D/b.tsv; wc -l < $D/b.tsv; echo ALL; cut -f2 $D/b.tsv | sort | uniq -c | sort -rn | head -8; echo LIB; awk -F'\t' '$1=="lib/index.js"{print $2}' $D/b.tsv | sort | uniq -c | sort -rn | head -6; echo TEST; awk -F'\t' '$1 ~ /^test\//{print $2}' $D/b.tsv | sort | uniq -c | sort -rn | head -6; echo FILES; cut -f1 $D/b.tsv | sort | uniq -c | sort -rn | head -6; echo COMMITS; git shortlog -sn --no-merges HEAD | head -5; git status --short | head
+FINAL ANSWER:
+Checking surviving authorship with `git blame`, and the results are in.
+
+**Who owns the lines in HEAD (1,997 lines, 19 tracked files)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 41% |
+| Douglas Christopher Wilson | 629 | 31% |
+| Íñigo Marquínez Prado | 95 | 5% |
+| Jon Church | 72 | 4% |
+| Sebastian Beltran | 67 | 3% |
+| Ulises Gascón | 52 | 3% |
+| Ignacio Mangas | 44 | 2% |
+| Alejandro Caravaca Puchades | 30 | 2% |
+
+Everyone else has fewer than 30 lines each.
+
+**By area**
+- `lib/index.js` (238 lines): Troy Goode 159 (67%), Douglas Christopher Wilson 22 (9%), Alejandro Caravaca Puchades 12, Raymond Feng 7. The core library is mostly Troy's original code.
+- `test/`: Troy Goode 517, Douglas Christopher Wilson 374. Together they own about 85% of the test lines.
+
+**Commits vs. surviving code**
+- Douglas Christopher Wilson has the most commits (143 vs. Troy's 95). Troy still owns more surviving lines (810 vs. 629).
+
+**Method and caveats**
+- I ran `git blame` on every tracked file. I used `--ignore-revs-file .git-blame-ignore-revs` so the 4-space and double-quote reformat commit (`62628c0`) doesn't take over ownership of every line.
+- I also used `-w` to ignore whitespace changes and `-M -C` to follow moved and copied lines.
+- Blame groups by author name, not by person. If someone committed under two names or emails, their lines are split across entries. I didn't check for that.
+- Lines count equally here, whether code, docs, CI config or tests. Lines in `README.md` (277) and `.github/workflows/ci.yml` (220) count the same as lines in `lib/index.js`.
+- A line's owner is whoever last substantively changed it. Someone who rewrote a line owns it now, even if the idea came from the previous author.
+META cost=0.08889840000000002 ms=56368 turns=7

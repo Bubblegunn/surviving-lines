@@ -1,0 +1,34 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__file_history,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 4}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/signer.py"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/timed.py"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/signer.py", "limit": 40}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-2/repo", "file": "src/itsdangerous/timed.py", "limit": 40}
+ - Bash: git show -s --format='%h %an <%ae> | committer %cn <%ce> | %ad%n%B' 0635526 93695fd 56dba8d | head -60; echo ----; git log --oneline | wc -l; git log --format='%h %ad %an' --date=short | tail -5; echo ----; git blame -w -M -C -C --line-porcelain src/itsdangerous/signer.py | grep '^author ' | sort | uniq -c | sort -rn; echo; git blame -w -M -C -C --line-porcelain src/itsdangerous/timed.py | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git log --format='%an' | sort | uniq -c | sort -rn | head -8; for a in "David Lord" "Tomás Ibarra" "Armin Ronacher" "Arnout van Meer" "Hsiaoming Yang" "Thomas Waldmann"; do echo "$a: $(git log --author="$a" -1 --format='%ad' --date=short) first $(git log --author="$a" --format='%ad' --date=short | tail -1) n=$(git log --author="$a" --oneline | wc -l)"; done; git log --author='Tomás' --format='%h %ad %s' --date=short; git log --format='%cn' --since=2025-01-01 | sort | uniq -c
+FINAL ANSWER:
+**Ask David Lord.** If the change touches the key rotation helpers, also ask Tomás Ibarra.
+
+**Authorship of surviving lines.** Plain blame credits David 67% of both files. That overstates it. His 2018 "split into modules" commit (`0635526`) moved code out of the old single-file `itsdangerous.py`, so blame gives him lines Armin Ronacher wrote. Rerunning blame with move/copy detection (`git blame -w -M -C -C`) gives:
+
+| File | David Lord | Tomás Ibarra | Armin Ronacher | Others |
+|---|---|---|---|---|
+| `signer.py` (366 lines) | 212 | 100 | 19 | Hsiaoming Yang 13, Arnout van Meer 11, bot 8, Thomas Waldmann 2, Markus Unterwaditzer 1 |
+| `timed.py` (300 lines) | 172 | 72 | 37 | Zach Hugnou 5, bot 5, Alan Hamlett 3, Thomas Waldmann 2, Dirk Müller 2, Daverball 2 |
+
+The move/copy detection is heuristic, so treat these counts as approximate.
+
+**Who wrote what:**
+- **Armin Ronacher** wrote the original signing and timestamp logic and the fallback signers (2011–2018). His last commit was 2018-10-27, so he is not a practical reviewer.
+- **David Lord** owns the current structure: the module split, the typing rewrites (2020 and 2024), and the `_compat` removal. He has committed 342 times since 2016 and made the most recent non-bot commit on 2025-07-07. He also committed Tomás's two patches.
+- **Tomás Ibarra** wrote the key rotation helpers: 100 lines in `signer.py` (`93695fd`) and 72 lines in `timed.py` (`56dba8d`). That is about a quarter of each file. Both commits are from 2025-07-01 and 2025-07-02, and they are Tomás's only commits in the repo.
+- **Small contributors** wrote one-off fixes and are not worth asking: Zach Hugnou (future-timestamp check), Alan Hamlett and Dirk Müller (overflow handling), Hsiaoming Yang (accepting secret keys in `Signer`), and Daverball (generic typing).
+
+**What to do:** If the change touches the rotation code, ask Tomás to review it, with David as the second reviewer. Tomás has little history in the repo, so David should be the approver. If the change is elsewhere in these files, ask David alone.
+META cost=0.09689790000000001 ms=28501 turns=9

@@ -1,0 +1,39 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && git log --format='%an' -- lib | sort | uniq -c | sort -rn && echo --- && git ls-files lib | wc -l && git log --oneline -- lib | wc -l
+ - Bash: wc -l lib/index.js && echo "--- blame (-w -M -C)" && git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo "--- last commit date per author" && git log --format='%an|%ad' --date=short -- lib | awk -F'|' '!s[$1]++' | head -12 && echo "--- 2 yrs" && git log --since=2024-10-22 --format='%an|%ad|%s' --date=short -- lib
+FINAL ANSWER:
+**Bus factor: 1.** Troy Goode.
+
+`lib/` is a single file, `lib/index.js` (238 lines, 67 commits, 25 authors).
+
+Surviving lines by author, from `git blame -w -M -C`:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 138 | 58% |
+| Fiona Formatter | 32 | 13% (the 2026-04-12 quote/indent reformat, so not real authorship) |
+| Douglas Christopher Wilson | 18 | 8% |
+| Alejandro Caravaca Puchades | 12 | 5% |
+| Raymond Feng | 7 | 3% |
+| 12 others | 31 | 13% |
+
+- **Majority owner:** Troy alone holds over 50% of the lines. Without the formatter lines, Troy holds 138 of 206, or 67%.
+- **Recent activity:** Only Troy has touched `lib/` in the last two years, apart from the formatter commit. Troy's last real commit is "lib: annotate handlers" on 2026-04-10.
+- **Next contributor:** Douglas Christopher Wilson holds 8% of the lines. His last commit was 2017-10-04.
+- **Everyone else:** The last commit from each other author is from 2021 or earlier. Most are one-off contributors with 1–3 lines left.
+
+If Troy leaves, nobody active has written or recently changed this code.
+
+Mitigating factors:
+- The file is small, so a new maintainer can read all of it in under an hour.
+- The file has had few changes recently.
+- I did not check whether tests cover `lib/index.js`. If they do, that lowers the risk further. If they don't, it raises it.
+
+To raise the bus factor, have a second person review or make real changes in `lib/index.js`. A reviewed PR would do. Reformat commits don't count.
+META cost=0.05436080000000001 ms=15503 turns=4

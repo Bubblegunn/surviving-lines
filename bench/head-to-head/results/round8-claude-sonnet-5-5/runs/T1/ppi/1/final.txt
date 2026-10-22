@@ -1,0 +1,66 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | head -50; git rev-list --count HEAD; git shortlog -sne HEAD | head -15; git show --stat --format='%h %an %ad %s' 62628c0 | tail -5
+ - Bash: for f in $(git ls-files | grep -E '\.(js)$'); do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "=== TOTAL"; for f in $(git ls-files | grep -E '\.js$'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn; echo "=== lib vs test"; for d in lib test; do echo "-- $d"; for f in $(git ls-files $d | grep '\.js$'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -5; done; echo "=== last commit per author"; git log --format='%an|%ad' --date=short | awk -F'|'
+ - Bash: git log --author='Douglas' -1 --format='%ad %s' --date=short; git log --author='Troy' -1 --format='%ad %s' --date=short; git log --author='Troy' --format='%ad' --date=short | sed -n '1p;$p'; git log --author='Troy' --since=2026-01-01 --format='%ad %s' --date=short | head; git log -3 --format='%h %an %ad %s' --date=short -- lib/index.js
+FINAL ANSWER:
+## Bus Factor Analysis (surviving lines)
+Period: all | Generated: 2026-10-22
+
+I ran `git blame -w -M -C` on every tracked `.js` file (7 files, about 1,220 lines). I ignored the reformat commit `62628c0`, because otherwise it would credit "Fiona Formatter" with almost every line. Lines are counted per author name. Troy Goode also has a second identity (`troy@laptop.example`) with the same name, so blame merges the two.
+
+### Project-level bus factor: 1
+
+Troy Goode owns about **55%** of the surviving lines (676 of about 1,220). If Troy left, more than half the code would have no knowledgeable maintainer.
+
+### Who owns the code today
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 676 | ~55% | 2026-04-10 (active) |
+| Douglas Christopher Wilson | 394 | ~32% | 2021-09-07 (inactive about 5 years) |
+| Alejandro Caravaca Puchades (two identities) | 34 | ~3% | not checked |
+| Eric di Domenico | 16 | ~1% | not checked |
+| Alberto Leal | 15 | ~1% | not checked |
+| 16 others | each 9 lines or fewer | ~8% together | not checked |
+
+### Compared with commit counts
+
+By commit count Doug leads (143) and Troy has 120 (122 with the alias). By surviving code Troy leads clearly. Doug's lines are mostly in `test/test.js`, where he owns 339 of about 730 lines. His last commit was in 2021, so about a third of the code is owned by someone who is no longer committing.
+
+### Per-file ownership
+
+| File | Owner | Share | Notes |
+|---|---|---|---|
+| `lib/index.js` (the core library) | Troy | 159 of ~230 lines (~69%) | 17 other contributors share the rest. Doug has 22 lines. |
+| `test/test.js` | Doug 339, Troy 317 | ~46% / ~43% | The only file with a real two-person split. |
+| `test/error-response.js`, `example-app.js`, `issue-2.js` | Troy | 80–85% | Doug owns the remainder. |
+| `test/vary.js` | Troy | 100% | Single owner, but it's a small test file. |
+| `test/support/env.js` | Doug | 100% | Two lines. |
+
+Two caveats on Troy's lead in `lib/index.js`. Much of it comes from his last commit, `b2005d9` ("annotate handlers", 2026-04-10). That commit also touched `test/vary.js`, so a large share of the "ownership" is recent. I did not measure how many of his 159 lines come from that commit.
+
+### Risk
+
+- **Core library `lib/index.js`: single-owner, moderate risk.** Troy owns about 69% and is active. Nobody else owns more than 12 lines (Alejandro Caravaca Puchades).
+- **Tests: concentrated in two people, one of them gone.** Troy has 517 of the roughly 950 test lines and Doug has 372. Doug's test code is the part nobody currently maintains.
+- **Everyone else is marginal.** Only five contributors own 15 or more surviving lines. Of the 21 authors in the blame output, 16 own 9 or fewer lines each.
+
+### Recommendations
+
+1. **Immediate:** get a second reviewer or maintainer onto `lib/index.js`. It is one small file, so a single reviewer can cover it quickly.
+2. **Short-term:** review Doug's portion of `test/test.js` and add comments or docs where intent isn't obvious. Nobody active wrote those tests.
+3. **Ongoing:** keep contributions spread across more people. Ulises Gascón, Jon Church and Sebastian Beltran have recent commits, so they may be candidates for a first review of Doug's test code.
+
+### Limits
+
+- I did not do the import-dependency check from step 3 of the skill. With one library file and a handful of tests, it would add little.
+- I did not launch the contributor-analyzer agent, since the repo is small enough to blame directly.
+- I checked recent activity only for Troy and Doug. The "last commit" column shows "not checked" for the others.
+- Blame by author name can split or merge people. For example, Alejandro Caravaca Puchades appears under two names, and I combined them by hand.
+META cost=0.0809391 ms=32162 turns=6

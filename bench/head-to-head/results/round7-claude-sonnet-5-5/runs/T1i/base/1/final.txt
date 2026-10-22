@@ -1,0 +1,44 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -100; git rev-list --count HEAD
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //" | sed "s|^|$f\t|"; done > /tmp/blame.tsv
+echo "== ALL FILES =="; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -15
+echo "== lib/index.js =="; grep '^lib/index.js' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -10
+echo "== excluding HISTORY.md, LICENSE =="; grep -v -e '^HISTORY.md' -e '^LICENSE' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -10
+echo "== total =="; wc -l < /tmp/blame.tsv
+echo "== per file lines =="; cut -f1 /tmp/blame.tsv | sort | uniq -c | sort -rn
+ - Bash: for g in '^lib/' '^test/' '^(README|HISTORY|LICENSE)' '^\.github/'; do echo "== $g =="; grep -E "$g" /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -4; done
+echo "== commits =="; git shortlog -sn HEAD | head -5
+echo "== Troy lib/index.js sample dates =="; git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | awk '/^author Troy Goode/{t=1} /^author-time/{if(t){print $2}; t=0}' | sort -n | sed -n '1p;$p' | xargs -I{} date -r {} +%F
+FINAL ANSWER:
+Ownership is measured by `git blame` on every tracked file at HEAD. It ignores whitespace changes and uses `.git-blame-ignore-revs`, so the 4-space/double-quote reformat commit (62628c0) doesn't count as authorship. That's 1,997 surviving lines.
+
+**All files**
+| Author | Lines |
+|---|---|
+| Troy Goode | 810 (about 41%) |
+| Douglas Christopher Wilson | 629 (about 31%) |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+
+**By area**
+- **`lib/index.js` (the actual library, 238 lines):** Troy Goode owns 159 lines (about 67%). Douglas Christopher Wilson owns 22. Alejandro Caravaca Puchades owns 12. Raymond Feng owns 7. The rest is spread across small contributions.
+- **`test/`:** Troy Goode owns 517 lines. Douglas Christopher Wilson owns 374.
+- **README, HISTORY, LICENSE:** Troy Goode owns 121 lines, Douglas Christopher Wilson 84, Jon Church 72, Linus Unnebäck 26.
+- **`.github/` (CI and config):** Douglas Christopher Wilson owns 118 lines, Íñigo Marquínez Prado 95, Sebastian Beltran 63, Ulises Gascón 45.
+
+**Commits vs. surviving code:** Douglas Christopher Wilson has the most commits (143 vs. 122 for Troy Goode). Troy Goode still owns more of the code, mainly in `lib/index.js` and the tests. Their surviving lines in `lib/index.js` date from 2013-01-31 to 2026-04-10. Douglas Christopher Wilson's lines are mostly tests, CI and docs.
+
+**Caveats**
+- Blame attributes a line to whoever last changed it. A small edit to a line can move it from the original author to someone else.
+- I used `-w -M -C`, which follows moved or copied lines. The same author name under different emails would be counted as separate people, though I didn't see any in the top entries.
+- Blame is per author name, not per person. `max.laverse`, `alex94puchades` and `Alejandro Caravaca Puchades` may overlap with other entries.
+META cost=0.0668198 ms=18956 turns=5

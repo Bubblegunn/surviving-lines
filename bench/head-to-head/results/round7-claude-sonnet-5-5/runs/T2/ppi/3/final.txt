@@ -1,0 +1,63 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files lib); do echo "== $f $(wc -l < $f)"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | sort -t'|' -k1,1 -u | head -20
+ - Bash: echo blame; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo last-commit-per-author; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | awk -F'|' '!s[$1]++' | head -8; echo importers; grep -rlE "require\(.*lib|from .*lib" --include=*.js . --exclude-dir=node_modules | wc -l; git log -1 --pretty=%ad --date=short; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib | sort | uniq -c
+ - Bash: git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; git log --all --no-merges --since=2025-10-22 --pretty='%an|%ad|%s' --date=short -- lib; git log -3 --pretty='%an|%ad|%s' --date=short -- lib
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis: `lib/`
+Period: all history | Generated: 2026-10-22
+
+**Project-level bus factor for `lib/`: 1.** If Troy Goode leaves, no one is left who knows most of this code.
+
+`lib/` is a single file, `lib/index.js` (238 lines), so the per-file and per-module numbers are the same.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 1 (`lib/index.js`) |
+| Distinct contributors, all time | 25 (excluding the formatter bot) |
+| Commits (no merges) | 63 |
+| Troy Goode share of commits | 33 of 63 (52%) |
+| Troy Goode share of current lines | 159 of 238 (67%) |
+| Next-largest line owner | Douglas Christopher Wilson, 22 lines (9%) |
+| Contributors active in the last 12 months | 1 human (Troy Goode, 2026-04-10) |
+
+### Method
+- **Commit counts:** `git log --no-merges -- lib`. Troy has 33 commits. The next most active people have 4 each.
+- **Line ownership:** I ran `git blame` with `-w --ignore-rev 62628c0`. Commit `62628c0` reformatted the whole file. Without that flag, "Fiona Formatter" would own 214 of 238 lines, which is meaningless.
+- **Activity:** The only recent commits to `lib/` are Troy's `lib: annotate handlers` (2026-04-10) and the formatter commit (2026-04-12). Everyone else last touched the file in 2021 or earlier.
+
+### Answer to "how many people leaving before nobody understands it?"
+
+| People leave | Remaining knowledge |
+|---|---|
+| 0 | Troy owns about 67% of lines and is the only active maintainer. |
+| **1 (Troy)** | **Effectively none among active people.** The remaining owners are Wilson (9%), Caravaca Puchades (5% of lines, plus 1 more commit under another account name), Feng (3%), and others. All last touched `lib/` in 2021 or earlier. |
+| 2–3 (Troy, Wilson, Caravaca Puchades) | About 85% of lines lose their author. Nobody who remains has meaningful history in the file. |
+
+So the practical bus factor is **1**. On a strict "who has ever touched it" count the number is much higher, because 24 other people have contributed. Most contributed one commit years ago, so they probably don't retain working knowledge.
+
+### Risk assessment
+
+| File | Main owner | Owner active? | Risk |
+|---|---|---|---|
+| `lib/index.js` | Troy Goode (67% of lines) | ✅ Active (last commit 2026-04-10) | **[HIGH]**. It is the package's entire `lib/` surface, so every consumer depends on it. |
+
+I did not compute a dependent-file count. My grep for importers failed on a shell glob error. Since `lib/index.js` is the only file in `lib/`, it is the package entry point by definition.
+
+### Caveats
+- Git author names are not deduplicated. Alejandro Caravaca Puchades and `alex94puchades` look like the same person, so the contributor count is slightly high.
+- Commit authorship is not the same as understanding. A reviewer or user who never committed may know the code well. Git can't show that.
+- The formatter commit is a bot-style author and is excluded from ownership.
+
+### Recommendations
+1. **Immediate:** Have a second person review every change to `lib/index.js`, with Troy as author or reviewer. Review alone doesn't transfer much knowledge, so also have the second person make at least one non-trivial change.
+2. **Short-term:** Add a short architecture note on what `lib/index.js` does and why. Troy's recent `annotate handlers` commit is a good start. Extend it to explain the design decisions.
+3. **Ongoing:** Check that tests cover the behavior in `lib/index.js`. Good tests let a new maintainer change it safely without the original author.
+META cost=0.07341600000000001 ms=26465 turns=6

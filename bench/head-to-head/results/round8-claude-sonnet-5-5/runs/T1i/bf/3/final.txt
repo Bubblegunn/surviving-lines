@@ -1,0 +1,43 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -100; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done > /tmp/blame.tsv
+echo "== overall (all files)"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn
+echo "== code only (lib, test)"; grep -E '^(lib|test)/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn
+echo "== lib/index.js"; grep -E '^lib/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn
+echo "== commits (for contrast)"; git shortlog -sn HEAD | head
+FINAL ANSWER:
+**Troy Goode owns the most surviving code, not Douglas Christopher Wilson.** Troy has fewer commits than Douglas (122 vs 143).
+
+I used `git blame` on HEAD for all 19 tracked files. I ignored whitespace changes, followed moved or copied lines, and skipped the 4-space reformat commit through `.git-blame-ignore-revs`. Each line counts for whoever last wrote it.
+
+**Code only (`lib/` and `test/`, about 1,205 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 676 | ~56% |
+| Douglas Christopher Wilson | 396 | ~33% |
+| Alejandro Caravaca Puchades | 30 | ~2.5% |
+| Eric di Domenico | 16 | ~1% |
+| Alberto Leal | 15 | ~1% |
+| 16 others | 72 | ~6% |
+
+**`lib/index.js` alone (239 lines):** Troy has 159 (~66%) and Douglas has 22 (~9%). Alejandro Caravaca Puchades has 12. Everyone else has 7 or fewer.
+
+**All files, including docs, config and CI:**
+- Troy has 810 lines and Douglas has 629.
+- Íñigo Marquínez Prado has 95 lines, mostly in `README.md` and `HISTORY.md`.
+- Jon Church, Sebastian Beltran, Ulises Gascón and Ignacio Mangas each have between 44 and 72 lines, mostly in docs and config.
+
+**What the numbers show:**
+- Troy wrote most of the original library, and a lot of it is still there. Douglas changed more files and fixed more bugs, but he mostly edited lines other people had written.
+- Almost all of the library core is Troy's. Douglas's lines are mostly in the tests (about 374 of his 396 code lines are in `test/`).
+- Ownership of the library is concentrated in one person. Troy's `lib/index.js` lines are probably the code that carries the most risk if nobody understands it.
+- "Fiona Formatter" and "Efe" show up with 2 and 6 lines, so the reformat exclusion didn't catch every line. These are small, but they are not real code ownership.
+
+Blame only shows who last touched a line. It doesn't show who designed the code. If you want a CODEOWNERS file or a list of areas with a single maintainer, the `busfactor` skill can produce one. It works from commit history rather than blame, so its results may differ from these.
+META cost=0.0538421 ms=18299 turns=3

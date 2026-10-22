@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | while IFS= read -r f; do case "$f" in *.*) ext="${f##*.}";; *) ext="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | awk -v e="$ext" '/^author /{sub(/^author /,""); print e "\t" $0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; print c "\t" $0}' | head -100
+FINAL ANSWER:
+Top owner by surviving lines (`git blame -w`, current HEAD, tracked files only):
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension | Douglas Christopher Wilson | 17 |
+
+Caveats:
+- **`.js`:** "Fiona Formatter" has 291 lines from the latest commit (`62628c0`, reformat to 4-space indent and double quotes). `-w` ignores whitespace, but the quote change still moved those lines to the formatter. Troy Goode leads anyway, though the formatter commit probably cost Troy some lines. Douglas Christopher Wilson is third at 245.
+- Authors are matched by name, not email. If one person committed under several names, their counts are split.
+- Files without an extension are things like `LICENSE`. Dotfiles such as `.gitignore` are counted under the extension `gitignore`.
+META cost=0.0499978 ms=9364 turns=3

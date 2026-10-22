@@ -1,0 +1,72 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git log --oneline | wc -l; git ls-files | grep -E '\.(js|ts|json)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts)$' | head -50
+ - Bash: cd . && for f in $(git ls-files | grep -E '\.(js|json|md)$'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv
+echo "== total by author (all files)"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -15
+echo "== code only (lib/ + test/)"; grep -E '^(lib|test)/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -15
+echo "== per file top 3"; for f in $(cut -f1 /tmp/blame.tsv | sort -u); do echo "-- $f ($(grep -c "^$f	" /tmp/blame.tsv) lines)"; grep "^$f	" /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -3; done
+echo "== recent activity"; git log --since="90 d
+ - Bash: for s in all code; do if [ $s = all ]; then g=cat; else g="grep -E ^(lib|test)/"; fi; $g /tmp/blame.tsv 2>/dev/null | cut -f2 | sort | uniq -c | sort -rn | awk -v s=$s '{t+=$1; a[NR]=$1; n[NR]=$0} END{c=0; for(i=1;i<=NR;i++){c+=a[i]; if(c/t>0.5){print s, "total", t, "bus factor", i, "cum%", int(100*c/t); break}}}'; done
+grep -E '^(lib|test)/' /tmp/blame.tsv | wc -l; grep -E '^lib/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -4
+git log --since="2026-07-24" --format='%an' | sort | uniq -c
+FINAL ANSWER:
+## Bus factor: 1 (Troy Goode)
+
+I counted surviving lines with `git blame -w -M -C`, not commits. I ignored the `62628c0` reformat commit through `.git-blame-ignore-revs`. Otherwise it would give every line to the formatter. I analyzed 8 tracked files in `lib/`, `test/`, `README.md`, `HISTORY.md` and `package.json`. That is 1,585 lines in total, and 1,202 of them are code.
+
+Troy Goode owns 50.7% of all lines and 56% of code lines (676 of 1,202). Troy is the only person who alone holds more than half the code.
+
+### Who owns the code today
+
+| Author | Code lines (`lib/` + `test/`) | Share of code | Last commit |
+|---|---|---|---|
+| Troy Goode | 676 | 56% | 2026-04-10 |
+| Douglas Christopher Wilson | 394 | 33% | 2021-09-07 |
+| Alejandro Caravaca Puchades | 30 | 2.5% | 2015-05-28 |
+| Eric di Domenico | 16 | 1.3% | 2013-10-05 |
+| Alberto Leal | 15 | 1.2% | 2014-05-12 |
+| Everyone else | about 70 | about 6% | — |
+
+Troy and Douglas together own about 89% of the code.
+
+### Per-file ownership
+
+| File | Lines | Top owner | Next |
+|---|---|---|---|
+| `lib/index.js` (the core) | 238 | Troy 67% | Douglas 9%, Alejandro 5% |
+| `test/test.js` | 731 | Douglas 46% | Troy 43% |
+| `test/vary.js` | 36 | Troy 100% | — |
+| `test/error-response.js` | 66 | Troy 86% | Douglas 14% |
+| `test/example-app.js` | 81 | Troy 83% | Douglas 17% |
+| `test/issue-2.js` | 48 | Troy 83% | Douglas 17% |
+| `test/support/env.js` | 2 | Douglas 100% | — |
+| `package.json` | 42 | Douglas 48% | Troy 29% |
+| `README.md` | 277 | Troy 42% | Jon Church 26% |
+| `HISTORY.md` | 64 | Douglas 78% | Ulises Gascón 9% |
+
+### Risk
+
+- **Critical: `lib/index.js`.** It is the only runtime file. Troy owns 67% of it, and no one else owns more than 9%. Six people own a few lines each, and none of them has committed since 2015 or earlier.
+- **High: nobody has committed in the last 90 days.** The latest real commit is Troy's on 2026-04-10, about 6 months ago. Douglas's last commit was in 2021. Troy and Douglas both count as inactive, so the people who own the code are not maintaining it now.
+- **Medium: `test/test.js`.** Ownership is split between Douglas (46%) and Troy (43%). Both are inactive, so the split does not reduce the risk.
+- **Low: `README.md`.** Jon Church (committed 2026-01-16) and Linus Unnebäck share it with Troy.
+
+Commit counts would give a different picture. 355 commits cover a long history of contributors, but most of their lines were replaced or deleted. Only a small group of them still has code in the repo.
+
+### Recommendations
+
+1. **Now:** get a second person to review `lib/index.js` and write down how it works. Jon Church, Ulises Gascón or Vansh Sharma committed recently, so they are candidates.
+2. **Short term:** have a recently active contributor take over review of `test/test.js`, since its two main owners are both inactive.
+3. **Ongoing:** require review from someone other than the sole owner for changes to `lib/index.js`.
+
+**Limitations:**
+- Blame follows copied and moved lines with `-M -C`. Lines that moved between files can still be credited to the wrong person.
+- The same person can appear under more than one name, for example `alex94puchades` and Alejandro Caravaca Puchades. I did not merge them, which slightly understates a few owners.
+- I used the line-ownership method instead of the skill's commit-count method. I did not run the contributor-analyzer agent, because the repo is small enough to check directly.
+META cost=0.09263179999999999 ms=30079 turns=7

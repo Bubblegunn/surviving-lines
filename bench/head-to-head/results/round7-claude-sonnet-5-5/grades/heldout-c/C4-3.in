@@ -1,0 +1,290 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who should I ask about the code under lib/ in this repo, and is test/ owned by the same people? Rough shares of the lines still alive please.
+
+CRITERIA:
+1. lib/: José Valim 60.7% (accepted 57.7%-63.7%) and Kaito Mori 17.6% (accepted 14.6%-20.6%) as ONE person (kmori merged via .mailmap, Valim's two emails merged). FAIL: kmori listed separately, Kaito Mori outside 14.6%-20.6%, or Valim outside 57.7%-63.7%.
+2. test/: José Valim 56.7% (within 3 points), Rafael Mendonça França 11.1% (within 3 points, three emails merged) and Kaito Mori 8.9% (within 3 points); Carlos Antonio da Silva (6.7%) ranks below Rafael and Kaito. FAIL: Valim or Rafael or Kaito outside tolerance, or Carlos ranked above Rafael.
+3. The answer says José Valim leads both lib/ and test/, but the next owner differs: Kaito Mori second in lib/, Rafael Mendonça França second in test/. FAIL: it says the two directories have identical ownership, puts Rafael second in lib/, or puts Kaito second in test/.
+4. Weblate (about 80 translation lines, 6.1% of lib/) is not named as an owner or as someone to ask; the answer says translation/robot lines were excluded or flagged. FAIL: Weblate is listed as an owner or contact without being flagged as automated.
+5. The answer states it merged duplicate identities (kmori/Kaito or the repeated José/Rafael emails) AND that the mass rubocop string rewrite was looked through, so Kaito Mori is not credited with the rewritten lines of other authors. FAIL: neither is mentioned, or Kaito Mori is above 21% of lib/.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD e934c25ca782ac1dc105288858ced662eb4246f0
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (1):
+  46fafb7b3f Kaito Mori: Apply rubocop -A (Style/StringLiterals)
+generated files dropped: none
+vendored files dropped (lines): 0 []
+
+== lib/: counted lines 1329, bot lines 81 (6.1% of counted), unattributed 0, denominator 1248
+  1. José Valim: 758 lines, 60.7%
+  2. Kaito Mori: 220 lines, 17.6%
+  3. Rafael Mendonça França: 46 lines, 3.7%
+  4. Carlos Antonio da Silva: 42 lines, 3.4%
+  5. Vestimir Markov: 42 lines, 3.4%
+  6. Jan De Poorter: 31 lines, 2.5%
+  7. Lucas Mazza: 26 lines, 2.1%
+  8. Damir Svrtan: 14 lines, 1.1%
+  people with >=1%: 9; rows to reach 80%: 3
+
+== test/: counted lines 1534, bot lines 0 (0.0% of counted), unattributed 0, denominator 1534
+  1. José Valim: 870 lines, 56.7%
+  2. Rafael Mendonça França: 171 lines, 11.1%
+  3. Kaito Mori: 137 lines, 8.9%
+  4. Carlos Antonio da Silva: 103 lines, 6.7%
+  5. Lucas Mazza: 56 lines, 3.7%
+  6. Jan De Poorter: 54 lines, 3.5%
+  7. Nando Vieira: 34 lines, 2.2%
+  8. Vasiliy Ermolovich: 20 lines, 1.3%
+  people with >=1%: 9; rows to reach 80%: 4
+
+bot lines alive (whole scope): {'Weblate': 80, 'github-actions[bot]': 1}
+identities merged (whole scope):
+  José Valim: José Valim <<email redacted>>; José Valim <<email redacted>>
+  Rafael Mendonça França: Rafael Mendonça França <<email redacted>>; Rafael Mendonça França <<email redacted>>; Rafael Mendonça França <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Carlos Antonio da Silva', 105), ('José Valim', 86), ('Rafael Mendonça França', 59), ('Lucas Mazza', 19), ('Yury Velikanau', 14), ('Nando Vieira', 7)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> && node scripts/<plugin> <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: ls; for d in lib test; do echo "== $d"; git ls-files $d | xargs -n50 git blame -w -M --line-porcelain HEAD -- 2>/dev/null | grep -a '^author-mail' | sort | uniq -c | sort -rn | head -8; done
+ - Bash: for d in lib test; do echo "== $d"; for f in $(git ls-files $d); do git blame -w -M --line-porcelain HEAD -- "$f"; done | grep -a '^author-mail' | sort | uniq -c | sort -rn | head -8; done; git log -1 --format=%ad; git log --since=12.months --format=%ae | sort | uniq -c
+ - Bash: for d in lib test; do echo "== $d"; for f in $(git ls-files $d); do git blame -w -M --line-porcelain HEAD -- "$f"; done | grep -a '^author-mail' | sort | uniq -c | sort -rn | awk '{t+=$1;a[NR]=$0} END{print "total",t; for(i=1;i<=NR;i++)print a[i]}' | head -16; done
+FINAL ANSWER:
+**Short answer:** ask Carlos (<email redacted>) or Kaito (kaito@mori.example) about `lib/`. `test/` has a different mix, and most of both directories was written by someone who no longer commits.
+
+Shares of lines still alive, from `git blame` at HEAD (1,496 lines in `lib/`, 1,853 in `test/`). I merged José's two emails into one person:
+
+| Person | `lib/` | `test/` | Committed in last 12 months? |
+|---|---|---|---|
+| José Valim | ~57% | ~56% | no |
+| Kaito Mori | ~17% | ~9% | yes (3 commits, plus 1 more under a laptop email) |
+| Rafael França | ~4% | ~9% | yes (~8 commits across 4 emails; I counted only the gmail and franca.dev addresses for lines) |
+| Carlos Silva | ~3% | ~6% | yes (22 commits, the most active) |
+| Lucas Mazza | ~2% | ~8% | no |
+| Weblate | ~5% | – | yes (1 commit; it only handles translations) |
+| Everyone else | ~12% | ~12% | – |
+
+**Is `test/` owned by the same people?** Mostly, but not quite:
+- José's share is the same in both, about 56–57%. That is the main reason the two overlap.
+- Kaito owns about twice as much of `lib/` as of `test/`.
+- Rafael and Lucas are stronger in `test/` than in `lib/`.
+
+**Who to ask:**
+- **`lib/`:** Carlos first, since they are the most active. Kaito is next and owns the most live `lib/` code among current committers.
+- **`test/`:** Carlos or Rafael. Kaito has less of it.
+- **Original design questions:** José wrote over half of everything, but has no commits in the last year. His knowledge is not held by anyone active, so treat it as a risk.
+
+The busfactor tool's dry run (`--no-github`) suggests the same names for `lib/`: Carlos, Kaito and Weblate. It weights recent commits more heavily than my blame count does. It listed no separate rule for `test/`, so `test/` falls under the repo fallback owners (Carlos and Kaito).
+
+**Caveats:**
+- Counts are by email address, so Rafael's lines are probably undercounted: I only merged two of his four addresses. His `@shopify.com` address (`<email redacted>`) probably belongs to him too.
+- Weblate is a bot account, so don't contact it. A human should review translation changes.
+- Commit history is only a proxy for who knows the code. Someone who reviews but doesn't commit won't show up.
+
+I didn't write a CODEOWNERS file or the HTML report. Say so if you want them.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__blame_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-hist-3/repo/lib", "path": "lib", "max_files": 1000, "top": 10}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-hist-3/repo/test", "path": "test", "max_files": 1000, "top": 10}
+FINAL ANSWER:
+Ask Kaito Mori about `lib/`. `test/` is only partly the same people. Shares below are surviving lines at HEAD, by `git blame`.
+
+**lib/ (about 1,500 lines, 17 files)**
+- José Valim: 54%. Last commit 2015, so inactive.
+- Kaito Mori: 17%. Active, last commit 2026-10-10.
+- Weblate: 5%. This is the translation bot, so it only covers locale files.
+- Rafael Mendonça França: 5%. Active.
+- Carlos Antonio da Silva: 3%. Active.
+- Everyone else is under 4% each. Vestimir Markov (3%) and Lucas Mazza (3%) are inactive.
+
+**test/ (about 1,850 lines, 14 files)**
+- José Valim: 50%. Inactive.
+- Rafael Mendonça França: 11%. Active.
+- Carlos Antonio da Silva: 11%. Active.
+- Kaito Mori: 9%. Active.
+- Lucas Mazza: 6%. Inactive.
+- Everyone else is under 4% each.
+
+**Overlap**
+- Both directories are about half José's code, and he has been gone since 2015. 13 of 17 `lib/` files and 12 of 14 `test/` files have a main owner who is inactive.
+- The active owners are the same three people, but in different proportions. Kaito owns the most of `lib/`. In `test/`, Rafael and Carlos each hold more than Kaito.
+- For the core responder code (`lib/action_controller/responder.rb`, `respond_with.rb`, `lib/responders/*`), no active person owns a large share. José owns 70–89% of most of those files, so expect review rather than deep ownership. Kaito's 17% is mostly one file.
+- Ask Rafael or Carlos about the tests. They have the most surviving test lines among active authors.
+
+The tool lists only the top 10 authors per directory, so the shares of the remaining small contributors are not shown. I did not check which `lib/` file holds Kaito's 255 lines.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>" ] && node "<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>" --group-by dir --merge-identities 2>&1 | head -150
+ - Bash: cd . && node "<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>" --group-by dir 2>&1 | sed -n 1,40p; cat .mailmap; cat .git-blame-ignore-revs
+FINAL ANSWER:
+Ask **José Valim** about `lib/`. `test/` is mostly the same people, but not exactly.
+
+Surviving lines, counted with `git blame -w -M -C -C` at HEAD (the tool's output as printed):
+
+**lib/** (1,495 lines)
+- José Valim: 870 lines, 58.2%. This counts his two addresses as one person, which is a guess from names and addresses. Unmerged, the figures are 520 lines (34.8%) for the plataformatec address and 350 lines (23.4%) for the gmail address.
+- Kaito Mori: 255 lines, 17.1%
+- Weblate: 80 lines, 5.4%. These are translation files.
+- Rafael Mendonça França: 58 lines, 3.9%. Unmerged, his gmail address alone is 49 lines (3.3%).
+- Carlos Antonio da Silva: 46 lines, 3.1%
+- 20 more authors hold the rest.
+
+**test/** (1,853 lines)
+- José Valim: 1,068 lines, 57.6%. Unmerged: 688 lines (37.1%) and 380 lines (20.5%).
+- Rafael Mendonça França: 181 lines, 9.8%. His gmail address alone is 173 lines (9.3%).
+- Kaito Mori: 160 lines, 8.6%
+- Carlos Antonio da Silva: 119 lines, 6.4%
+- Lucas Mazza: 80 lines, 4.3%
+- Jan De Poorter: 68 lines, 3.7%
+
+**Is test/ owned by the same people?** Partly.
+- José Valim is the top owner of both, at about 58% each.
+- Kaito Mori holds a lot of `lib/` (17%) and 8.6% of `test/`.
+- Rafael Mendonça França, Carlos Antonio da Silva and Lucas Mazza hold more of `test/` than of `lib/`.
+
+**Bus factor** is the smallest number of authors whose surviving lines together reach 50% of the lines counted.
+- For `lib/`, it is 1 with the merge and 2 without it.
+- For `test/`, it is 1 with the merge and 2 without it.
+
+**Left out of the numbers**
+- `Gemfile.lock` (174 lines) is excluded as a lockfile.
+- One bot is excluded (1 line, 1 commit).
+- Commit `46fafb7` (the rubocop string-quote reformat) is ignored through `.git-blame-ignore-revs`.
+
+**Identity merges**
+- `.mailmap` already merges `kmori <<email redacted>>` into Kaito Mori (20 lines). That merge is in all the numbers above.
+- The tool suggested the José Valim and Rafael Mendonça França merges, and I haven't written them to `.mailmap`.
+
+These figures show whose code is still there. They don't show who understands it best, and they don't count review or design work.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls && for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -8; done; cat .git-blame-ignore-revs
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{print "total",t; for(i=1;i<=6;i++){split(c[i],a," "); printf "%s (%.0f%%)\n", c[i], a[1]*100/t}}'; done
+FINAL ANSWER:
+`git blame` counts for surviving lines. I used `-w -M -C` and ignored the rubocop reformat commit through `.git-blame-ignore-revs`.
+
+**lib/** (1,496 lines)
+- José Valim: 57%
+- Kaito Mori: 17%
+- Weblate: 5%. This is a bot, so the lines are likely locale files. Ask whoever reviews translations.
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+
+**test/** (1,853 lines)
+- José Valim: 57%
+- Rafael Mendonça França: 10%
+- Kaito Mori: 9%
+- Carlos Antonio da Silva: 6%
+- Lucas Mazza: 4%
+- Jan De Poorter: 4%
+
+**Who to ask:** José Valim for `lib/`. Kaito Mori is the second choice, with the largest share after José.
+
+**Same owners?** Mostly. José has 57% of both. Below José the order differs:
+- In `lib/`, Kaito Mori is clearly second (17%).
+- In `test/`, Rafael Mendonça França is second (10%), Kaito Mori is close behind (9%), and the rest is spread thinner.
+- Weblate and Vestimir Markov appear only in the top `lib/` list, and Lucas Mazza and Jan De Poorter only in the top `test/` list.
+
+Line counts show who wrote the code, not who is active now. Check `git log` for recent activity before you pick someone to ask.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib/ and test/ \u2014 ownership by surviving lines (git blame), compare owners"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-ppi-3/repo
+for d in lib test; do
+echo "== $d: files=$(git ls-files $d | wc -l)"
+git ls-files $d | while read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn > /tmp/own_$d.txt
+awk -v d=$d '{n=$1; t+=n; $1=""; a[NR]=$0; c[NR]=n} END{for(i=1;i<=NR&&i<=8;i++) printf "%5.1f%% %s (%d)\n", 100*c[i]/t, a[i], c[i]; print "total lines", t, "authors", NR}' /tmp/own_$d.txt
+done
+git log -1 --format=%cd; git log --since="90 days ago" --format=%an | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+**Short answer:** ask José Valim first, then Kaito Mori for `lib/`. José also owns most of `test/`, so the two directories are mostly owned by the same person.
+
+I counted surviving lines with `git blame -w -M -C` at HEAD, so whitespace changes and moved lines don't change the credit.
+
+| | `lib/` (17 files, 1,496 lines, 31 authors) | `test/` (22 files, 1,853 lines, 18 authors) |
+|---|---|---|
+| José Valim | 57% | 57% |
+| Kaito Mori | 17% | 9% |
+| Rafael Mendonça França | 4% | 10% |
+| Carlos Antonio da Silva | 3% | 6% |
+| Lucas Mazza | 2% | 5% |
+| Weblate | 5% | – |
+| Jan De Poorter | 2% | 4% |
+| Others | ~10% (Vestimir Markov 3%, the rest each under 2%) | ~9% |
+
+- **`lib/`:** José owns just over half. Kaito Mori is the clear second owner. Weblate's 5% is probably translation files, so nobody needs to be asked about it. The remaining 28 authors each hold a few percent or less.
+- **`test/`:** José's share is the same as in `lib/`. After him, the ownership is spread more evenly than in `lib/`: Rafael, Kaito, Carlos and Lucas each hold 5–10%.
+- **Who is still active:** the last 90 days of commits are mostly Carlos (8) and Rafael (6), then Kaito (3 under "Kaito Mori" plus 1 under "kmori", which is likely the same person). José has no commits in that window. He owns the most code but is not currently active in this repo.
+- **Practical advice:** for current questions, ask Carlos or Rafael, who touch the code now. Ask Kaito about `lib/` internals. Ask José about original design intent, if you can reach him.
+
+**Caveats:**
+- I did not run the skill's full report. That means no commit-count bus factor, no importer-count ranking and no per-module breakdown.
+- I did not merge author aliases such as "Kaito Mori" and "kmori". Counting them together would raise Kaito's share slightly.
+- Line counts show who wrote the code. They don't show who understands it best.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8; done
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{print "total",t; for(i=1;i<=6;i++){split(c[i],a," "); printf "%s  %.0f%%\n", c[i], a[1]*100/t}}'; done; git ls-files lib | sed 's/.*\.//' | sort | uniq -c
+FINAL ANSWER:
+Ask José Valim first. Ask Kaito Mori second.
+
+Share of surviving lines, from `git blame -w -M -C` at HEAD:
+
+**lib/** (1496 lines)
+- José Valim: 57%
+- Kaito Mori: 17%
+- Weblate: 5%. This is a translation bot, so it is not a person to ask. Its lines are the locale `.yml` files.
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+
+**test/** (1853 lines)
+- José Valim: 57%
+- Rafael Mendonça França: 10%
+- Kaito Mori: 9%
+- Carlos Antonio da Silva: 6%
+- Lucas Mazza: 4%
+- Jan De Poorter: 4%
+
+José Valim owns both directories at about the same share. The rest differs. Kaito Mori is clearly second in `lib/` but third in `test/`. Rafael Mendonça França and Carlos Antonio da Silva have a bigger share in `test/` than in `lib/`. Lucas Mazza and Jan De Poorter show up in the `test/` top six but not the `lib/` top six. So `test/` has about the same main owner but a wider group of contributors.
+
+Blame shows who last changed a line, not who is active now. Check `git log --since=1.year -- lib` before you pick a person to contact.
+
+FILE .mailmap written by this run
+Kaito Mori <kaito@mori.example> kmori <<email redacted>>

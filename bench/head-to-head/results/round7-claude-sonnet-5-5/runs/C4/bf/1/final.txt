@@ -1,0 +1,34 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-bf-1/repo --dry-run --no-github
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | head -8; done; git log -1 --format=%cd; git shortlog -sne --since="12 months ago" HEAD | head
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | awk '{n[NR]=$0; s+=$1} END{print "total",s; for(i=1;i<=NR;i++){split(n[i],a," "); printf "%s %.1f%%\n", n[i], a[1]*100/s}}'; done
+FINAL ANSWER:
+**Short answer:** ask Carlos Antonio da Silva or Kaito Mori about `lib/`. Carlos is the better first contact for `test/`. The two directories do not have the same owners, though the same people appear in both.
+
+**Share of surviving lines, from `git blame` at HEAD, ignoring whitespace and detecting moves (lib/ 1,496 lines, test/ 1,853):**
+
+| Person | lib/ | test/ | Active in the last 12 months? |
+|---|---|---|---|
+| José Valim (2 emails combined) | ~57% | ~58% | No |
+| Kaito Mori | 17% | 9% | Yes (4 commits) |
+| Weblate (translations bot) | 5% | – | Automated |
+| Rafael Mendonça França (4 emails combined) | ~4% | ~10% | Yes (about 7 commits) |
+| Carlos Antonio da Silva | 3% | 6% | Yes (22 commits) |
+| Everyone else | ~14% | ~17% | Mostly no |
+
+**What this means:**
+- **`lib/`:** José wrote most of the surviving lines, but he has no commits in the last 12 months. That makes him a poor reviewer choice. The active owners are Kaito and Carlos. The busfactor tool also emitted `/lib/ → Carlos, Weblate, Kaito` as its rule. Weblate should come out of that list, because it is a bot and not a reviewer.
+- **`test/`:** José is again the largest author at about 58%. The tool emitted no separate `test/` rule, so it falls under the repo default of Carlos and Kaito. By lines, Rafael (~10%) and Carlos (6%) are the most relevant active people there. Kaito has only 9%.
+- **Bus factor:** `lib/` rests mostly on Kaito and Carlos. Kaito holds 17% of the lines and Carlos only 3%. Carlos's role comes from his recent commit volume, not from surviving lines.
+
+**Caveats:**
+- I ran with `--no-github`, so identities are bare emails. I merged José's and Rafael's emails by hand. Other people may have more than one email too.
+- Line counts are only a proxy for who knows the code. Carlos's 22 recent commits probably involve maintenance and review work that blame does not show.
+- I ran the tool with `--dry-run`, so nothing was written to the repo. I did not generate the full risk report or a `CODEOWNERS` file. Tell me if you want either one.
+META cost=0.0699278 ms=24584 turns=6

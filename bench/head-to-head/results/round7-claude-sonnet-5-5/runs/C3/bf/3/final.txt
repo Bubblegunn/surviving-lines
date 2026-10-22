@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame --line-porcelain -w -M -C HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame --line-porcelain -w -M -C HEAD -- 2>/dev/null | grep -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Not quite one person, but close: Andrew Gallant owns about two thirds of the surviving Rust lines. I used `git blame` (`-w -M -C`) on the 10 tracked `.rs` files at HEAD, which comes to 4,366 lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,838 | 65.0% |
+| Sam Okoro | 646 | 14.8% |
+| Inès Moreau / Ines Moreau | 217 (120 + 97) | 5.0% |
+| Sebastian Thiel | 74 | 1.7% |
+| Ashley | 68 | 1.6% |
+| Aron Griffis | 59 | 1.4% |
+
+- **Moreau:** the two spellings use different emails (`ines@moreau.example` and `ines.moreau@university.example`). I combined them on the assumption they're the same person, but I haven't confirmed it. Separately they would rank third (120) and fourth (97).
+- **Long tail:** about 30 more authors each hold 1% or less, and together they hold roughly 8%. Ashley's `Ashley Mannix` entry (4 lines) is a different name, so I left it out of the table.
+- **Concentration:** the top two authors hold about 80% of the lines, and the top three about 85%. Gallant plus Okoro is the practical bus factor.
+META cost=0.0566826 ms=15750 turns=4

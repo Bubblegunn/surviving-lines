@@ -1,0 +1,63 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser"}
+ - Bash: find src/Parser -type f | head -100; echo ---; git log --all --no-merges --pretty=format:"%an <%ae>" -- src/Parser | sort | uniq -c | sort -rn; echo ---; git log -1 --format=%cd; git log --all --no-merges --pretty=format:"%an|%cs" -- src/Parser | sort -t'|' -k2 -r | awk -F'|' '!s[$1]++'
+ - Bash: for f in $(find src/Parser -type f -name '*.php'); do echo "== $f"; git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; echo "commits:"; git log --all --no-merges --pretty='%an|%cs|%s' -- $f | head -8; echo "dependents: $(grep -rl "$(basename $f .php)" src tests 2>/dev/null | grep -v "^$f$" | wc -l)"; done; echo; ls .mailmap 2>&1; git log -1 --format=%cs
+FINAL ANSWER:
+## 🚌 Bus Factor: `src/Parser`
+Period: all | Generated: 2026-10-22 | I ran the git commands directly instead of launching the haiku agent. The directory has 11 files and about 1,600 lines.
+
+### Project-level bus factor: 2
+If Graham Campbell and Aiko Tanaka both left, about 87% of the surviving lines in `src/Parser` would have no knowledgeable maintainer. Authors are counted from `git blame -w -M -C` on HEAD, so they are the people whose lines still exist.
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Graham Campbell | 782 | 48% | 2026-08-26 |
+| Aiko Tanaka (also committed as "aiko tanaka") | 637 | 39% | 2026-08-26 |
+| `root` | 117 | 7% | 2026-08-26 |
+| "Your Name" (`<email redacted>`) | 69 | 4% | 2026-08-26 |
+| Vance Lucas | 10 | <1% | not in the commit log; inherited by blame |
+| Jonas Staudenmeir, JT Smith, StyleCI Bot | 1 each | <1% | 2024-07, 2022-10, 2026-08 |
+
+- **Active status:** The newest commit in the repo is 2026-08-26, which is 57 days ago. Both main authors are inside the 90-day window.
+- **Identity merging:** There is no `.mailmap`. Graham appears under 3 emails and Aiko under 2 spellings. I merged them by name.
+- **Anonymous authors:** `root` and "Your Name" are placeholder identities. I can't tell who they are from git alone.
+
+### Per-file ownership
+
+| File | Sole or main owner | Dependents | Risk |
+|---|---|---|---|
+| `Parser.php` | Graham, 100% | 20 | HIGH |
+| `Value.php` | Graham, 100% | 19 | HIGH |
+| `Lines.php` | Graham, 92% | 2 | MEDIUM |
+| `EntryParser.php` | Graham, 99.7% | 2 | MEDIUM |
+| `Lexer.php` | Graham, 100% | 2 | MEDIUM |
+| `Entry.php` | Graham, 98% | 7 | MEDIUM |
+| `Escape.php` | Aiko, 100% | 3 | HIGH for the audit |
+| `Unicode/CharTable.php` | Aiko, 100% | 0 | MEDIUM |
+| `Quirks.php` | `root`, 100% | 0 | unknown owner |
+| `Compat.php` | "Your Name", 100% | 0 | unknown owner |
+
+Every file has a bus factor of 1.
+
+### Who to ask
+
+- **`Lexer.php`: Graham Campbell.** All 58 lines are theirs, with about 7 commits since 2020. The latest is #614 on 2026-08-24, which resolved static analysis baseline entries.
+  - That latest change was a lint cleanup, so ask Graham about the original lexing design.
+  - The performance rewrite of the lexer was in 2020.
+- **Escape handling: Aiko Tanaka.** They wrote all of `Escape.php` (206 lines) and `Unicode/CharTable.php` (431 lines) in two commits on 2026-08-26: "Add escape sequence handling" and "Escape: more sequences".
+  - Both files are brand new and have no review history in this repo's log.
+  - `Lexer.php` has no escape-related commits, so the lexer does not seem to contain escape logic.
+- **Graham for the surrounding code:** `EntryParser.php` and `Value.php` are Graham's, and they call into `Escape`. Graham's recent commits there include #602 (a memory-safety crash on invalid UTF-8 variable names) and #604 (removing quadratic value parsing). Both are directly relevant to a security audit.
+
+### Audit notes
+
+1. **Newest code:** `Escape.php`, `CharTable.php`, `Quirks.php` and `Compat.php` all landed on 2026-08-26. They are the least reviewed code in the directory, and two of them have no named author.
+2. **Unknown authors:** Someone should find out who wrote `Quirks.php` and `Compat.php`, since I couldn't. Their only commits are "fix" and "compat shims", which say nothing about intent.
+3. **No dependents found by grep:** `Quirks.php`, `Compat.php` and `CharTable.php` have no references in `src` or `tests`. Check whether they are dead code, loaded through autoload or Composer `files`, or called dynamically.
+4. **Concentration:** Because Graham wrote nearly all of the parsing path and Aiko wrote all of the escape path, you could audit each area with one conversation.
+META cost=0.07621 ms=26817 turns=5

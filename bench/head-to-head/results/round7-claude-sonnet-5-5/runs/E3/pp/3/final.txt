@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do [ -f "$f" ] || continue; case "$f" in *.*) ext=".${f##*.}";; *) ext="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //;s|^|$ext\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; print c"\t"substr($0,2)}'
+FINAL ANSWER:
+Surviving lines by `git blame -w`, top owner per extension:
+
+| Extension | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 | about 36% of 1,201 |
+| `.md` | Troy Goode | 116 | about 26% of 449 |
+| `.yml` | Douglas Christopher Wilson | 117 | about 26% of 383 |
+| `.json` | Douglas Christopher Wilson | 20 | about 63% of 32 |
+| `.gitignore` | Douglas Christopher Wilson | 4 | 80% of 5 |
+| no extension | Douglas Christopher Wilson | 17 | about 77% of 22 |
+
+- **`.js`:** Fiona Formatter is second with 291 lines. Those lines come from the latest commit, `62628c0`, which changed quotes and indentation. `-w` ignores whitespace only, so the quote changes still count as rewrites. Douglas Christopher Wilson has 245 lines, which puts them third.
+- **`.md`:** Jon Church is second with 72 lines and Douglas Christopher Wilson is third with 67.
+- **`.yml`:** Íñigo Marquínez Prado is second with 95 lines.
+- **`.json`:** There are only 32 lines in total.
+
+I can rerun the count with `git blame -w -M -C` to skip moved or copied lines. I can also skip `62628c0` to find who wrote the code before the reformat.
+META cost=0.051505300000000004 ms=23498 turns=3

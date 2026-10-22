@@ -1,0 +1,52 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-2/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-2/repo"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-2/repo"}
+FINAL ANSWER:
+**Short answer:** No directory is a single-contributor silo by commit count. Two people account for most of the history, though, and the line-ownership data is skewed by one reformat commit.
+
+**Commit concentration** (326 non-merge commits, 64 authors)
+- Bus factor is **2**. Douglas Christopher Wilson has 143 commits (43.9%) and Troy Goode has 95 (29.1%). Together they cover 73%.
+- No other human has more than 4 commits.
+- The silo rule is a directory with at least 3 commits where one author made more than 80% of them. No directory meets it.
+
+| Directory | Top author | Share |
+|---|---|---|
+| root | Wilson | 51% |
+| `lib/` | Goode | 50% |
+| `test/` | Goode | 44% |
+| `.github/` | Wilson | 37% |
+
+**Line ownership at HEAD (blame)**
+- "Fiona Formatter" owns 50.9% of lines. This is a blame artifact. Commit `62628c0` ("reformat js with 4-space indent and double quotes") rewrote nearly every line in these files:
+  - `lib/index.js`: 89.9% attributed to Fiona
+  - `test/test.js`: 93.8%
+  - `test/example-app.js`: 82.7%
+  - `test/error-response.js`: 74.2%
+- Treat Fiona as a formatter, not a knowledge owner. Real code knowledge in `lib/` and `test/` sits mostly with **Troy Goode** and, for older code, **Wilson**.
+- Files where one person owns most lines, apart from the reformat:
+  - **Troy Goode:** `test/vary.js` (100%), `test/issue-2.js` (83%), `README.md` (38%, the largest share)
+  - **Wilson:** `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js` (all 100%), `HISTORY.md` (78%), `LICENSE` (77%), `.gitignore` (80%), `package.json` (48%), `ci.yml` (49%)
+- Single-person CI and config files:
+  - `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado (93%)
+  - `.github/workflows/codeql.yml`: Sebastian Beltran (95%)
+  - `.github/dependabot.yml`: Ulises Gascón (100%)
+
+**Activity**
+- Wilson's last commit is **2021-09-07**, so the project has had no maintainer-level activity from them for years.
+- Troy Goode's last commit is 2026-04-10.
+- The most recent commit in the repo is 2026-04-12, and 2026 has only about 10 commits in total. By the tool's six-month cutoff (2026-04-22), all 18 analyzed files count as "orphaned".
+- That 18/18 result reflects a dormant repo, not 18 separate risks.
+
+**Caveats**
+- Commit counts measure activity, not expertise. Wilson's 143 commits likely include many small maintenance changes.
+- Blame analysis covered only 18 files, and `lib/` has a single file.
+- I did not check pre-2021 per-file history. `file_history` or `blame_summary` with `git blame -w -M --ignore-rev 62628c0` would show the true authors under the reformat. I can run that if you want it.
+META cost=0.0768088 ms=20618 turns=6

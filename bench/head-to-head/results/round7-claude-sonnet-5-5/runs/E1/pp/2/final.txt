@@ -1,0 +1,76 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; git rev-list --count HEAD; echo ---; git ls-files | grep -vE '^(node_modules|\.git)/' | grep -E '\.(js|mjs|cjs|ts)$' | awk -F/ '{print (NF>1?$1"/"$2:$1)}' | sort | uniq -c | sort -rn | head -30
+ - Bash: git ls-files | grep -vE '^node_modules/' | while read f; do
+ t=$(git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn)
+ n=$(echo "$t" | wc -l); tot=$(echo "$t" | awk '{s+=$1}END{print s}'); top=$(echo "$t" | head -1 | sed 's/^ *//')
+ echo "$f | contributors=$n total=$tot top=$top"
+done; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++{print}' | head -8; echo ---; git log --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '{l[$1]=$2; if(!($1 in f))f[$1]=$2; f[$1]=$2} END{for(k in f)print k, "first:",f[k]}' | sort -k3 | head -5; echo; wc -l lib/index.js; grep -c . package.json
+ - Bash: for a in "Douglas Christopher Wilson" "Troy Goode" "Ulises Gascón"; do echo "$a: $(git log --all --no-merges --author="$a" --format=%ad --date=short | head -1) (last) / $(git log --all --no-merges --author="$a" --format=%ad --date=short | tail -1) (first)"; done; echo ---; git blame -w -M --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo ---; git log --since=2025-10-22 --all --no-merges --format=%an | sort | uniq -c | sort -rn; echo ---; git log -3 --format='%h %an %ad %s' --date=short -- lib/index.js; git shortlog -sn --all --no-merges | wc -l
+FINAL ANSWER:
+## Bus factor analysis
+
+Scope: full history, 354 commits, 64 non-merge authors. The repo is small: 1 runtime file (`lib/index.js`, 238 lines), 6 test files and config. Only ~18 tracked files, so I analyzed all of them rather than sampling.
+
+### Project-level bus factor: 2
+
+Two people account for most commits: **Douglas Christopher Wilson** (143, 56%) and **Troy Goode** (95, 37%). Together that is about 93% of non-bot, non-merge commits (238 of 255 commits by the top 2, out of 255 for the 15 listed authors). The remaining 62 authors have 1–4 commits each.
+
+### The practical risk is Troy Goode
+
+| Person | Commits | First | Last | Status |
+|---|---|---|---|---|
+| Troy Goode | 95 | 2013-01-30 | 2026-04-10 | Active |
+| Douglas Christopher Wilson | 143 | 2017-03-22 | **2021-09-07** | **Inactive about 5 years** |
+| Ulises Gascón | 3 | 2025-06-05 | 2026-01-22 | Active, only on CI and dependabot config |
+
+Wilson wrote the most commits, but he has not committed since 2021. His knowledge is effectively already gone. Troy Goode is the only high-volume contributor still active.
+
+### Single-owner risk by file
+
+| File | Contributors | Top author (share) | Risk |
+|---|---|---|---|
+| `lib/index.js` (the only runtime code) | 25 | Troy Goode, 29/62 commits (47%); 138 of 238 current lines (58%) | **Medium–high.** Many authors have touched it, but Goode owns most of the surviving code. Fiona Formatter's reformat commit accounts for another 32 lines but is a style change only. |
+| `package.json` | 9 | Wilson, 68/113 (60%) | Medium. Wilson is inactive. |
+| `README.md` | 30 | Goode, 29/66 (44%) | Low |
+| `test/test.js` | 4 | Wilson, 8/11 (73%) | Medium |
+| `test/example-app.js` | 3 | Goode, 10/13 (77%) | Medium |
+| `test/issue-2.js` | 2 | Goode, 10/12 (83%) | Medium (bus factor 2 on paper, 1 in practice) |
+| `test/vary.js` | 1 | Goode (100%) | Low. Tiny, and only 1 commit. |
+| `test/error-response.js` | 3 | Goode, 4/8 (50%) | Low |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js` | 1 each | Wilson (100%) | Low. Config and helpers, single commit each, and Wilson is inactive. |
+| `.github/dependabot.yml` | 1 | Ulises Gascón (100%) | Low |
+| `.github/workflows/*` | 2–5 | Wilson on `ci.yml` (10/16); dependabot on `codeql.yml` and `scorecard.yml` | Low |
+
+Strictly single-contributor files (bus factor 1): 5 of 18, about 28%. All are small config or test helpers with few dependents, so they are low impact. The only critical file, `lib/index.js`, has many past contributors. The risk there is in current line ownership, not in the number of authors.
+
+### Heat map
+
+```
+repo/
+├── lib/index.js      🟡 Goode 47% of commits, 58% of lines (25 contributors)
+├── test/             🔴 Goode on 4 of 6 files, Wilson on test.js and helpers
+├── package.json      🟡 Wilson 60% (inactive)
+├── .github/          🟢 spread across Wilson, Gascón, dependabot
+└── README.md         🟢 30 contributors
+```
+
+### Caveats
+
+- The commit counts use author names, not email. Contributors who committed under more than one name would be counted separately. The `--all` flag also includes non-default branches.
+- The "last commit" dates for Wilson and Goode come from `git log --all --no-merges --author`.
+- Commit counts are not the same as expertise. A large share of the 2026-04 history is cosmetic (a reformat commit and a handler-annotation commit).
+- I did not run the contributor-analyzer agent. The repo is small enough to check directly.
+
+### Recommendations
+
+1. **Immediate:** Ask a second maintainer (Gascón or Jon Church, both active in the last year) to review any change to `lib/index.js` and the tests, so Goode is not the only reviewer.
+2. **Short term:** Document the intent behind `lib/index.js` and the `issue-2` and `example-app` tests. Goode wrote most of that history and no one else has written it down.
+3. **Ongoing:** Move `package.json` and release or CI ownership to an active maintainer. Wilson owns most of that history and has been inactive since 2021. Check that publish and npm access do not depend on him.
+META cost=0.0887612 ms=30570 turns=7

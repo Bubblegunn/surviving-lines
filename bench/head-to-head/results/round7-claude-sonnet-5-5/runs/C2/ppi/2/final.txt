@@ -1,0 +1,68 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/itsdangerous/signer.py src/itsdangerous/timed.py"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ppi-2/repo
+for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do
+echo "== $f (blame lines, -w -M -C -C, ignoring whitespace/moves)"
+git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn
+echo "-- commits (no merges)"
+git log --no-merges --follow --pretty='%an' -- $f | sort | uniq -c | sort -rn
+echo "-- last touch per author"
+git log --no-merges --pretty='%an|%ad' --date=short -- $f | awk -F'|' '!s[$1]++'
+done
+echo "== recent activity (all repo, last 12 mo)"
+git log --no-merges --since=12.months --pretty='%an' | sort | uniq -c | sort -rn | head
+echo "== importers"
+grep -rlE "signer
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ppi-2/repo
+git log --no-merges --author='Ibarra' --pretty='%h %ad %an <%ae>%n  %s' --date=short --stat -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -20
+git log --no-merges --author='David Lord' --pretty='%ad' --date=short | head -1
+git log --no-merges --author='Ibarra' --pretty='%h' | wc -l
+FINAL ANSWER:
+## Bus factor: `signer.py` and `timed.py`
+
+I ran `git blame -w -M -C -C` on HEAD. That counts the lines that survive today, and it ignores whitespace changes and code moved between files. Commit counts are shown only for comparison.
+
+**`signer.py` (366 lines)**
+
+| Author | Surviving lines | Commits | Last touched |
+|---|---|---|---|
+| David Lord | 212 (58%) | 10 | 2024-04-16 |
+| Tomás Ibarra | 100 (27%) | 1 | 2025-07-01 |
+| Armin Ronacher | 19 | 2 | 2018 |
+| Hsiaoming Yang | 13 | 1 | 2019 |
+| Arnout van Meer | 11 | 0 | — |
+| pre-commit-ci[bot] | 8 | 1 | — |
+
+**`timed.py` (298 lines)**
+
+| Author | Surviving lines | Commits | Last touched |
+|---|---|---|---|
+| David Lord | 172 (58%) | 17 | 2025-05-28 |
+| Tomás Ibarra | 72 (24%) | 1 | 2025-07-02 |
+| Armin Ronacher | 37 | 3 | 2018 |
+| Zach Hugnou | 5 | 1 | 2019 |
+| Other contributors, each 5 lines or fewer | 12 | — | — |
+
+**What the numbers show**
+- David Lord wrote most of the code that survives, about 58% of each file. They are also the top committer and have the most commits to both files.
+- Tomás Ibarra is a real second owner. Each file has only one commit from them, but those commits added 100 and 72 lines. Commit counts hide this, and `git shortlog` doesn't list them in its top contributors.
+- Ibarra's commits are the key rotation helpers: `93695fd` for `signer.py` and `56dba8d` for `timed.py`. Those helpers are the newest logic in both files.
+- Armin Ronacher wrote the original design, but only 19 and 37 lines of it remain.
+- The other contributors are one-off or fully rewritten, so don't ask them. The bot's lines are formatting only.
+- Bus factor is 2 for both files: David Lord and Tomás Ibarra. Together they own about 85% of each file.
+
+**Who to ask**
+1. **David Lord** for the core signing and timestamp logic. Ask them first if your change touches anything other than rotation.
+2. **Tomás Ibarra** if your change touches the rotation helpers, or if it has to stay consistent with them. They are the only person who knows that code.
+
+**Caveats**
+- The repo's last commit is 2025-07-08, so nobody has committed in the last 12 months. I can't tell from git whether either person is still active, so check before you tag them.
+- I didn't count importers, because my `grep` for them failed on a shell glob. For these two modules the answer is obvious anyway: `signer.py` and `timed.py` are the package's core, so the risk is high either way.
+- I looked at only these two files, not the whole repo. I didn't compute a project-level bus factor, and I didn't launch the contributor-analyzer agent, because blame answers this question directly.
+META cost=0.07685890000000001 ms=26203 turns=6

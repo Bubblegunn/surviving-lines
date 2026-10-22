@@ -1,0 +1,52 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -20; echo ---; git log --follow --format='%ad %an %s' --date=short -- lib/index.js | tail -5; echo ---; git log --follow --format='%ad %an %s' --date=short -- lib/index.js | head -8; echo ---; git log --oneline --follow -- lib/index.js | wc -l; wc -l lib/index.js
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+`lib/index.js` is the `cors` middleware. It has 62 commits and 238 lines.
+
+**Who shaped it**
+- **Troy Goode** created it on 2013-01-30 and wrote 29 of the 62 commits. Early on he made header lookup case-insensitive, made `origin: false` disable CORS, and fixed the async pause/resume of requests. He also added the 2026-04-10 "annotate handlers" commit.
+- **Douglas Christopher Wilson** (Express maintainer) made 4 commits, mostly 2017 lint and build cleanup (eslint, paren spacing).
+- **Alejandro Caravaca Puchades** made 4 commits, and **Simon Mansfield** made 3.
+- Other one-off contributors fixed specific problems:
+  - Benjamin Eidelman: a Safari workaround in the default pre-flight response.
+  - Tom Arad: `maxAge: 0` (2018).
+  - LuisEGR: removal of unused parameters (2021).
+  - Chima Alaebo: removal of an unreachable branch.
+- **Fiona Formatter** made the latest commit (2026-04-12), which reformatted the file to 4-space indent and double quotes.
+
+**Whose code is still in it today**
+Counts come from `git blame -w -M -C` over the current 238 lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 138 |
+| Fiona Formatter | 32 |
+| Douglas Christopher Wilson | 18 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| LuisEGR | 6 |
+| max.laverse | 5 |
+| alex94puchades | 3 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Mathias Buus | 2 |
+| Eric di Domenico | 2 |
+| Benjamin Eidelman | 2 |
+| Alberto Leal | 2 |
+| Saad Tazi | 1 |
+| Hannah Wolfe | 1 |
+| Chima Alaebo | 1 |
+
+Troy Goode still owns about 58% of the lines. The original design survives, with later fixes layered on top.
+
+Fiona Formatter's 32 lines are style-only. `-w` ignores whitespace changes, but the quote-style change still shows up as theirs. Those lines were probably written by someone else. To find the real authors, blame at `b2005d9`, the commit before the reformat.
+
+The two authors under `Alejandro Caravaca Puchades` and `alex94puchades` may be the same person under two git identities. I did not check.
+META cost=0.05220160000000001 ms=11015 turns=4

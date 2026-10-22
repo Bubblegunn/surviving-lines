@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-bf-2/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author-mail ' | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{for(i=1;i<=NR&&i<=8;i++){split(c[i],a," "); printf "%s %.1f%%\n", c[i], a[1]*100/t}; print "total",t}'; done; git log -1 --format=%ad; git shortlog -sne --since="12 months ago" HEAD | head
+FINAL ANSWER:
+**Short answer:** ask Carlos Antonio da Silva or Kaito Mori for `lib/`. For `test/`, Carlos is still the best contact, and Rafael Mendonça França is a second contact. The people who wrote most of both trees have left.
+
+I counted lines that survive in `HEAD` using `git blame -w -M -C`: 1,496 lines in `lib/` and 1,853 in `test/`. Merging José Valim's two emails gives these shares:
+
+| Author | `lib/` | `test/` | Active in the last 12 months? |
+|---|---|---|---|
+| José Valim (2 emails) | ~57% | ~58% | No |
+| Kaito Mori | 17% | 9% | Yes (4 commits) |
+| Weblate (translations bot) | 5% | not in the top 8 | Automated |
+| Carlos Antonio da Silva | 3% | 6% | Yes (22 commits, the most active) |
+| Rafael Mendonça França | 3% (one email only) | 9% (one email only) | Yes (7 commits across 3 emails) |
+| Others (Vestimir, Jan, Lucas Mazza, Fernando) | ~14% | ~11% | No |
+
+**Is `test/` owned by the same people?** Mostly the same group, with a different mix:
+- José Valim has about 58% of `test/`, as he does of `lib/`. That code is effectively orphaned, because he has no commits in the last year.
+- Kaito's share drops from 17% in `lib/` to 9% in `test/`.
+- Rafael and Carlos have a bigger share in `test/` than in `lib/`.
+
+**Generated CODEOWNERS (dry run, nothing written):** `/lib/` is assigned to Carlos, Kaito and the Weblate bot. The script's `*` fallback is Carlos and Kaito. It produced no separate rule for `test/`, so `test/` falls back to Carlos and Kaito. Weblate is a bot account and probably shouldn't be a review owner.
+
+**Caveats:**
+- The script weights commits with a one-year half-life. The shares above are raw surviving lines, so the two views differ. Surviving lines give José credit for old code that is still there.
+- I ran it with `--no-github`, so owners are bare emails. Rafael's three emails would merge into one person once they are resolved. That would raise his share a little.
+- Commit volume is only a proxy for who understands the code.
+- Kaito's email is a placeholder (`kaito@mori.example`). Check that it maps to a real, active account.
+
+I used `--dry-run`, so I wrote no `.github/CODEOWNERS` or `ownership.json`. I can write them and build the HTML risk report if you want.
+META cost=0.0606732 ms=18421 turns=5

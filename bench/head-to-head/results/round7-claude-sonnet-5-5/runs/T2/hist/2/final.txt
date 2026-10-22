@@ -1,0 +1,29 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-hist-2/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-hist-2/repo", "path": "lib"}
+FINAL ANSWER:
+**Bus factor of `lib/`: 2 by commit count.** The result is weak, because `lib/` is tiny and the line-ownership numbers are distorted.
+
+**Commits (66 commits, 25 authors):**
+- Troy Goode wrote 33 commits, exactly 50%. The tool needs more than 50%, so Troy plus one more author (Alejandro Caravaca Puchades or Douglas Christopher Wilson, 4 commits each) crosses the line.
+- The other 22 authors made 1 to 3 commits each. No knowledge silo is flagged, since no one is above 80%.
+
+**Current activity (inactive means no commit in 6 months, since 2026-04-22):**
+- Troy Goode's last commit was 2026-04-10, so Troy is already inactive. The single largest source of `lib/` knowledge is already gone.
+- Douglas Christopher Wilson's last commit was 2021-09-07, so he is also inactive.
+- By this measure, the bus factor is already effectively 0 to 1 among the people who wrote the most.
+
+**Line ownership at HEAD:**
+- `lib/` contains one file, `lib/index.js` (238 lines). The tool marks it as orphaned: 100% of its lines belong to inactive authors.
+- "Fiona Formatter" owns 89.9% of the lines. That is almost certainly the formatting commit `62628c0 style: reformat js with 4-space indent and double quotes`, not a person who understands the code. Blame attributes every reformatted line to that commit.
+- Troy Goode owns 8.4% (20 lines) and Raymond Feng 0.8% (2 lines). Both are inactive.
+
+**What this means:** Nobody active clearly understands `lib/index.js`. The commit-based factor of 2 overstates safety, since it counts history rather than who is still around. The line-based view understates real knowledge, since the reformat hides the real authors. I haven't checked who recently touched the logic behind the reformat. Run `blame_summary` with whitespace and formatting commits ignored if you want the true line owners.
+META cost=0.0587974 ms=11994 turns=5

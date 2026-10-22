@@ -1,0 +1,26 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) x=".${e##*.}";; *) x="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //" | sed "s|^|$x\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; print c"\t"substr($0,2)}' | awk -F'\t' '{if(!($2 in s)){s[$2]=$3; n[$2]=$1}; t[$2]+=$1} END{for(k in s) print k"\t"s[k]"\t"n[k]"\t"t[k]}' | sort
+FINAL ANSWER:
+Top owner per extension, by surviving lines from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 of 1202 | 43% |
+| `.md` | Troy Goode | 116 of 341 | 34% |
+| `.yml` | Douglas Christopher Wilson | 117 of 383 | 31% |
+| `.json` | Douglas Christopher Wilson | 20 of 42 | 48% |
+| `.gitignore` | Douglas Christopher Wilson | 4 of 5 | 80% |
+| (no extension) | Douglas Christopher Wilson | 17 of 22 | 77% |
+
+- **`.js` runner-up:** "Fiona Formatter" has 291 lines. That is probably the author of the latest `style: reformat js` commit (62628c0). The quote-style change reassigned those lines, and `-w` only ignores whitespace. Douglas Christopher Wilson has 245.
+- **`.yml` runner-up:** Íñigo Marquínez Prado has 95 lines.
+- **`.md` runner-up:** Jon Church has 72 lines. Douglas Christopher Wilson has 67.
+
+I did not use `-M` or `-C`, so moved or copied lines count for whoever last touched them.
+META cost=0.055460300000000004 ms=14932 turns=3

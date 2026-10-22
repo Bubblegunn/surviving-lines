@@ -1,0 +1,25 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -a . .github 2>/dev/null | head -50; find . -iname CODEOWNERS -not -path './node_modules/*'; echo ---; git shortlog -sne --since="2 years ago" -- lib/index.js | head; echo ---; git log -8 --format='%h %an %ad %s' --date=short -- lib/index.js
+ - Bash: git shortlog -sn -- lib/index.js | head; grep -n -i -E 'maintainer|author|contributors' package.json README.md | head
+FINAL ANSWER:
+Repo has no CODEOWNERS file, so nothing assigns a reviewer. I'd pick from git history and `package.json`.
+
+**Best pick: Troy Goode.**
+- `package.json` lists them as author.
+- They made the latest functional change to `lib/index.js` (`b2005d9`, "annotate handlers", 2026-04-10).
+- They're the only recent contributor who isn't a drive-by formatter.
+
+**Other names from history:**
+- **Douglas Christopher Wilson** edited the file in 2017 (eslint, lint fixes). They're a likely backup for CORS and Express middleware questions.
+- **Fiona Formatter** made the most recent commit (`62628c0`, 2026-04-12). It was a formatting-only change, so they know the file's current layout but not its logic.
+- Tom Arad, LuisEGR, Chima Alaebo and Benjamin Eidelman each made a single change, years ago. They aren't good picks.
+
+**Before you pick someone:**
+- Check whether the change touches CORS behavior, such as header handling or `maxAge`. If so, ask for a reviewer who knows the CORS spec.
+- Add a `CODEOWNERS` file under `.github/` so reviews get assigned automatically. I can draft one if you want.
+META cost=0.040702600000000005 ms=23721 turns=3

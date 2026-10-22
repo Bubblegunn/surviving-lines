@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; git shortlog -sne --all | wc -l
+ - Bash: git shortlog -sne --all | sed -E 's/^ *[0-9]+\t//' > /tmp/a.txt; echo names-multi-email; sed -E 's/ <.*//' /tmp/a.txt | sort | uniq -d; echo email-multi-name; sed -E 's/.*<(.*)>/\1/' /tmp/a.txt | tr A-Z a-z | sort | uniq -d; echo; git shortlog -sne --all | tail -16; git log --all --format='%an <%ae>|%cn <%ce>' | sort -u | grep -v -E '^(.*)\|\1$' | head
+ - Bash: git config user.email; git log --all --format='%an <%ae>' | grep -i -E 'efe|genc|fiona|troy'| sort | uniq -c; cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | wc -l; git status --short
+FINAL ANSWER:
+Two people appeared under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). They now count as one author with 122 commits.
+- **Alejandro Caravaca Puchades** used the same email under two names: `Alejandro Caravaca Puchades` (4 commits) and `alex94puchades` (1 commit). They now count as one author with 5 commits.
+
+I added a `.mailmap` file at the repo root that merges these identities. I did not rewrite history, so no commit hashes changed. The file is untracked and not committed.
+
+The author count went from 65 to 63.
+
+I left two identities alone because nothing in the history shows they're the same person as anyone else. They are `Efe <<email redacted>>` and `Fiona Formatter <fiona@formatter.example>`. Your git config email is a different address, so I can't tell if `Efe` is you.
+
+**New top author:** Douglas Christopher Wilson, with 143 commits. Troy Goode is second with 122. The merge didn't change the ranking, since Troy's 2 extra commits only took them from 120 to 122.
+META cost=0.06537480000000001 ms=19671 turns=5

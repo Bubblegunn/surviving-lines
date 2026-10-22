@@ -1,0 +1,26 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -10; git log --format='%an' | sort | uniq -c | sort -rn | head
+ - Bash: git ls-files -z '*.rs' | xargs -0 cat | wc -l; git log --format='%an <%ae>' | grep -iE 'ines|inès|okoro' | sort | uniq -c
+FINAL ANSWER:
+Yes, it's mostly one person. Andrew Gallant owns about 64% of the surviving Rust lines. I used `git blame -w` on the 10 tracked `.rs` files, which cover 4,366 lines.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,798 | ~64% |
+| 2 | Sam Okoro | 646 | ~15% |
+| 3 | Inès Moreau (two spellings, see below) | 217 | ~5% |
+| 4 | nivkner | 146 | ~3% |
+| 5 | Sebastian Thiel | 96 | ~2% |
+| 6 | Marvin Löbel | 83 | ~2% |
+
+Below those are mcharsley (46), Aron Griffis (45) and Martin Sehnoutka (38).
+
+- **Moreau:** Git shows "Inès Moreau" with 120 lines and "Ines Moreau" with 97. The commit log has a third identity, `ines <<email redacted>>`. The two spellings use different emails (`ines.moreau@university.example` and `ines@moreau.example`), so I can't confirm they are the same person. I'm assuming they are and combined them to get 217 lines. Taken separately they would rank below nivkner. There is no `.mailmap` merging them.
+- **Gallant by commit count:** He has 135 of the commits in the log, far more than anyone else. Sam Okoro has only 2 commits but holds the second-largest share of lines.
+- **Whitespace and line endings:** I used `-w` so the "normalize line endings" commit doesn't take credit for every line. Moves and renames are not traced across files, so shares could shift slightly with `-M -C`.
+META cost=0.0439321 ms=13737 turns=3

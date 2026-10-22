@@ -1,0 +1,44 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -20; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -5; echo ---; git log --follow --oneline -- lib/index.js | wc -l; echo ---; git blame -w -M -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: wc -l lib/index.js; git blame -w -M -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%ad %an' --date=short -- lib/index.js | awk '{print substr($1,1,4)}' | sort | uniq -c; echo ---; git log -3 --format='%h %ad %an %s' --date=short -- lib/index.js; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | grep -iE 'vary|express|es6|rewrite|refactor|promise|typescript|preflight' | head
+FINAL ANSWER:
+`lib/index.js` is the CORS middleware. It has 62 commits (followed through renames) and 238 lines. Troy Goode created it and still owns most of it.
+
+**Who shaped it**
+- **Troy Goode** made the first commit on 2013-01-30. He has 29 of the 62 commits and wrote the core: case-insensitive header lookup, `origin: false` disabling CORS, and pause/resume of the request for async middleware. He also added Connect support without Express (v2.1.0), Express 4 support (2.3.2), and the switch to the `vary` module. Most of the activity was in 2013–2015. After that the file saw only a few commits a year.
+- **Douglas Christopher Wilson** has 4 commits, all in 2017. The ones I could see in the log add `Vary: Access-Control-Request-Headers` when `allowedHeaders` is dynamic. He still has 22 lines.
+- **Alejandro Caravaca Puchades** has 4 commits and 12 lines. (An `alex94puchades` account has 4 more lines.)
+- **Smaller contributors:**
+  - Mathias Buus made the first change to use non-Express request and response methods.
+  - Igor Soarez added `Vary: Origin` for specific origins.
+  - Eran Tiktin fixed `Vary` for `*`.
+  - Tomek Kopczuk added `Vary: Origin` for regex origins.
+  - max.laverse let the preflight request pass to `next()`.
+  - LuisEGR removed unused function parameters (2021).
+- **Recent changes (April 2026):** Troy Goode added handler annotations on 2026-04-10. On 2026-04-12 "Fiona Formatter" reformatted the whole file to 4-space indent and double quotes.
+
+**Whose code is still there**
+
+I ran `git blame -w -M -C -C` and skipped the reformat commit (`--ignore-rev 62628c0`), so the reformat doesn't count as authorship. If you don't skip it, Fiona Formatter gets 32 lines, which is only whitespace and quote changes.
+
+| Author | Lines (of 238) |
+|---|---|
+| Troy Goode | 159 (about 67%) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 (16 with the `alex94puchades` account) |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Igor Soarez | 3 |
+| Simon Mansfield | 3 |
+| Benjamin Eidelman | 3 |
+| 10 others | 1–2 lines each |
+
+Blame covers only the current lines. Some of the 2013–2015 code may have been reworked, but Troy's original structure is still the base. I didn't check which specific lines in the file are his.
+META cost=0.0376364 ms=16762 turns=4

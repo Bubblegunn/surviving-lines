@@ -1,0 +1,40 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL --merge-identities -- lib; echo ======; $SL --merge-identities --bus-factor-threshold 80 -- lib | grep -i "bus factor"
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; node "$S" --merge-identities -- lib; echo ======; node "$S" --merge-identities --bus-factor-threshold 80 -- lib | grep -i "bus factor"
+FINAL ANSWER:
+**Bus factor of `lib`: 1**, counted by surviving lines. That is the smallest number of authors whose surviving lines reach 50% of the lines counted. Troy Goode alone holds 159 of 238 lines (66.8%). To reach 80% you need 3 authors.
+
+Both numbers are for the `lib` directory only. The tool attributed all 238 lines, and `lib` has 1 file. Counts use `git blame -w -M -C`, which is the default copy detection.
+
+| Author | Lines | Share | Commits | Share |
+|---|---|---|---|---|
+| Troy Goode (2 addresses) | 159 | 66.8% | 33 | 50.0% |
+| Douglas Christopher Wilson | 22 | 9.2% | 4 | 6.1% |
+| alex94puchades | 16 | 6.7% | 5 | 7.6% |
+| Raymond Feng | 7 | 2.9% | 1 | 1.5% |
+| LuisEGR | 6 | 2.5% | 1 | 1.5% |
+| max.laverse | 6 | 2.5% | 1 | 1.5% |
+| 17 more authors | 22 | 9.2% | | |
+
+The tool prints 10 rows and groups the last 14 authors into "… 14 more authors". I added the 4 rows it did print (Simon Mansfield, Benjamin Eidelman, Igor Soarez, Alberto Leal) into my "17 more authors" row. The 22 lines in that row are my own subtraction from the 238 total, so check them against the tool output if you need them exact.
+
+**Adjustments to the numbers**
+- **Merged identities:** I counted `<email redacted>` (147 lines) and `troy@laptop.example` (12 lines) as one person. This is a guess from the shared name and addresses, not confirmed. Unmerged, the gmail address alone holds 147 lines (61.8%), so the bus factor is still 1. Nothing was written to `.mailmap`.
+- **Reformat commit ignored:** `62628c0` ("style: reformat js with 4-space indent and double quotes", by Fiona Formatter) is left out of the table. It touches 32 lines of `lib`, and only whitespace and quotes changed. With it counted, Fiona Formatter would show 32 lines (13.4%) and Troy 138 (58.0%). The bus factor is still 1.
+- **Mechanical rewrites checked:** 33 commits were examined and 1 was set aside, which is the reformat commit. One more candidate was kept in the numbers: `fcd2b56` ("issue #42: (WIP) switch to ESLint; clean up", by Troy Goode, 6 surviving lines). Six lines can't change the result.
+- **Not shown:** the output gave no note about dropped files or excluded bots, so I have nothing to report on either.
+
+**What this does and doesn't tell you**
+- It shows how concentrated the remaining code is. It doesn't show who understands it.
+- Review work, design discussions and deleted code leave no lines behind.
+- If Troy Goode left, about a third of the lines (31–33%) would have a remaining author. The next largest holder, Douglas Christopher Wilson, has only 9.2%.
+- Losing Troy plus two more of the top holders would leave most of `lib` without a current author. That is the 80% mark.
+
+If you want a reviewer shortlist for `lib`, `--reviewers lib` gives the top three owners with an active or inactive marker.
+META cost=0.0663082 ms=19110 turns=5

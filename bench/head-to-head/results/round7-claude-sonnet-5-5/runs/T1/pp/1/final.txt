@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | wc -l && git log --oneline | wc -l && git show --stat --format='%h %an %s' 62628c0 | tail -5
+ - Bash: git ls-files; echo ---; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -20; echo --- naive; for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -5
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^author-mail '; done | sort | uniq -c | sort -rn | head -8; echo; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -c '^author '; done | paste -sd+ | bc; ls .mailmap 2>&1 | head -1; git log --format='%an <%ae>' | grep -iE 'efe|fiona' | sort | uniq -c
+FINAL ANSWER:
+Most surviving code is Troy Goode's and Douglas Christopher Wilson's. This is line ownership from `git blame` across all 18 tracked files, not commit counts.
+
+| Author | Lines still present |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| everyone else | under 20 each |
+
+The table's top 20 authors add up to about 1,940 lines, and the remaining authors are below that. So Troy owns roughly 40% and Douglas roughly 30%.
+
+- **Reformat commit skipped:** commit `62628c0` ("reformat js with 4-space indent and double quotes", author Fiona Formatter) rewrote 1,016 lines across `lib/index.js` and the test files. A plain `git blame` credits those lines to Fiona, who then shows as the top owner with 1,016 lines. I excluded that commit with `--ignore-rev 62628c0`, ignored whitespace (`-w`), and tracked moved or copied lines (`-M -C`). Lines whose content the reformat actually changed, such as the quote style, may still be credited to Fiona under this method.
+- **Troy has two identities:** 762 lines are under `<email redacted>` and 48 under `troy@laptop.example`. There is no `.mailmap`, so I counted them separately in the email breakdown. The 810 figure merges them by author name.
+- **Authorship, not current maintenance:** blame shows who wrote each line, not who maintains it now. The current maintainers could be different people.
+META cost=0.06723010000000001 ms=18265 turns=5

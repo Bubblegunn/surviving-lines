@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-2/repo", "path": "src/Parser"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-2/repo", "file": "src/Parser/Lexer.php"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-2/repo", "file": "src/Parser/Lexer.php", "limit": 30}
+FINAL ANSWER:
+**Who wrote the live code in `src/Parser`** (line ownership at HEAD, 11 files, about 1,620 lines):
+
+| Author | Lines | Share | Main owner of |
+|---|---|---|---|
+| Graham Campbell | 792 | 48.9% | `Entry`, `Lines`, `EntryParser`, `Value`, `Lexer`, `Parser`, `ParserInterface` |
+| Aiko Tanaka | 590 | 36.5% | `Escape.php`, `Unicode/CharTable.php` |
+| "root" | 117 | 7.2% | `Quirks.php` |
+| "Your Name" | 69 | 4.3% | `Compat.php` |
+| "aiko tanaka" (lowercase) | 47 | 2.9% | part of `Escape.php` |
+| JT Smith, Jonas Staudenmeir, StyleCI Bot | 1 each | 0.1% each | single lines |
+
+- **Lexer.php:** Graham Campbell wrote all 58 lines. The file has 7 commits, from 2020-06-06 to 2026-08-24. The newest is a static-analysis cleanup. The core logic dates from June 2020.
+- **Escape handling:** it lives in `Escape.php`, not `Lexer.php`. Aiko Tanaka owns it (77%, or about 100% if "aiko tanaka" is the same person), and `Unicode/CharTable.php` is 100% theirs. I did not check whether `Lexer.php` calls `Escape.php`.
+
+**Who to ask:**
+- **Lexer.php:** Graham Campbell. They have written all of it, and they are active (last commit 2026-08-26).
+- **Escape handling:** Aiko Tanaka. For anything involving the Lexer and escapes together, ask both.
+
+**Audit notes:**
+- **Orphaned code:** none. The only inactive authors are JT Smith (last commit 2022-10-15) and Jonas Staudenmeir (last commit 2024-07-20), and each owns one line.
+- **Unattributable files:** `Quirks.php` ("root") and `Compat.php` ("Your Name") have placeholder git identities, so you can't tell who wrote them. Their "active" status only means that identity committed recently. Run `git log` on those two files and check the commit emails or PR authors to find the real person.
+- **Duplicate identity:** "Aiko Tanaka" and "aiko tanaka" look like one person under two identities. A `.mailmap` entry would merge them.
+- **Escape ownership:** it is concentrated in one person. Aiko Tanaka owns `Escape.php` and `CharTable.php`, which is 590 lines, and `Escape.php` is the part most likely to matter for a security audit. Do not rely on anyone else for questions about it.
+META cost=0.06991939999999999 ms=15958 turns=6

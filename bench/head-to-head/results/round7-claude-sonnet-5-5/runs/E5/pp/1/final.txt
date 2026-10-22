@@ -1,0 +1,63 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -5; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -15; echo ---; wc -l lib/index.js; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: echo "ignoring reformat:"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; echo "Troy lines by year (ignoring reformat):"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2} /^\t/{ if(a=="Troy Goode"){ print strftime("%Y",t)}}' | sort | uniq -c; git show --stat --format='%h %s' b2005d9 | head; git log --follow --format='%ad' --date=short -- lib/index.js | awk -F- '{print $1}' | sort | uniq -c | tr '\n' ' '
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2} /^\t/{print a"|"t}' | while IFS='|' read a t; do echo "$a|$(date -r $t +%Y)"; done | sort | uniq -c | sort -k2 | grep "Troy"
+FINAL ANSWER:
+`lib/index.js` started in 2013 as Troy Goode's code, and about two-thirds of the 238 lines are still his. Counts below come from `git log --follow` and `git blame -w -M -C`, with the 2026 reformat commit `62628c0` ignored so it doesn't take credit for old lines.
+
+## Who shaped it
+
+**Troy Goode (author, 2013–2016, then a 2026 commit)**
+- He wrote the first commit on 2013-01-30 and 29 of its commits in total.
+- His early commits added case-insensitive header lookup, `.origin = false` to disable CORS, and pause/resume of the request to handle asynchronous middleware.
+- He made the last substantial rewrite in 2016, releasing 2.8.0 with fixes #66 and #73.
+- He touched the file again in April 2026 with `lib: annotate handlers`.
+
+**Douglas Christopher Wilson (maintainer, 2017)**
+- He made 4 commits, all in 2017, and still owns 22 lines.
+- He fixed an error when the options delegate had no `methods` option.
+- He added `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders`.
+- He also did the eslint upgrade and lint cleanups.
+
+**Other contributors**
+- Alejandro Caravaca Puchades has 4 commits, now 12 lines (his 3 lines under `alex94puchades` count separately).
+- Single-fix contributors include:
+  - Saad Tazi: fix for frozen options.
+  - Tomek Kopczuk: `Vary: Origin` for regex origins.
+  - Benjamin Eidelman: Safari preflight workaround.
+  - Tom Arad: `maxAge` set to 0.
+  - Hannah Wolfe: named the anonymous middleware function.
+  - LuisEGR: lint cleanup in 2021.
+- Raymond Feng, max.laverse, Simon Mansfield, Igor Soarez, Mathias Buus, Eric di Domenico and Alberto Leal each own a few lines.
+
+**Fiona Formatter (2026)**
+- Her `style: reformat js with 4-space indent and double quotes` commit rewrote the file's style. Plain `git blame` credits her with 32 lines, but she added no logic.
+
+## Whose code is still there
+
+By surviving lines, with the reformat ignored:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 159 | ~67% |
+| Douglas Christopher Wilson | 22 | ~9% |
+| Alejandro Caravaca Puchades | 12 | ~5% |
+| Raymond Feng | 7 | ~3% |
+| max.laverse | 6 | ~3% |
+| LuisEGR | 6 | ~3% |
+| About 12 others | 26 combined | ~11% |
+
+Troy's 159 lines break down by year as 90 from 2013, 16 from 2014, 39 from 2015, 2 from 2016 and 12 from 2026. So 145 lines (about 61% of the file) are his code from 2013–2016, which is the core of the original design. The 12 lines from 2026 are the handler annotations.
+
+Wilson's 2017 work is the main later layer. It added `Vary` headers and delegate handling.
+
+## Caveats
+- Blame shows who last changed each line. A line reworded after its original author counts as the later author's.
+- `-M -C` follows moved and copied lines, but I didn't check whether code from before 2013 was copied in from another repo.
+META cost=0.07598869999999999 ms=22762 turns=5

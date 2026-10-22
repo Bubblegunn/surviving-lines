@@ -19,6 +19,7 @@ before it is searched, so an address that follows a JSON escape such as \n is
 found as a plain address. The line is then written back with json.dumps, so it
 still parses. A line that is not JSON is searched as plain text.
 """
+import gzip
 import json
 import os
 import re
@@ -41,7 +42,18 @@ def home_prefixes():
     return [home] if len(home) > 1 else []
 
 
+# Keys and tokens of the common providers. The pattern list is short on purpose: it covers what a run
+# transcript can quote (an environment dump, a config file), and the self-test plants one of each kind.
+SECRET = re.compile(
+    r"\b(?:sk-ant-[A-Za-z0-9_-]{10,}|sk-[A-Za-z0-9]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|npm_[A-Za-z0-9]{20,}"
+    r"|tvly-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,})"
+    r"|(?<=Bearer )[A-Za-z0-9._~+/=-]{20,}"
+)
+SECRET_PLACEHOLDER = "<secret redacted>"
+
+
 def redact_paths(text):
+    text = SECRET.sub(SECRET_PLACEHOLDER, text)
     text = SCRATCH.sub("<scratch>", text)
     text = TMP.sub("<tmp>", text)
     for home in home_prefixes():
@@ -130,13 +142,20 @@ def residual(text):
 
 
 def text_files(root):
-    """Every file under root without a NUL byte, as a path. Binary files are skipped."""
+    """Every file under root without a NUL byte, as a path. Binary files are skipped; .gz files are read by check()."""
     for folder, _, names in os.walk(root):
         for name in names:
             path = os.path.join(folder, name)
             with open(path, "rb") as fh:
                 if b"\x00" not in fh.read():
                     yield path
+
+
+def gz_files(root):
+    for folder, _, names in os.walk(root):
+        for name in names:
+            if name.endswith(".gz"):
+                yield os.path.join(folder, name)
 
 
 def read(path):
@@ -154,6 +173,11 @@ def check(root):
     found = []
     for path in text_files(root):
         count = len(residual(read(path)))
+        if count:
+            found.append((path, count))
+    for path in gz_files(root):
+        with gzip.open(path, "rt", encoding="utf-8", errors="surrogateescape") as fh:
+            count = len(residual(fh.read()))
         if count:
             found.append((path, count))
     return found
@@ -235,6 +259,22 @@ def self_test():
     jout = scrub_text(jline)
     assert json.loads(jout)["cmd"] == "cd <home>/x\nls <scratch>/h2h/fixture", jout
     assert scrub_text("a path /usr/bin/git stays") == "a path /usr/bin/git stays"
+    # Keys and tokens: one planted per provider pattern, assembled so no key literal sits in the source.
+    keys = ["".join(["sk-", "ant-api03-", "A" * 24]), "".join(["gh", "p_", "B" * 30]), "".join(["npm", "_", "C" * 30]),
+            "".join(["tvly", "-", "D" * 20]), "".join(["AK", "IA", "E" * 16]), "".join(["xox", "b-", "1234567890-abc"])]
+    for key in keys:
+        out = scrub_text("export X=%s\n" % key)
+        assert key not in out and SECRET_PLACEHOLDER in out, out
+        assert residual("export X=%s" % key) != [], key
+    bearer = "Authorization: Bearer " + "F" * 30
+    assert "F" * 30 not in scrub_text(bearer) and scrub_text(bearer).startswith("Authorization: Bearer "), scrub_text(bearer)
+    assert scrub_text("plain sk-learn and git sha 4b65d05") == "plain sk-learn and git sha 4b65d05"
+    # A gzip file is checked by content.
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        with gzip.open(os.path.join(tmp, "t.jsonl.gz"), "wt") as fh:
+            fh.write(json.dumps({"r": "x " + gmail}) + "\n")
+        assert check(tmp) != [], "a gzip with an address must fail the check"
     print("scrub self-test OK")
     return 0
 

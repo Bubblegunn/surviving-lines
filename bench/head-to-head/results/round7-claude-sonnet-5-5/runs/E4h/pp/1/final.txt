@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git shortlog -sne HEAD | head -30; git log --format='%h %an %s' | head -20
+ - Bash: git ls-files > /tmp/files.txt; cat /tmp/files.txt | tr '\n' ' '; echo
+for f in $(cat /tmp/files.txt); do
+ case "$f" in *.png|*.jpg|*.ico|*.svg) continue;; esac
+ git blame -w -M --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^\t/{n=split(f,p,"/"); d=(n>1?p[1]:"(root)"); print d"\t"a}'
+done | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Owner only where one person holds at least half. Counts come from `git blame` on HEAD, with whitespace changes ignored and commit `62628c0` (the reformat) skipped. Bots are excluded. Each person is counted once, so Alejandro Caravaca Puchades and `alex94puchades` are merged.
+
+| Path | Top author | Share of surviving lines | Result |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 67% | owner |
+| `test/` | Troy Goode | 517/966 = 54% | owner |
+| `.github/` | Douglas Christopher Wilson | 118/366 = 32% | no owner |
+| root files | Troy Goode | 134/415 = 32% | no owner |
+
+In `.github/`, the next highest are Íñigo Marquínez Prado at 26% and Sebastian Beltran at 17%. In the root files, Douglas Christopher Wilson holds 28% and Jon Church 17%.
+
+I have no GitHub handles, only git names and emails, so `@troygoode` below is a guess. Check it before use.
+
+```
+# CODEOWNERS
+/lib/   @troygoode
+/test/  @troygoode
+
+# No one holds >=50% of surviving lines; deliberately unowned:
+# /.github/
+# /*   (root files)
+```
+
+`test/` is only just over half, so it is the weakest of the two claims. Git history alone also doesn't show who currently maintains the repo. The top `.github/` and root contributors are authors of past commits, not necessarily active reviewers.
+META cost=0.06837480000000001 ms=18006 turns=4

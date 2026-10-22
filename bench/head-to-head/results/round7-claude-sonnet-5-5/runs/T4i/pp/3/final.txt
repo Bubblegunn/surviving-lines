@@ -1,0 +1,17 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log --since='1 year ago' --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log -8 --format='%h %ad %an %s' --date=short -- lib/index.js; echo ---; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+FINAL ANSWER:
+**Troy Goode** should review it. No CODEOWNERS file exists, so this comes from git history.
+
+- Troy Goode wrote 30 of the commits touching `lib/index.js`, far more than anyone else. They also made the last real change (`b2005d9`, "lib: annotate handlers", 2026-04-10).
+- Second choice: **Douglas Christopher Wilson**, with 4 commits. The last was in 2017, so their knowledge may be stale.
+- Ignore "Fiona Formatter". Their only commit (`62628c0`) is the 4-space/double-quote reformat, which `.git-blame-ignore-revs` already excludes. It says nothing about who knows the code.
+
+Only 2 commits touched the file in the past year, so ownership is concentrated in one person. Ask Troy Goode for review, and consider adding a `CODEOWNERS` entry for `lib/`.
+META cost=0.0211703 ms=14692 turns=3

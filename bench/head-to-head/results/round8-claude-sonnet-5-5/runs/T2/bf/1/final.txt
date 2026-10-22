@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib directory"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-bf-1/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: git ls-files lib | wc -l; git ls-files | wc -l; git log --no-merges --format='%ae|%ad' --date=short -- lib | awk -F'|' '{c[$1]++; if(!($1 in l)) l[$1]=$2; f[$1]=$2} END{for(a in c) print c[a], a, "last="l[a], "first="f[a]}' | sort -rn | head -20; git log -1 --format=%ad --date=short; git log --reverse --format='%h %ad' --date=short | head -1; git log --diff-filter=A --format= --name-only --root | wc -l
+ - Bash: git ls-files lib; git log --no-merges --since=2021-01-01 --format='%h %ae %ad %s' --date=short -- lib; git show --stat --format=%h --root bcd03d9 | tail -3
+FINAL ANSWER:
+**Short answer:** `lib/` is effectively orphaned. By commit counts the bus factor is 2, but I don't think that number is real.
+
+`lib/` is a single file, `lib/index.js`. I ran the busfactor script with `--dry-run --no-github`, so nothing was written to the repo. The script's output doesn't break out `lib/` separately, so I checked `git log` for the path directly.
+
+**Who touched it** (about 54 non-merge commits):
+- `<email redacted>` made 32 commits, the first in 2013-01 and the last in 2016-08. That is about 60% of the history, and none of it is recent.
+- Eleven other people made 1–5 commits each. Their last commits were between 2013 and 2018, apart from one in 2021-07 (`luisegr149`, "remove unused function parameters").
+- Only two authors fall inside the 12-month active window (history ends 2026-04-12):
+  - `troy@laptop.example` made `b2005d9 lib: annotate handlers` on 2026-04-10.
+  - `fiona@formatter.example` made `62628c0 style: reformat js with 4-space indent and double quotes` on 2026-04-12.
+
+**Why I don't trust "2":**
+- Both recent commits are mechanical, an annotation pass and a reformat. As the skill notes, commit volume is a proxy for knowledge, and someone who ran a refactor across the file can look like an expert without being one.
+- The people who wrote the logic, mainly Troy Goode, left years ago. Nothing I can see shows that either active author wrote or designed the logic, so the real number may be 0.
+- I couldn't tell whether `troy@laptop.example` is the same person as `<email redacted>`. If so, one person would hold both the history and the recent activity, and the bus factor would be 1. I didn't check this.
+
+**How many have to leave:**
+- If you count by commits, both active authors have to leave, so the answer is 2.
+- If you count by who understands the design, the answer is probably already 0. I can't verify that without asking those two.
+
+**Caveats:**
+- The root commit is 8 of 18 tracked files (44%), so the script flags this history as imported. Ownership reflects work since the import, not who first wrote the code.
+- Authors are matched by git email only, because I ran with `--no-github`. People with several emails may be split into separate authors.
+- Everything here is inferred from git history. I haven't checked who actually reviews or maintains the file.
+
+If you want the full report (HTML plus a `CODEOWNERS` file), I can run it for real. That would write `.github/CODEOWNERS` and `.github/ownership.json` into the repo. I'd also need to know whether the two active authors are still around and whether the two Troy emails are the same person.
+META cost=0.0675567 ms=24297 turns=6

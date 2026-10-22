@@ -1,0 +1,26 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %cd' --date=iso && git log --since='2026-03-29' --format='%h|%an|%ae|%ad|%s' --date=iso --no-merges | head -100; echo; git log --since='2026-03-29' --format='%h' | wc -l
+ - Bash: git log -12 --format='%h|%an|%ae|%cn|%ad|%s' --date=iso; cat .mailmap 2>/dev/null; git show --stat --format='%h %s' b2005d9 02afce3 5317ebe 62628c0 | head -40
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s|^|$f\t|"; done | awk -F'\t' '{split($2,a,"author ");c[a[2]]++; k[a[2]" "$1]++} END{for(n in c)print c[n],n; print "---"; for(x in k) if(x ~ /Troy|Vansh|Fiona/) print k[x],x}' | sort -rn | head -30
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -aE '^([0-9a-f]{40} |author-mail )' | paste - - | awk '{print substr($1,1,7), $0}' | awk '{print $1, $NF}' ; done > /tmp/b.txt; grep -E 'troy@laptop|vansh' /tmp/b.txt | sort | uniq -c; echo; grep -i troy /tmp/b.txt | awk '{print $2}' | sort | uniq -c; git log --author='Troy' --format='%h %ae %ad %s' --date=short | head -5; git log --author=Troy --oneline | wc -l
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12, anchored on the latest commit, `62628c0`). Troy Goode appears under two emails and is counted once.
+
+| Person | Commits in window | Lines still in code from those commits | All surviving lines they authored |
+|---|---|---|---|
+| **Troy Goode** (`troy@laptop.example`, also `<email redacted>` in older history) | `02afce3` test: vary header coverage (2026-04-10)<br>`b2005d9` lib: annotate handlers (2026-04-10) | 48 (36 in `test/vary.js`, 12 in `lib/index.js`) | 746 (698 under `<email redacted>`, 48 under `troy@laptop.example`) |
+| **Vansh Sharma** | `5317ebe` docs: app.del() → app.delete() in README (#411) (2026-04-07) | 1 (`README.md`) | 1 |
+
+I left out two authors:
+- **Fiona Formatter** (`62628c0`, 2026-04-12) made a formatting-only commit. It re-indented and changed quotes in 4 files.
+- **dependabot[bot]** has no commits in the window. Its latest are from 2026-03-02.
+
+I counted surviving lines with `git blame -w --ignore-rev 62628c0`, so the formatting commit doesn't take credit for lines that were only reformatted.
+
+"Lines of theirs" could mean only the lines from the window commits or every line they still own. The table gives both.
+META cost=0.0650326 ms=41702 turns=5

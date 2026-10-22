@@ -1,0 +1,41 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -15; echo ---; git log --follow --oneline -- lib/index.js | wc -l; git log --follow --name-status --format='%h' -- lib/index.js | grep -E '^R' 
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git blame --ignore-rev 62628c0 -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%ad %an' --date=short -- lib/index.js | sed -n '1,12p'; git log --format='%an <%ae>' -1 62628c0; git log --follow --format='%ad' --date=format:%Y -- lib/index.js | sort | uniq -c
+FINAL ANSWER:
+`lib/index.js` is 238 lines with 62 commits, and git shows no renames. Troy Goode wrote it and still owns most of it.
+
+**Who shaped it**
+- **Troy Goode** made the first commit on 2013-01-30. He made 29 of the 62 commits, including header lookup, the `origin: false` behavior, strict mode and the CORS-spec cleanup. He also made a commit on 2026-04-10.
+- **Simon Mansfield** (2013) made the credentials and `Origin` check fixes. **Damien Klinnert** (2013) made the change that sends `Access-Control-Allow-Methods` only on OPTIONS requests.
+- **Douglas Christopher Wilson** made 4 commits in 2017 and is the second-largest contributor to the current code.
+- **Alejandro Caravaca Puchades** made 4 commits, plus 1 more under the name `alex94puchades`.
+- The rest are single commits from many contributors, in 2013–2018 and one in 2021 (LuisEGR).
+- Activity peaked in 2013–2015 (48 commits). It was 8 commits in 2017 and almost none afterward.
+- **Fiona Formatter** made the most recent commit, 62628c0 on 2026-04-12 (`style: reformat js with 4-space indent and double quotes`). It is a mechanical reformat.
+
+**Whose code is still in it**
+
+A plain `git blame` credits Fiona Formatter with 214 of 238 lines, because the reformat touched nearly every line. I ignored that commit (`--ignore-rev 62628c0`) to see who wrote the logic. Whitespace-only changes were ignored too (`-w`), and moved lines were followed (`-M -C`).
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades (plus `alex94puchades`, 4) | 12 (16 combined) |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Benjamin Eidelman | 3 |
+| 10 others | 1–2 each |
+
+Troy Goode wrote about two thirds of the current lines (159 of 238), from 2013 onward. Almost all the rest is small patches from about 18 contributors. Only 2 of Goode's 29 commits are dated after 2013–2015, so the file has been close to stable since 2017.
+META cost=0.06382149999999999 ms=19304 turns=5

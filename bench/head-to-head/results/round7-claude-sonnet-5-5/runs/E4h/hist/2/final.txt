@@ -1,0 +1,47 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: ls -A && cat .mailmap 2>/dev/null; git shortlog -sne HEAD | head -30
+ - Bash: git show --stat 62628c0 | tail -8; for g in lib test .github ROOT; do echo "== $g"; if [ $g = ROOT ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files $g); fi; for f in $files; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -6; done
+ - Bash: git ls-files | head -30; git blame -w --ignore-rev 62628c0 --line-porcelain -- test/test.js 2>&1 | head -3
+ - Bash: for g in lib test .github ROOT; do echo "== $g"; if [ $g = ROOT ]; then git ls-files | grep -v /; else git ls-files $g; fi | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | head -5; done; git ls-files | grep -v / | while read f; do echo "$f: $(git blame -w --ignore-rev 62628c0 --line-porcelain -- $f | grep -a '^author ' | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done
+ - Bash: for g in lib test .github ROOT; do if [ $g = ROOT ]; then git ls-files | grep -v /; else git ls-files $g; fi | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep -a '^author '; done | grep -vi 'bot' | awk -v g=$g '{n[$0]++;t++} END{for(k in n) if(n[k]/t>=0.4) printf "%s %s %d/%d = %.1f%%\n",g,k,n[k],t,100*n[k]/t; print g" total",t}'; done
+FINAL ANSWER:
+Status: I've finished the line-ownership counts and am writing up the result.
+
+I ran `git blame -w` on every tracked file, with the 4-space/double-quote reformat commit `62628c0` ignored. I dropped bot lines and merged authors by name. That left one Troy Goode, even though git lists two emails for them.
+
+| Path | Top author | Share of surviving lines |
+|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 66.8% |
+| `test/` | Troy Goode | 453/966 = 46.9% |
+| `.github/` | none | no author has 40% or more of 366 lines |
+| root files | none | no author has 40% or more of 415 lines |
+
+For `test/`, Douglas Christopher Wilson holds 400/966 = 41.4%. For the root files, Troy Goode holds 134/415 (about 32%) and Wilson holds 115/415 (about 28%).
+
+- **`lib/`:** Troy Goode holds at least half.
+- **`test/`:** nobody holds half. Troy Goode is closest at 46.9%.
+- **`.github/`:** nobody holds half. Wilson has the most lines (108), but he is not close to half.
+- **Root files:** nobody holds half. In `README.md`, Troy Goode has 116 lines and Jon Church has 72. Wilson leads `package.json`, `HISTORY.md`, `.eslintrc.yml` and `LICENSE`, but that is not enough to give him half of the root total.
+
+Suggested CODEOWNERS, with the unowned paths left as comments:
+
+```
+# lib/ — Troy Goode holds 66.8% of surviving lines
+/lib/    @<troy-goode-github-handle>
+
+# No owner: nobody holds >= 50% of surviving lines
+# /test/       (Troy Goode 46.9%, Douglas Christopher Wilson 41.4%)
+# /.github/    (no dominant author)
+# /*           (root files: Troy Goode ~32%, Douglas Christopher Wilson ~28%)
+```
+
+I don't know anyone's GitHub handles, so replace the placeholder with the real one.
+
+Troy Goode's share of `lib/` and `test/` is mostly old code. I didn't check whether they are still active, so confirm that before assigning them as owner.
+META cost=0.0763559 ms=25684 turns=7

@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; git config user.name
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[$2]++} END{}1' | wc -l; echo --- names with multiple emails; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{c[$1]++} END{for(k in c) if(c[k]>1) print k}'; echo --- emails with multiple names; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{c[$2]++} END{for(k in c) if(c[k]>1) print k}'; echo --- committers; git log --all --format='%cN|%cE' | sort | uniq -c | sort -rn | head
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -iE 'troy|alejandro c|alex94'; git status --short
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** was listed under `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). He now shows as one entry with 122 commits.
+- **Alejandro Caravaca Puchades** was listed as "Alejandro Caravaca Puchades" (4 commits) and as "alex94puchades" (1 commit), both with the same email. He now shows as one entry with 5 commits.
+
+I fixed this by adding a `.mailmap` file at the repo root. It maps the duplicate identities to one canonical name and email, so git's author counts (`git shortlog`, `git log`) merge them. I did not rewrite any history. The file is untracked and not committed yet.
+
+**The top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second with 122.
+
+I looked for duplicates by author name and by author email. Other people could be listed under different names and emails that I can't detect that way, such as someone who used a different name and a different email.
+META cost=0.0559134 ms=13768 turns=4

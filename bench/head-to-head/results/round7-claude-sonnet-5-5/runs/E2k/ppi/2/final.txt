@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:sprint-health
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:sprint-health", "args": "--team"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; echo ---; git log --since="2026-03-29" --until="2026-04-13" --no-merges --pretty=format:"%h|%an|%ae|%ad|%s" --date=short; echo; echo ---; git log --no-merges --since="2026-03-29" --until="2026-04-13" --format='%an <%ae>' | sort | uniq -c
+ - Bash: git log --no-merges -8 --pretty=format:"%h|%an|%ae|%cn|%ad|%s" --date=iso; echo; cat .mailmap 2>/dev/null; echo ---; git shortlog -sne --all | head -30; echo ---; git show --stat --format='%h %an' 62628c0 | tail -15
+ - Bash: git show --stat --format='%h %an %s' b2005d9 02afce3 5317ebe | cat; echo ---; for ign in "" "--ignore-rev 62628c0"; do echo "ignore=[$ign]"; git ls-files | while read f; do git blame $ign -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -8; done
+ - Bash: git blame --ignore-rev 62628c0 -w --line-porcelain -- lib/index.js 2>&1 | head -3; echo ---; for ign in "" "--ignore-rev 62628c0"; do echo "ignore=[$ign]"; git ls-files | while read f; do git blame $ign -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | grep -Ei 'troy|vansh|s.vansh|formatter'; done
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- "$f" 2>/dev/null </dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | grep -Ei 'troy|vansh|formatter'; echo "---commit-level survivors"; for c in b2005d9 02afce3 5317ebe; do echo -n "$c: "; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- "$f" 2>/dev/null </dev/null | grep -a "^$c" | grep -a -v '^author'; done | grep -c "^$c"; done
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12) once formatting-only commits and bots are set aside.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | 2 | 48 from those commits, 746 overall |
+| Vansh Sharma | 1 | 1 |
+
+**Troy Goode**
+- `b2005d9` "lib: annotate handlers" (2026-04-10): 12 lines added, 12 removed in `lib/index.js`, and all 12 survive.
+- `02afce3` "test: vary header coverage" (2026-04-10): 36 lines added in the new file `test/vary.js`, and all 36 survive.
+- Troy appears under two author emails, `troy@laptop.example` and `<email redacted>`. I counted them as one person because the name is the same. If they are two different people, the window figures are unchanged, but the 746 splits into 698 and 48.
+
+**Vansh Sharma**
+- `5317ebe` "docs: app.del() with app.delete() in README example (#411)" (2026-04-07): 1 line added, 1 removed in `README.md`, and the added line survives.
+
+**Set aside**
+- `62628c0` by Fiona Formatter (2026-04-12) only reindents and changes quote style. It touches 1,016 lines across 4 files with equal insertions and deletions.
+- I blamed with `--ignore-rev 62628c0 -w`, so reformatted lines count for their original author. Without that, 291 lines would show as Fiona's.
+- There are no bot commits in the window. The two `dependabot[bot]` commits are from 2026-03-02.
+
+Two caveats on the line counts:
+- "Still in the code" is a `git blame` count over all tracked files at HEAD. It includes Troy's lines from before the window, which is why his overall figure is 746.
+- Lines from the window that were later rewritten would not count. None were.
+META cost=0.0966569 ms=33805 turns=9

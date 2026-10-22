@@ -1,0 +1,20 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -a | head -50; find . -name CODEOWNERS -not -path './node_modules/*'; echo ---; git shortlog -sne --no-merges -- lib/index.js | head; echo ---; git log -n 8 --format='%h %an %ar %s' -- lib/index.js
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --format='%an' --no-merges -- lib/index.js | sort | uniq -c | sort -rn; echo ---; ls .github; cat .github/CODEOWNERS 2>/dev/null; grep -nE 'maintainer|contributors|author' package.json
+FINAL ANSWER:
+No CODEOWNERS file exists, so the repo doesn't name a reviewer. I'd go by the history and `package.json`.
+
+- **Troy Goode** is the best choice. They are the `author` in `package.json:5`. They also made 29 of the commits to `lib/index.js`, far more than anyone else, including the latest functional change (`b2005d9`, "lib: annotate handlers", 7 months ago).
+- **Douglas Christopher Wilson** is a good second reviewer. They made 4 commits to the file, though the last was about 9 years ago. That makes them useful for a second opinion on the core logic, but they may not be active on this repo now.
+- **Alejandro Caravaca Puchades** also made 4 commits. I didn't check how recent they are.
+
+Fiona Formatter's `62628c0` is only a style reformat, so they aren't a reviewer. Skip them.
+
+I only looked at git history, so this shows who knows the file, not who is still active. Check recent activity on GitHub before you ask anyone.
+META cost=0.026008199999999995 ms=23615 turns=4

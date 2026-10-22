@@ -1,0 +1,43 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "src/Parser \u2014 who wrote surviving code; best contact for Lexer.php and escape handling"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -60; echo ---; ls src/Parser; echo ---; git log --format='%an <%ae> %ad' --date=short -- src/Parser | sort | uniq -c | sort -rn | head; git log --reverse --format=%h -1 --max-parents=0; git ls-files | wc -l
+ - Bash: for f in src/Parser/Lexer.php; do echo "== blame $f"; git blame -w -M -C --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "== escape grep"; grep -rniE 'escape|\\\\\\\\' -l src/Parser | head; echo "== log Lexer"; git log --follow --format='%h %an %ad %s' --date=short -- src/Parser/Lexer.php | head -20
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w -M -C --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git log --format='%h %an <%ae> %ad %s' --date=short -- src/Parser/Escape.php src/Parser/Lines.php src/Parser/Quirks.php src/Parser/Compat.php; git log -3 --format='%h %an %cn %ad %s' --date=short --author=root
+FINAL ANSWER:
+**Short answer:** Ask Graham Campbell about `Lexer.php`. For `Escape.php` internals, ask Aiko Tanaka. Both are the only real option for their area, so the bus factor is 1.
+
+**Who wrote the surviving lines in `src/Parser` (`git blame -w -M -C`):**
+
+| File | Surviving author(s) |
+|---|---|
+| `Lexer.php` (58 lines) | Graham Campbell, 100% |
+| `Parser.php`, `ParserInterface.php`, `Entry.php`, `Value.php`, `EntryParser.php` | Graham Campbell, plus 1 line each from Jonas Staudenmeir (`Entry.php`) and StyleCI Bot (`EntryParser.php`) |
+| `Lines.php` | Graham 126 lines, Vance Lucas 10, JT Smith 1 |
+| `Escape.php` (206 lines) | Aiko Tanaka, 100% |
+| `Unicode/CharTable.php` (431 lines) | Aiko Tanaka, 100% |
+| `Quirks.php` (117 lines) | `root <root@localhost>`, no real identity |
+| `Compat.php` (69 lines) | `Your Name <<email redacted>>`, no real identity |
+
+**`Lexer.php`:**
+- Graham wrote the core logic in 2020-06-07 (performance work and "Tweaked lexing"). He last touched it on 2026-08-24 for static analysis cleanups.
+- No other author has any surviving lines in this file.
+
+**Escape handling:**
+- Aiko added `Escape.php` and `CharTable.php` on 2026-08-26 in two commits, "Add escape sequence handling" and "Escape: more sequences". Graham merged them as PR #1.
+- The git author names differ only in letter case, for example `<email redacted>` and `<email redacted>`. I treated them as one person.
+- Graham wrote `EntryParser.php` and `Value.php`, so he is the person to ask about how escapes are consumed. I did not check whether `Lexer.php` calls `Escape.php`.
+
+**Caveats for the audit:**
+- **The escape code is new and has one author.** `Escape.php` and `CharTable.php` are 637 lines from a single day, and Aiko's commits are all from 2026-08-26. A reviewer should check them closely. Graham's merge is the only second look I can see in the history.
+- **Two files have no accountable author.** `Quirks.php` and `Compat.php` came from commits by `root` ("fix") and `Your Name` ("compat shims"). Graham may know who wrote them, so ask him.
+- **The tool's owner list needs checking.** The busfactor script lists `<email redacted>` as an owner of `/src/Parser/`, and the address is on `example.org`. It also counts Aiko as active only because the repo's newest commit is from the same day. I did not verify that Aiko is a real, reachable contributor.
+- **Graham appears under three emails** (`alt-three.com`, `gjcampbell.co.uk`, and the GitHub noreply address). Counts per email understate his share.
+
+I ran the busfactor script with `--dry-run --no-github`, so I wrote no files and made no GitHub lookups. Its full report would give you `ownership.json` and the active/inactive roster, if you want it.
+META cost=0.083676 ms=26128 turns=7

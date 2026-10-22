@@ -1,0 +1,61 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -40; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo AUTHORS; git log --follow --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo BLAME; git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git show --stat --pretty=format:"%h %s" 62628c0 b2005d9 | head -20; echo; git log --all --oneline -i --grep=revert -- lib/index.js | head; wc -l lib/index.js; git log --follow --reverse --pretty=format:"%h %ad %an %s" --date=short -- lib/index.js | head -3
+FINAL ANSWER:
+## 🔍 Code History: `lib/index.js`
+
+### Quick Context
+> This is the main file of the `cors` Express middleware. It sets the CORS headers and answers preflight requests. Troy Goode wrote it, and he still owns most of the surviving lines. The newest commit, a reformat, makes blame misleading.
+
+### Decision Timeline
+| Date | Who | What / why |
+|---|---|---|
+| 2013-01-30 | Troy Goode | First commit. Case-insensitive header lookup. `origin: false` disables CORS. |
+| 2013–2014 | Troy Goode | JSLint cleanup, `Access-Control-Expose-Headers` (#15), Express 4 support (#21), and the 2.4.0 fixes. |
+| 2014-05 | Typicode, Alberto Leal, Shane Tomlinson | Added PATCH to the default methods. Stopped overriding the `origin` callback. Method names are uppercased before comparison. |
+| 2014-10/11 | Igor Soarez, Troy Goode | Added `Vary: Origin` for specific origins. Switched to the `vary` module (#30), then fixed the Express-only regression (#33). |
+| 2015 | Raymond Feng, Eran Tiktin, max.laverse, DracoBlue | `applyHeaders` loses its closure. `Vary` is no longer sent for `*`. Preflight can pass through to `next()`. Exposed headers are added to OPTIONS responses. |
+| 2015-05 | Alejandro Caravaca Puchades | `origin` accepts a regexp or an array. Troy then moved the project to ESLint (#42). |
+| 2015–2016 | jordandenison, Hannah Wolfe, Troy Goode | Strict-mode fix. Named the middleware function. Released 2.8.0 (#66, #73). |
+| 2017 | Douglas Christopher Wilson, Saad Tazi, Tomek Kopczuk, Benjamin Eidelman, Chima Alaebo | `Vary` fixes. Frozen-options fix. Delegate-without-`methods` fix. Workaround for a Safari preflight bug. Lint fixes. |
+| 2018-11 | Tom Arad | Fixed `maxAge: 0`. |
+| 2021-07 | LuisEGR | Lint: removed unused parameters. |
+| 2026-04-10 | Troy Goode | "annotate handlers" (12 lines). |
+| 2026-04-12 | Fiona Formatter | Reformatted to 4-space indent and double quotes. It touched 428 lines in this file and about 1,000 across 4 files. |
+
+### Narrative
+Troy Goode wrote the first version in January 2013. He made 29 of the 62 commits, and most of the later work builds on his structure.
+
+Contributors added features and fixes in small pull requests. Each one added a rule or edge case:
+- `Vary` handling.
+- Regexp and array origins.
+- Preflight pass-through.
+- Safari's preflight behavior.
+- `maxAge: 0`.
+
+Changes have been rare since 2018.
+
+The most recent commit is a mechanical reformat by Fiona Formatter. `git blame -w` ignores whitespace changes but not quote changes. Fiona therefore shows as the author of 32 lines that only had single quotes changed to double quotes. Using `--ignore-rev 62628c0` would likely give a more accurate picture. I did not run that.
+
+### Key Takeaways
+1. **Who shaped it:** Troy Goode is the author and, by blame, the owner of about 138 of the 238 lines. Alejandro Caravaca Puchades added the regexp/array origin matching. Douglas Christopher Wilson maintained the 2017 `Vary` and robustness fixes.
+2. **Whose code remains:** Blame lists 17 authors. Fiona Formatter has 32 lines, which are cosmetic. Douglas Christopher Wilson has 18, Alejandro Caravaca Puchades 12, Raymond Feng 7 and LuisEGR 6. The rest are one-to-five-line contributions. Many small fixes survive, such as Tom Arad's `maxAge` fix, but the blame output doesn't attribute them to the author. This is because the reformat rewrote those lines.
+3. **Current state:** The file is stable and mature. There were no reverts in its history. The 2026 commits are cosmetic, not behavioral. Treat the `Vary`, preflight and `maxAge` code as hard-won edge-case handling and don't simplify it casually.
+
+### Metrics
+| Metric | Value |
+|--------|-------|
+| Total commits | 62 (`--follow`) |
+| Contributors | 25 (Troy Goode 29, Douglas Christopher Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3, jordandenison 2, 19 others with 1 each; counts treat `alex94puchades` as a separate author) |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Low to medium. Bursts in 2014–2017, almost none since 2018 except the 2026 style changes. |
+
+I read the log and blame directly instead of launching the git-archaeologist agent. I did not read the individual diffs, so the "what / why" column comes from commit messages.
+META cost=0.0405637 ms=28523 turns=5

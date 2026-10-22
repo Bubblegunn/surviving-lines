@@ -1,0 +1,65 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$' | awk -F/ '{print $1}' | sort | uniq -c; echo ---; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -5; git rev-list --count HEAD
+ - Bash: files=$(git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$'); echo "$files"; echo "=== total surviving lines by author (ignoring reformat)"; for f in $files; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn; echo "=== per file"; for f in $files; do echo "## $f"; git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -4; done; echo "=== last commit per author"; git log --all --no-merges --pretty='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -8
+ - Bash: B="git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD --"; F=$(git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$')
+echo "=== total surviving lines by author"; echo "$F" | while read f; do $B "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn
+echo "=== per file"; echo "$F" | while read f; do echo "## $f ($(wc -l < "$f") lines)"; $B "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -4; done
+echo "=== naive (no ignore) lib/index.js"; git blame -w --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -3
+ - Bash: bl(){ git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- "$1" | grep '^author ' | sed 's/^author //'; }
+F=$(git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$')
+echo "=== total surviving lines by author"; echo "$F" | while read f; do bl "$f"; done | sort | uniq -c | sort -rn
+echo "=== per file"; echo "$F" | while read f; do echo "## $f ($(wc -l < "$f") lines)"; bl "$f" | sort | uniq -c | sort -rn | head -4; done
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson"; do echo "$a: $(git log --all --no-merges --author="$a" -1 --pretty=%ad --date=short)"; done; for f in lib/index.js; do echo importers:; grep -rl "require(.*lib\|require(.*\.\./" test lib 2>/dev/null | wc -l; done; cat package.json | grep -E '"main"'
+FINAL ANSWER:
+## Bus factor: who owns the surviving code
+
+I used `git blame` instead of the skill's `git log` commit counts, so each line goes to the author who last wrote it. I excluded the `62628c0` reformat commit and ignored whitespace-only changes. Without that exclusion, a "Fiona Formatter" account would own part of `lib/index.js`. The analysis covers 7 JS files and 1,196 lines.
+
+### Project-level bus factor: 1
+
+| Author | Surviving lines | Share | Last commit | Active? |
+|---|---|---|---|---|
+| Troy Goode | 676 | 56.5% | 2026-04-10 | ⚠️ About 6 months ago |
+| Douglas Christopher Wilson | 394 | 32.9% | 2021-09-07 | ❌ Inactive for 5 years |
+| 19 others | 126 | 10.5% | n/a | not checked |
+
+Troy Goode alone owns more than 50% of the code. Troy and Douglas together own about 89%.
+
+Commit counts tell a different story. By commits, Douglas leads (143, against Troy's 95). By surviving code, Troy leads clearly, because Troy's work is what's still in the files.
+
+### Ownership by file
+
+| File | Lines | Main owner | Share | Second owner |
+|---|---|---|---|---|
+| `lib/index.js` (the package `main`) | 238 | Troy Goode | 67% | Douglas 9% |
+| `test/test.js` | 731 | Douglas | 46% | Troy 43% |
+| `test/example-app.js` | 81 | Troy | 83% | Douglas |
+| `test/error-response.js` | 66 | Troy | 86% | Douglas |
+| `test/issue-2.js` | 48 | Troy | 83% | Douglas |
+| `test/vary.js` | 36 | Troy | 100% | none |
+| `test/support/env.js` | 2 | Douglas | 100% | none |
+
+### Risk
+
+- **`lib/index.js` is the highest risk.** It is the only source file, and two-thirds of it is Troy's. Nobody else owns more than about 9%.
+- **`test/test.js` is shared.** Douglas and Troy each own about 45% of it. Douglas is inactive, so in practice Troy is the only current owner.
+- **The tail is thin.** The 19 other contributors own 126 lines between them, and the largest holds 30. No one in that group is a realistic backup maintainer.
+
+### Recommendations
+
+1. **Now:** Have someone other than Troy review or pair on `lib/index.js`, so a second person understands it.
+2. **Short term:** Check whether Troy is still engaged. Their last commit is about 6 months old, which is past the skill's 90-day "active" cutoff.
+3. **Ongoing:** Document the intent behind the handler annotations and `lib/index.js` internals. Douglas's remaining knowledge in `test/test.js` is effectively unreachable.
+
+### Caveats
+
+- **Identity matching:** Authors are matched by name only. "Alejandro Caravaca Puchades" and "alex94puchades" may be the same person, which would put them at 34 lines.
+- **Dependent counts:** I did not run the skill's dependents analysis, since there is only one source file.
+- **Contributor activity:** I did not check last-commit dates for the 19 smaller contributors.
+META cost=0.09130809999999999 ms=36455 turns=8

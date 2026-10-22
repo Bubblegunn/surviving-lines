@@ -1,0 +1,25 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | sed -E 's|.*/||' | awk '{ if ($0 ~ /\./) { n=split($0,a,"."); print "." a[n] } else print "(none)" }' | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files); do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //" | sed "s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr; git ls-files | grep -v '\.' ; git ls-files | grep gitignore
+FINAL ANSWER:
+Top owner of surviving lines per file type, from `git blame -w` on HEAD:
+
+| Type | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` (7 files) | Troy Goode | 517 | about 40% of 1,203 |
+| `.md` (2 files) | Troy Goode | 116 | about 36% of 321 |
+| `.yml` (6 files) | Douglas Christopher Wilson | 117 | about 29% of 399 |
+| `.json` (1 file) | Douglas Christopher Wilson | 20 | about 43% of 42 |
+| `.gitignore` (1 file) | Douglas Christopher Wilson | 4 | 80% of 5 |
+| no extension (`LICENSE`) | Douglas Christopher Wilson | 17 | 77% of 22 |
+
+- **`.js` runner-up:** "Fiona Formatter" has 291 lines, from the latest commit (`62628c0`, the 4-space and double-quote reformat). The `-w` flag ignores whitespace-only changes, but the quote changes still count as edits. Troy Goode still leads.
+- **`.yml` is close:** Íñigo Marquínez Prado has 95 lines and Sebastian Beltran has 63, so the lead is not large.
+- **Name variants:** I did not merge author names. "Alejandro Caravaca Puchades" and "alex94puchades" are probably the same person, but merging them doesn't change any top owner.
+META cost=0.05617659999999999 ms=16886 turns=4

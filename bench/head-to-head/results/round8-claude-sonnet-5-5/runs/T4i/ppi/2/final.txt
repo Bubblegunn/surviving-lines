@@ -1,0 +1,43 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== all commits ==" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last 1y ==" && git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit per author ==" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++' && echo && echo "== dependents ==" && grep -rlE "require\(.*(lib/index|\./lib|\.\./lib)['\"/)]" --include="*.js" . --exclude-dir=node_modules --exclude-dir=.git | wc -l && git log --oneline --no-merges -- lib/index.js | wc -l
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** Ask Douglas Christopher Wilson as a second reviewer if you want one.
+
+| Metric | Value |
+|---|---|
+| Commits (non-merge) | 62 |
+| Contributors | 25 |
+| Top owner | Troy Goode, 29 commits (47%) |
+| Dependents (`require` of `lib`) | 3 files |
+
+**Recent activity**
+- **Troy Goode:** last commit 2026-04-10. He is the top owner and the only substantive author active in the last year.
+- **Fiona Formatter:** last commit 2026-04-12. This is almost certainly the reformat commit (`style: reformat js with 4-space indent and double quotes`). Do not use it as a review signal. I did not check the author of that commit.
+- **Douglas Christopher Wilson:** 4 commits, last in 2017-10. He is the second-ranked substantive author, but he has been inactive for about 9 years.
+- **Alejandro Caravaca Puchades:** 4 commits, last in 2015 (a second identity, `alex94puchades`, has 1 more). Inactive.
+- **Everyone else:** 1–3 commits each, all last active in 2021 or earlier.
+
+**Risk**
+- **Ownership:** Troy has 47% of commits, below the 80% single-owner threshold. The file is not formally bus-factor-1.
+- **Knowledge in practice:** Troy is the only person with current context, so the effective bus factor is **1**.
+- **Importance:** only 3 files import it. That is low to moderate importance. The grep matched `require(.../lib...)` patterns only, so it may miss other import styles.
+- **Overall:** MEDIUM. The file is widely contributed to but has only one active maintainer.
+
+**Caveats**
+- I ran the git commands for this one file. I did not launch the `contributor-analyzer` agent or compute a project-wide bus factor.
+- Authors are matched by name, not email. `Alejandro Caravaca Puchades` and `alex94puchades` look like the same person but are counted separately.
+- Troy's recent commit may be the reformat or an unrelated change. If you want to know who last changed the logic, I can run `git blame -w` with `.git-blame-ignore-revs`.
+
+**Recommendations**
+1. Get Troy to review the change, since he has the most current context.
+2. If Troy is unavailable, nobody else is active on this file. Treat the review as unowned and test coverage as the safety net.
+3. Run the tests before merging, because no second active expert exists to catch regressions.
+META cost=0.0562579 ms=17133 turns=4

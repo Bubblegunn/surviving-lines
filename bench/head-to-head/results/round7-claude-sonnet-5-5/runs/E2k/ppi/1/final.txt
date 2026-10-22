@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:sprint-health
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:sprint-health", "args": "--team"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad' --date=iso; git log --since="2026-03-29" --until="2026-04-12 23:59:59" --no-merges --pretty=format:"%h|%an|%ae|%cn|%ad|%s" --date=short --shortstat
+ - Bash: git log --no-merges --pretty=format:"%h|%an|%ae|%ad|%s" --date=short -12; echo; cat .mailmap 2>/dev/null; git shortlog -sne HEAD | head -20
+ - Bash: F=62628c04a1b16306a0285b3e26645acfa1c21687
+echo "== all lines, ignoring format commit =="
+git ls-files | while read f; do git blame --ignore-rev $F -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | head -8
+echo "== lines from window commits (blame sha in window set) =="
+W="b2005d9 02afce3 5317ebe"
+for c in $W; do full=$(git rev-parse $c); echo -n "$c "; git ls-files | while read f; do git blame --ignore-rev $F --line-porcelain -- "$f" 2>/dev/null | grep -a "^$full " ; done | wc -l; done
+ - Bash: F=62628c04a1b16306a0285b3e26645acfa1c21687
+git ls-files | while read f; do git blame --ignore-rev $F -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -aE '^([0-9a-f]{40} |author-mail )'; done > /tmp/blame.txt
+for c in b2005d9 02afce3 5317ebe; do echo -n "$c "; grep -c "^$(git rev-parse $c) " /tmp/blame.txt; done
+grep -c '<email redacted>' /tmp/blame.txt; grep -a 'author-mail' /tmp/blame.txt | grep -c -E '<email redacted>|troy@laptop.example'
+FINAL ANSWER:
+Blame results are in, so I'm writing up the answer now.
+
+Window: 2026-03-29 to 2026-04-12, which is 14 days ending at the latest commit. Four non-merge commits fall in it.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| Troy Goode | 2 (`02afce3`, `b2005d9`) | 48 from the window commits (36 + 12). 810 across the whole repo. |
+| Vansh Sharma | 1 (`5317ebe`) | 1 |
+
+- **Troy counted once.** Troy commits under two emails, `<email redacted>` and `troy@laptop.example`. Both are the same name, so I merged them. The 810 is 762 lines under the first email plus 48 under the second.
+- **Excluded:** Fiona Formatter's `62628c0`, a reformat of 4 files (1016 lines added and 1016 removed). No bot commits fall in the window. The latest `dependabot[bot]` commits are from 2026-03-02.
+- **How lines were counted:** I ran `git blame` on every tracked file at HEAD, ignoring `62628c0`, with whitespace ignored (`-w`) and moved or copied lines tracked (`-M -C`). Without this, Fiona would own the reformatted lines.
+- **Two readings of "lines of theirs":** I gave both Troy figures because the wording is ambiguous. The 48 is lines from the window commits only. The 810 is every line they authored that is still in the repo.
+
+I ran the git commands directly and skipped the `--team` contributor-analyzer agent and the rest of the dashboard (velocity, hotspots, risk flags). Your question only needed per-person commits and surviving lines.
+META cost=0.0871395 ms=29891 turns=8

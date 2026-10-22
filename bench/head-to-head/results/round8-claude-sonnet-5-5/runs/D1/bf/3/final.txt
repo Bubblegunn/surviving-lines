@@ -1,0 +1,33 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; for f in cJSON.c cJSON.h; do echo "== $f lines: $(wc -l < $f)"; done; echo "--- with ignore-revs, -w -M -C"; for f in cJSON.c cJSON.h; do git blame --line-porcelain -w -M -C --ignore-revs-file .git-blame-ignore-revs $f; done | grep '^author ' | sort | uniq -c | sort -rn; echo "--- without ignore-revs"; for f in cJSON.c cJSON.h; do git blame --line-porcelain -w -M -C $f; done | grep '^author ' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Max Bruckner wrote about 75% of the lines that survive in `cJSON.c` and `cJSON.h`.
+
+I ran `git blame` on the current HEAD of both files. That gave 3,601 lines in total (3,298 in `.c`, 303 in `.h`). I used `-w -M -C` so whitespace-only changes and moved lines don't reassign credit. I also passed `.git-blame-ignore-revs`, so the clang-format commit `413c6d1` doesn't take credit. Results were identical with and without the ignore file, because `-w` already skips that reformat.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 74.9% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 131 | 3.6% |
+| 4 | Dave Gamble | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi | 74 | 2.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 9 | PeterAlfredLee | 31 | 0.9% |
+| 10 | Nicolas Badoux | 29 | 0.8% |
+| 11 | Zach Hindes | 23 | 0.6% |
+| 12 | miaoerduo | 22 | 0.6% |
+| | 33 other authors, each 13 lines or fewer | 157 | 4.4% |
+
+- **Original author:** Dave Gamble created cJSON, but only 3.1% of his lines remain.
+- **Possible duplicate identity:** `tomasi` and `Tomás Ibarra` may be the same person. I grouped by author name, not email, and haven't checked. If they are one person, the combined 142 lines (3.9%) would rank 4th.
+- **Bot and generic names:** `github-actions[bot]` has 5 lines. `root`, `Use` and `Lee` are generic or truncated names that I didn't try to resolve.
+- **What a line is:** Every line counts equally, including blanks, comments and braces. A weighted count that skipped those would shift the numbers somewhat, and I haven't run one.
+META cost=0.0524955 ms=18924 turns=2

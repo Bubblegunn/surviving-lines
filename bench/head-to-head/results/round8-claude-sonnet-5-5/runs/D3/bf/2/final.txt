@@ -1,0 +1,30 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib/rack/attack/store_proxy"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-bf-2/repo --dry-run --no-github
+ - Bash: git log --no-merges --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn | head -20; git log -1 --format=%ad --date=short
+ - Bash: git log --no-merges --since=2025-04-14 --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb; echo ---; git log --all --format='%an <%ae>' | grep -iE 'tanaka|park' | sort | uniq -c; echo ---; git log --no-merges --format='%an <%ae>' -- lib/rack/attack/ | sort | uniq -c | sort -rn | head -8; echo ---; ls lib/rack/attack/store_proxy
+FINAL ANSWER:
+Short answer: ask Gonzalo Rodriguez. For review, use Santiago Bartesaghi, who is the safer choice. The tool's CODEOWNERS suggestion for this path looks unreliable, so check it before you use it.
+
+**Who to ask**
+- **Gonzalo Rodriguez** (`<email redacted>`, GitHub `grzuy`) wrote most of `store_proxy/`. He has about 60 commits across `lib/rack/attack/` and was still committing in March 2026. He is the best person to ask about why the proxies are shaped the way they are.
+- **Santiago Bartesaghi** (`<email redacted>`) also touched this path, most recently in December 2024. The tool lists him as a fallback owner of the repo, alongside `grzuy`.
+
+**Who should review**
+- Gonzalo and Santiago.
+- Aaron Suggs (42 commits in `lib/rack/attack/`) and fatkodima (16, including four recent-era commits to `store_proxy/` in October 2019) know the history. Neither shows up in the tool's active-owner list, so I don't know if they're still around.
+
+**Caveats**
+- The tool's dry-run only produced a rule for `/lib/rack/attack/`. It names Mei Tanaka, Hye-jin Park and Santiago.
+- Mei and Hye-jin have only 1 and 2 commits in the whole repo. None of those commits touch `store_proxy/` in the `git log` I ran for that path.
+- Their weight probably comes from broad changes across `lib/`, so treat their ownership of this code as unverified. I'd skip them as reviewers unless you know they own the area.
+- The tool was run with `--no-github`, so it didn't map emails to GitHub accounts. Gonzalo's commits use two author names (`Gonzalo Rodriguez` and `Gonzalo`). I haven't confirmed that all his weight was merged into one person.
+- Ownership here is inferred from commit counts, not from who actually reviews code.
+- I used `--dry-run`, so no files were written to the repo.
+META cost=0.0731672 ms=20310 turns=7

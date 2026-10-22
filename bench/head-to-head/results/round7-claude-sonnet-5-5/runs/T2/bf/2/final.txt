@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ 2>&1; cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-bf-2/repo && ls && git log --oneline | wc -l
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -60; git status --short
+ - Bash: ls lib; git log -1 --format=%ad --date=short; echo; git log --no-merges --format='%ae|%ad' --date=short -- lib | awk -F'|' '{c[$1]++; if(!($1 in l))l[$1]=$2; f[$1]=$2} END{for(a in c)print c[a],a,"last="l[a],"first="f[a]}' | sort -rn | head -15; git log --no-merges --format=%h -- lib | wc -l
+ - Bash: git log --no-merges --since=2025-04-12 --format='%h %ae %ad %s' --date=short -- lib; echo ---; git log --no-merges --since=2025-04-12 --format='%ae' | sort | uniq -c | sort -rn
+ - Bash: wc -l lib/index.js; git show --stat --format='%h %an %s' b2005d9 62628c0 | head -20; git log --no-merges --format='%ae' --since=2018-11-05 -- lib | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** `lib` has an effective bus factor of 0 to 1. Nobody in recent history has made a substantive change there, so it is close to orphaned.
+
+`lib` is one file, `lib/index.js` (238 lines), with 66 non-merge commits since 2013-01-30.
+
+**Who wrote it**
+- Troy Goode wrote 32 of the 66 commits (48%) as `<email redacted>`, from 2013-01-30 to 2016-08-23. This is the main source of knowledge.
+- Five more people made 2 to 5 commits each, all between 2013 and 2017: `alex94puchades`, `<email redacted>`, `siyfion` and `jordand`. Their last commits are 2015–2017.
+- About 25 other people made one commit each. The newest of those is from 2018-11.
+
+**Who is active.** The history ends 2026-04-12. Only two commits touched `lib` in the last 12 months:
+- `b2005d9` is "annotate handlers" from `troy@laptop.example`. It is a 12-line edit. The author name is also Troy Goode, but the email is different from `<email redacted>`. That is probably the same person, but I could not confirm it. I ran with `--no-github`, so the tool did not merge the two emails.
+- `62628c0` is a reformat from `fiona@formatter.example`. It changed 1016 lines across `lib` and `test` and changed no behavior. It makes Fiona look like an owner without showing that Fiona understands the code.
+
+**How many leavers it takes**
+- If the two Troy emails are the same person, losing Troy leaves nobody with real knowledge of `lib`. That is one departure.
+- If they are different people, `lib` is already orphaned. Everyone with substantive history left in 2018 or earlier, and the recent commits are annotations and formatting.
+- Fiona is not a safety net, because a reformat does not show understanding of the code.
+
+**Caveats**
+- The tool's dry run printed no rule for `lib`. It falls under the repo-wide `*` fallback, which lists Fiona and two other people (`<email redacted>` and `<email redacted>`). Those two have commits elsewhere in the repo, not in `lib`.
+- The tool printed a note that this history was imported in a bulk first commit of 8 files. Ownership therefore reflects work since the import, not who first wrote the code.
+- I ran `--dry-run`, so I wrote no `.github/CODEOWNERS` or `ownership.json`. I computed the per-author counts above directly from `git log`, not from the tool's weighted scores.
+- Commit counts are a proxy for knowledge. Someone who reviews `lib` but never commits would not appear here.
+
+To get a firm number, tell me whether `troy@laptop.example` and `<email redacted>` are the same person. I can then re-run the tool with an identity override.
+META cost=0.086873 ms=29425 turns=9

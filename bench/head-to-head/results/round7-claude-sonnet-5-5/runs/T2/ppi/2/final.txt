@@ -1,0 +1,47 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files lib); do n=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort -u | wc -l); top=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -1); tot=$(git log --all --no-merges --oneline -- $f | wc -l); dep=$(grep -rl "$(basename $f .js)" --include=*.js . --exclude-dir=node_modules --exclude-dir=.git | grep -v "^./$f$" | wc -l); echo "$f contributors=$n commits=$tot top=[$top] mentions=$dep"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; git 
+ - Bash: git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; wc -l lib/index.js; echo ---; git log --no-merges --pretty='%ad %an' --date=short -- lib | head -8; echo ---; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib | sort | uniq -c; echo ---; git log --no-merges --author="Troy Goode" -1 --date=short --pretty='%ad'; grep -n '"main"' package.json; grep -rln "lib/\|require(\"\.\./lib\|require('\.\./lib" test index.js 2>/dev/null | head
+FINAL ANSWER:
+## Bus factor of `lib/`: 1
+
+`lib/` holds one file, `lib/index.js` (238 lines). It is the package entry point (`"main": "./lib/index.js"` in `package.json`). I ran the git commands directly instead of launching the contributor-analyzer agent, because there is only one file.
+
+### Ownership
+
+| Measure | Value |
+|---|---|
+| Contributors, all history | 25 |
+| Commits (no merges) | 62 |
+| Troy Goode, share of commits | 33 of 62 (53%) |
+| Troy Goode, share of surviving lines (`git blame -w`) | 138 of 238 (58%) |
+| Next in line | Fiona Formatter 32 lines (14%), Douglas C. Wilson 18 (8%), A. Caravaca Puchades 12 (5%) |
+
+Troy Goode alone covers more than 50% of the file, by commits and by lines. If Troy leaves, nobody holds a majority of the knowledge. That makes the bus factor 1.
+
+### Caveats
+
+- **Fiona Formatter's 32 lines come from the latest commit, `style: reformat js with 4-space indent and double quotes` (2026-04-12).** That is a whitespace and quote reformat. It is not real knowledge of the code, so the 14% overstates understanding. With `-w` the blame still credits reformatted lines to this commit.
+- **The tail of contributors is thin.** Most of the 25 people made one commit each. Only Troy, Douglas Wilson and Alejandro Caravaca Puchades have more than 3 commits.
+- **Troy is probably still active.** Their last commit to `lib/` was 2026-04-10. The latest commit in the repo is dated 2026-04-12, so that is about 6 months before today (2026-10-22). Only 2 commits touched `lib/` in the past year, so activity is low overall.
+- **Bus factor 2 would be borderline.** Troy and Douglas Wilson together cover about 66% of lines. A third person would not change the result.
+
+### Risk
+
+| File | Main owner | Owner active? | Importance | Risk |
+|---|---|---|---|---|
+| `lib/index.js` | Troy Goode (58%) | Last commit 2026-04-10 | Sole entry point, used by `test/error-response.js`, `test/example-app.js` and `test/issue-2.js` | **HIGH** |
+
+I did not measure dependents with the skill's grep. It failed with a zsh glob error and I did not rerun it. The importance rating rests on `lib/index.js` being the package `main` and on the three tests that reference `lib/`.
+
+### Recommendations
+
+1. **Now:** Ask Douglas Wilson or Alejandro Caravaca Puchades to review the next change to `lib/index.js`, so a second person has recent knowledge.
+2. **Short term:** Add short comments or a doc section on the file's main flows. It is only 238 lines, so this is cheap.
+3. **Ongoing:** Keep tests covering `lib/index.js`. That is what lets a new maintainer change it safely.
+META cost=0.06514110000000001 ms=22380 turns=5

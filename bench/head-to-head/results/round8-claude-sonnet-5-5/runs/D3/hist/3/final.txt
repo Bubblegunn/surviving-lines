@@ -1,0 +1,45 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__search_commits", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-3/repo", "path": "lib/rack/attack/store_proxy"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-3/repo/lib/rack/attack/store_proxy"}
+ - mcp__git-historian__search_commits: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-hist-3/repo", "query": "proxy", "limit": 30}
+ - Bash: ls .github CODEOWNERS docs 2>&1 | head; git log -1 --format='%an %ad' --date=short; git log --since=2026-04-22 --format='%an' | sort | uniq -c
+FINAL ANSWER:
+Git history can't name a clear owner here. Nobody who has touched this directory has committed in the last 6 months, and the repo has no `CODEOWNERS` file. The newest commit is a bot autocorrect on 2026-04-14. "Inactive" means no commit since 2026-04-22, and I checked that no human has committed since then.
+
+**Who to ask**
+
+- **Gonzalo Rodriguez** is the best first contact.
+  - They made 25 of the 61 commits in the directory (41%).
+  - They have worked on most of the proxies since 2018, including the refactors that made the Redis proxies share code.
+  - Their last commit was 2026-03-09, when they removed `NullProxy`.
+- **Recent additions:** these authors know the code they wrote, though none have committed since 2026-02.
+  - Hye-jin Park added `ttl` and `multi_increment` to `RedisProxy` and `RedisCacheStoreProxy`.
+  - Divya Rao wrote `MemoryStoreProxy`.
+  - Mei Tanaka wrote `DalliAccessors`.
+  - Jaroslav Novak added `NullProxy`, which was later removed.
+- **Older code:**
+  - `fatkodima` fixed error rescuing in `RedisProxy#increment`.
+  - Jonathan del Strother wrote `MemCacheStoreProxy`.
+  - Brian Kephart and Brad Lindsay wrote the first `RedisCacheStoreProxy`.
+
+**Who should review**
+
+Git history can't tell me who reviews PRs. For a reviewer I'd suggest the following:
+
+- **Gonzalo Rodriguez** is the best choice. They have the most context on the whole directory and have merged most PRs that touched it.
+- **Hye-jin Park** is a second reviewer if your change touches the Redis proxies. They have the most recent Redis changes (2026-01 and 2026-02).
+- If neither is reachable, ask whoever currently maintains the repo. The history doesn't say who that is.
+
+**Risk**
+
+All 7 files in the directory are "orphaned". Authors who have been inactive for over 6 months own more than 50% of the lines in each file. The directory's bus factor is 2, so two authors account for over half the commits.
+
+Because of that, add tests for your change. Also check the callers of `StoreProxy.build` in `lib/rack/attack/store_proxy.rb`, since the proxies are chosen there by store class.
+META cost=0.0793981 ms=20343 turns=7

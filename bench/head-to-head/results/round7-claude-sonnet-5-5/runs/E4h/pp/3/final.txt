@@ -1,0 +1,45 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-pp-3/repo; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git shortlog -sne HEAD | head -40; ls .mailmap 2>&1; git log --format='%h %an %s' | grep -iE 'style|format|lint|prettier|reformat' | head -20
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E4h-pp-3/repo; git ls-files; for f in $(git ls-files); do d=$(echo $f | awk -F/ '{print (NF>1?$1:"(root)")}'); git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v d="$d" '/^author /{sub(/^author /,"");print d"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Only `lib/` has an owner. Troy Goode holds about 67% of its lines.
+
+Counts come from `git blame` at HEAD. I skipped the reformat commit `62628c0` (Fiona Formatter) and ignored whitespace. Bots (dependabot) are excluded from the totals. I merged one person's separate identities. For example, `alex94puchades` is the same person as Alejandro Caravaca Puchades.
+
+| Area | Top holder | Share | Runner-up |
+|---|---|---|---|
+| `lib/` | Troy Goode, 159 of 238 | 66.8% | Douglas Wilson, 22 |
+| `test/` | Troy Goode, 453 of 966 | 46.9% | Douglas Wilson, 400 (41.4%) |
+| `.github/` | Douglas Wilson, 108 of 366 | 29.5% | Íñigo Marquínez Prado, 95 |
+| root files | Troy Goode, 134 of 415 | 32.3% | Douglas Wilson, 115 |
+
+- **`lib/`:** Troy Goode clears the threshold.
+- **`test/`:** Nobody holds half. Troy Goode is close at 46.9%.
+- **`.github/`:** Nobody holds half. Five people have 12–30% each.
+- **Root files:** Nobody holds half.
+
+Suggested CODEOWNERS:
+
+```
+# lib/ : Troy Goode holds 67% of surviving lines
+/lib/    @<troy-goode-github-handle>
+
+# No single person holds >=50% of surviving lines in the following.
+# Add a team or leave unowned:
+# /test/
+# /.github/
+# /*
+```
+
+I can't get GitHub handles from git history. Replace the placeholder with Troy Goode's real handle.
+
+Two caveats:
+- **Blame vs. recent activity:** `lib/` ownership reflects who wrote the lines that survive. Most of Troy Goode's lines may be old, so check who still maintains the code before assigning review duty.
+- **`test/` threshold:** The 46.9% share is close to half. Counting lines differently could push Troy Goode over 50%. For example, ignoring more commits would do it.
+META cost=0.047659799999999995 ms=30741 turns=4

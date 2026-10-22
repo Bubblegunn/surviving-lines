@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //;s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; split($0,a,"\t"); ext=substr(a[1],2); if(!(ext in seen)){seen[ext]=1; print ext, "|", a[2], "|", c} tot[ext]+=c} END{}' 
+FINAL ANSWER:
+Top owner of surviving lines per extension, from `git blame -w` over tracked files. Counts are lines.
+
+| Extension | Top owner | Lines | Next |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 | Fiona Formatter 291, Douglas Christopher Wilson 245 |
+| `.md` | Troy Goode | 116 | Jon Church 72, Douglas Christopher Wilson 67 |
+| `.yml` | Douglas Christopher Wilson | 117 | Íñigo Marquínez Prado 95, Sebastian Beltran 63 |
+| `.json` | Douglas Christopher Wilson | 20 | Troy Goode 12 |
+| `.gitignore` | Douglas Christopher Wilson | 4 | Troy Goode 1 |
+| no extension | Douglas Christopher Wilson | 17 | Troy Goode 5 |
+
+- **Whitespace:** The `-w` flag ignores whitespace-only changes. The latest commit, "reformat js with 4-space indent and double quotes", still shows as "Fiona Formatter" for 291 `.js` lines. That is the quote changes. Without `-w`, Fiona Formatter would own more.
+- **Possible bot account:** I assume "Fiona Formatter" is the author of that reformat commit. I did not check whether it is a bot or an alias.
+- **Aliases:** Authors are counted by name, not merged by email. For example, "Efe" and "Efe Genc" would count separately.
+META cost=0.018139300000000004 ms=22385 turns=2

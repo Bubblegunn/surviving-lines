@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -8; done; echo; cat .git-blame-ignore-revs
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n=$1; t+=n; v[NR]=n} END{for(i=1;i<=6&&i<=NR;i++) printf "%s  %.0f%%\n", c[i], 100*v[i]/t; print "total", t, "authors", NR}'; done
+FINAL ANSWER:
+José Valim is the person to ask about both `lib/` and `test/`. I measured this with `git blame` on HEAD, following moved lines, ignoring whitespace, and skipping the rubocop reformat commit.
+
+**lib/** (1,496 live lines, 31 authors)
+- José Valim: 57%
+- Kaito Mori: 17%
+- Weblate: 5%. This is the translation bot, not a person.
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+
+**test/** (1,853 live lines, 18 authors)
+- José Valim: 57%
+- Rafael Mendonça França: 10%
+- Kaito Mori: 9%
+- Carlos Antonio da Silva: 6%
+- Lucas Mazza: 4%
+- Jan De Poorter: 4%
+
+**Is test/ owned by the same people?** Mostly yes. José Valim holds 57% of both. Below that the order differs:
+- Kaito Mori is second in `lib/` (17%) but third in `test/` (9%).
+- Rafael Mendonça França is second in `test/` (10%) but only 4% in `lib/`.
+- Lucas Mazza and Jan De Poorter appear in the `test/` top six but not in the `lib/` top six.
+
+**Who to ask:** José Valim first for either directory. Kaito Mori is the second contact for `lib/`. Rafael Mendonça França or Carlos Antonio da Silva are the next contacts for `test/`.
+
+Blame shows who wrote the lines, not who is still active on the project.
+META cost=0.05784809999999999 ms=14736 turns=4

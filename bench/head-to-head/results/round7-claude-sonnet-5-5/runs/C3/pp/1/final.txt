@@ -1,0 +1,30 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10; echo ---; git ls-files '*.rs' | wc -l; echo --- ignoring SPDX+eol commits; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain --ignore-rev a45246e --ignore-rev c862f48 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain 2>/dev/null | grep -c '^author '
+FINAL ANSWER:
+Andrew Gallant wrote most of it, but not all. The other contributors are spread thin.
+
+I ran `git blame -w` over the 10 tracked `.rs` files, which gives 4,366 surviving lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,798 | 64% |
+| Sam Okoro | 646 | 15% |
+| Inès Moreau (also listed as "Ines Moreau") | 217 (120 + 97) | 5% |
+| nivkner | 146 | 3.3% |
+| Sebastian Thiel | 96 | 2.2% |
+| Marvin Löbel | 83 | 1.9% |
+| mcharsley | 46 | 1.1% |
+| Aron Griffis | 45 | 1.0% |
+| Martin Sehnoutka | 38 | 0.9% |
+
+- **Concentration:** Gallant has about two-thirds of the lines. With Okoro, the top two have about 79%. Everyone else is at 5% or less.
+- **Moreau:** "Inès Moreau" and "Ines Moreau" look like the same person under two spellings. I merged them above. I didn't check for a `.mailmap`, so treat the merge as a guess.
+- **Excluded commits:** The "add SPDX headers" and "normalize line endings" commits could have taken credit for lines they only touched. I re-ran blame ignoring both. The counts moved by at most 5 lines per author (Gallant 2,803, Okoro 647), so the ranking doesn't change.
+- **Not counted:** Blame credits whoever last changed a line. Code that was later reformatted or lightly edited is credited to the later editor. The table also covers only the 10 tracked `.rs` files, with no `-M`/`-C` copy detection.
+META cost=0.0512665 ms=16451 turns=3

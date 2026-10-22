@@ -1,0 +1,47 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -vE '(^|/)(node_modules)/' | wc -l; git ls-files | head -80
+ - Bash: for f in $(git ls-files | grep -vE '^(LICENSE|HISTORY.md)$'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done > /tmp/blame.tsv; echo TOTAL; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo; echo BY FILE; awk -F'\t' '{c[$1" | "$2]++} END{for(k in c) print c[k], k}' /tmp/blame.tsv | sort -k3,3 -k1,1rn | head -60; git log --format='%an' | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+Troy Goode owns the most surviving code, about 42% of current lines. Douglas Christopher Wilson is second at about 29%.
+
+I ran `git blame` on every tracked file and counted the author of each line still present at HEAD. I used `-w -M -C` to ignore whitespace changes and follow moved or copied lines. I also used `--ignore-revs-file .git-blame-ignore-revs`, so the 4-space/double-quote reformat commit (`62628c0`) doesn't count as authorship. I excluded `LICENSE` and `HISTORY.md`. That leaves about 1,910 lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 805 | 42% |
+| Douglas Christopher Wilson | 562 | 29% |
+| Íñigo Marquínez Prado | 95 | 5% |
+| Jon Church | 72 | 3.8% |
+| Sebastian Beltran | 67 | 3.5% |
+| Ulises Gascón | 46 | 2.4% |
+| Ignacio Mangas | 44 | 2.3% |
+| About 35 others | 219 combined | about 11% |
+
+**Where each author's code lives:**
+- **Troy Goode:**
+  - He wrote about two-thirds of the actual library, `lib/index.js` (159 of about 235 lines).
+  - He wrote nearly all of `test/example-app.js`, `test/error-response.js`, `test/issue-2.js` and `test/vary.js`.
+  - He wrote 317 lines of `test/test.js`.
+  - He wrote 116 lines of `README.md`.
+- **Douglas Christopher Wilson:**
+  - He wrote 22 lines of `lib/index.js`.
+  - He wrote 339 lines of `test/test.js`, slightly more than Troy.
+  - He wrote 118 lines of `ci.yml` and 20 lines of `package.json`.
+- **Íñigo Marquínez Prado, Sebastian Beltran, Ulises Gascón, Ignacio Mangas:**
+  - Their lines are almost all CI and security config: `scorecard.yml`, `codeql.yml`, `ci.yml` and `dependabot.yml`.
+  - Sebastian Beltran also wrote 4 lines of `package.json`.
+- **Jon Church and Linus Unnebäck:** Their lines are mostly in `README.md`.
+- **Library code outside `lib/index.js`:** Alejandro Caravaca Puchades has 12 lines, Raymond Feng has 7, and LuisEGR and max.laverse have 6 each.
+
+**Caveats:**
+- Troy's lead is smaller than the commit count suggests. Douglas has 143 commits to Troy's 122, but Troy's lines survived better.
+- `-M -C` can still credit moved code to whoever moved it, and a rename-heavy history can hide the original author.
+- Blame counts lines, not importance. A one-line fix in `lib/index.js` counts the same as a line of YAML.
+- The `Efe` entry (6 lines in `README.md`) and `Fiona Formatter` (2 lines in `.git-blame-ignore-revs`) are very recent edits, not part of the original code.
+META cost=0.0728945 ms=23112 turns=4

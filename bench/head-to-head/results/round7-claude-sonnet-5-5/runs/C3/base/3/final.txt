@@ -1,0 +1,26 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Andrew Gallant wrote most of it, but not all. 2,838 of the 4,366 surviving Rust lines (65%) are theirs, across 10 `.rs` files.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,838 | 65.0% |
+| Sam Okoro | 646 | 14.8% |
+| Inès Moreau (+ "Ines Moreau") | 217 | 5.0% |
+| Sebastian Thiel | 74 | 1.7% |
+| Ashley | 68 | 1.6% |
+| Aron Griffis | 59 | 1.4% |
+
+- **Long tail:** another 30 or so contributors account for the remaining ~11%, each with 45 lines or fewer.
+- **Name variants:** "Inès Moreau" (120 lines) and "Ines Moreau" (97) look like the same person under two spellings, so I combined them. I assumed that from the names. Git doesn't confirm it, and without a `.mailmap` entry the two stay separate.
+- **Other duplicates:** "Ashley" (68) and "Ashley Mannix" (4) might also be one person, but I left them apart. Other near-matches like "Niv Kaminer" and "nivkner" (45 together) are also unmerged.
+- **Counting method:** I ran `git blame -w -M -C` on every tracked `.rs` file. The `-w` flag ignores whitespace changes, so the line-ending normalization commit doesn't take over authorship.
+- **Bot lines:** `github-actions[bot]` shows 10 lines. I didn't check whether those are the SPDX header commit.
+META cost=0.05010390000000001 ms=14441 turns=3

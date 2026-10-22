@@ -1,0 +1,66 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; echo ---; git ls-files | grep -v -E '^(node_modules|\.git/)' | head -100; echo; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; done; echo; echo "--- last commit per author"; git log --all --no-merges --pretty=format:"%an|%cs" | awk -F'|' '!s[$1]++' | head -8; echo "--- lines by blame lib/index.js"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5
+ - Bash: git log --all --no-merges --pretty=format:"%an|%cs" | awk -F'|' '!s[$1]++' | grep -E "Douglas|Troy"; git log --all --no-merges --author="Fiona" --stat --format="%h %cs %s" | head -20; echo; git log --all --no-merges --format=%an --since=2025-10-22 | sort | uniq -c | sort -rn; echo; echo "blame excluding reformat:"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -4; wc -l lib/index.js; git log --all --no-merges --format=%an --since=2025-10-22 -- lib/index.js | sort | uniq -c
+FINAL ANSWER:
+**Bus factor: 2.** Two people, Troy Goode and Douglas Christopher Wilson, account for about 238 of the 280 non-bot commits (about 85%). They are not equally at risk, though. Troy Goode is the person to worry about.
+
+Scope: this is a small repo with 18 tracked files, so I checked every file. Counts are commits from `git log --all --no-merges`.
+
+**Contributors**
+- Douglas Christopher Wilson has 143 commits. His last commit was 2021-09-07, so he is inactive.
+- Troy Goode has 95 commits. His last commit was 2026-04-10, so he is active.
+- Everyone else has 4 or fewer commits each. This includes `dependabot[bot]` with 11.
+- The "Fiona Formatter" commit `62628c0` rewrote 1,016 lines in 4 files. It only reformatted code (4-space indent, double quotes), so I ignored it. Plain `git blame` credits that author with 214 of `lib/index.js`'s 238 lines. With `--ignore-rev 62628c0`, Troy Goode owns 159 lines and Douglas Wilson 22.
+
+**Single-contributor risk**
+
+Single owner means one author in the file's history, or one clearly dominant author.
+
+| File | Owner | Concentration | Risk |
+|---|---|---|---|
+| `lib/index.js` (the entire library) | Troy Goode | 159 of 238 lines (67%) after ignoring the reformat. The next authors have 22 and 12 lines. | **Critical**. It's the only source file, and everything depends on it. The owner is active, so the risk is dependence, not abandonment. |
+| `test/vary.js` | Troy Goode | 1 commit, 1 author | Medium |
+| `test/issue-2.js` | Troy Goode | 10 of 12 commits (83%) | Medium |
+| `test/example-app.js` | Troy Goode | 10 of 12 commits ignoring the reformat (83%) | Medium |
+| `package.json` | Wilson (68) and Goode (37) | Two main owners | Medium. Wilson is inactive, so Goode is effectively the only current maintainer. |
+| `README.md` | Troy Goode | 29 of 38 commits (76%) | Low to medium |
+
+**Single owner, but low risk** (config files, 1 commit each, trivial to maintain):
+- `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js` are all Wilson's.
+- `.github/dependabot.yml` is Ulises Gascón's.
+
+**Well distributed**
+- `.github/workflows/ci.yml` has Wilson (10), Gascón (2) and Mangas (2).
+- `.github/workflows/codeql.yml` and `scorecard.yml` are mostly dependabot, with a few human commits.
+- `test/test.js` has 3 contributors but is mostly Wilson's, and he is inactive.
+
+**By area**
+
+| Area | Primary owner | Bus factor |
+|---|---|---|
+| `lib/` | Troy Goode | 1 |
+| `test/` | Wilson (`test.js`) and Goode (the other files) | 2, but the `test.js` owner is inactive |
+| `.github/` (CI) | Wilson, Gascón and Mangas | 3 |
+| Docs and root files | Goode and Wilson | 2 |
+
+**Recent activity (last 12 months):** Troy Goode made 2 commits to `lib/index.js`. The other 10 or so recent commits came from dependabot, Jon Church, Ignacio Mangas, Vansh Sharma, Ulises Gascón and Phillip Barta, and touched docs, CI or dependencies. Only Troy Goode is still changing the library code.
+
+**Recommendations**
+1. Have a second person review changes to `lib/index.js` and learn how the library works. Gascón and Church are recent contributors and good candidates.
+2. Add a short architecture note to the README or a new `CONTRIBUTING.md`. Wilson's knowledge of `test/test.js` and `package.json` (publish, scripts) is undocumented and he is inactive.
+3. Add `.git-blame-ignore-revs` containing `62628c0`, so blame shows real authors instead of the formatter.
+4. Give at least one other person publish and merge rights, so releases don't depend on Goode alone.
+
+**Limits of this analysis**
+- Commit counts don't measure how well someone understands the code.
+- Git author names may be aliases, and some contributors may appear under more than one name.
+- The "importance" cross-check is trivial here, because `lib/index.js` is the only source file.
+META cost=0.0842233 ms=27313 turns=7

@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary", "max_results": 1}
+ - Bash: git ls-files | sed -E 's|.*/||' | awk '{n=split($0,a,"."); if(n>1) print a[n]; else print "(none)"}' | sort | uniq -c | sort -rn
+ - Bash: for mode in plain ignore; do echo "== $mode"; git ls-files | while read f; do case "$f" in *.*) e="${f##*.}";; *) e="(none)";; esac; [ "$(basename "$f")" = ".gitignore" ] && e="gitignore"; if [ $mode = ignore ]; then git blame --line-porcelain --ignore-rev 62628c0 -- "$f"; else git blame --line-porcelain -- "$f"; fi 2>/dev/null | grep -a '^author ' | sed "s/^author /$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr; done
+FINAL ANSWER:
+Top owner per extension, by surviving lines in `git blame` at HEAD:
+
+| Extension | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` | Fiona Formatter | 1016 of 1202 | 85% |
+| `.md` | Troy Goode | 104 of 336 | 31% |
+| `.yml` | Douglas Christopher Wilson | 117 of 383 | 31% |
+| `.json` | Douglas Christopher Wilson | 20 of 42 | 48% |
+| `.gitignore` | Douglas Christopher Wilson | 4 of 5 | 80% |
+| no extension (1 file) | Douglas Christopher Wilson | 17 of 22 | 77% |
+
+**`.js` result is misleading.** Fiona Formatter owns those lines because of the latest commit, `62628c0` ("reformat js with 4-space indent and double quotes"). It rewrote most lines, so blame credits the reformatter. I reran blame with `--ignore-rev 62628c0`:
+
+| Owner | `.js` lines |
+|---|---|
+| Troy Goode | 520 |
+| Douglas Christopher Wilson | 339 |
+| Fiona Formatter | 237 |
+
+With the reformat ignored, Troy Goode owns the most `.js` lines, about 43%. Fiona Formatter still owns 237 lines. Those are probably lines the reformat created or split, which blame can't trace back to the original author.
+
+The other extensions are unaffected by the reformat. The results are identical with and without `--ignore-rev`.
+
+The 18 tracked files are 7 `.js`, 6 `.yml`, 2 `.md`, 1 `.json`, `.gitignore`, and one file with no extension.
+META cost=0.0601852 ms=16577 turns=5

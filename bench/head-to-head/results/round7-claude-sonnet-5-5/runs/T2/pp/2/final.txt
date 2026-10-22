@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git log --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && git log --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && for f in lib/*; do echo "$f: $(git log --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done && git rev-list --count HEAD
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; wc -l lib/index.js; git log -3 --format='%an %ad' --date=short -- lib; git log --format='%an %ad' --date=short --author="Troy Goode" -1 -- lib
+FINAL ANSWER:
+**Bus factor of `lib/`: 1.**
+
+`lib/` holds one file, `lib/index.js` (238 lines). The numbers below come from git history.
+
+| Measure | Result |
+|---|---|
+| Lines still attributed to Troy Goode (`git blame`) | 138 of 238 (58%) |
+| Commits touching `lib/` by Troy Goode | 33 of 66 (50%) |
+| Next biggest contributors by blame | Douglas Christopher Wilson 18 lines, Alejandro Caravaca Puchades 12, Raymond Feng 7, LuisEGR 6 |
+| Distinct commit authors | 25 |
+
+**What it means:**
+- If Troy Goode leaves, the person who wrote about half to 58% of the code is gone. Nobody else has more than about 8% of the lines. So 1 departure takes out the main maintainer.
+- The count is lower than the author list suggests. 20 of the 25 authors made exactly 1 commit, and most of those are small fixes. Knowledge is spread thin.
+- The "Fiona Formatter" lines (32) are from the latest style-only reformat, commit `62628c0`. They are not real ownership. Those lines were most likely written by earlier authors, so Troy's real share is probably higher than 58%.
+
+**Activity:**
+- Troy's last commit to `lib/` was 2026-04-10. The last commit of any kind to `lib/` was the reformat on 2026-04-12.
+- No one has committed to `lib/` in the last 90 days. Under the skill's 90-day rule, even the primary owner counts as inactive.
+
+**Limits of this analysis:**
+- Commit share and blame show who wrote the code. They don't show who understands it. Reviewers and issue discussions aren't counted.
+- With a single file, there is no per-module breakdown or importance ranking to report.
+- A 238-line file is small enough that a new maintainer could learn it quickly. The practical risk is lower than the number suggests.
+
+**Cheap fix:** have a second person review or touch `lib/index.js` in the next change. Doing that for two or three changes would raise the bus factor to 2.
+META cost=0.0717673 ms=22074 turns=6

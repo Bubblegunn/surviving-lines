@@ -1,0 +1,37 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-bf-2/repo --dry-run --no-github
+ - Bash: git log -1 --format=%cs && git ls-files | head -50 && for d in . lib test .github; do echo "== $d"; git log --no-merges --since=2025-04-12 --format=%ae -- $d | sort | uniq -c | sort -rn | head -4; echo "-- all-time"; git log --no-merges --format=%ae -- $d | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+Short answer: no single active person owns the code. The risk is an orphaned core, not a bus factor of 1. I ran the busfactor script with `--dry-run --no-github`, so nothing was written to the repo. I then checked the numbers with `git log`. The tool's per-zone verdicts (`ownership.json`) were not generated, so the zone verdicts below come from my own `git log` counts.
+
+**Orphaned: `lib/` and `test/`**
+- **Who wrote it:** `<email redacted>` made 32 of the `lib/` commits and 31 of the `test/` commits. `<email redacted>` made 23 more `test/` commits and 143 across the whole repo.
+- **Activity:** I did not see either of them in the last 12 months of history, which ends 2026-04-12. They are probably inactive, but that is inferred from commit dates only.
+- **Recent commits:** In that window `lib/` and `test/` got only two commits, both reformatting. They came from `fiona@formatter.example` and `troy@laptop.example`.
+- **Why it matters:** Whoever knows the library logic may no longer be around, even though `git shortlog` still lists Troy and Doug as top committers.
+
+**Root and fallback (`*`): not sole-owned**
+- The tool lists three owners: `fiona@formatter.example`, `<email redacted>` and `<email redacted>`.
+- Fiona's weight probably comes from the recent mechanical reformat commit (62628c0). That counts as volume, not knowledge, so treat Fiona as a weak owner.
+- Ulises and Jon Church are the real active maintainers. Each has only 3 recent root-level commits.
+
+**`.github/`: not sole-owned**
+- The tool lists `<email redacted>` and `<email redacted>`. Dependabot makes most of the commits here.
+- Doug made 10 of the all-time commits here.
+
+**Caveats**
+- **Identities:** `troy@laptop.example` is probably the same person as `<email redacted>`. I haven't merged them. Splitting one person into two makes ownership look more spread out than it is.
+- **Imported history:** History starts 2013-01-31 with a bulk commit of 8 files. Ownership reflects work since that import, not who first wrote the code.
+- **Inferred, not authoritative:** Commit counts are a proxy for knowledge. Review work and mechanical refactors distort them.
+
+**Next steps**
+- Confirm whether Troy and Doug are actually gone. If either still reviews PRs, add `{"<email>": {"active": true}}` to the cache file and re-run.
+- Choose who will take over `lib/` and `test/`. Ulises and Jon Church are the likely candidates.
+- I haven't written `.github/CODEOWNERS` or the HTML report. I can do both if you want.
+META cost=0.0605448 ms=17256 turns=5

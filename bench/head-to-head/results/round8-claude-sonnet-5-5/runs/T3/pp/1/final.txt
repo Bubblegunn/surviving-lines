@@ -1,0 +1,28 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -50; echo ---; git shortlog -sn --all | wc -l; ls -a | grep -i mailmap; git config mailmap.file
+ - Bash: git shortlog -sne --all | sed -n '51,80p'; echo --- names with multiple emails; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{c[$1]++; e[$1]=e[$1]" "$2} END{for(n in c) if(c[n]>1) print n":"e[n]}'; echo --- emails with multiple names; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{c[$2]++; n[$2]=n[$2]" / "$1} END{for(m in c) if(c[m]>1) print m":"n[m]}'; echo --- committers; git log --all --format='%cN|%cE' | sort -u | grep -iE 'troy|doug|efe|fiona'
+ - Bash: git config user.email; git log --all --format='%aN <%aE>' | grep -iE 'efe|genc'; cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sn --all | wc -l
+FINAL ANSWER:
+Two people appeared under more than one identity. I fixed both by adding a `.mailmap` file. It's uncommitted, and git history is not rewritten.
+
+- **Troy Goode** used two emails, `<email redacted>` and `troy@laptop.example`. He now counts 122 commits (120 + 2).
+- **Alejandro Caravaca Puchades** also appeared as `alex94puchades`, with the same email. He now counts 5 commits (4 + 1).
+
+Distinct authors dropped from 64 to 63.
+
+**Top author is still Douglas Christopher Wilson with 143 commits.** Troy Goode is second with 122. The merge didn't change who is first.
+
+I did not merge `Efe <<email redacted>>`. The email differs from your configured git email (`<email redacted>`), and the name differs from "Efe Genc", so I can't tell whether it's you. If it is, tell me and I'll add a mapping.
+
+I haven't committed `.mailmap`. Say if you want me to.
+META cost=0.0632137 ms=13589 turns=5

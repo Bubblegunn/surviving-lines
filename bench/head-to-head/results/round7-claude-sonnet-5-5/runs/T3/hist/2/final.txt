@@ -1,0 +1,27 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git shortlog -sne --all | awk '{ $1=""; print }' | sed 's/^ //' | sed 's/ <.*//' | sort | uniq -d; echo ---; git shortlog -sne --all | grep -o '<[^>]*>' | sort | uniq -d; git log --all --format='%an|%ae|%cn|%ce' | grep -iE 'wilson|doug|troy|fiona|efe|genc' | sort | uniq -c
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git status --short
+FINAL ANSWER:
+Two people appeared under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** used the same email under two names, "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit).
+
+I added a `.mailmap` file at the repo root that maps each of these to one identity. I did not rewrite history, so the commits are unchanged. Git, GitHub-style stats and tools that read `.mailmap` now count each person once. The file is untracked and uncommitted.
+
+Troy Goode now has 122 commits and Alejandro Caravaca Puchades has 5.
+
+The top author is still **Douglas Christopher Wilson** (`<email redacted>`) with 143 commits. Troy Goode is second with 122, so merging Troy's two identities did not change first place.
+
+I left "Fiona Formatter" (`fiona@formatter.example`) as a separate person. I found nothing that links that identity to anyone else.
+META cost=0.05470380000000001 ms=11111 turns=4

@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib && echo --- && git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && for f in lib/*.js; do echo "$f: $(git log --all --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | head -3 | tr -s ' ' | tr '\n' ';') total=$(git log --all --no-merges --oneline -- $f | wc -l)"; done; echo ---; git log -1 --format=%cd; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | sort -t'|' -k1,1 -k2,2r | awk -F'|' '!s[$1]++'
+FINAL ANSWER:
+**Bus factor of `lib/`: 2 by commit share. By knowledge of the code, it is 1 to 2.**
+
+`lib/` has one file, `lib/index.js`, so there is no module-level split. Every dependent in the project imports it, so its importance is maximal.
+
+**Commit share on `lib/` (all history, no merges, 66 commits, 25 authors)**
+
+| Author | Commits | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 33 | 50% | 2026-04-10 |
+| Douglas Christopher Wilson | 4 | 6% | 2017-10-04 |
+| Alejandro Caravaca Puchades | 4 | 6% | 2015-05-28 |
+| Simon Mansfield | 3 | 5% | 2013-05-22 |
+| 21 other authors | 1–2 each | about 33% combined | 2013–2021 |
+
+**How many people have to leave**
+- **One person (Troy Goode):** Troy has exactly 50% of commits, which is not more than half, so the metric says one departure is survivable. In practice Troy is the only recent deep maintainer.
+- **Two people (Troy and Douglas Christopher Wilson):** these two cover 56%. If both leave, most of the file has no knowledgeable maintainer. This is the bus factor by commit share.
+- **Practical answer:** nobody else has touched `lib/` recently. The last non-Troy human commit is LuisEGR's, in 2021-07. Most other authors made a single commit between 2013 and 2018.
+
+**Other points**
+- **Activity:** nobody has committed to `lib/` in the last 90 days of calendar time. The most recent commits are from April 2026 (Troy on 04-10, and a formatting pass by "Fiona Formatter" on 04-12). Troy counts as active only relative to the repo's last commit, and the formatting pass does not show real knowledge.
+- **Wide but thin:** 25 people have touched the file, but 20 of them made one commit each. Many people have touched it, but few understand it.
+- **Method limits:** I counted commits, not surviving lines. I did not run `git blame`, so line ownership could differ, for example if Troy's commits are small edits. I did not merge duplicate identities. Alejandro Caravaca Puchades and alex94puchades are probably the same person, so that author's share is slightly higher than shown.
+
+**Recommendations**
+1. Have someone besides Troy review changes to `lib/index.js` from now on.
+2. Write down the non-obvious behavior of the file in comments or docs.
+3. If you want line-level confidence, I can run `git blame` to see who owns the code that still exists.
+META cost=0.07033710000000001 ms=21730 turns=5

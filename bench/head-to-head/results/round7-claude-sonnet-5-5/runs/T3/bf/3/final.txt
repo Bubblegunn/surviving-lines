@@ -1,0 +1,24 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; echo ---; git shortlog -sne --all | wc -l; ls -a | grep -i mailmap; cat .mailmap 2>/dev/null
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | tail -16; echo ---; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[tolower($2)]++; print} END{}' >/dev/null; echo "same email multi-name:"; git log --all --format='%aE|%aN' | sort -u | awk -F'|' '{c[$1]++; v[$1]=v[$1]";"$2} END{for(k in c) if(c[k]>1) print k, v[k]}'; echo "same name multi-email:"; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{c[$1]++; v[$1]=v[$1]";"$2} END{for(k in c) if(c[k]>1) print k, v[k]}'; echo committers:; git log --all --format='%cN <%cE>' | sort | uniq -c | sort -rn | head -8
+ - Bash: printf 'Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n' > .mailmap; git shortlog -sne --all | head -4; git shortlog -sne --all | wc -l; git status --short
+FINAL ANSWER:
+Two people showed up under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** used the name "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit), both with `<email redacted>`.
+
+I added a `.mailmap` at the repo root that maps each to one identity. Git history is not rewritten. `git shortlog`, `git blame` and `git log --use-mailmap` now count each person once. The author list went from 65 entries to 63.
+
+Troy Goode now has 122 commits and Alejandro has 5.
+
+**The top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second with 122.
+
+I left `Efe <<email redacted>>` and `Fiona Formatter <fiona@formatter.example>` as separate people. Nothing in the history links either one to another identity. `.mailmap` is untracked and I did not commit it.
+META cost=0.0633564 ms=16906 turns=5

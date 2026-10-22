@@ -1,0 +1,204 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+How concentrated is authorship of the Rust code in this repo? Is it basically one person, and who are the next few by share of the lines that still exist?
+
+CRITERIA:
+1. Andrew Gallant is the dominant author with 75.4% of surviving non-generated lines (accepted 72%-79%); the answer says authorship is essentially one person / about three quarters. FAIL: his share is under 72% or over 79%, or the answer calls him the sole author or 90%+.
+2. Inès Moreau is second with 5.7% (accepted 3.7%-7.7%) as ONE person (identities Inès/Ines/ines are merged). FAIL: she appears as separate entries, is not second, or her share is above 9% (credit taken for the CRLF re-save of util.rs, dent.rs, error.rs).
+3. Sam Okoro (generated src/ucd_tables.rs, about 650 lines, plus a reverted prototype) is not credited: absent or under 1%, and the answer says the generated file was excluded or that the reverted code is gone. FAIL: Sam Okoro is in the top three or credited 2% or more.
+4. At least two of Sebastian Thiel (2.0%), Ashley (2.0%) and Aron Griffis (1.7%) are named as the next contributors, each within 1.5 points. FAIL: fewer than two of them are named, or the next names include a bot or Sam Okoro.
+5. The answer's concentration statement is consistent: top two together about 81% (accepted 77%-85%); the github-actions[bot] SPDX lines (9 lines, 0.3%) are not presented as a contributor with 1% or more. FAIL: top-two combined outside 77%-85%, or the bot is ranked with 1% or more.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD a45246eecaf4764ed26890f488806a23d5f7a39d
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (0):
+generated files dropped: {'src/ucd_tables.rs': 647}
+vendored files dropped (lines): 0 []
+
+== all *.rs: counted lines 3312, bot lines 9 (0.3% of counted), unattributed 0, denominator 3303
+  1. Andrew Gallant: 2489 lines, 75.4%
+  2. Inès Moreau: 189 lines, 5.7%
+  3. Sebastian Thiel: 66 lines, 2.0%
+  4. Ashley: 65 lines, 2.0%
+  5. Aron Griffis: 56 lines, 1.7%
+  6. mcharsley: 43 lines, 1.3%
+  7. Marvin Löbel: 39 lines, 1.2%
+  8. Martin Sehnoutka: 38 lines, 1.2%
+  people with >=1%: 9; rows to reach 80%: 2
+
+== src/lib.rs: counted lines 1119, bot lines 1 (0.1% of counted), unattributed 0, denominator 1118
+  1. Andrew Gallant: 725 lines, 64.8%
+  2. Aron Griffis: 43 lines, 3.8%
+  3. mcharsley: 43 lines, 3.8%
+  4. Martin Sehnoutka: 38 lines, 3.4%
+  5. Ashley: 36 lines, 3.2%
+  6. Jonathan Soo: 29 lines, 2.6%
+  7. Marvin Löbel: 27 lines, 2.4%
+  8. Jos van den Oever: 21 lines, 1.9%
+  people with >=1%: 14; rows to reach 80%: 6
+
+bot lines alive (whole scope): {'github-actions[bot]': 9}
+identities merged (whole scope):
+  Inès Moreau: Ines Moreau <ines.moreau@university.example>; Inès Moreau <ines@moreau.example>
+raw commit counts by author name (non-merge, whole history), top 6: [('Andrew Gallant', 128), ('Michal Budzynski', 5), ('opilarium', 4), ('Jérémie Lawson', 4), ('Igor Gnatenko', 3), ('Yufeng Wang', 3)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10; echo ---; git ls-files '*.rs' | wc -l; echo --- ignoring SPDX+eol commits; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain --ignore-rev a45246e --ignore-rev c862f48 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w --line-porcelain 2>/dev/null | grep -c '^author '
+FINAL ANSWER:
+Andrew Gallant wrote most of it, but not all. The other contributors are spread thin.
+
+I ran `git blame -w` over the 10 tracked `.rs` files, which gives 4,366 surviving lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,798 | 64% |
+| Sam Okoro | 646 | 15% |
+| Inès Moreau (also listed as "Ines Moreau") | 217 (120 + 97) | 5% |
+| nivkner | 146 | 3.3% |
+| Sebastian Thiel | 96 | 2.2% |
+| Marvin Löbel | 83 | 1.9% |
+| mcharsley | 46 | 1.1% |
+| Aron Griffis | 45 | 1.0% |
+| Martin Sehnoutka | 38 | 0.9% |
+
+- **Concentration:** Gallant has about two-thirds of the lines. With Okoro, the top two have about 79%. Everyone else is at 5% or less.
+- **Moreau:** "Inès Moreau" and "Ines Moreau" look like the same person under two spellings. I merged them above. I didn't check for a `.mailmap`, so treat the merge as a guess.
+- **Excluded commits:** The "add SPDX headers" and "normalize line endings" commits could have taken credit for lines they only touched. I re-ran blame ignoring both. The counts moved by at most 5 lines per author (Gallant 2,803, Okoro 647), so the ranking doesn't change.
+- **Not counted:** Blame credits whoever last changed a line. Code that was later reformatted or lightly edited is credited to the later editor. The table also covers only the 10 tracked `.rs` files, with no `-M`/`-C` copy detection.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn | grep -iE 'moreau|total' ; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -c '^author '
+FINAL ANSWER:
+Concentration is high, but it's not one person. Andrew Gallant wrote most of the code, and a few others have meaningful shares.
+
+I used `git blame -w -M -C` on the 10 tracked `.rs` files. That counts the 4,366 lines that survive at HEAD, and it ignores whitespace changes and follows moved or copied lines.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,838 | 65% |
+| 2 | Sam Okoro | 646 | 15% |
+| 3 | Inès Moreau (two identities, see below) | 217 | 5% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+Further down are mcharsley (45), Marvin Löbel (41) and Martin Sehnoutka (38).
+
+- **Moreau identities:** "Inès Moreau" (120 lines, `ines@moreau.example`) and "Ines Moreau" (97 lines, `ines.moreau@university.example`) differ only by the accent and the email address. They are probably the same person. I combined them to get 217, but I didn't confirm it, and there's no `.mailmap` entry for it. Counted separately, they rank 3rd and 4th, at 120 and 97 lines.
+- **Top two:** Gallant and Okoro together hold about 80% of the lines.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>; [ -f "$S" ] && node "$S" --include '*.rs' --merge-identities
+FINAL ANSWER:
+Authorship is concentrated. Andrew Gallant holds most of the Rust code that still exists.
+
+**Scope:** 9 `.rs` files, 3,710 of 3,719 lines attributed, counted with `git blame -w -M -C -C` at HEAD.
+
+| Author | Surviving lines | Share | Commits | Share |
+|---|---|---|---|---|
+| Andrew Gallant | 2,838 | 76.5% | 128 | 67.0% |
+| Sam Okoro | 98 | 2.6% | 2 | 1.0% |
+| Ines Moreau (2 addresses merged) | 97 | 2.6% | 2 | 1.0% |
+| Sebastian Thiel | 74 | 2.0% | 1 | 0.5% |
+| Ashley | 68 | 1.8% | 2 | 1.0% |
+
+Next after those: Aron Griffis (59 lines, 1.6%), Niv Kaminer and mcharsley (45 each, 1.2%). 32 more authors hold less than 1.2% each.
+
+**Bus factor:** it is 1 for the whole repo's `.rs` files, meaning one author is enough to reach 50% of the surviving lines. Andrew Gallant alone holds 76.5%. Reaching 80% takes 3 authors.
+
+**Left out of the numbers:**
+- `src/ucd_tables.rs` (647 lines) is excluded as a generated file. `--keep-generated` would count it.
+- 1 bot identity is excluded (9 lines, 1 commit).
+- The tool found no reformat commit to set aside.
+
+**Identity merges (guesses from names and addresses, nothing written to `.mailmap`):**
+- Ines Moreau's two addresses are merged in the table above. Unmerged, the lines are 97 for `ines.moreau@university.example` and 0 for the noreply address.
+- A weak suggestion says Ines Moreau, Inès Moreau and "ines" may be one person. That would be 119 lines (3.2%), which would move them ahead of Sam Okoro. This is not merged.
+- A weak suggestion says Ashley and Ashley Mannix may be one person. That would be 72 lines (1.9%). This is not merged.
+- Igor Gnatenko's addresses were also merged, but they hold 0 surviving lines, so the table doesn't change.
+- Only you can confirm any of these.
+
+The numbers measure who wrote the code that is still here. They say nothing about code quality, review work or design work.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__blame_summary", "max_results": 5}
+ - Bash: echo "files: $(git ls-files '*.rs' | wc -l)"; echo "== plain blame (-w -M -C)"; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo "== ignoring normalize + SPDX commits"; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M --line-porcelain --ignore-rev c862f48 --ignore-rev a45246e HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8
+ - Bash: git log --format='%an <%ae>' | grep -i 'mor' | sort | uniq -c; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M --line-porcelain --ignore-rev c862f48 --ignore-rev a45246e HEAD -- | grep -c '^author '
+FINAL ANSWER:
+Andrew Gallant wrote about 69% of the surviving Rust lines, so it is mostly one person, with Sam Okoro a distant second.
+
+I ran `git blame` over the 10 tracked `.rs` files (4,366 lines at HEAD). I used `-w -M` to ignore whitespace and moved lines, and I excluded the two recent bulk commits (`c862f48` line endings, `a45246e` SPDX headers). Including them barely changes the numbers.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,994 | ~68.6% |
+| Sam Okoro | 647 | ~14.8% |
+| Inès Moreau (combined, see below) | 218 | ~5.0% |
+| Sebastian Thiel | 74 | ~1.7% |
+| mcharsley | 45 | ~1.0% |
+| Aron Griffis | 45 | ~1.0% |
+| Marvin Löbel | 42 | ~1.0% |
+
+- **Inès Moreau:** git lists "Inès Moreau" (121 lines) and "Ines Moreau" (97 lines) as separate authors. There is also an `ines` commit under a GitHub noreply address that matches the university email. I think these are one person, but the repo has no `.mailmap`, so I merged them myself. Counted separately, neither would rank above Sebastian Thiel.
+- **Where the remainder sits:** the top three account for about 88% of the lines. The rest is a long tail of one-off contributors.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -10; git shortlog -sne --no-merges HEAD | head
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | wc -l; git log --format='%an <%ae>' | grep -iE 'ines|inès' | sort | uniq -c
+FINAL ANSWER:
+Authorship is concentrated in one person, Andrew Gallant. Of the 4,366 surviving lines in the 10 tracked `.rs` files, 2,838 (65%) are theirs. I counted lines with `git blame -w -M -C` at HEAD, so whitespace changes and moved or copied lines don't change who gets credit.
+
+| Rank | Author | Surviving lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,838 | 65.0% |
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau (two spellings merged) | 217 (120 + 97) | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+
+Further down are Aron Griffis (59), mcharsley (45), Marvin Löbel (41) and Martin Sehnoutka (38). Together with ranks 4 and 5, everyone outside the top three holds about 15% of the lines.
+
+- **Name merge:** Inès Moreau appears under "Inès Moreau" and "Ines Moreau" in blame. Git history shows three identities with two different emails plus a noreply address. I assumed they are the same person. Without the merge, they would be 120 and 97 lines, and Sebastian Thiel would rank third.
+- **Commit counts differ:** Andrew Gallant also has the most commits (128). Sam Okoro has only 2 commits but 646 surviving lines, so those commits were large.
+- **Not done:** The skill's full workflow also covers per-file bus factor, whether owners are still active, and import-based importance. I skipped those because you asked only about overall authorship share. I can run them if you want.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Bash: git ls-files '*.rs' | wc -l; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | awk '{t+=$1} END{print t, NR" authors"}'; git log --format='%an <%ae>' | grep -i 'ines\|inès' | sort | uniq -c
+FINAL ANSWER:
+Mostly one person. Andrew Gallant owns 2,838 of 4,366 surviving Rust lines (65%). The 10 `.rs` files were measured with `git blame -w -M -C`. Moves and whitespace-only changes are not credited to the mover.
+
+Next authors by surviving lines:
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau | 217 (120 + 97) | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+- **Inès Moreau:** I merged two blame names, "Inès Moreau" (120) and "Ines Moreau" (97). The commit log shows different emails for them (`ines@moreau.example` and `ines.moreau@university.example`), so I assumed they are the same person. Counted separately, they would rank 3rd and 4th.
+- **Long tail:** The remaining 32 authors each have 45 lines or fewer, and together they hold about 10% of the lines.
+- **Top two:** Gallant and Sam Okoro together hold about 80% of the lines.

@@ -1,0 +1,34 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor", "max_results": 5}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | head -12; echo; git ls-files '*.go' | xargs cat | wc -l; git ls-files '*.go' | wc -l
+ - Bash: git ls-files '*.go' | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | head -20; ls .mailmap 2>&1
+ - Bash: git ls-files '*.go' | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep -a -E '^author(-mail)? ' | paste - -; done | sort | uniq -c | sort -rn | grep -i -E 'marcus|lindqvist|priya|raman' ; git ls-files '*.go' | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep -a -c '^author '; done | paste -sd+ - | bc; git log --format='%an <%ae>' | grep -i -E 'marcus|lindqvist|priya|raman' | sort | uniq -c
+ - Bash: git show --stat --format='%an %ae' 822af32 | head -3; git show --shortstat --format= 822af32; git show --shortstat --format= d43be5f
+FINAL ANSWER:
+Checked blame on every Go file at HEAD. 15,313 lines across 78 files. Now the answer.
+
+Top five by surviving lines:
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 1917 | 12.5% |
+| 2 | Noah Dietz | 1194 | 7.8% |
+| 3 | Marcus Lindqvist | 1020 | 6.7% |
+| 4 | Jonathan Reyna | 1004 | 6.6% |
+| 5 | Riobard | 908 | 5.9% |
+
+Caveats:
+- **Marcus Lindqvist is three identities.** There is no `.mailmap`. His lines sit under `<email redacted>` (442), `mlindqvist@corp.example` (322) and `<email redacted>` (256, shown as `mlindqvist`). I merged them on the assumption they are one person, based on the name match. Without the merge he has 442 or 764 lines. In that case Priya Raman (802 lines, 5.2%) takes fifth place and he drops out.
+- **Shares are small.** The top five together own about 40% of surviving lines. Ownership is spread across many contributors, so no one person dominates.
+- **Blame counts blank lines and comments**, not only logic.
+- **Bot lines excluded.** `github-actions[bot]` owns 308 lines. All of them are license headers from commit `822af32`.
+- **The `go fix` commit `d43be5f` touched 38 lines** (`interface{}` to `any`). Blame credits those lines to whoever ran it, not to the original author. The effect is small.
+
+Surviving lines show who wrote the code. They don't show who is still active or reviews well. For co-maintainers, check recent activity too. I can run `knowledge_risk` or a recent-commits breakdown if you want that.
+META cost=0.082516 ms=32385 turns=7

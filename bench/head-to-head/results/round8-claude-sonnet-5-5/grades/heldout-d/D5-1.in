@@ -1,0 +1,243 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who should review a change to the parser in src/Parser? Show me who wrote the code that is still there, as a share per person.
+
+CRITERIA:
+1. Graham Campbell is ONE person with about 83% of live lines (accept 80% to 86.5%) and is ranked first. FAIL if he is reported at or below 60%, or split into several entries (his several addresses are one person).
+2. Fatima Zahra owns about 7.9% (accept 5.9% to 9.9%): her branch was merged by a merge commit, which does not take her lines. FAIL if she is missing, or below 4%.
+3. Dmitri Volkov owns about 7.3% (accept 5.3% to 9.3%): his comment-stripping code was reverted and then re-landed by him. FAIL if he is missing or below 4%, or if his lines are credited to Graham Campbell.
+4. Marta Kowalska (pure rename of Regex.php) and "StyleCI Bot" hold at most 0.5% each and the bot is not ranked as an owner; Regex.php lines are credited to the original authors. FAIL if Marta Kowalska is above 1%, or if StyleCI Bot appears as a ranked author.
+5. The answer states what it left out or merged: at least two of (a) style-only commits (StyleCI) ignored, (b) rename followed or the moved file credited to its original authors, (c) Graham Campbell's several e-mail addresses merged. FAIL if fewer than two are stated, or if commit counts are used as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD 4b0375e948774b11b3c84e9fe32096ec9d7ec6c1
+scope: src/Parser/
+files counted: 10  excluded: 0
+ignore-revs (13):
+  1b0fd5cb8c83 Graham Campbell | Merge pull request #298 from GrahamCampbell/analysis-XZ7VYD
+  4b0375e94877 StyleCI Bot | Apply fixes from StyleCI
+  4ee9bf81b048 Graham Campbell | Apply fixes from StyleCI (#431)
+  5c2a7fed445d Graham Campbell | Apply fixes from StyleCI (#413)
+  61f8fdbb2c54 Graham Campbell | Apply fixes from StyleCI
+  7738fec1fc5c Graham Campbell | Apply fixes from StyleCI (#396)
+  7e6837db20eb Graham Campbell | Apply fixes from StyleCI (#451)
+  8c62ccf22b12 Graham Campbell | Apply fixes from StyleCI (#388)
+  b27970d73c7a Graham Campbell | Apply fixes from StyleCI (#440)
+  bf58b9c61ba3 Graham Campbell | Apply fixes from StyleCI (#317)
+  c9c1a808fb1b Graham Campbell | Apply fixes from StyleCI (#428)
+  cacfbe3147dc Graham Campbell | Apply fixes from StyleCI (#2)
+  e9a7fac9600a Graham Campbell | Apply fixes from StyleCI (#422)
+live lines in scope: 961
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 961
+RANKING (share of human live lines)
+ 1. Graham Campbell: 801 lines, 83.35%
+ 2. Fatima Zahra: 76 lines, 7.91%
+ 3. Dmitri Volkov: 70 lines, 7.28%
+ 4. Vance Lucas: 10 lines, 1.04%
+ 5. JT Smith: 2 lines, 0.21%
+ 6. Jonas Staudenmeir: 2 lines, 0.21%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Graham Campbell: Graham Campbell <<email redacted>>=488; Graham Campbell <<email redacted>>=304; Graham Campbell <<email redacted>>=9
+people needed to cover >=50% of human live lines: 1; >=80%: 1
+FACT Graham Campbell: 801 lines = 83.35%
+FACT Vance Lucas: 10 lines = 1.04%
+FACT Fatima Zahra: 76 lines = 7.91%
+FACT Dmitri Volkov: 70 lines = 7.28%
+FACT Marta Kowalska: 0 lines = 0.00%
+FACT StyleCI: 0 lines = 0.00%
+FACT file src/Parser/CommentStripper.php: 70 lines, top author Dmitri Volkov 100%
+FACT file src/Parser/Entry.php: 59 lines, top author Graham Campbell 98%
+FACT file src/Parser/EntryParser.php: 299 lines, top author Graham Campbell 73%
+FACT file src/Parser/EscapeDecoder.php: 76 lines, top author Fatima Zahra 100%
+FACT file src/Parser/Lexer.php: 58 lines, top author Graham Campbell 93%
+FACT file src/Parser/Lines.php: 127 lines, top author Graham Campbell 64%
+FACT file src/Parser/Parser.php: 53 lines, top author Graham Campbell 62%
+FACT file src/Parser/ParserInterface.php: 19 lines, top author Graham Campbell 100%
+FACT file src/Parser/Regex.php: 112 lines, top author Graham Campbell 54%
+FACT file src/Parser/Value.php: 88 lines, top author Graham Campbell 70%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__blame_summary,mcp__tool__knowledge_risk,mcp__tool__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git log -1 --format=%H
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D5-hist-1/repo/src/Parser", "top": 20}
+ - Bash: git shortlog -sn --since=2026-04-22 HEAD; echo ---; git log -5 --format='%ad %an %s' --date=short -- src/Parser
+FINAL ANSWER:
+Surviving lines in `src/Parser` (10 files, 961 lines at HEAD), by author:
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Graham Campbell | 809 | 84.2% | 2026-02-27 |
+| Fatima Zahra | 72 | 7.5% | 2026-01-22 |
+| Dmitri Volkov | 65 | 6.8% | 2026-03-10 |
+| StyleCI Bot | 11 | 1.1% | 2026-03-20 |
+| JT Smith | 2 | 0.2% | 2022-10-15 |
+| Jonas Staudenmeir | 2 | 0.2% | 2024-07-20 |
+
+Main owner per file:
+- Graham Campbell owns 8 files at 98–100%: `EntryParser`, `Lines`, `Regex`, `Value`, `Entry`, `Lexer`, `Parser` and `ParserInterface`.
+- Fatima Zahra owns `EscapeDecoder.php` at 94.7%.
+- Dmitri Volkov owns `CommentStripper.php` at 92.9%.
+
+**Who should review:** by line ownership, Graham Campbell for most files, Fatima Zahra for `EscapeDecoder.php`, and Dmitri Volkov for `CommentStripper.php`. None of them has committed since 2026-04-22, which is six months before today (2026-10-22), and the whole repo has no commits since then. All 10 files count as orphaned, because inactive authors own 100% of their lines.
+
+Check with the team whether any of them can still review. If not, pick the most recent contributor to the area. Dmitri Volkov (2026-03-10) is the most recent human who edited the parser, and Marta Kowalska last touched it on 2026-02-11 with the `Regex` move. Marta owns no surviving lines, so I did not count them as an owner.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>'; $SL --reviewers src/Parser; echo ======; $SL --merge-identities -- src/Parser
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>; node "$S" --reviewers src/Parser; echo ======; node "$S" --merge-identities -- src/Parser
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>; node "$S" --merge-identities -- src/Parser; node "$S" --reviewers src/Parser --merge-identities | tail -n +3 | head -12
+FINAL ANSWER:
+**Suggested reviewers for `src/Parser`:** Graham Campbell, Fatima Zahra and Dmitri Volkov, in that order of surviving lines. All three are marked active.
+
+**Who wrote the code that is still there** (`git blame -w -M -C` on HEAD, 10 files, 961 lines, all attributed):
+
+| Person | Surviving lines | Share |
+|---|---|---|
+| Graham Campbell (3 addresses merged) | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+| Marta Kowalska | 0 | 0.0% |
+
+**Graham Campbell's addresses.** Graham appears under three addresses. Merging them is a guess from names and addresses, and I have not written a `.mailmap`. Unmerged, the rows are:
+- <email redacted>: 483 lines (50.3%). Last commit 2020-07-14, so this address is marked inactive.
+- <email redacted>: 307 lines (31.9%). Last commit 2026-02-27.
+- <email redacted>: 9 lines.
+
+If these are separate people, the alt-three address is still the top author at 50.3%. The tool rates the evidence for a single person as strong.
+
+**Bus factor** (smallest number of authors whose surviving lines reach the threshold, computed on all of `src/Parser`):
+- At 50%, the bus factor is 1 either way.
+- To reach 80%, it takes 1 author with the merge and 2 without.
+
+**What the numbers leave out and assume:**
+- **Excluded files and reformats:** No files were dropped, and no reformat commit was ignored.
+- **Bots:** StyleCI Bot is listed here. The tool's default is to exclude bots, but it printed this row.
+- **Mechanical rewrites:** I checked for them. It examined 47 commits and set aside none.
+- **Copy detection:** The figures use `-w -M -C`. Without `-C`, Graham's merged share is 84.2% (809 lines). Vance Lucas's 10 lines disappear, so those lines were only attributed to Vance through copy detection.
+- **Moved code:** 476 of 961 lines (49.5%) were written elsewhere and moved here, mostly from `src/Parser.php`, `src/Regex/Regex.php` and `src/Lines.php`. The credit goes to the people who wrote them, not to whoever moved them.
+- **What counts as survival:** Line counts show whose code remains. They say nothing about quality, review work or design discussion, and deleted code counts for nobody.
+
+**Review advice:** Request Graham first, since they hold most of the code. Graham has been active (last commit 2026-02-27), so the inactive alt-three address does not rule them out. Fatima and Dmitri are the most useful second reviewers. They hold the most remaining code after Graham, and both committed recently.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Graham Campbell wrote 83% of the lines still in `src/Parser`, so they should review. Fatima Zahra is a good second reviewer.
+
+Counts come from `git blame -w -M -C` on `HEAD`. They cover 961 surviving lines across the 10 files in `src/Parser`.
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+- **Bot:** StyleCI Bot is a bot, so it can't review.
+- **Recency:** I didn't check who touched the code recently, only who wrote the surviving lines. If the change is in one file, run the same blame on that file. Ownership may differ from the 83% overall figure.
+- **Aliases:** I didn't check for a `.mailmap`. One person may appear under two names.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/Parser"}
+ - Bash: ls src/Parser && for f in $(git ls-files src/Parser); do git blame --line-porcelain -w -M -C -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1; v[NR]=$1} END{for(i=1;i<=NR;i++){printf "%s  %.1f%%\n", c[i], v[i]*100/n}; print "total lines", n}'
+ - Bash: git log --since="90 days ago" --no-merges --pretty='%an' -- src/Parser | sort | uniq -c | sort -rn; echo ---; git log -1 --format=%cd
+ - Bash: git log --no-merges --pretty='%an|%cs' -- src/Parser | awk -F'|' '!s[$1]++{print $1, "last:", $2}'
+FINAL ANSWER:
+Graham Campbell wrote most of the code in `src/Parser` that is still there. Fatima Zahra and Dmitri Volkov are the best second reviewers.
+
+I did not use the skill's commit-count method. I used `git blame` (with `-w -M -C`, so whitespace changes and moved lines don't change who gets credit). It counts the lines in the current code, which answers your question about code that is still there. It covers all 10 files in `src/Parser`, 961 lines in total.
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+**Bus factor is 1 for this directory.** Graham alone owns more than 80% of the lines.
+
+**Who should review**
+1. **Graham Campbell** owns most of the code and committed here most recently among the main authors (2026-02-27). Ask them first.
+2. **Fatima Zahra or Dmitri Volkov** should be the second reviewer. Dmitri touched the parser most recently (2026-03-10). Fatima's last commit was 2026-01-22. Having one of them review also spreads knowledge beyond Graham.
+3. Ignore StyleCI Bot, Vance Lucas, Jonas Staudenmeir and JT Smith as reviewers. The bot only formats code, and the others own 2 to 10 lines each and have not committed to the directory since 2024 or earlier.
+
+**Limits**
+- Marta Kowalska has commits in `src/Parser` (last 2026-02-11), but none of her lines remain, so she gets no share. She may still know the history.
+- No one has committed to `src/Parser` in the last 90 days, because the newest commit is from 2026-03-20. I don't know whether these people are still on the project. Check that before you assign a reviewer.
+- I did not run the skill's dependents-count step or its agent step, since you asked only about ownership shares.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Blame of `src/Parser` at HEAD, 961 surviving lines in 10 files. It ignores whitespace and follows moved lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+**Reviewer:** Graham Campbell. They wrote most of the code that is still there. Add Fatima Zahra or Dmitri Volkov as a second reviewer. Both own a real share, but I did not check which parts of the parser they wrote.
+
+StyleCI Bot only did formatting, so don't pick it.
+
+This counts current lines only. It does not show who changed the parser recently, so check `git log` on `src/Parser` if you want that.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Bash: ls src/Parser && git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn
+ - Bash: git log --since="12 months ago" --format='%an' -- src/Parser | sort | uniq -c | sort -rn; git log -1 --format='%an %ad' -- src/Parser
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+Line ownership in `src/Parser` comes from `git blame` (ignoring whitespace, following moved and copied lines). It covers 961 surviving lines in 10 files.
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+**Reviewers**
+- **Graham Campbell** is the default reviewer. They wrote most of every file except two: `EntryParser`, `Lexer`, `Lines`, `Parser`, `ParserInterface`, `Regex`, `Value` and `Entry`.
+- **Fatima Zahra** should review changes to `EscapeDecoder.php`. They wrote 72 of its 76 lines.
+- **Dmitri Volkov** should review changes to `CommentStripper.php`. They wrote 65 of its 70 lines.
+- **Optional second reviewer:** Fatima or Dmitri on a change that crosses files. Each owns a whole file, so each knows one part of the parser well.
+
+**Caveats**
+- Graham Campbell is a single point of failure. Fatima and Dmitri each hold only about 7% of the lines.
+- Vance Lucas, Jonas Staudenmeir and JT Smith have only a few lines left. They are not useful as reviewers.
+- StyleCI Bot only reformatted code. Ignore it.
+- Marta Kowalska committed to `src/Parser` in the last 12 months but has no surviving lines in the blame. Their commit may have been a revert, a rename, or code since rewritten. I did not check, so they may still know recent changes.

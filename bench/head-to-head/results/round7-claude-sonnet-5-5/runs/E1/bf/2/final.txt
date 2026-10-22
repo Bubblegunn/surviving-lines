@@ -1,0 +1,49 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-bf-2/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: T=$(mktemp -d) && git clone -q <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-bf-2/repo $T/r && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs $T/r --no-github --cache $T/c.json >/dev/null 2>&1; node -e '
+const j=require(process.argv[1]+"/r/.github/ownership.json");console.log(JSON.stringify(j.meta,null,1));console.log(JSON.stringify(j.unresolved));console.log(JSON.stringify(j.authors||j.people,null,0));for(const z of j.zones)console.log(JSON.stringify(z))' $T | head -80; git log --format='%ae %ad' --date=short | awk '{print $1}' | sort | uniq -c | sort -rn | head
+ - Bash: git log --author='fiona@formatter.example' --author='troy@laptop.example' --format='%h %ae %ad %s' --date=short --shortstat
+FINAL ANSWER:
+Bus factor results below. I ran the analysis on a temporary clone with `--no-github`, so nothing was written to your repo. The commit history ends 2026-04-12.
+
+**Caveat first:** the tool's "top owners" for `lib/` and `test/` are not reliable, and I think the data supports a different answer than the raw numbers.
+
+## What the tool reports
+
+| Zone | Files | Verdict | Sole active owner (tool's view) |
+|---|---|---|---|
+| `lib/` | 1 | bus factor 1, but under the significance threshold | Fiona Formatter (48%) and `troy@laptop.example` (48%) |
+| `test/` | 7 | **bus factor 1** | Fiona Formatter (67% of weight) |
+| `test/support/` | 1 | **orphaned** (not significant) | Douglas Christopher Wilson, last commit 2021-09-08 |
+| `.github/`, `.github/workflows/` | 4 and 3 | bus factor 2 | Ulises Gascón and Ignacio Mangas |
+| repo root | 18 | bus factor 3 | Fiona, Ulises, Jon Church |
+
+## Why I don't trust the `test/` and `lib/` verdicts
+
+- **Fiona Formatter** (`fiona@formatter.example`) has exactly one commit. It is `62628c0`, "style: reformat js with 4-space indent and double quotes". It changed 1016 lines in 4 files, all whitespace and quote changes. A mechanical reformat gives her the largest ownership share, but it doesn't mean she understands the code.
+- **`troy@laptop.example`** has two small commits (+12/-12 lines in `lib/`, +36 lines in `test/`). The name is Troy Goode, who also committed as `<email redacted>` with 120 commits and a last commit in 2019. I can't confirm these are the same person. If they are, the "active" status comes from a new email address, and nearly all of `lib/` and `test/` still depends on one person. If they aren't, nobody active has deep knowledge of those areas.
+- **Without the Fiona and `troy@laptop.example` commits**, the picture changes. The historical authors are Douglas Christopher Wilson (143 commits, inactive since 2021) and Troy Goode (120 commits, inactive since 2019). Both are inactive. So `lib/` and `test/` may effectively be orphaned, and the tool's active-owner view hides that.
+
+## Overall
+
+- **Single-person dependence:** the only "bus factor 1" zone is `test/` (and `lib/`, below the significance threshold). Both rest on one reformat commit and two small commits, so I wouldn't treat them as real owners.
+- **Orphaned in substance:** the original code in `lib/` and `test/`. Its authors, Douglas Wilson and Troy Goode, are gone.
+- **Healthier:** `.github/` and CI workflows have two active owners, Ulises Gascón and Ignacio Mangas, with Sebastian Beltran as a third who is not counted as active owner.
+- **Imported history:** the root commit has 8 of 18 files, so the history was imported (`bulkFirstCommit`). Ownership reflects work since the import, not who first wrote the code.
+- **Dependabot:** 11 commits from the bot are excluded.
+- **Inferred, not authoritative:** commit volume is a proxy for knowledge. Reviewers who don't commit don't show up.
+
+## Questions for you
+
+1. Is `troy@laptop.example` the same person as `<email redacted>`? If yes, I'll merge them in the cache.
+2. Should the reformat commit by Fiona Formatter be excluded from ownership? Then re-running would give a clearer `lib/` and `test/` picture.
+
+I haven't written a `.github/CODEOWNERS` file. Say so if you want it generated, but hand edits would be lost on the next regeneration.
+META cost=0.098071 ms=27182 turns=7

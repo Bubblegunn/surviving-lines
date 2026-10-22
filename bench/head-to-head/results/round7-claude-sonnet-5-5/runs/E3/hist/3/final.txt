@@ -1,0 +1,27 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{f=$NF; if (f ~ /\./) {n=split(f,a,"."); print a[n]} }' | sort | uniq -c | sort -rn | head -20; git ls-files | wc -l
+ - Bash: git ls-files | while read f; do case "$f" in *.*) e="${f##*.}";; *) e="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //" | sed "s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Top owner by surviving lines, from `git blame -w` on the 18 tracked files:
+
+| Type | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 of about 1,200 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension | Douglas Christopher Wilson | 17 |
+
+- **`.js`:** Fiona Formatter is second with 291 lines, from the latest commit `62628c0` (the 4-space and double-quote reformat). Douglas Christopher Wilson is third with 245. Troy Goode's lead depends on `-w`. That flag ignores whitespace-only changes, but the quote changes still count as Fiona's.
+- **`.md`:** Jon Church is second with 72, then Douglas Christopher Wilson with 67.
+- **`.yml`:** Íñigo Marquínez Prado is second with 95.
+- **`.gitignore`:** I counted this as its own type, since the extension is the whole filename.
+- **Merges:** the blame counts every line in the current files and does not exclude merge commits.
+META cost=0.0283225 ms=27327 turns=4

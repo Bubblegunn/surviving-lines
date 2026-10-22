@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git shortlog -sne --all | awk '{$1="";print}' | sed -E 's/^ //' | awk -F' <' '{n[$1]++; e[$2]++} END{for(k in n) if(n[k]>1) print "name dup:",k; for(k in e) if(e[k]>1) print "email dup:",k}'; echo ---; git log --all --format='%an <%ae>|%cn <%ce>' | sort | uniq -c | sort -rn | grep -iE 'goode|wilson|fiona|efe'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -iE 'alejandro C|troy'; git status --short
+FINAL ANSWER:
+Evet, iki kişi birden fazla kimlikle görünüyordu:
+
+- **Troy Goode** iki e-postayla görünüyordu: `<email redacted>` (120 commit) ve `troy@laptop.example` (2 commit).
+- **Alejandro Caravaca Puchades** aynı e-postayla ama iki adla görünüyordu: "Alejandro Caravaca Puchades" (4 commit) ve "alex94puchades" (1 commit).
+
+Bunları `.mailmap` dosyasıyla birleştirdim. Dosya repo kökünde ve henüz commit edilmedi. Commit geçmişine dokunmadım, hash'ler aynı kaldı. `git shortlog` ve `git log --use-mailmap` artık her kişiyi tek sayıyor. Troy Goode 122 commit, Alejandro 5 commit oldu.
+
+**En çok commit yapan hâlâ Douglas Christopher Wilson, 143 commit.** Birleştirme sıralamayı değiştirmedi, çünkü Troy 122'de kaldı.
+
+Başka çakışma bulamadım. Aynı ada veya aynı e-postaya sahip başka kayıt yok. "Efe" ve "Fiona Formatter" tek kimlikle görünüyor.
+
+`.mailmap`'i commit etmemi ister misin?
+META cost=0.052953400000000005 ms=22130 turns=4

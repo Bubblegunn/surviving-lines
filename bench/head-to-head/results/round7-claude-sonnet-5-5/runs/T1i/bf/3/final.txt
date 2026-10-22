@@ -1,0 +1,39 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs && git ls-files | head -100 && git ls-files | wc -l
+ - Bash: ls .mailmap 2>/dev/null; run(){ for f in $(git ls-files | grep -E "$1"); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn; }; echo "== code (lib, test .js) =="; run '^(lib|test)/.*\.js$'; echo "== all files =="; run '.'; echo "== lib/index.js only =="; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep -a '^author ' | sort | uniq -c | sort -rn; echo "== without ignore-revs, code =="; for f in $(git ls-files | grep -E '^(lib|test)/.*\.js$'); do git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' | sed 's/^author //'; do
+FINAL ANSWER:
+Ownership here means lines that still exist at HEAD, attributed with `git blame`. I used `-w -M -C` and `--ignore-revs-file .git-blame-ignore-revs`. Without the ignore file, the 4-space/double-quote reformat (`62628c0`) would credit "Fiona Formatter" with about 290 lines of code. That commit is already listed in the ignore file, so Fiona doesn't appear in the code counts below.
+
+**Code (`lib/` + `test/*.js`, about 1,200 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 676 | about 56% |
+| Douglas Christopher Wilson | 394 | about 33% |
+| Alejandro Caravaca Puchades | 30 | 2.5% |
+| Eric di Domenico | 16 | 1.3% |
+| Alberto Leal | 15 | 1.2% |
+| about 16 others | 1–9 each | under 1% each |
+
+**`lib/index.js`, the core file (about 240 lines)**
+- Troy Goode: 159 lines (about 66%).
+- Douglas Christopher Wilson: 22 lines.
+- Alejandro Caravaca Puchades: 12 lines, plus 4 under the alias `alex94puchades`.
+- Everyone else: 7 lines or fewer each.
+
+**All tracked files (about 1,500 lines)**
+- Troy Goode has 810 lines and Douglas Christopher Wilson has 629.
+- The others are mostly docs, CI and config. They include Íñigo Marquínez Prado (95), Jon Church (72), Sebastian Beltran (67), Ulises Gascón (52) and Ignacio Mangas (44).
+
+**Caveats**
+- Troy Goode holds the original implementation. Douglas Christopher Wilson holds the later maintenance, mostly in tests.
+- There is no `.mailmap`, so the same person under two names is counted twice. For example, `Alejandro Caravaca Puchades` and `alex94puchades` are probably one person.
+- Blame credits whoever last touched a line. Small edits such as renames, lint fixes and comment annotations can take a line from its original author.
+- "Efe" holds 6 lines, which are probably recent local edits.
+META cost=0.0366171 ms=24905 turns=4

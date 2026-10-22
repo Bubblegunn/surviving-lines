@@ -1,0 +1,81 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git log --oneline | wc -l && git ls-files '*.go' | grep -v '^vendor/' | wc -l && git ls-files '*.go' | grep -v '^vendor/' | xargs grep -l -E '^// Code generated .* DO NOT EDIT' | head -50; echo ---; git shortlog -sne --all --no-merges | head -30; echo ---; git log -1 --format=%cd
+ - Bash: ls .mailmap 2>&1 | head -1; 
+files=$(git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated_flags.go$')
+echo "$files" | wc -l
+for f in $files; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed "s|^author-mail ||;s|$| $f|"; done > /tmp/blame.txt
+wc -l /tmp/blame.txt
+echo "--- by author (email) lines"; awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -25
+echo "--- vendored/generated excluded; last commit date per top author"
+for e in $(awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -10 | awk '{print $2}'); do m=$(echo $e | tr -d '<>'); echo "$e $(git log --all --author="$m" -1 --format=%cd --date=sho
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ppi-1/repo
+git ls-files '*.go' | grep -v '^vendor/' | grep -v '^zz_generated_flags.go$' > /tmp/gofiles.txt
+: > /tmp/blame.txt
+while IFS= read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author-mail /{print $2, f}' >> /tmp/blame.txt; done < /tmp/gofiles.txt
+wc -l < /tmp/blame.txt
+echo "--- lines by author"; awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -20
+echo "--- last commit"
+for e in $(awk '{print $1}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -10 | awk '{print $2}'); do m=$(echo $e | tr -d '<>'); echo "$e $(git log --all --author="$m" -1 --format=%cd --date=short)"; d
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ppi-1/repo
+echo "--- cumulative share"; awk '{c[$1]++;t++} END{for(a in c)print c[a],a; }' /tmp/blame.txt | sort -rn | awk '{t+=$1;l[NR]=$0;n[NR]=$1} END{s=0;for(i=1;i<=NR;i++){s+=n[i]; if(i<=12||i==NR) printf "%d %s cum=%.1f%%\n",i,l[i],100*s/t}; print "authors",NR,"total",t}'
+echo "--- per-file top owner share"
+awk '{k=$1" "$2; c[k]++; f[$2]++} END{for(k in c){split(k,a," "); if(c[k]>m[a[2]]){m[a[2]]=c[k];o[a[2]]=a[1]}} for(x in m) printf "%s %s %.0f %d\n",x,o[x],100*m[x]/f[x],f[x]}' /tmp/blame.txt > /tmp/perfile.txt
+echo "files with top owner >80%:"; awk '$3>80' /tmp/perfile.txt | wc -l; echo "of"; wc -l < /tmp/perfile.txt
+echo "
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ppi-1/repo
+echo "--- active (commit since 2025-04-22) authors, blame lines"
+for m in $(git log --since=2025-04-22 --no-merges --format='%ae' | sort -u); do n=$(grep -c "<$m>" /tmp/blame.txt); echo "$n $m $(git log --author="$m" -1 --format='%an %cd' --date=short)"; done | sort -rn
+echo "--- Tomas Aschan lines"; grep -ci 'tomasaschan' /tmp/blame.txt
+echo "--- active share"
+act=$(for m in $(git log --since=2025-04-22 --no-merges --format='%ae' | sort -u); do grep -c "<$m>" /tmp/blame.txt; done | paste -sd+ - | bc); echo "$act of $(wc -l < /tmp/blame.txt)"
+echo "--- Voss/Okafor files"; grep -E 'lena.voss|sam.okafor' /tmp/blame.txt | aw
+FINAL ANSWER:
+**Bus factor:** 5 people cover over 50% of surviving Go code. That number is misleading, because almost all of those people have left.
+
+I used `git blame` (`-w -M -C`) on HEAD instead of the skill's commit counts. Blame counts lines that still exist, which is what you asked about. I skipped `vendor/` and `zz_generated_flags.go`. That leaves 75 Go files and 12,194 live lines from 77 authors. I did not launch the contributor-analyzer agent. I ran the git commands directly.
+
+**Who owns the live code** (last commit in parentheses):
+
+| Author | Lines | Share | Cumulative | Last commit |
+|---|---|---|---|---|
+| Eric Paris | 2020 | 16.6% | 16.6% | 2018 |
+| Alex Ogier | 1237 | 10.1% | 26.7% | 2015 |
+| Noah Dietz | 1228 | 10.1% | 36.8% | 2018 |
+| Jonathan Reyna | 1044 | 8.6% | 45.3% | 2017 |
+| Tamal Saha | 624 | 5.1% | 50.5% | 2018 |
+| Riobard | 538 | 4.4% | 54.9% | 2014 |
+| Mitch Connors | 522 | 4.3% | 59.2% | 2019 |
+| Georges Varouchas | 454 | 3.7% | 62.9% | 2025-06 |
+
+**Active people:** 12 people committed in the last 12 months, excluding dependabot. Together they own 1,229 lines, about 10% of the code.
+- **Largest active owners:** Georges Varouchas (454), Maximilian Frank (172), Hu Jun (136), Lena Voss (133), Patrick Ohly (108).
+- **Latest commits:** Sam Okafor (2026-04) and Lena Voss (2026-03) are the most recent. Both own few lines.
+- **Tomas Aschan:** 32 commits in 2 years but only 67 live lines.
+
+**Would losing one or two people be a problem?** No. The top 4 owners hold 45% of the code, but all four are long gone, and the library works without them. The real risk is that nobody active knows most of the code.
+- **Knowledge gap:** about 90% of the code has no active author. The biggest active owner holds 3.7%.
+- **Single-owner files:** 40 of 75 files have one person above 80% of lines. 11 are 100% one person.
+- **Core file:** `flag.go` has 1,292 lines. Ogier owns 33%, Paris 14% and Nigmatzianov 9%. All three are inactive since 2015–2018.
+- **Slice types** (`*_slice.go`): mostly Reyna, Dietz and Volosatov. All inactive since 2017–2018. Each file is generic and repetitive, so the risk is low.
+- **`string_to_string.go`:** 94% Tamal Saha (inactive since 2018).
+- **`bytes.go`:** 59% Eugene Agafonov (inactive since 2018).
+- **`flagset_helpers.go`:** Lena Voss owns 133 lines. This is the largest recent single-owner area and it is still active. Review it.
+
+**What this means for your PR reviews:**
+- You are probably the main person who knows the core. Read `flag.go`'s history (`git log -p` and blame) before approving changes to parsing or `FlagSet` behavior.
+- Ask Varouchas, Frank, Hu Jun or Voss for a second opinion on PRs that touch their files.
+- Rely on tests for the slice types and the other repetitive files. They are low risk.
+
+**Caveats:**
+- Blame counts line authorship. It does not measure understanding. A line moved or reformatted by someone else may be attributed to that person.
+- I did not check which files other files import, so I did not rank files by importance. I used file size and the `flag.go` role instead.
+- "Active" means a commit in the last 12 months. I did not check PR review activity or comments, which the git history does not show.
+- The `example.net` emails for Voss and Okafor look synthetic. I took them at face value.
+META cost=0.1239265 ms=49899 turns=9

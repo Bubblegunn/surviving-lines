@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser"}
+ - Bash: ls src/Parser && for f in $(git ls-files src/Parser); do git blame --line-porcelain -w -M -C -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; n+=$1; v[NR]=$1} END{for(i=1;i<=NR;i++){printf "%s  %.1f%%\n", c[i], v[i]*100/n}; print "total lines", n}'
+ - Bash: git log --since="90 days ago" --no-merges --pretty='%an' -- src/Parser | sort | uniq -c | sort -rn; echo ---; git log -1 --format=%cd
+ - Bash: git log --no-merges --pretty='%an|%cs' -- src/Parser | awk -F'|' '!s[$1]++{print $1, "last:", $2}'
+FINAL ANSWER:
+Graham Campbell wrote most of the code in `src/Parser` that is still there. Fatima Zahra and Dmitri Volkov are the best second reviewers.
+
+I did not use the skill's commit-count method. I used `git blame` (with `-w -M -C`, so whitespace changes and moved lines don't change who gets credit). It counts the lines in the current code, which answers your question about code that is still there. It covers all 10 files in `src/Parser`, 961 lines in total.
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 799 | 83.1% |
+| Fatima Zahra | 72 | 7.5% |
+| Dmitri Volkov | 65 | 6.8% |
+| StyleCI Bot | 11 | 1.1% |
+| Vance Lucas | 10 | 1.0% |
+| Jonas Staudenmeir | 2 | 0.2% |
+| JT Smith | 2 | 0.2% |
+
+**Bus factor is 1 for this directory.** Graham alone owns more than 80% of the lines.
+
+**Who should review**
+1. **Graham Campbell** owns most of the code and committed here most recently among the main authors (2026-02-27). Ask them first.
+2. **Fatima Zahra or Dmitri Volkov** should be the second reviewer. Dmitri touched the parser most recently (2026-03-10). Fatima's last commit was 2026-01-22. Having one of them review also spreads knowledge beyond Graham.
+3. Ignore StyleCI Bot, Vance Lucas, Jonas Staudenmeir and JT Smith as reviewers. The bot only formats code, and the others own 2 to 10 lines each and have not committed to the directory since 2024 or earlier.
+
+**Limits**
+- Marta Kowalska has commits in `src/Parser` (last 2026-02-11), but none of her lines remain, so she gets no share. She may still know the history.
+- No one has committed to `src/Parser` in the last 90 days, because the newest commit is from 2026-03-20. I don't know whether these people are still on the project. Check that before you assign a reviewer.
+- I did not run the skill's dependents-count step or its agent step, since you asked only about ownership shares.
+META cost=0.059538100000000004 ms=22901 turns=6

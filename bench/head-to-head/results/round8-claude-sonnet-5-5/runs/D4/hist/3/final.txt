@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D4-hist-3/repo/src", "top": 50, "max_files": 1000}
+FINAL ANSWER:
+Bus factor is 1. One author owns more than half of the surviving lines in `src/`. This comes from `git blame` at HEAD across all 8 tracked files in `src/`, which total 4,205 lines.
+
+| Author | Lines | Share | Main owner of |
+|---|---|---|---|
+| Andrew Gallant | 2,231 | 53.1% | `lib.rs`, `dent.rs`, `tests/recursive.rs`, `tests/util.rs`, `tests/mod.rs` |
+| Niko Alvarez | 883 | 21.0% | `errno_table.rs` (100%) |
+| Kaito Mori | 262 | 6.2% | `error.rs` (100%) |
+| nivkner | 147 | 3.5% | none |
+| Sebastian Thiel | 96 | 2.3% | none |
+| Marvin Löbel | 82 | 2.0% | none |
+| ola.berg / Ola Berg | 75 / 66 | 1.8% / 1.6% | `util.rs` (75%) |
+| 23 other authors | 365 combined | 8.7% | none |
+
+- **Concentration:** Gallant alone passes 50%. The top three authors (Gallant, Alvarez, Mori) own 80.3%.
+- **Per-file ownership:**
+  - `dent.rs`: 98% Gallant.
+  - `tests/util.rs` and `tests/mod.rs`: 100% Gallant.
+  - `tests/recursive.rs`: 82.7% Gallant.
+  - `lib.rs`: 54.2% Gallant.
+  - `errno_table.rs`: 100% Alvarez.
+  - `error.rs`: 100% Mori.
+- **Everyone is inactive:** The tool counts an author as inactive with no commit since 2026-04-22. By that rule all 8 files are orphaned, because every author is listed as inactive. Gallant's last commit is 2026-04-09, Alvarez's is 2026-03-20 and Mori's is 2026-02-24.
+- **Duplicate author:** `ola.berg` and `Ola Berg` look like one person under two identities. Merged they own 141 lines (3.4%), which doesn't change the result. A `.mailmap` entry would fix it.
+- **Blame limits:** Blame credits lines to whoever last touched them. A reformat or a rename would move ownership, so some of Gallant's share could be formatting rather than authorship. I didn't check for that.
+META cost=0.0667311 ms=13551 turns=4

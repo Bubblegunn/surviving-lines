@@ -1,0 +1,51 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -80; echo ---; git shortlog -sn --follow -- lib/index.js | head -30; echo ---; wc -l lib/index.js; git log --follow --format='%h' -- lib/index.js | wc -l
+ - Bash: echo "raw blame:"; git blame --line-porcelain -w lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "--- ignoring format+annotate commits:"; git blame --line-porcelain -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -5; git show 62628c0 --stat | tail -5; git show b2005d9 --stat | tail -4
+FINAL ANSWER:
+`lib/index.js` is the `cors` Express/Connect middleware. It has 238 lines and 62 commits (`git log --follow`), from 2013-01-30 to 2026-04-12.
+
+## Who shaped it
+
+- **Troy Goode** created it (`bcd03d9`, 2013-01-30) and made 29 of the 62 commits.
+  - 2013: case-insensitive header lookup, `origin: false` to disable CORS, pausing and resuming the request for async middleware, and the preflight-only headers (CORS spec review).
+  - 2014–2016: Express 4 support, `Access-Control-Expose-Headers`, switching to the `vary` module, ESLint, and the 2.8.0 release.
+- **Simon Mansfield** (2013) added the `Origin`-undefined checks and the early origin check. He also moved the credentials header.
+- **Eric di Domenico** (2013) allowed `origin` to be a callback.
+- **Mathias Buus** (2013) added support for Connect without Express.
+- **Alejandro Caravaca Puchades** (2015, with an `alex94puchades` alias) added RegExp and array values for `origin`.
+- **Douglas Christopher Wilson**, the Express maintainer, made 4 commits in 2017. They cover `Vary: Access-Control-Request-Headers`, an options-delegate fix and lint/build upkeep.
+- **Smaller fixes from one-off contributors:**
+  - Igor Soarez: `Vary: origin`.
+  - Raymond Feng: the `applyHeaders` optimization.
+  - max.laverse: passing preflight to `next()`.
+  - Tomek Kopczuk: `Vary: Origin` for RegExp origins.
+  - Benjamin Eidelman: the Safari preflight workaround.
+  - Tom Arad: the `maxAge: 0` fix.
+  - Others: Typicode (PATCH default), Shane Tomlinson (uppercase method names), Hannah Wolfe, Saad Tazi, Chima Alaebo, LuisEGR.
+- **2026:** Troy Goode added handler annotations (`b2005d9`). Then `62628c0`, by "Fiona Formatter", reformatted the whole file to 4-space indent and double quotes.
+
+## Whose code is still there
+
+`git blame` credits the 2026 reformat commit with 32 of the 238 lines. I re-ran blame with `-w -M -C` and told it to ignore the reformat and annotate commits (`--ignore-rev`). That gives attribution to the earlier authors, though git assigns the lines heuristically:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 157 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 9 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy Goode wrote about two thirds of the current file (157 of 238 lines). Some of the lines credited to the 2013 authors may be modified versions of their originals. Chima Alaebo's one line is from a lint cleanup that removed code.
+META cost=0.06563870000000001 ms=18713 turns=4

@@ -1,0 +1,48 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls; ls .git-blame-ignore-revs 2>/dev/null; git log --oneline | wc -l; git status --short | head; for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | awk '/^[0-9a-f]{40} /{c=$1} /^author /{a=substr($0,8)} /^author-mail /{m=$2} /^summary /{s=substr($0,9); k=a" "m" "substr(c,1,8)" "s; n[k]++} END{for(k in n) print n[k], k}' | sort -rn | head -30; done; ls .mailmap 2>&1 | head -1; git log --format='%h %an <%ae> %ad %s' --date=short -15
+ - Bash: git show --stat --format='%h %an %ad%n%s%n%b' 0635526a | head -30; echo ----; git show --stat --format='%h %an %cn %ad%n%s%n%b' 93695fd 56dba8d; echo ----; git show 93695fd -- src/itsdangerous/signer.py | head -150
+ - Bash: for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -M -C -C -C --line-porcelain HEAD -- $f | awk '/^author /{a=substr($0,8); n[a]++} END{for(k in n) print n[k], k}' | sort -rn; done; git show -s --format=%H 0635526a^ >/dev/null && git show 0635526a^:src/itsdangerous/__init__.py >/dev/null 2>&1 && echo orig-exists; git log --oneline --diff-filter=A --follow -- src/itsdangerous/__init__.py | tail -1; git log --format='%h %an %ad %s' --date=short -3 0635526a^ 
+ - Bash: cat > /tmp/own.py <<'EOF'
+import subprocess,sys,collections
+def blame(rev,f,extra=()):
+    out=subprocess.run(["git","blame","-w","-M","--line-porcelain",*extra,rev,"--",f],capture_output=True,text=True,check=True).stdout.split("\n")
+    res=[];c=None;a=None
+    for l in out:
+        if l.startswith("\t"): res.append((c,a,l[1:].strip()))
+        elif len(l)>40 and l[40]==" " and all(x in "0123456789abcdef" for x in l[:40]): c=l[:40]
+        elif l.startswith("author "): a=l[7:]
+    return res
+parent=blame("0635526a^","src/itsdangerous/__init__.py")
+m=collections.defaultdict(list)
+for c,a,t in parent:
+    if t: m[t].append((a,c[:8]))
+for f in ["src/itsdangerous/signer.py","src/itsdangerous/ti
+FINAL ANSWER:
+Status: I traced authorship through git blame, and I have what I need. Answer below.
+
+**Ask David Lord.** Ask Armin Ronacher too if you can reach them.
+
+Surviving lines by original author (`git blame -w -M -C`). I also followed the 2018 "split into modules" commit back into the old `__init__.py`, because that commit credits David for code Armin wrote:
+
+| File | Lines by author |
+|---|---|
+| `signer.py` | David Lord 196, Tomás Ibarra 100, Armin Ronacher 33, Hsiaoming Yang 13, Arnout van Meer 13, pre-commit bot 8, others 4 |
+| `timed.py` | David Lord 158, Tomás Ibarra 72, Armin Ronacher 51, pre-commit bot 5, Zach Hugnou 5, Alan Hamlett 3, others 6 |
+
+- **David Lord** is the main author of both files. Most of that is his typing, timezone-aware datetime and cleanup work from 2018 onward. He is also the maintainer, committed the Tomás commits, and removed the legacy compat module.
+- **Armin Ronacher** wrote the original design, and about 30 to 50 lines of it remain. His line counts are higher than blame shows because the module split hides his authorship. Ask him only if the change touches the original signing or timestamp logic.
+- **Tomás Ibarra** (about 170 lines in total) wrote the most recent code, on 2025-07-01 and 2025-07-02.
+  - Those lines are `rotate_0`, `rotate_1`, and so on. They are generic arithmetic helpers, not key rotation as the commit messages say. I read only part of `signer.py`, and I did not check whether anything calls them.
+  - Ask him if your change touches those functions. Otherwise David is the better reviewer.
+- **Gustavo Reyes** wrote the legacy v0 compat code, but it was removed, so none of it is still in the package.
+- **Smaller contributors** are Hsiaoming Yang (`Signer` accepting secret keys), Arnout van Meer (the JWS-era signing algorithm), and Zach Hugnou, Alan Hamlett and Dirk Müller (timestamp edge cases in `timed.py`). Their lines are small and fix specific bugs. Contact them only for those areas.
+
+The pre-commit bot only reformatted lines, so I discounted it. Blame counts surviving lines, and a later edit to a line credits the editor. For example, David's typing changes cover code Armin wrote.
+META cost=0.1081787 ms=37776 turns=7

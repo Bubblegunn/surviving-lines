@@ -1,0 +1,34 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -8; git log --reverse --format='%h %ad %an' --date=short | head -2; git rev-list --count HEAD; git ls-files | wc -l; git log -1 --format=%ad --date=short; for d in lib test examples .github; do echo "== $d"; git log --since=2025-04-12 --format='%an' -- $d | sort | uniq -c | sort -rn | head -3; done
+ - Bash: for d in lib test .github; do echo "== $d"; git log --no-merges --format='%an|%ad' --date=format:%Y -- $d | awk -F'|' '{c[$1]++; l[$1]=($2>l[$1]?$2:l[$1])} END{for(k in c)print c[k],k,"last:"l[k]}' | sort -rn | head -5; done; git log --format='%an %ad' --date=short -3 --author=Fiona; git ls-files | head -20
+FINAL ANSWER:
+**Short answer:** the code depends on **Troy Goode** (`<email redacted>`). One zone has been abandoned entirely, and the history has caveats that make the ownership picture less certain than it looks.
+
+I ran the busfactor script with `--dry-run --no-github`, so nothing was written to the repo. I added a few `git log` queries of my own for the per-directory counts. Commit counts are only a proxy for knowledge.
+
+**Bus factor 1: `lib/` and `test/`**
+- Troy Goode wrote 33 of the commits in `lib/` and 32 in `test/`. Both counts include commits in 2026.
+- `lib/index.js` is the only source file in the project, so it is effectively the whole codebase.
+- Douglas Christopher Wilson is the top committer overall (143 commits, against 120 for Troy). His last commit in `lib/` was in 2017 and in `test/` in 2019, so he is not an active owner of either.
+- The other `lib/` and `test/` contributors (Alejandro Caravaca Puchades, Simon Mansfield and others) last committed in 2013–2015.
+
+**Orphaned: none confirmed, but `.github/` is close**
+- Douglas Wilson wrote 10 commits in `.github/`, the most of any human, but his last was in 2021.
+- Recent work there comes from Ulises Gascón and Ignacio Mangas (two commits each), plus dependabot (nine, excluded as a bot).
+- The script assigns `.github/` to those two people, so it is a thin two-person zone rather than bus factor 1.
+
+**Caveats**
+- **Fallback owners:** the script's `*` fallback is `fiona@formatter.example`, `<email redacted>` and `<email redacted>`. `fiona@formatter.example` is the author of the latest commit (2026-04-12), the "reformat js with 4-space indent and double quotes" change. That is a mechanical change, not real ownership, so I'd drop that name. It also shows the "mechanical refactor looks like expertise" distortion the skill warns about.
+- **Import flag:** the script flagged the 2013 root commit as a bulk import because it adds 8 of 18 files. The root commit is by Troy Goode, so this may be the original author's first push and not a re-import. I can't tell which from the history. Don't conclude that the history was re-imported.
+- **Unchecked identities:** I ran with `--no-github`, so emails are not merged into GitHub accounts. Someone with two emails could appear as two people. That would make the risk look lower than it is, not higher.
+- **Inactive list:** I did not check the "inactive" roster with you. Anyone who still reviews without committing is invisible here.
+
+If you want the full run, I can write `.github/CODEOWNERS` and `.github/ownership.json` and build the HTML report. Say so, since both would add files to the repo.
+META cost=0.06559569999999999 ms=39460 turns=6

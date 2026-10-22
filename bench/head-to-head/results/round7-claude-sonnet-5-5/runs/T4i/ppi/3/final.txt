@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --all --no-merges --pretty=format:"%an|%ad|%s" --date=short -- lib/index.js | head -15; echo ---; git log --all --no-merges --pretty=format:"%an" --since="90 days ago" -- lib/index.js | sort | uniq -c; echo ---; git log -1 --pretty=format:"%ad" --date=short; echo; git blame -w -M -C --line-porcelain lib/index.js 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn; echo ---; grep -rl "lib/index\|require(['\"]\./lib['\"])\|require(['\"]\.\./lib['\"])" --include="*.js" --include="*.json" . --exclude-dir=node_modules --exclude-dir=.git | head
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** Second choice: Douglas Christopher Wilson.
+
+| Metric | Value |
+|---|---|
+| Contributors | 25 |
+| Commits (no merges) | 62 |
+| File bus factor | 3+ (not single-owner) |
+| Top owner | Troy Goode, 29 commits (47%), 138 of 232 blamed lines (about 59%) |
+| Next owners | Douglas Christopher Wilson (4 commits, 18 lines), Alejandro Caravaca Puchades (4 commits, 12 lines) |
+| Dependents | `package.json` (main entry), `test/example-app.js`, `test/error-response.js`, `test/issue-2.js` |
+
+- **Troy Goode:** They made the most recent real change ("lib: annotate handlers", 2026-04-10). They also did the 2.8.0 fix for #66 and #73 in 2016.
+- **Douglas Christopher Wilson:** They made the `Vary` header fixes in 2017: `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders`, and the fix for a missing `methods` option in the options delegate.
+- **Activity:** No one has changed the file in the last 90 days. The last commits were in April 2026, about 6 months ago. I can't tell from git whether Troy is still active in the project.
+- **Excluded from owners:** "Fiona Formatter" only did the 4-space and double-quote reformat. They own 32 lines in blame but have no real knowledge of the file. `.git-blame-ignore-revs` already covers that commit.
+
+**Risk: MEDIUM-LOW.** Ownership is spread out. `lib/index.js` is the library's main entry (`package.json` points to it), so any change reaches every user. Ask for review from at least one person on top of Troy.
+
+Before you change it, check these areas, because past bugs came from them:
+- `Vary` headers
+- Default pre-flight response (the Safari workaround)
+- `maxAge` set to 0
+- Frozen or missing options
+
+I ran the git commands directly instead of launching the contributor-analyzer agent. This was a single-file question, so a full-repo scan wasn't needed.
+META cost=0.027607 ms=22261 turns=4

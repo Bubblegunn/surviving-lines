@@ -1,0 +1,73 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; echo ---; find . -type f \( -name "*.js" -o -name "*.ts" \) -not -path "*/node_modules/*" -not -path "./.git/*" | wc -l; echo ---; for f in $(git ls-files | grep -E '\.(js|ts|mjs|cjs)$'); do n=$(git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn); tot=$(echo "$n" | awk '{s+=$1} END{print s}'); uniq=$(echo "$n" | wc -l); top=$(echo "$n" | head -1 | sed 's/^ *//'); echo "$f|$uniq|$tot|$top"; done
+ - Bash: for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a: $(git log --all --no-merges --author="$a" --format='%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done; git ls-files | grep -vE '^(node_modules)/' | head -30; git log --all --no-merges --since="1y" --pretty=format:"%an" | sort | uniq -c | sort -rn; grep -rl "lib/index\|require(\"\.\./\|require('\.\./" test lib index.js 2>/dev/null | wc -l
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-22
+
+### Project-Level Bus Factor: 2
+
+Douglas Christopher Wilson and Troy Goode account for about 85% of the non-bot commits (143 and 95 of roughly 280 across all branches, bots included). If these two left, almost nothing would have a knowledgeable maintainer.
+
+- **Troy Goode** is the main current owner. They have the most recent commit (2026-04-10) and a history back to 2013-01-30.
+- **Douglas Christopher Wilson** has no commits after 2021-09-07, so they are effectively inactive. Their knowledge is still the largest in the history.
+
+### Overview
+
+There are only 7 source files, so the percentages are coarse.
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 7 (`lib/index.js` plus 6 test files) |
+| Files with 1 contributor | 2 (29%): `test/support/env.js`, `test/vary.js` |
+| Files with 2 contributors | 1 (14%): `test/issue-2.js` |
+| Files with 3+ contributors | 4 (57%) |
+| Critical single-owner files | 0 |
+
+Even `lib/index.js` has 25 contributors across 62 commits, so no source file is truly single-owner.
+
+### Critical Risk Areas
+
+| File | Top contributor | Share | Contributors | Risk |
+|---|---|---|---|---|
+| `lib/index.js` | Troy Goode | 29 of 62 (47%) | 25 | [MEDIUM] Core file, with a concentration in Troy but spread among many others |
+| `test/example-app.js` | Troy Goode | 10 of 13 (77%) | 3 | [LOW] |
+| `test/issue-2.js` | Troy Goode | 10 of 12 (83%) | 2 | [LOW] Regression test |
+| `test/vary.js` | Troy Goode | 1 of 1 | 1 | [LOW] Tiny file |
+| `test/support/env.js` | Douglas Wilson | 1 of 1 | 1 | [LOW] Inactive owner, but tiny |
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary owner | Ownership | Bus factor |
+|---|---|---|---|---|
+| `lib/` | 25 | Troy Goode | 47% | 3+ |
+| `test/` | about 4 | Troy Goode | about 70% | 1–2 |
+| `.github/` (CI) | mostly bots | dependabot | high | n/a |
+
+### Knowledge Heat Map
+
+```
+repo/
+├── lib/     [█████░░░░░] 🟢 Bus Factor: 3+ (Troy 47%, 25 contributors)
+├── test/    [███████░░░] 🟡 Bus Factor: 1–2 (Troy ~70%)
+└── .github/ [████░░░░░░] 🟢 Automated (dependabot)
+```
+
+### Recommendations
+
+1. **Immediate**: Troy is the only recently active core maintainer. Add at least one more reviewer or maintainer with commit rights.
+2. **Short-term**: Document the intent of `test/issue-2.js` and `test/example-app.js` (Troy wrote 77–83% of each). Have someone else review them.
+3. **Ongoing**: Rotate PR review among several people. Doug's history is a risk because they have been inactive since 2021, so capture their design reasoning in `HISTORY.md` or the README where it isn't already.
+
+### Caveats
+
+- The `--since="1y"` query returned nothing, so I only ran the all-history analysis. The latest commit is dated 2026-04-12 and the history may have been rewritten or imported, so the activity dates may not reflect real activity.
+- Author names were not de-duplicated by email, so one person committing under two names would be counted twice.
+- With only one source file (`lib/index.js`) and 3 files that import it, I skipped the dependents count. Importance is clear without it.
+META cost=0.0523789 ms=37347 turns=5

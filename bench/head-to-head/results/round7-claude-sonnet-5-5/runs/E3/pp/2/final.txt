@@ -1,0 +1,31 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do [ -f "$f" ] && git blame -w --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{sub(/^author /,""); n=split(f,p,"."); e=(n>1 && f !~ /^\.[^.]*$/)?"."p[n]:"(none)"; if (f ~ /(^|\/)\.[^\/.]*$/) e="(dotfile)"; print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; e=$2; $1="";$2=""; if(!(e in seen)){seen[e]=1; printf "%s\t%s\t%s\n", e, c, $0}}'
+ - Bash: git log -3 --format='%h %an' && git ls-files | sed -E 's/.*\.([^./]+)$/\1/' | sort | uniq -c | sort -nr | head; git blame -w --line-porcelain -- index.js | grep '^author ' | sort | uniq -c | sort -nr
+ - Bash: for f in $(git ls-files '*.js'); do echo "$f"; git blame -w --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -nr; done; echo ---; git blame --line-porcelain $(git ls-files '*.js') | grep '^author ' | sort | uniq -c | sort -nr; git show --stat 62628c0 | tail -12
+ - Bash: for f in $(git ls-files '*.js'); do git blame --line-porcelain -- "$f"; done | grep '^author ' | sort | uniq -c | sort -nr | head -4
+FINAL ANSWER:
+Top owner per extension, counted by `git blame` on tracked files at HEAD:
+
+| Extension | Top owner | Surviving lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 (with `-w`) |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| no extension (`LICENSE`) | Douglas Christopher Wilson | 17 |
+| dotfile (`.gitignore`) | Douglas Christopher Wilson | 4 |
+
+**`.js` depends on whitespace handling.**
+- Commit `62628c0` (Fiona Formatter) reformatted four JS files to 4-space indent and double quotes. It touched 1016 lines.
+- With `-w`, blame ignores indentation-only changes. Troy Goode owns 517 lines. Fiona Formatter still owns lines where quotes changed.
+- Without `-w`, plain blame gives Fiona Formatter 1016 lines, Troy Goode 139, and Douglas Christopher Wilson 35.
+- I'd go with Troy Goode, since the reformat only restyled their code. Under strict blame, the answer is Fiona Formatter.
+
+I didn't use `-M` or `-C`, so lines moved between files count for whoever moved them.
+META cost=0.0739974 ms=23363 turns=6

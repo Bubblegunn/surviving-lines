@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[tolower($2)]++} END{}1' | awk -F'|' '{print tolower($1)}' | sort | uniq -d; echo ---; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{print tolower($2)}' | sort | uniq -d; echo ---; git log --all --format='%cN|%cE' | sort -u | grep -iE 'troy|fiona|doug|efe'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git status --short
+FINAL ANSWER:
+Two people appeared under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). That is now 122 commits.
+- **Alejandro Caravaca Puchades** appeared once as `alex94puchades` with the same email as the other entry. That is now 5 commits.
+
+I fixed this with a new `.mailmap` file at the repo root. It is uncommitted, and I haven't rewritten any history. Git tools such as `git shortlog` and GitHub's contributor views read `.mailmap` and merge the identities.
+
+The top author is still **Douglas Christopher Wilson** with 143 commits. Troy Goode is second with 122. Merging the duplicates didn't change the order.
+
+I didn't merge "Fiona Formatter" or "Efe". Each has one identity, so I found nothing to match them to.
+
+I haven't committed `.mailmap`. Tell me if you want it committed.
+META cost=0.051626 ms=10355 turns=4

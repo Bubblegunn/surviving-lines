@@ -1,0 +1,36 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29T00:00:00 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=iso --no-merges; echo; git log -1 --format='%ad' --date=iso
+ - Bash: git log --since=2026-03-28 --format='%h|%an|%ae|%cn|%ad|%P|%s' --date=iso | cat; echo; git shortlog -sne --all | cat; git log --since=2026-03-29 --numstat --format='--%h %an' | cat
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^(author|summary) ' ; done | paste - - | awk -F'\t' '{print $1}' | sort | uniq -c | sort -rn | head -5
+echo ---; for c in b2005d9 02afce3 5317ebe; do echo $c; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -c "^$(git rev-parse $c) " ; done | paste -sd+ | bc; done
+echo ---; for c in b2005d9 02afce3 5317ebe; do echo $c; for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep -c "^$(git rev-parse $c) " ; done | paste -sd+ | bc; done
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null; done | grep -E '^[0-9a-f]{40} ' | cut -c1-40 > /tmp/b.txt
+for c in b2005d9 02afce3 5317ebe; do echo $c $(grep -c "^$(git rev-parse $c)" /tmp/b.txt); done
+git ls-files | head -30
+FINAL ANSWER:
+Two people committed in the window 2026-03-29 to 2026-04-12 once formatting-only commits and bots are set aside.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | 2 | 48 |
+| Vansh Sharma | 1 | 1 |
+
+**Troy Goode**
+- `02afce3` "test: vary header coverage" (2026-04-10) added `test/vary.js`. All 36 lines are still there.
+- `b2005d9` "lib: annotate handlers" (2026-04-10) changed 12 lines in `lib/index.js`. All 12 are still there.
+- Git lists Troy under two emails, `<email redacted>` and `troy@laptop.example`. I counted them as one person.
+
+**Vansh Sharma**
+- `5317ebe` "docs: app.del() with app.delete() in README example (#411)" (2026-04-07) changed 1 line in `README.md`. That line is still there.
+
+**Left out**
+- `62628c0` by Fiona Formatter is a formatting-only commit (4-space indent, double quotes). It rewrote about 1,000 lines, so she is not counted.
+- No bot commits fall in the window. `dependabot[bot]` has commits elsewhere in the history, but none in these 14 days.
+
+I measured surviving lines with `git blame`, ignoring whitespace changes and skipping Fiona's reformat commit. Without that, her commit would take credit for Troy's 12 `lib/index.js` lines, which it only re-indented.
+META cost=0.060768499999999996 ms=18523 turns=5

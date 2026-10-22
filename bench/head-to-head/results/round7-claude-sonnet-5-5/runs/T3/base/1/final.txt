@@ -1,0 +1,29 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%aN|%aE%n%cN|%cE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[tolower($2)]++} END{}1' | grep -i -E 'troy|doug|wilson|goode'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git status --short
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** used two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** used two names with the same email: "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit).
+
+I added a `.mailmap` file at the repo root that maps each of these to one identity. It's untracked and not committed. This doesn't rewrite history, so commit hashes are unchanged. `git shortlog`, `git log` and GitHub use the file to merge the names.
+
+Merged counts:
+- Troy Goode: 122
+- Alejandro Caravaca Puchades: 5
+
+**The top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second with 122, which is still below Douglas even after the merge.
+
+I left two entries alone because I can't tell if they are the same person as anyone else: "Efe" (`<email redacted>`) and "Fiona Formatter" (`fiona@formatter.example`). Each has one commit, so merging them wouldn't change the ranking. If "Efe" is you, I can add a line for it.
+META cost=0.050379700000000006 ms=12107 turns=4

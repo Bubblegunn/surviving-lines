@@ -1,0 +1,24 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; esac; git blame --line-porcelain -w -M -C -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //;s|^|$e\t|"; done | awk -F'\t' '{c[$1"\t"$2]++; t[$1]++} END{for(k in c){split(k,a,"\t"); print a[1]"\t"c[k]"\t"t[a[1]]"\t"a[2]}}' | sort -t$'\t' -k1,1 -k2,2nr
+FINAL ANSWER:
+Top owner of surviving lines per extension (`git blame -w -M -C`, tracked files only):
+
+| Extension | Top owner | Lines | Share |
+|---|---|---|---|
+| `.js` | Troy Goode | 581 of 1202 | 48% |
+| `.md` | Troy Goode | 116 of 341 | 34% |
+| `.yml` | Douglas Christopher Wilson | 127 of 383 | 33% |
+| `.json` | Douglas Christopher Wilson | 20 of 42 | 48% |
+| `.gitignore` | Douglas Christopher Wilson | 4 of 5 | 80% |
+| `LICENSE` (no extension) | Douglas Christopher Wilson | 17 of 22 | 77% |
+
+- **`.js`:** Douglas Christopher Wilson is second with 219 lines. "Fiona Formatter" has 291 lines, from the latest commit that reformatted the JS (`62628c0`). `-w` ignores whitespace changes, but the quote-style changes still count as new lines. Without that commit, Troy Goode would likely lead by more.
+- **`.yml`:** The lead is close. Íñigo Marquínez Prado has 95 lines, and Sebastian Beltran has 63.
+- **`.md`:** Troy Goode leads, followed by Jon Church with 72 lines.
+META cost=0.0498195 ms=10442 turns=3

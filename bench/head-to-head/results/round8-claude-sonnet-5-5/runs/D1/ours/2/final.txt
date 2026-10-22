@@ -1,0 +1,52 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" ] && node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --include 'cJSON.c' --include 'cJSON.h'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ours-2/repo; SL=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' 413c6d1 | head; git show --stat --format='%h %an %s' f831aef | head -5; node $SL --include cJSON.c --include cJSON.h --merge-identities --top 6 | head -14; node $SL --include cJSON.c --include cJSON.h --copies deep --top 4 | sed -n 1,10p; node $SL --include cJSON.c --include cJSON.h --no-detect-reformat --keep-reformat --top 4 | sed -n 1,9p
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D1-ours-2/repo; for f in cJSON.c cJSON.h; do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -5; git show --stat --format='%h %an %s' $(git log --format=%h -1 --author="Max Bruckner" --grep='reformatting: print_string_ptr') | head -4
+FINAL ANSWER:
+Max Bruckner wrote about three quarters of the code that is still in `cJSON.c` and `cJSON.h`.
+
+I used `git blame -w -M -C` at HEAD. It attributed 3,596 of 3,601 lines.
+
+| # | Author | Surviving lines | Share | Commits | Commit share |
+|---|---|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.1% | 636 | 66.5% |
+| 2 | Kevin Branigan | 149 | 4.1% | 7 | 0.7% |
+| 3 | Alan Wang (2 addresses) | 131 | 3.6% | 67 | 7.0% |
+| 4 | Dave Gamble | 111 | 3.1% | 84 | 8.8% |
+| 5 | Mike Jerris | 76 | 2.1% | 2 | 0.2% |
+| 6 | tomasi | 74 | 2.1% | 1 | 0.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% | 1 | 0.1% |
+| 8 | PeterAlfredLee | 32 | 0.9% | 4 | 0.4% |
+| 9 | caglarivriz | 31 | 0.9% | 1 | 0.1% |
+| 10 | Nicolas Badoux | 29 | 0.8% | 8 | 0.8% |
+
+91 more authors hold the remaining lines.
+
+**Bus factor:** it is 1, meaning Max Bruckner alone holds more than 50% of the surviving lines. It takes 3 authors to reach 80%. Both numbers cover only these two files.
+
+**Dave Gamble:** he made the original cJSON and has 8.8% of the commits but only 3.1% of the surviving lines. Most of his code has since been rewritten.
+
+**Identity merges:**
+- **Alan Wang:** the repo's `.mailmap` already merges `Alanscut <<email redacted>>` into Alan Wang, which adds 94 lines. Those are included in the table. With a second address (strong evidence), Alan Wang has 131 lines (3.6%) instead of 129. That is the figure in the table. I did not write anything to `.mailmap`.
+- **tomasi and Tomás Ibarra:** they might be the same person, but the evidence is weak, so I kept them separate. If they are one person, they hold 142 lines (3.9%), which would rank them 3rd, just below Kevin Branigan.
+- **Randy, Andy and Sayan Bandyopadhyay:** also a weak match, but they hold 0 lines here, so it doesn't change the ranking.
+- **Both groups:** these are guesses from names and addresses until you confirm them.
+
+**What was left out or checked:**
+- **Bots:** one bot identity (5 lines, 1 commit) is excluded.
+- **Reformat commit:** `413c6d1` by Priya Nair ran clang-format over both files (2,303 insertions and 2,303 deletions). `.git-blame-ignore-revs` lists it, so it is ignored. A plain `git blame -w -M -C` run gave the same top five, so the ignore file doesn't change who is on top.
+- **Copy detection:** the figures use `-M -C`. I also ran `-C -C` (deeper copy detection), and no one's share moved.
+- **Mechanical rewrites:** the tool checked 320 commits and set none aside. It flagged 59 "reformatting: …" commits by Max Bruckner that I kept in his count. Examples are `f831aef` (`cJSON_CreateIntArray`, 59 surviving lines) and `c71cd6c` (`print_string_ptr`, 40 lines). I looked at two of them with `git show --stat`:
+  - `f831aef` has 28 insertions and 1 deletion.
+  - `c71cd6c` has 140 insertions and 53 deletions.
+  - Both add and change code, so they aren't pure whitespace changes. I didn't inspect the other 57. If you want to be sure, I can re-run with `--ignore-rev` on them.
+
+This counts surviving lines only. It says nothing about code quality, review or design work, or code that was deleted on purpose.
+META cost=0.0929904 ms=33381 turns=7

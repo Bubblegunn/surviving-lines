@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && for f in $(git ls-files lib); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; done && echo --- && git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && git log -1 --format=%cd
+FINAL ANSWER:
+**Bus factor of `lib/`: 2.** Take Troy Goode plus one more contributor, and over 50% of commit history has no author left. Practically it is closer to 1, because nobody has committed in the last 90 days.
+
+`lib/` has one file, `lib/index.js`. The numbers below come from `git log` on `lib/`, excluding merge commits.
+
+| Metric | Value |
+|---|---|
+| Commits touching `lib/` | 66 |
+| Distinct authors | 25 |
+| Top author (Troy Goode) | 33 commits, 50% |
+| Next authors | Douglas C. Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3, jordandenison 2 |
+| Authors with a single commit | 20 |
+| Commits in the last 90 days | 0 (latest commit on HEAD is 2026-04-12) |
+
+**Why 2 and not 1:** Troy has exactly 50%, which is not more than 50%. Troy plus Douglas Wilson is 37 of 66 commits (56%), so that pair crosses the threshold.
+
+**Why it is weaker than the number suggests:**
+- **Nobody is active.** No author committed in the last 90 days, so current maintenance knowledge is unconfirmed for all 25.
+- **The tail is shallow.** 20 authors made one commit each, which means a small patch, not deep ownership. Only about 5 people have 2 or more commits.
+- **Some commits carry no knowledge.** The latest commit (`style: reformat js with 4-space indent and double quotes`, author "Fiona Formatter") is a mechanical reformat. Commit counts overstate understanding.
+- **Single file.** `lib/index.js` is the whole directory, so the directory-level and file-level factors are the same.
+- **Commit counts only.** I did not run blame to see how many surviving lines each person wrote. That would show who understands the current code, and it may differ from this ranking.
+
+**Recommendations:**
+1. Have a current maintainer read through `lib/index.js` and write down the non-obvious parts, since nobody has committed recently.
+2. Run `git blame` on the file to confirm which authors still have live lines.
+3. Add review and test coverage around the handlers so a new contributor can change them safely.
+META cost=0.0655463 ms=19846 turns=5

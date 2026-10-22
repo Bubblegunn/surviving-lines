@@ -1,0 +1,34 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 4}
+ - Bash: cat .git-blame-ignore-revs; git config blame.ignoreRevsFile
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1i-hist-1/repo
+echo "== with ignore-revs =="; git ls-files | grep -E '\.(js|json|md|yml|yaml|txt)$|^[^.]*$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+echo "== without ignore =="; git ls-files | grep -E '\.(js|json|md|yml|yaml|txt)$|^[^.]*$' | while read f; do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -8
+git ls-files | wc -l
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that survives at HEAD, with Troy Goode ahead. I counted the author of each line with `git blame`, ignoring whitespace-only changes and the formatting commit.
+
+| Author | Surviving lines (ignoring the reformat) |
+|---|---|
+| Troy Goode | 809 |
+| Douglas Christopher Wilson | 625 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Everyone else | 30 or fewer each |
+
+- **Reformat commit:** the commit `62628c0` (4-space indent and double quotes) rewrote almost every line. A plain `git blame` credits "Fiona Formatter" with about 1,016 lines, which is wrong. I excluded that commit with `.git-blame-ignore-revs`, which the repo already lists.
+- **Troy Goode:** the dozen or so top lines that were not rewritten show Troy's code is older and mostly unchanged. After the reformat is ignored, their count rises from 260 to 809.
+- **Douglas Christopher Wilson:** their count rises from 256 to 625 once the reformat is ignored. They are likely the main author of recent changes, but I did not check this.
+- **Lines per file:** I did not break the counts down by file, so I can't say which files each person owns.
+- **Files counted:** I blamed `.js`, `.json`, `.md`, `.yml`, `.yaml` and `.txt` files plus files without an extension. Other tracked files are not in the counts.
+
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` makes plain `git blame` skip the reformat commit too. I did not change any config.
+META cost=0.0548979 ms=15099 turns=4

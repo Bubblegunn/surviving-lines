@@ -1,0 +1,53 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk", "max_results": 1}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-hist-2/repo", "top": 15}
+ - Bash: git log -1 --format='%h %an %ad %s' 62628c0 && git show --stat --format= 62628c0 | tail -3 && for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; echo ---lib; git blame -w --ignore-rev 62628c0 --line-porcelain -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Plain `git blame` gives a misleading answer here, so I ran it two ways.
+
+**Plain blame (what the git-historian tool reports):**
+- Fiona Formatter owns 50.9% of surviving lines (1,016 lines).
+- Troy Goode owns 13.1%.
+- Douglas Christopher Wilson owns 13%.
+
+Fiona's share comes from one commit, `62628c0` ("style: reformat js with 4-space indent and double quotes"). It rewrote 1,016 lines in `lib/index.js`, `test/test.js`, `test/example-app.js` and `test/error-response.js`. Blame credits the reformatter, but she didn't write the logic.
+
+**Blame ignoring that reformat commit** (`--ignore-rev 62628c0 -w -M -C`), which is closer to who wrote the code:
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+I only listed the top 10 authors from the ignore-rev run. The total is about 1,990 lines across 18 files.
+
+**By area:**
+- **Core code (`lib/index.js`):** Troy Goode owns 159 of 238 lines (about 67%). Wilson owns 22, Caravaca Puchades 12, Raymond Feng 7 and max.laverse 6.
+- **Tests:** mostly Troy Goode, with some from Wilson.
+- **Config and metadata** (`package.json`, `LICENSE`, `HISTORY.md`, `.eslintrc.yml`, `ci.yml`): mostly Wilson.
+- **Security and CI workflows** (`scorecard.yml`, `codeql.yml`, `dependabot.yml`): Marquínez Prado, Beltran and Gascón.
+
+**Risk:** the tool treats every one of the 18 files as orphaned. Its rule is that the authors who own more than 50% of a file's lines have no commit since 2026-04-22. Wilson's last commit is 2021-09-07, so the 8 files he mainly owns are the oldest orphans.
+
+The ignore-rev numbers still contain some noise:
+- `-M -C` can reassign moved lines.
+- Troy Goode may include bulk or mechanical edits that I didn't check.
+- Authors are mailmap-resolved, but the same person could still appear under two names.
+
+I didn't check whether Fiona Formatter is a real person or a bot account.
+META cost=0.0811093 ms=17824 turns=6

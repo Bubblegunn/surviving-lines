@@ -1,0 +1,56 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js: who shaped it, and whose code is still in it today?"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -40; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo AUTHORS; git shortlog -sn --follow -- lib/index.js; echo BLAME-ORIGINAL; git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo BLAME-IGNORING-REFORMAT; git blame -w -C -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | tail -22; echo; git log --follow --format=%an -- lib/index.js | sort | uniq -c | sort -rn | head -8; git blame -w -C -C -C --ignore-rev 62628c0 lib/index.js | grep -c b2005d9
+FINAL ANSWER:
+## 🔍 Code History: lib/index.js
+
+### Quick Context
+> `lib/index.js` is the `cors` middleware (238 lines). Troy Goode wrote it in January 2013 and still owns most of it. Many one-off contributors patched individual CORS edge cases over 13 years.
+
+### Decision Timeline
+- **2013-01-30, Troy Goode:** first commit. Same-day fixes made header lookup case-insensitive and made `origin: false` disable CORS.
+- **2013-02 to 03:** Goode paused and resumed the request to handle async middleware. After reading the CORS spec, he sent most headers only on the preflight response. Damien Klinnert limited `Access-Control-Allow-Methods` to OPTIONS.
+- **2013-04 to 05, Simon Mansfield:** credentials header handling, an early origin check, and handling of an undefined `Origin`.
+- **2013-10:** Eric di Domenico added a callback for `config.origin`. Mathias Buus swapped in non-Express request and response methods, so Connect works without Express (v2.1.0).
+- **2014:** Typicode added PATCH to the default methods. Alberto Leal fixed the origin callback being overridden. Shane Tomlinson uppercased method names before comparing. Goode added Express 4 support and `Access-Control-Expose-Headers` (v2.3.2 to 2.4.0).
+- **2014-10 to 2015:** Igor Soarez added `Vary: Origin` for specific origins, and Goode moved this to the `vary` module. Goode fixed the Express-only regression this caused (#33). Raymond Feng optimized `applyHeaders`. Eran Tiktin stopped `Vary: Origin` from being sent for `*`. max.laverse added passing preflight to `next()`. DracoBlue exposed headers on OPTIONS.
+- **2015-05, Alejandro Caravaca Puchades (also as alex94puchades):** regexp and array support for `origin`. Goode moved the file to ESLint the same day.
+- **2015-06:** jordandenison fixed a strict-mode problem in the middleware wrapper.
+- **2016-08:** Goode fixed #66 and #73 and published 2.8.0.
+- **2017, Douglas Christopher Wilson:** he took over maintenance. He added `Vary` for regexp origins (credit to Tomek Kopczuk, who first sent it) and `Vary: Access-Control-Request-Headers`. He fixed a crash when the options delegate had no `methods`. He also did lint upgrades. Benjamin Eidelman added a Safari preflight workaround, and Saad Tazi fixed a frozen-options error.
+- **2018 to 2021:** Tom Arad fixed `maxAge: 0`. LuisEGR removed unused parameters.
+- **2026-04:** Troy Goode annotated the handlers (`b2005d9`). Fiona Formatter reformatted the file to 4-space indentation and double quotes (`62628c0`).
+
+### Narrative
+Goode designed the original structure: an options-normalizing wrapper around a header-applying function. Almost everything since then has been a small compatibility or spec fix from a contributor who hit one edge case. Early work (2013 to 2015) added the main options: callback, regexp and array origins, and exposed headers. Wilson's 2017 changes were mostly about correct `Vary` behavior and robustness. Since 2018 the changes have been tiny.
+
+### Key Takeaways
+1. **Who shaped it:** Troy Goode (about 29 of 62 commits) set the design and shipped most features. Douglas Christopher Wilson shaped its correctness and maintenance from 2017.
+2. **Whose code remains:** Blame with `-w -C -C -C` and the reformat commit `62628c0` ignored shows these surviving lines:
+   - Troy Goode: 159 of 238 (67%)
+   - Douglas Christopher Wilson: 22
+   - Alejandro Caravaca Puchades: 12 (plus 4 as alex94puchades)
+   - Raymond Feng: 7
+   - max.laverse: 6
+   - LuisEGR: 6
+   - The other 12 contributors: 1 to 3 lines each
+3. **Raw blame misleads:** without ignoring the reformat, Fiona Formatter appears to own 32 lines. Those lines were only restyled, so I credited them to their earlier authors.
+4. **Current state:** the file is stable and small. The two newest commits (2026-04) changed only annotations and style.
+
+### Metrics
+| Metric | Value |
+|--------|-------|
+| Total commits | 62 (`--follow`) |
+| Contributors | about 30, including Troy Goode, Douglas Christopher Wilson, Alejandro Caravaca Puchades, Simon Mansfield, Raymond Feng, LuisEGR |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Medium overall; high in 2013 to 2015, low since 2018 |
+
+Limits: I read the commit subjects but not the diffs. `git shortlog --follow` printed nothing, so I counted authors with `git log --follow`. The per-person counts above come from `git blame` and are exact. The "about 30" contributor figure is approximate.
+META cost=0.07546640000000002 ms=24578 turns=5

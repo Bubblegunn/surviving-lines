@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && for f in $(git ls-files src); do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done > /tmp/blame.tsv; awk -F'\t' '{c[$2]++; t++} END{for(a in c) printf "%d\t%.1f%%\t%s\n", c[a], 100*c[a]/t, a; print t" total"}' /tmp/blame.tsv | sort -rn
+ - Bash: awk -F'\t' '{n[$1]++; c[$1 FS $2]++} END{for(k in c){split(k,p,FS); if(c[k]>m[p[1]]){m[p[1]]=c[k];a[p[1]]=p[2]}} for(f in n) printf "%s\t%d lines\ttop: %s %.0f%%\n", f, n[f], a[f], 100*m[f]/n[f]}' /tmp/blame.tsv | sort
+FINAL ANSWER:
+Bus factor of `src/` is **1**. Andrew Gallant wrote 60.7% of the surviving lines, which is more than half on their own.
+
+I ran `git blame -w -M -C` on all 8 files in `src/`. That ignores whitespace-only changes and follows lines moved or copied between files. It covers 4,205 surviving lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| ~35 other contributors | 768 | 18.3% |
+
+- **Two authors cover 81.7%.** After Gallant and Alvarez, no one else has more than 1.8%.
+- **Alvarez's share is one file.** All 883 lines are `src/errno_table.rs`, the generated errno table. Excluding it, Gallant owns about 77% of the hand-written code (2,554 of 3,322 lines).
+- **Per-file ownership.** Gallant's share is high in most files:
+
+| File | Gallant's share |
+|---|---|
+| `src/tests/util.rs` | 100% |
+| `src/tests/mod.rs` | 100% |
+| `src/tests/recursive.rs` | 88% |
+| `src/dent.rs` | 83% |
+| `src/lib.rs` | 66% |
+| `src/error.rs` | 65% |
+
+- **`src/util.rs`** is the only file Gallant doesn't own, and only 100 lines. Its top author is `ola.berg` at 55%.
+- **Author aliases.** Blame counts a few people under more than one name, so their real share is a bit higher. `Ola Berg` (58) and `ola.berg` (55) are likely the same person, about 2.7% together. `Niv Kaminer` and `nivkner` look like the same person, as do `Alisha` and `Alisha Aneja`, and possibly `Ashley` and `Ashley Mannix`. I did not merge them, because there is no `.mailmap`. Merging them does not change the result.
+
+If Gallant is gone, most of the core logic and most of the tests lose their only knowledgeable author.
+META cost=0.0613181 ms=15573 turns=4

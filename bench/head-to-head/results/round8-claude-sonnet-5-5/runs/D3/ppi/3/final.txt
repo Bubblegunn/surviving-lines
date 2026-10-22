@@ -1,0 +1,51 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/rack/attack/store_proxy"}
+ - Bash: ls lib/rack/attack/store_proxy* ; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---; for f in lib/rack/attack/store_proxy/*.rb lib/rack/attack/store_proxy.rb; do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; echo "last: $(git log -1 --format='%an %ad' --date=short -- $f)"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" | sort | uniq -c | sort -rn; echo; git log -1 --format=%ad --date=short; echo ---; git log --no-merges --pretty=format:"%an|%ae" -- lib/rack/attack/store_proxy | sort | uniq -c | so
+ - Bash: git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | awk -F'|' '!s[$1]++' | head -12; echo ---; git log --all --no-merges --since="2025-10-22" --pretty=format:"%an|%ad|%s" --date=short -- lib/rack/attack/store_proxy | head -20; echo ---; grep -rl "StoreProxy\|store_proxy" lib spec | wc -l; git shortlog -sn --no-merges --since="2025-10-22" HEAD | head
+FINAL ANSWER:
+## Bus factor: `lib/rack/attack/store_proxy`
+
+Period: all history. Newest commit in the repo is 2026-04-14. Today is 2026-10-22, so no one has committed in the last 90 days. I counted "recently active" as a commit in the last 12 months, using author names from `git log`. Some people appear under more than one name or email, for example "Gonzalo", "Gonzalo R" and "Gonzalo Rodriguez".
+
+### Project-level bus factor for this directory: 2–3
+
+No single person owns more than about 40% of the commits. Gonzalo Rodriguez has the most, with 27 of about 70 commits. Many people have touched the directory, but only a few touched it recently.
+
+### Who to ask
+
+| Person | Commits | Last commit here | Why ask them |
+|---|---|---|---|
+| **Gonzalo Rodriguez** | 27 | 2026-03-09 | Main owner overall. He is the top contributor to `redis_cache_store_proxy.rb` (9), `redis_store_proxy.rb` (9), `dalli_proxy.rb` (5) and `store_proxy.rb` (7). He removed `NullProxy` most recently. |
+| **Hye-jin Park** | 2 | 2026-02-20 | Added TTL to `RedisCacheStoreProxy` and `multi_increment`, `ttl` and `exists?` to `RedisProxy`. Ask about Redis behavior. |
+| **Mei Tanaka** | 1 | 2026-02-09 | Only author of `dalli_accessors.rb`. Ask about the Dalli read/write/increment/delete extraction. |
+| **Divya Rao** | 1 | 2026-01-28 | Wrote `MemoryStoreProxy`. |
+| **fatkodima** | 4 | 2019-10-24 (last on `store_proxy.rb`) | Ask only if the others can't answer. They show up in most files, but I didn't check when their other commits were. |
+
+### Who to ask for review
+
+1. **Gonzalo Rodriguez** is the best reviewer. They know the most files and were active within the last 7 months.
+2. **Hye-jin Park** for Redis changes, or **Mei Tanaka** for Dalli changes. Choose by which proxy you change.
+3. Skip `github-actions[bot]`. It only made rubocop autocorrect commits.
+
+### Risk areas
+
+| File | Sole or main owner | Active? | Risk |
+|---|---|---|---|
+| `dalli_accessors.rb` | Mei Tanaka (1 contributor, bus factor 1) | Last commit 2026-02 | MEDIUM. The file is new, and `dalli_proxy.rb` depends on it. |
+| `memory_store_proxy.rb` | Divya Rao (1 human contributor) | Last commit 2026-01 | LOW. The file is small. |
+| `redis_cache_store_proxy.rb` | Gonzalo Rodriguez (9 of about 21 commits) | Active | LOW. Many contributors. |
+| `store_proxy.rb` | Gonzalo Rodriguez, hakanensari, Vincent Boisard | Last commit 2019 | LOW. It has been stable since 2019. |
+
+Nine files in `lib` and `spec` reference `StoreProxy` or `store_proxy`. I didn't check which of them depend on each proxy, so the dependent counts are not per-file.
+
+### Recommendations
+
+- **Before your PR:** ask Gonzalo about the proxy design, especially the recent `NullProxy` add and remove, and the TTL and Dalli accessor changes.
+- **In the PR:** request Gonzalo plus one of Hye-jin or Mei, depending on the proxy you change.
+- **Ongoing:** `dalli_accessors.rb` has one author, so ask for a second reviewer on any change to it.
+META cost=0.07160129999999999 ms=21762 turns=5

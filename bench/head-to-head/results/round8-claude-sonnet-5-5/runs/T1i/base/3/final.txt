@@ -1,0 +1,38 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | head -100 && cat .git-blame-ignore-revs && git log --oneline | wc -l
+ - Bash: echo "== code (lib+test), ignoring reformat, whitespace, moves ==" && for f in lib/index.js test/*.js test/support/env.js; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -25; echo "== lib/index.js only =="; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -15; echo "== naive blame lib/index.js (no ignore) =="; git blame --line-porcelain lib/index.js | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -5; echo "== total commits by author ==
+FINAL ANSWER:
+Troy Goode owns most of the code that is still here, not Douglas Christopher Wilson. Douglas leads on commits, but much of what he wrote has since been replaced or reformatted.
+
+I used `git blame -w -M -C` with `.git-blame-ignore-revs`, so the 4-space/double-quote reformat commit `62628c0` isn't credited to anyone. Plain blame credits that commit to "Fiona Formatter" for 214 of the 238 lines in `lib/index.js`. I counted lines in `lib/index.js` and the `test/` JS files. I left out docs, config and the license.
+
+**All code (about 1,200 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 676 | about 56% |
+| Douglas Christopher Wilson | 394 | about 33% |
+| Alejandro Caravaca Puchades | 30 | about 2.5% |
+| Eric di Domenico | 16 | about 1.3% |
+| Alberto Leal | 15 | about 1.2% |
+| about 15 others | 1–9 each | the rest |
+
+**`lib/index.js` only (about 234 lines)**
+- Troy Goode: 159 lines, about 68%.
+- Douglas Christopher Wilson: 22 lines, about 9%.
+- Alejandro Caravaca Puchades: 12 lines.
+- Raymond Feng: 7 lines.
+- The rest is spread across smaller contributors.
+
+**Where Douglas's lines are:** about 370 of his 394 lines are in `test/`. His 143 commits are mostly maintenance, test and CI work, and little of that code is still in the library itself.
+
+**Commit count vs. surviving code:** Douglas has 143 commits and Troy has 122, but Troy owns about twice as many surviving lines. Dependabot's 11 commits touch dependency versions in `package.json` and the workflow files, so they don't show up in these counts.
+
+Blame credits the author of the commit that last changed a line. A line that was reworded or moved by someone else goes to them, even if the idea was the original author's. `-M -C` only partly corrects for that.
+META cost=0.0594977 ms=37466 turns=4

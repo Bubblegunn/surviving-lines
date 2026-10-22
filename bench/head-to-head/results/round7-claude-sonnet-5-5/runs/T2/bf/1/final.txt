@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib directory"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-bf-1/repo --dry-run --no-github 2>&1 | head -80; cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T2-bf-1/repo && git log --format='%ad %ae' --date=short -- lib | sort | awk '{print $2}' | sort | uniq -c | sort -rn | head; git log -1 --format=%ad --date=short; git log --reverse --format=%ad --date=short | head -1; ls lib
+ - Bash: git log --follow --no-merges --format='%ad %ae %s' --date=short -- lib/index.js | head -60; echo; git log --follow --no-merges --format='%ae' -- lib/index.js | sort | uniq -c | sort -rn; git rev-list --count HEAD; git log --format='%ae' --since=2025-04-12 | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** by raw commit counts, 2 people. By who understands the code, about 1, and possibly 0. I got this from git history. I did not run a separate verdict for `lib`.
+
+`lib/` is one file, `lib/index.js`. The `busfactor` script ran with `--dry-run --no-github`. It emitted no separate rule for `lib/`, so the numbers below are my own reading of `git log --follow`.
+
+**Who is active.** History runs through 2026-04-12, and the active window is 12 months. Only two author emails touched `lib/index.js` in that window:
+- `troy@laptop.example`, 2026-04-10, "lib: annotate handlers".
+- `fiona@formatter.example`, 2026-04-12, "style: reformat js with 4-space indent and double quotes".
+
+**Who is gone.** Everyone else last touched the file in 2021 or earlier. That is about 22 other authors, among them:
+- `<email redacted>`: 28 commits, last one in 2016. This is the original author.
+- `alex94puchades`: 5 commits.
+- `<email redacted>`: 4 commits, last one in 2017.
+- `<email redacted>`: the last outside commit, in 2021.
+
+Old commits decay with a 365-day half-life. The 2013–2016 commits therefore count for almost nothing, so the two recent commits dominate the score. The script would likely read this as bus factor 2, not orphaned. That reading is weak, for these reasons:
+
+- **Fiona's commit is mechanical.** A whitespace and quote reformat does not show knowledge of the CORS logic. I'd count Fiona as zero.
+- **Troy has one commit.** "Annotate handlers" is real work, but it is a single commit. The 2026 commit from `troy@laptop.example` may or may not be the same person as `<email redacted>`. I ran with `--no-github`, so identities were not resolved or merged. If they are the same person, that person has about 30 commits and is the only one who understands the file. That is bus factor 1.
+- **The history was imported.** The script reports a bulk first commit of 8 files on 2013-01-31. Ownership reflects work since the import, not necessarily who first wrote the code.
+
+**If people leave:**
+- If Troy leaves, nobody active understands `lib/index.js`. Fiona has only touched formatting, so the file is effectively orphaned.
+- If Fiona leaves, nothing changes.
+
+The file is small and was heavily worked on by many people. A new maintainer could probably learn it from the test suite and history. That is a different problem from having a current owner.
+
+To tighten this, confirm whether `troy@laptop.example` is `troygoode`, and whether Fiona has reviewed the logic as well as reformatting it. Say so and I'll rerun with those identities merged and write `.github/CODEOWNERS` and `ownership.json`. I haven't written either file.
+META cost=0.0718869 ms=28385 turns=5

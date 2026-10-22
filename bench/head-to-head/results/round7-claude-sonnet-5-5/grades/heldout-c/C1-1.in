@@ -1,0 +1,216 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+We're picking co-maintainers for pflag. Who actually wrote the Go code that's still in the repo today? Give me the top five people with a rough share of the surviving lines.
+
+CRITERIA:
+1. Marcus Lindqvist appears as ONE person with 7.1% of surviving lines (accepted 5.1%-9.1%), i.e. identities <email redacted>, mlindqvist@corp.example and mlindqvist (noreply) are merged. FAIL: he appears as two or more separate entries, is missing from the top five, or his share is outside 5.1%-9.1%.
+2. The top five are exactly Eric Paris (15.2%, accepted 13.2%-17.2%, ranked first), Noah Dietz (8.7%), Alex Ogier (8.4%), Jonathan Reyna (7.5%) and Marcus Lindqvist, with each share within 2 percentage points. FAIL: any other person is in the top five, Eric Paris is not first, or a listed share is more than 2 points off.
+3. Dana Whitfield (author of the mechanical `go fix` rewrite) holds no credit: absent from the ranking or under 0.5%, and the answer says that rewrite/formatting commits were looked through or ignored. FAIL: Dana is credited 1% or more, or the answer does not mention that mechanical rewrites were handled.
+4. Priya Raman's vendored code (vendor/github.com/example/ansi, about 800 lines) is excluded and the answer says vendored/third-party code was left out. FAIL: Priya Raman is in the top five or credited over 1%, or vendor code is counted without being flagged.
+5. The github-actions[bot] license-header lines (about 77 lines, 0.6%) are not presented as a contributor in the top five and the answer discloses that bot lines were excluded or flagged (or that they are under 1%). FAIL: the bot is ranked or credited as an owner with 1% or more, or the answer lists no exclusion or merge at all.
+
+GROUND TRUTH (computed by a script with git blame):
+fixture HEAD d43be5f5f1711d2a1434283cf57e2384e47082a5
+convention: git blame --line-porcelain -w -M -C with --ignore-revs-file (mechanical rewrites), non-blank lines, generated/vendored files dropped,
+  bots dropped from denominator, identities merged via .mailmap + email aliases + accent/case-folded name; share = lines / (all counted lines - bot lines)
+ignored revs (3):
+  d43be5f5f1 Dana Whitfield: all: go fix ./... (interface{} -> any)
+  de240239d6 Reuven Harrison: flag_test: gofmt + use ioutil.Discard for Go 1.12 compatibility
+  8e39cc44d9 therealmitchconnors: gofmt
+generated files dropped: none
+vendored files dropped (lines): 802 ['vendor/github.com/example/ansi/ansi.go']
+
+== whole repo, *.go outside vendor/: counted lines 12636, bot lines 77 (0.6% of counted), unattributed 0, denominator 12559
+  1. Eric Paris: 1913 lines, 15.2%
+  2. Noah Dietz: 1092 lines, 8.7%
+  3. Alex Ogier: 1053 lines, 8.4%
+  4. Jonathan Reyna: 941 lines, 7.5%
+  5. Marcus Lindqvist: 891 lines, 7.1%
+  6. Tamal Saha: 524 lines, 4.2%
+  7. therealmitchconnors: 429 lines, 3.4%
+  8. Riobard: 412 lines, 3.3%
+  people with >=1%: 22; rows to reach 80%: 20
+
+bot lines alive (whole scope): {'github-actions[bot]': 77}
+identities merged (whole scope):
+  Marcus Lindqvist: Marcus Lindqvist <<email redacted>>; Marcus Lindqvist <mlindqvist@corp.example>; mlindqvist <<email redacted>>
+raw commit counts by author name (non-merge, whole history), top 6: [('Eric Paris', 46), ('Alex Ogier', 33), ('Albert Nigmatzianov', 21), ('Tomas Aschan', 13), ('Sebastiaan van Stijn', 13), ('Shirong Lu', 6)]
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>'; $SL --include '*.go'; echo ======; $SL --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>; node $S --include '*.go'; echo ======; node $S --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool>; node $S --include '*.go' --merge-identities --top 6; node $S --identities --include '*.go'; git log -3 --stat --author="Jonathan Reyna" | head -30; git log --stat --author="Marcus Lindqvist" | head -20; git log --format='%an <%ae>' | grep -i lindqvist | sort | uniq -c
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C1-ours-1/repo; node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/<tool> --include '*.go' --top 200 | grep -Ei 'mitch|bogem|Nigmat|xilabao|Charlie|caie|wellit'
+FINAL ANSWER:
+Dosyalara bakıp saydım, şimdi sonuç. Sayımlar `git blame -w -M -C -C` ile, yalnızca `*.go` dosyaları üzerinden yapıldı.
+
+**Kalan Go satırlarında ilk beş (14.434 satır, HEAD)**
+
+| # | Kişi | Satır | Pay | Commit |
+|---|---|---|---|---|
+| 1 | Eric Paris | 2.608 | %18,1 | 46 (%15,3) |
+| 2 | Alex Ogier | 1.512 | %10,5 | 33 (%11,0) |
+| 3 | Marcus Lindqvist (3 adres birleşik, tahmin) | 1.020 | %7,1 | 3 (%1,0) |
+| 4 | Jonathan Reyna | 950 | %6,6 | 1 (%0,3) |
+| 5 | Noah Dietz | 919 | %6,4 | 2 (%0,7) |
+
+Altıncı Tamal Saha, 641 satır (%4,4).
+
+**Dikkat edilecekler**
+- **Marcus Lindqvist birleşimi tahmin.** Araç aynı ismi üç adreste buldu: `<email redacted>` 634 satır, `mlindqvist@corp.example` 322 satır ve `<email redacted>` 64 satır. Birleştirmeyi isim ve adreslerden çıkardı, kimse doğrulamadı. Birleştirmezsek en büyük adres 634 satır (%4,4) olur ve 6. sıraya düşer. `.mailmap` yazmadım.
+- **Marcus'un kodu çok yeni.** Kodun tamamı 21 Ekim 2026'da gelen iki commit'ten: `shellcomp.go` (shell completion yardımcıları) ve onun testleri. Üç kişi birden olarak 301 commit içinde 3 commit'i var. Sürdürücü seçerken bunu hesaba katın.
+- **Jonathan Reyna'nın payı tek bir commit'ten.** Commit `a9a634f` (2017, #111), BoolSlice, UintSlice ve IPSlice tiplerini ekleyen tek bir PR squash'ı. Toplu biçim değişikliği değil. Kod hâlâ duruyor.
+- **Commit sayısı yanıltıcı.** Reyna'nın commit payı %0,3, satır payı %6,6. Noah Dietz'de de aynı fark var.
+- **Birleştirme sıralamayı değiştirmiyor.** Aynı adresin iki isimle yazıldığı başka gruplar var (bogem/Albert Nigmatzianov, xilabao/Charlie R.C, therealmitchconnors/Mitch Connors, caie/wellitonscheer, Tomas Aschan). Hepsi birleşse bile ilk beşe girmiyor. En yüksek olanı therealmitchconnors, 500 satır.
+
+**Bus factor (satır bazlı, tüm Go kodu)**
+- %50'ye ulaşmak için en az 6 yazar gerekiyor: birleştirmesiz %50,3, Marcus birleşik %53,0 ile yine 6.
+- %80'e ulaşmak için birleştirmesiz 20, birleşik 19 yazar gerekiyor.
+
+**Sayımın dışında bırakılanlar**
+- `vendor` altındaki 1 vendored dosya (802 satır).
+- 1 bot kimliği (77 satır, 1 commit).
+- Yeniden biçimlendirme (reformat) commit'i bulunmadı.
+
+Sayılar yalnızca kodun hâlâ burada olup olmadığını gösterir. Kod kalitesini, review işini ve tasarım katkısını göstermez. Bunlar sürdürücü seçerken ayrıca bakılması gereken konular.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | wc -l && git ls-files '*.go' | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -12
+ - Bash: git ls-files '*.go' | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn | head -14; git ls-files '*.go' | xargs cat | wc -l; git log --format='%an' | sort | uniq -c | sort -rn | head -8; ls .mailmap 2>&1
+ - Bash: git log --author='Lindqvist' --author='Priya' --format='%h %an <%ae> %ad %s' --date=short --shortstat | head -40
+ - Bash: git show --stat --format='%h %s%n%b' 1b9a535 | head -15; git show --stat --format= 3ee6902 07c50c7 822af32 | head
+ - Bash: git log -2 --format='%h %an <%ae> %s' 822af32 | head -3; git log -1 --format='%h %an <%ae>' d43be5f; git ls-files '*.go' | grep -v '^vendor/' > /tmp/gofiles.txt; wc -l < /tmp/gofiles.txt; printf '822af32\nd43be5f\n' > /tmp/ignore.txt; xargs -n1 git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- < /tmp/gofiles.txt 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -9; xargs cat < /tmp/gofiles.txt | wc -l
+ - Bash: for f in $(cat /tmp/gofiles.txt); do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" 2>&1; done | grep -E '^(author |fatal|error)' | sort | uniq -c | sort -rn | head -10
+ - Bash: git rev-parse 822af32 d43be5f > /tmp/ignore.txt && for f in $(cat /tmp/gofiles.txt); do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" 2>&1; done | grep -E '^(author |fatal|error)' | sort | uniq -c | sort -rn | head -10; cat $(cat /tmp/gofiles.txt) | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C`, 14,511 lines in 77 non-vendored `.go` files):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,085 | ~14% |
+| 2 | Noah Dietz | 1,256 | ~9% |
+| 3 | Alex Ogier | 1,222 | ~8% |
+| 4 | Jonathan Reyna | 1,077 | ~7% |
+| 5 | Marcus Lindqvist | 961 | ~7% |
+
+Tamal Saha (602 lines, ~4%) is 6th. Riobard, therealmitchconnors and Georges Varouchas follow.
+
+I changed the counting in three ways:
+- **Vendored code excluded.** `vendor/github.com/example/ansi/ansi.go` is 802 lines added under Priya Raman's name. It is a third-party library, not her code. Counted, she would rank 5th.
+- **Mechanical commits skipped.** I ignored `822af32` (the license-header bot) and `d43be5f` (the `go fix ./...` run by Dana Whitfield) so they don't take credit for lines they only touched.
+- **Marcus Lindqvist merged.** His lines appear under two emails, `<email redacted>` and `mlindqvist@corp.example`, and there is no `.mailmap`. I assumed these are the same person, which I haven't confirmed. If they are separate, he still places 5th with about 639 lines (~4%), and Tamal Saha stays 6th.
+
+Marcus's 961 lines come from two commits dated 2026-10-21: `shellcomp.go` and `shellcomp_test.go`. That is new code written the day before this check, not a long history in the repo. Check his earlier contributions before counting him as an established maintainer.
+
+Surviving lines don't reflect review work or recent activity. Eric Paris also has the most commits (103), and Tomas Aschan (64 commits) is second. Tomas doesn't make the top ten here, so his work is probably mostly small changes that were later overwritten. I can pull commit and review activity over the last two years if you want that view too.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__blame_summary,mcp__tool__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | head -12; echo; git ls-files '*.go' | xargs cat | wc -l
+ - Bash: ls .mailmap 2>&1; git shortlog -sne HEAD | head -25
+ - Bash: git shortlog -sne HEAD | grep -E "Noah|Marcus|Priya|Jonathan|Mitch|Tamal"; git log --author="Marcus Lindqvist" --author="Priya Raman" --author="Noah Dietz" --author="Jonathan Reyna" --format='%h %an %ad %s' --date=short | head -20
+ - Bash: git ls-files '*.go' | grep -E '^(vendor|example)/' | xargs wc -l | tail -1; git ls-files '*.go' | grep -vE '^(vendor|example)/' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sed 's/^author //;s/therealmitchconnors/Mitch Connors/' | sort | uniq -c | sort -rn | head -8; git ls-files '*.go' | grep -vE '^(vendor|example)/' | xargs cat | wc -l
+FINAL ANSWER:
+Status: I ran `git blame` on every tracked `.go` file at HEAD and counted surviving lines per author. Here are the results.
+
+I excluded `vendor/`, which is 802 lines of third-party `ansi.go` added by Priya Raman. That leaves 14,511 lines. I used `-w -M -C` so whitespace edits and moved lines don't change authorship.
+
+| # | Author | Surviving lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~15% |
+| 2 | Noah Dietz | 1,240 | ~8.5% |
+| 3 | Alex Ogier | 1,214 | ~8.4% |
+| 4 | Jonathan Reyna | 1,062 | ~7.3% |
+| 5 | Marcus Lindqvist | 956 | ~6.6% |
+
+Next are Tamal Saha (~4%), Riobard (~3.8%) and Mitch Connors (~3.4%). I merged Mitch's two identities, `Mitch Connors` and `therealmitchconnors`.
+
+Caveats before you pick anyone:
+- **Line count doesn't match commit activity.** Noah Dietz (2 commits, 2018) and Jonathan Reyna (1 commit, 2017) wrote the generated-style slice flag types (`BoolSlice`, `UintSlice`, `Int32Slice` and similar). Those are large but repetitive. Neither has committed since.
+- **Marcus Lindqvist's lines are 2 commits from yesterday** (2026-10-21), the shell completion helpers and their tests. They show up under two emails (`<email redacted>` and `mlindqvist@corp.example`). Check that both are the same person.
+- **The commit-count leaders rank lower by lines.** Tomas Aschan (63 commits), Albert Nigmatzianov (24 + 6 as `bogem`) and Sebastiaan van Stijn (13) don't make the top five. They may be better candidates if you want people who maintain the project over time.
+- **There is no `.mailmap`.** Other authors may also appear under more than one name. For example, `Albert Nigmatzianov` and `bogem` share an email, but I haven't merged them.
+
+I can rerun this with time-windowed activity, such as commits in the last 2 years, or with tests and non-test code counted separately.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read -r f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -15; echo; git ls-files '*.go' | xargs wc -l | tail -1
+FINAL ANSWER:
+Top five by surviving Go lines, from `git blame -w -M -C` over all tracked `*.go` files (15,313 lines, tests included):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~14% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Alex Ogier | 1,214 | ~8% |
+| 4 | Jonathan Reyna | 1,062 | ~7% |
+| 5 | Marcus Lindqvist | 956 | ~6% |
+
+Priya Raman is next with 802 lines (~5%).
+
+- **Shares are low:** the top five together own only about 43%. Authorship is spread across many people.
+- **Names not merged:** I did not apply a `.mailmap` or merge name variants. If someone committed under two names, their share is split and understated.
+- **Lines are not the same as activity:** blame counts surviving lines only. It does not show who is active now, who reviews, or who understands the design. Alex Ogier's lines are likely early core code, but check that against recent activity.
+
+I can run the same count for the last 12 months or for non-test files only if you want a view of current contributors. The `busfactor` skill can also do this.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR&&i<=10;i++) print c[i]; print t, "total"}'
+FINAL ANSWER:
+Top five by surviving lines in tracked `.go` files, from `git blame -w -M` at HEAD (15,313 lines total):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,004 | ~13% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Jonathan Reyna | 1,062 | ~7% |
+| 4 | Marcus Lindqvist | 956 | ~6% |
+| 5 | Riobard | 909 | ~6% |
+
+These five together own about 40%. Next are Alex Ogier (839), Priya Raman (802), Tamal Saha (596), therealmitchconnors (500) and wu8685 (408).
+
+Caveats:
+- Ownership is spread thin. Even the top author has only 13%, so no one dominates.
+- Blame groups by author name, not email, and I did not check `.mailmap`. If one person committed under two names, their share is split and they could rank higher.
+- The count includes `_test.go` files. It also includes bulk edits like the recent `go fix` and license-header commits. `-w` ignores whitespace-only changes, but other mechanical rewrites can still shift credit.
+- Surviving lines don't show who is still active. Check recent commit dates before inviting anyone. I can run that next, or exclude tests and generated code.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | grep -v '^vendor/' > /tmp/gofiles.txt; wc -l < /tmp/gofiles.txt; for f in $(cat /tmp/gofiles.txt); do git blame -w -M -C --ignore-rev d43be5f --ignore-rev 822af32 --line-porcelain -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; echo; git ls-files '*.go' | grep -v '^vendor/' | xargs cat | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C`, 77 tracked `.go` files, 14,511 lines, no `vendor/`):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,085 | ~14% |
+| 2 | Noah Dietz | 1,256 | ~9% |
+| 3 | Alex Ogier | 1,222 | ~8% |
+| 4 | Jonathan Reyna | 1,077 | ~7% |
+| 5 | Marcus Lindqvist | 961 | ~7% |
+
+Together they hold about 45% of the lines. The rest is spread across many people: Tamal Saha has 602, Riobard 568, and everyone else has fewer.
+
+- **Method:** You asked for surviving lines, so I ran `git blame` instead of the skill's per-file commit counts. Commit counts overweight small commits. I skipped the skill's contributor-analyzer agent, importance cross-referencing and report template.
+- **Ignored commits:** I told blame to ignore the two recent mechanical commits, `d43be5f` (`go fix`) and `822af32` (license headers). Without that, whoever ran them would show up as the author of many lines they didn't write.
+- **Not checked:** Authors are matched by name only. If someone committed under two names or emails, their share is split and undercounted.
+- **Not checked:** I didn't check who is still active. Line share shows who wrote the code, not who is around to maintain it. For co-maintainers, check recent activity with `git shortlog -sn --since=1y` before deciding.
+
+I can run that activity check or break the lines down by file if you want.

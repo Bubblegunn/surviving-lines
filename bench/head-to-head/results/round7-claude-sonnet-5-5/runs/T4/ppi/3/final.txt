@@ -1,0 +1,47 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== all-time commits per author (lib/index.js)" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn | head -10 && echo && echo "== last commit per author" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++' | head -10 && echo && echo "== blame lines per author" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -10 && echo && echo "== dependents" && grep -rl "lib/index\|require(['\"]\.\./lib['\"])\|require(['\"]\./lib['\"])\|require(['\"]\.\./['\"])" --include="*.js" . 2>/dev/null | grep -v node_modules | head -20; echo && echo "== total files / 
+ - Bash: git log -1 --pretty=format:"%h %an" -- lib/index.js && echo && echo "== blame ignoring reformat" && git blame -w -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8 && echo "== recent (2y) commits" && git log --no-merges --since="2y" --pretty=format:"%an|%ad|%s" --date=short -- lib/index.js | head -10 && echo && echo "== last 12 months authors" && git log --no-merges --since="1y" --pretty=format:"%an" -- lib/index.js | sort | uniq -c
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** Use Douglas Christopher Wilson as a second reviewer if you want one.
+
+| Metric | Value |
+|---|---|
+| Commits touching the file | 63 |
+| Top committer | Troy Goode, 29 (about 46%) |
+| Next committers | Douglas Christopher Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3 |
+| Unique contributors | more than 10 |
+| Bus factor for this file | 1 to 2 |
+
+**Who owns the lines.** The top blame author is "Fiona Formatter" (214 of 238 lines). That comes from the latest commit, `62628c0`, which reformatted the whole file, so it isn't real ownership. I re-ran blame with `-w -C -C --ignore-rev 62628c0`:
+
+- Troy Goode: 159 lines (about 67%)
+- Douglas Christopher Wilson: 22
+- Alejandro Caravaca Puchades: 12
+- Raymond Feng: 7
+- max.laverse: 6
+- LuisEGR: 6
+
+**Is the owner active?** Troy's last commit to this file was 2026-04-10, which is about 6 months ago. Douglas's was 2017-10-04. Most other authors haven't touched the file since 2017–2021.
+
+**Dependents.** Three test files reference the library entry point: `test/error-response.js`, `test/example-app.js` and `test/issue-2.js`. My grep for `lib/index.js` and the common `require` forms is rough, so other dependents may exist, such as `package.json` `main` or a root re-export. The importance rating is therefore uncertain. It is probably at least medium, because this is the main entry file.
+
+**Risk: medium.** One person wrote most of the file and still has the most context. That person is plausibly still reachable, but the other past contributors haven't touched the file in years.
+
+**Recommendations**
+1. **Now:** ask Troy Goode to review. Add Douglas Christopher Wilson if your change touches core behavior, since they hold the second-largest share of surviving lines.
+2. **When blaming or reading history:** use `git blame --ignore-rev 62628c0 lib/index.js`. Otherwise every line points to the reformat commit. You could also add that SHA to `.git-blame-ignore-revs`.
+3. **Run the three test files above** before merging, since they are the known dependents.
+
+**Caveats**
+- `git log --since="1y"` returned nothing, even though Troy's commit dated 2026-04-10 falls inside that window. `--since` filters on committer date, which may differ from the author date I used. I didn't investigate further, so treat "6 months ago" as the author date.
+- I did not launch the `contributor-analyzer` agent. The question covered one file, so a few `git` commands were enough.
+- Usernames in the history may not map to real people. Troy Goode and the "Fiona Formatter" entry could be bot or alias identities.
+META cost=0.06643160000000001 ms=35823 turns=5

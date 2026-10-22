@@ -1,0 +1,49 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-1/repo", "file": "src/itsdangerous/signer.py"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-1/repo", "file": "src/itsdangerous/timed.py"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-1/repo", "file": "src/itsdangerous/signer.py", "limit": 40}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-hist-1/repo", "file": "src/itsdangerous/timed.py", "limit": 40}
+ - Bash: for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -M -C -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; done; git show --stat --format='%h %an %s' 0635526 | head -20; git log --format='%h %an %ad %s' --date=short -5 --diff-filter=A -- src/itsdangerous/signer.py
+ - Bash: git show --format='%h %an <%ae> | committer %cn <%ce> | %ad%n%B' --date=short --stat 93695fd 56dba8d | head -50; echo ---; git log --format='%an | %ad | %s' --date=short --author='Ibarra' ; echo ---; git log --format='%an %ad' --date=short -1 --author='David Lord'; git log -1 --format='%an %ad' --date=short --author='Armin'; git log --all --format='%h %an %s' --grep='legacy' -i | head; git log --format='%h %an %s' -8
+FINAL ANSWER:
+**Ask David Lord. If your change touches the key-rotation helpers, add Tomás Ibarra.**
+
+I counted surviving lines at HEAD with `git blame -w -M -C -C -C`. That follows code across the 2018 "split into modules" commit, so David isn't credited for lines Armin wrote in the old single file.
+
+**signer.py (366 lines)**
+- David Lord: 212 (58%)
+- Tomás Ibarra: 100 (27%)
+- Armin Ronacher: 19
+- Hsiaoming Yang: 13
+- Arnout van Meer: 11
+- Others: 11 (pre-commit bot 8, Thomas Waldmann 2, Markus Unterwaditzer 1)
+
+**timed.py (300 lines)**
+- David Lord: 172 (57%)
+- Tomás Ibarra: 72 (24%)
+- Armin Ronacher: 37
+- Zach Hugnou: 5
+- Alan Hamlett: 3
+- Thomas Waldmann, Dirk Müller, Daverball: 2 each
+- pre-commit bot: 5
+
+**Why David**
+- He owns the most lines in both files. He is also active: his last commit is 2025-07-07.
+- His share is mostly typing and refactor rewrites (`aed5b26`, `69a3bca`) plus the 2018 split. That is still his code, but the original design logic came from Armin and Arnout.
+- Armin's last commit is 2018, so he isn't a practical reviewer.
+- David also committed Tomás's work, so he has seen the newest code.
+
+**Why Tomás**
+- The rotation helpers are his: `93695fd` added 100 lines to signer.py and `56dba8d` added 72 to timed.py, both in July 2025. He has no other commits in the repo. I can't tell whether he's still around.
+
+**What I didn't count**
+- Gustavo Reyes's "legacy v0" commits are gone: `b1c0caf` removed that module, and none of his lines survive in these two files.
+- Line counts say who wrote the text, not who understands it today. Arnout's 11 lines in signer.py, for example, are small but may be original logic.
+META cost=0.0941292 ms=30985 turns=9

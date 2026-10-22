@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico|\.gif)$' | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -20; echo ---; git log --oneline | wc -l; git ls-files | wc -l
+ - Bash: git show --stat --format='%h %an %ad %s' 62628c0 | head -30; echo ---; git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico|\.gif)$' | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -12; echo ---; git ls-files
+FINAL ANSWER:
+Surviving lines, by `git blame` (ignoring whitespace changes, tracking moved and copied lines). It covers all 18 tracked files except lockfiles and images.
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+| Eric di Domenico | 16 |
+| Alberto Leal | 15 |
+
+Troy Goode and Douglas Christopher Wilson own most of the code. Together they hold about 1,440 of the roughly 1,900 lines.
+
+A plain `git blame` gives different numbers. Commit `62628c0` ("style: reformat js with 4-space indent and double quotes") rewrote 1,016 lines in `lib/index.js` and three test files. `-w` ignores the indent change but not the quote change. Plain blame therefore gave "Fiona Formatter" 291 lines, third place. I reran blame with `--ignore-rev 62628c0`, which gives each of those lines back to its last real author. The table above uses that rerun. Troy Goode went from 715 to 810 lines and Wilson from 454 to 629.
+
+- **Line counts are not quality or importance.** A line count treats a one-line fix in `lib/index.js` the same as a line in a test file. Most of the lines are in `test/test.js`.
+- **The dependabot lines are real but small.** Dependabot appears with 10 lines. The list was cut off at the top 12 authors.
+
+For a per-file breakdown, tell me which files to look at.
+META cost=0.060051200000000006 ms=14056 turns=4

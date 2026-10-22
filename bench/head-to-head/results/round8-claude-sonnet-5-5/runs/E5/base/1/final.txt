@@ -1,0 +1,45 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib; git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | wc -l; git shortlog -sn --follow -- lib/index.js | head -20; git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | tail -5; git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -8
+ - Bash: git blame -w -M -C -e --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -15; wc -l lib/index.js; git log --follow --diff-filter=AR --format='%h %an %ad %s' --date=short -- lib/index.js
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -12; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -12; git blame --ignore-rev 62628c0 --line-porcelain lib/index.js | grep -E '^(author |author-time )' | paste - - | awk -F'\t' '{print substr($2,13)" "$1}' | sort | awk '{print strftime("%Y",$1)}' | uniq -c
+FINAL ANSWER:
+`lib/index.js` was created by Troy Goode on 2013-01-30 ("first commit"). It has 62 commits and 238 lines today. Troy Goode wrote most of it.
+
+**Who shaped it**
+- **Troy Goode** is the original author and the main contributor, with 29 of the first 40 or so commits by author count. In 2013 they built the core: case-insensitive header lookup, `origin: false` disabling CORS, lint fixes, and pausing and resuming the request for async middleware. They also made the 2026-04-10 commit "lib: annotate handlers".
+- **Douglas Christopher Wilson** was the maintainer in 2017. They updated eslint (`<email redacted>`) and fixed paren spacing.
+- **Alejandro Caravaca Puchades** (alongside `alex94puchades`, which may be the same person under another name) and **Simon Mansfield** each contributed several commits.
+- Single-commit contributors include Benjamin Eidelman (a Safari workaround for the default pre-flight response), Tom Arad (the fix for setting `maxAge` to 0), Chima Alaebo (removed an unreachable branch), LuisEGR (removed unused function parameters) and Saad Tazi.
+- **Fiona Formatter** made the 2026-04-12 commit that reformatted the file to 4-space indent and double quotes. That commit is formatting only.
+
+**Whose code is still there**
+
+I ran `git blame` with whitespace changes ignored and with the reformat commit skipped (`--ignore-rev 62628c0`). The count is of the 238 lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Benjamin Eidelman | 3 |
+| Saad Tazi | 2 |
+| Mathias Buus | 2 |
+
+The list is cut at 12 names. Those lines add up to 229, so about 9 more lines belong to authors not shown.
+
+Without `--ignore-rev`, blame gives Fiona Formatter 32 lines. That is only because of the quote-style changes. Those lines are Troy's and others' original code.
+
+I did not check which of Troy's 159 lines date from 2013 and which from the 2026 annotations. I also did not check whether the same person appears under more than one name or email.
+META cost=0.0604493 ms=19470 turns=5

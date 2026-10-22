@@ -1,0 +1,46 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; sl -- src; echo ======; sl --merge-identities -- src
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js "$@"; }; git show --stat c584a1d | head -20; sl --ignore-rev c584a1d -- src | sed -n 1,16p; sl --merge-identities -- src | sed -n 1,16p
+FINAL ANSWER:
+Ownership of `src/` is highly concentrated. Counting surviving lines, the bus factor is **1**: Andrew Gallant alone holds 76.9% of the code. Reaching 80% of the lines takes 2 authors.
+
+Both numbers cover `src/` only. Bus factor here means the smallest number of authors whose surviving lines add up to at least the threshold (50% or 80%) of the lines counted. It shows how concentrated the remaining code is, not who understands it.
+
+**Method:** `git blame -w -M -C` at HEAD, covering all 7 files and 3,322 attributed lines. Merge commits are excluded.
+
+| Author | Lines | Share of lines | Commits | Share of commits |
+|---|---|---|---|---|
+| Andrew Gallant | 2,554 | 76.9% | 55 | 51.9% |
+| Ola Berg | 113 | 3.4% | 2 | 1.9% |
+| Sebastian Thiel | 74 | 2.2% | 1 | 0.9% |
+| Ashley | 68 | 2.0% | 1 | 0.9% |
+| Aron Griffis | 59 | 1.8% | 1 | 0.9% |
+| Niv Kaminer | 45 | 1.4% | 2 | 1.9% |
+| mcharsley | 45 | 1.4% | 1 | 0.9% |
+| Marvin Löbel | 41 | 1.2% | 1 | 0.9% |
+| Martin Sehnoutka | 38 | 1.1% | 1 | 0.9% |
+| Yufeng Wang | 36 | 1.1% | 3 | 2.8% |
+
+28 more authors hold the rest. None of them is above 1.1%.
+
+**What the output left out or adjusted:**
+- **Generated file:** `src/errno_table.rs` (883 lines) is left out of every number because it is generated. `--keep-generated` would count it.
+- **Rustfmt commit:** Commit `c584a1d` ("style: switch to rustfmt", Andrew Gallant) was flagged as possibly mechanical but not set aside. It rewrote 243 lines across 9 files, 7 of them under `src/`. Excluding it with `--ignore-rev` barely changes the result: Andrew Gallant goes from 2,554 to 2,547 lines (76.7%). The conclusion stands either way.
+- **Other rewrite candidates:** The tool examined 75 commits with surviving lines and set aside none as mechanical.
+- **Copy detection:** The figures use `-w -M -C`. Copy detection moved 151 lines in 3 files to another author. Without it, Andrew Gallant would have 2,705 lines (81.4%), Niv Kaminer 15 lines (0.5%, against 45 with it), and Garrett Berg 0 lines (against 34).
+- **Bots:** None were removed.
+- **`.mailmap`:** I did not write one, since you only asked a question. `--merge-identities` changed none of the figures above.
+
+**Duplicate identities (guesses from names and addresses, not confirmed):**
+- Ashley and Ashley Mannix may be the same person, though the evidence is weak. If they are, they hold 72 lines (2.2%), against 68 and 4 lines unmerged. That would not change the top of the table or the bus factor.
+- The hint also suggested Igor Gnatenko (two addresses) and Alisha / Alisha Aneja (one address). Neither appears among the top authors in `src/`, so they don't affect these figures.
+
+**What these numbers can't show:** line counts say nothing about code quality, review work, design done outside the code, or code deleted on purpose. Gallant's share is high partly because they were the original author and are still the main committer. A commit-count view would understate it (51.9% against 76.9% of lines).
+META cost=0.0733879 ms=18116 turns=6

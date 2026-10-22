@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== all-time commits per author ==" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit per author ==" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++' && echo && echo "== last 1y ==" && git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== dependents ==" && grep -rlE "lib/index|require\(['\"]\.\.?/lib['\"]\)|require\(['\"]\.\./?['\"]\)" --include="*.js" --include="*.json" . --exclude-dir=node_modules --exclude-dir=.git | head -20 && echo && echo "== total commits ==" && git log
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** He is the only active deep owner.
+
+| Author | Commits | Share | Last touch |
+|---|---|---|---|
+| Troy Goode | 29 | 47% | 2026-04-10 (active) |
+| Douglas Christopher Wilson | 4 | 6% | 2017-10 (inactive) |
+| Alejandro Caravaca Puchades | 4 | 6% | 2015-05 (inactive) |
+| Simon Mansfield | 3 | 5% | 2013-05 (inactive) |
+| 21 others | 1–2 each | about 35% | all inactive since 2021 or earlier |
+
+- **File bus factor:** 25 authors have touched it in 62 non-merge commits. No one owns more than 80% of it, so it is not single-owner by the usual threshold. In practice it is 1, because only Troy Goode has committed in the last year. The one other recent author, Fiona Formatter, made the 2026-04-12 reformat commit (`62628c0`), which was a style-only change.
+- **Dependents:** 238 lines. `package.json` and 5 test files (`test/test.js`, `test/vary.js`, `test/error-response.js`, `test/example-app.js`, `test/issue-2.js`) reference it. It is the package entry point, so every consumer depends on it.
+- **Risk:** MEDIUM. Ownership is spread across many people, but nearly all of them have left. One person holds the working knowledge, and the file is the main entry point.
+
+### Recommendations
+1. **Immediate:** Ask Troy Goode to review. Also get a second reviewer who has not touched the file, so the knowledge spreads.
+2. **Before merging:** Run the 5 test files above. They are the only direct coverage.
+3. **Blame context:** Run `/project-pilot:history lib/index.js` for the section you are changing. Some past fixes may encode non-obvious behavior, such as the Safari pre-flight workaround (`d3304ab`) and the `maxAge: 0` fix (`01477dc`).
+
+I ran the git commands directly instead of launching the contributor-analyzer agent, because this is a single file.
+META cost=0.057483400000000004 ms=14169 turns=4

@@ -1,0 +1,47 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: F=lib/index.js; echo "== commits per author (all)"; git log --all --no-merges --pretty=format:"%an" -- $F | sort | uniq -c | sort -rn; echo "== last commit per author"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- $F | awk -F'|' '!s[$1]++'; echo "== blame lines"; git blame --line-porcelain $F | grep '^author ' | sort | uniq -c | sort -rn; echo "== dependents"; grep -rl "lib/index\|require(['\"]\.\./lib['\"])\|require(['\"]\./lib['\"])" --include="*.js" . 2>/dev/null | grep -v node_modules | wc -l; echo "== total commits"; git log --all --no-merges --oneline -- $F | wc -l
+ - Bash: git log -1 --pretty='%h %an %s' 62628c0; git blame --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git log --since=1y --no-merges --pretty='%an' -- lib/index.js | sort | uniq -c | sort -rn
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Reviewer: Troy Goode.** They are the only active human contributor to this file.
+
+| Metric | Value |
+|---|---|
+| Total commits (no merges) | 62 |
+| Unique contributors | 25 |
+| Troy Goode | 29 commits (47%), last commit 2026-04-10 |
+| Douglas Christopher Wilson | 4 commits, last commit 2017 |
+| Alejandro Caravaca Puchades | 4 commits (+1 under `alex94puchades`), last commit 2015 |
+| Everyone else | 1–3 commits each, all inactive since 2021 or earlier |
+| Files that depend on it | about 3 (rough grep) |
+
+**Ownership by current lines.** A plain `git blame` credits "Fiona Formatter" with 214 of 239 lines. That comes from the latest style commit, `62628c0`, which reformatted the whole file. It is not real ownership. I re-ran blame with `--ignore-rev 62628c0`:
+
+- Troy Goode: 109 lines
+- Fiona Formatter: 57 lines (probably from other formatting commits I did not exclude)
+- Douglas Christopher Wilson: 36 lines
+- Raymond Feng: 8 lines
+- Everyone else: 1–6 lines each
+
+**Risk: medium.**
+- The file has 25 contributors, so it is not a single-owner file by history. Only Troy Goode is active, so the working bus factor is 1.
+- Few files depend on it, so the impact is limited.
+- Douglas Christopher Wilson owns the second-largest share of lines (36) and is a good second opinion on design questions. Their last commit to this file was in 2017, so they may not be active on the project.
+
+**Recommendations**
+1. Ask Troy Goode to review the change.
+2. If the change touches code that Douglas Christopher Wilson wrote, ask them for input if they are reachable. Run `git blame --ignore-rev 62628c0 lib/index.js` to see which lines are theirs.
+3. Add a second reviewer from outside the file's history if you want the knowledge spread more widely.
+
+**Limits of this analysis**
+- I ran the git commands directly and did not launch the contributor-analyzer agent. This was one file, so I judged the agent unnecessary.
+- The dependents count is a rough grep.
+- My 1-year activity query returned nothing, probably because of the date syntax I used. I took recency from the last-commit dates above instead.
+META cost=0.0635202 ms=22475 turns=5

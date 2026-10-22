@@ -1,0 +1,48 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --format='%h|%an|%ae|%s' | awk -F'|' '{print $2" <"$3">"}' | sort | uniq -c | sort -rn | head -30; echo; git log --oneline | wc -l; ls -a; git ls-files | awk -F/ 'NF>1{print $1}' | sort | uniq -c
+ - Bash: git log --format='%h %an %s' | grep -iE 'style|format|indent|lint|prettier|whitespace|quote' | head -20; git ls-files
+ - Bash: cat > /tmp/blame.sh <<'EOF'
+for f in "$@"; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done
+EOF
+group(){ bash /tmp/blame.sh "$@" | awk -F'\t' '{k=$2" "$3; c[k]++; t++} END{for(k in c)printf "%d %.1f%% %s\n",c[k],100*c[k]/t,k; print t" total"}' | sort -rn | head -8; echo ---; }
+echo LIB; group lib/index.js
+echo TEST; group test/*.js test/support/env.js test/.eslintrc.yml
+echo GH; group .github/dependabot.yml .github/workflows/*.yml
+echo ROOT; group .eslintrc.yml .gitignore HISTORY.md LICENSE README.md package.json
+echo ROOT-noHISTORY; group .eslintrc.yml .gitignore LICENSE READ
+ - Bash: bash /tmp/blame.sh .eslintrc.yml .gitignore HISTORY.md LICENSE README.md package.json | awk -F'\t' '{n=$2; if(n ~ /Troy Goode/)n="Troy Goode"; c[n]++; t++} END{for(k in c)printf "%d %.1f%% %s\n",c[k],100*c[k]/t,k; print t}' | sort -rn | head -4
+FINAL ANSWER:
+Method: `git blame -w -M -C` on HEAD, ignoring the formatting commit `62628c0`. Each person is counted once, with Troy Goode's two emails merged. Dependabot is excluded.
+
+| Path | Surviving lines | Top contributor | Share |
+|---|---|---|---|
+| `lib/` | 238 | Troy Goode | 66.8% (159 lines) |
+| `test/` | 966 | Troy Goode | 53.5% (517 lines) |
+| `.github/` | 374 | Douglas Wilson | 31.6% (118 lines) |
+| Root files | 417 | Troy Goode | 32.1% (134 lines) |
+
+- **`.github/`:** nobody has half. Wilson has 31.6% (118 lines), Íñigo Marquínez Prado 25.4%, Sebastian Beltran 16.8%, Ulises Gascón 12.0% and Ignacio Mangas 11.8%. Dependabot has 2.1%.
+- **Root files:** nobody has half. Troy has 32.1%, Wilson 27.6% and Jon Church 17.3%. The root files are `.eslintrc.yml`, `.gitignore`, `HISTORY.md`, `LICENSE`, `README.md` and `package.json`. Dropping `HISTORY.md` makes Troy 38.0%, which is still under half.
+
+Suggested CODEOWNERS:
+
+```
+# Only paths where one person holds >= 50% of surviving lines
+/lib/    @troygoode
+/test/   @troygoode
+
+# No majority owner (top share < 50%): leave unowned or assign a team
+# /.github/   (top: Douglas Wilson 31.6%)
+# /*          (root files; top: Troy Goode 32.1%)
+```
+
+- **Handle:** `@troygoode` is a guess from the email `<email redacted>`. Confirm the real GitHub handle before using it.
+- **`test/` is borderline:** Troy's 53.5% clears the bar only after merging his two emails. Without the merge he would have 49.8%.
+- **Activity:** Troy's lines are old and Wilson's are more recent. If you want owners who are active now, check recent activity before relying on this.
+META cost=0.0749006 ms=20859 turns=6

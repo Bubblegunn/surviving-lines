@@ -1,0 +1,34 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && git log --oneline | wc -l && git ls-files -z src | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author-mail ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Bus factor is 1: `<email redacted>` alone wrote about 61% of the surviving lines in `src/`.
+
+I ran `git blame -w -M -C` on all 8 files in `src/` at HEAD. That counts the 4,205 lines still present, credited to whoever last wrote each one, and ignores whitespace-only changes and moved code. I did not use the busfactor skill, because it weights commits with a time decay and does not count surviving lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| <email redacted> | 2,554 | 60.7% |
+| <email redacted> | 883 | 21.0% |
+| <email redacted> | 74 | 1.8% |
+| <email redacted> | 68 | 1.6% |
+| <email redacted> | 59 | 1.4% |
+| Ola Berg (two email casings, merged) | 113 | 2.7% |
+| 28 others | about 454 | about 10.8% |
+
+- **Concentration:** `jamslam` alone passes 50% (60.7%). Adding `niko` brings it to 81.7%, so two people cover 80% of the code, and nobody else has more than 2.7%.
+- **Everyone else:** The remaining contributors each wrote 45 lines or fewer, so the long tail adds little real coverage.
+- **Merged emails:** I combined `<email redacted>` and `<email redacted>` into one person. I did not check for other identities that map to the same person.
+
+Two caveats:
+- **Activity:** This counts who wrote the lines, not who is still on the project. If `jamslam` or `niko` has left, the risk is higher than the numbers show, and I did not check recent activity.
+- **Sample size:** Eight files is a small sample, so the shares could shift a lot if you add or move files.
+
+I can break the numbers down per file to see whether `jamslam` dominates everywhere or only in a few files.
+META cost=0.0618243 ms=15274 turns=5

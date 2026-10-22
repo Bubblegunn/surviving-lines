@@ -1,0 +1,3 @@
+# Who wrote this set and what the writer was shown
+
+A fresh `claude-sonnet-5-5` agent (headless, no plugins). Shown: the prompt in `WRITER-PROMPT.md` (the one-sentence user problem from the top of `README.md` and the list of files a task consists of). Not shown: the product code, `docs/HEAD-TO-HEAD.md`, the research report, any earlier task set. Not told which cases the product handles or loses. The controller did not read the tasks, criteria or ground-truth scripts before the run (a disclosed slip, if any, is in SUMMARY.md). Source branch: heldout-2026-10-c at 51b9ab2b3cddadc0370616c1ad3202dccb11ceb0 (local, never pushed). The set was held-out until this gate and is public from here on.

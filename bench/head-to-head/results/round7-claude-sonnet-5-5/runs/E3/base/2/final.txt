@@ -1,0 +1,25 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,"");print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";if(!(e in s)){s[e]=1;print e, c, $0}}'
+FINAL ANSWER:
+Top owner by surviving lines, from `git blame -w` on HEAD, grouped by extension:
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension | Douglas Christopher Wilson | 17 |
+
+- **Method:** I used `-w`, so whitespace-only changes don't count. This keeps the latest commit (`style: reformat js with 4-space indent and double quotes`) from taking over the `.js` lines for indentation.
+- **Scope:** Only tracked files count.
+- **Not checked:** I didn't check how close the second-place author is in each group. I also didn't merge authors who appear under more than one name or email.
+
+I can add the runner-up and the share of lines for each extension if you want.
+META cost=0.0378961 ms=10911 turns=2

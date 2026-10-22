@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" ] && node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --merge-identities
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ours-1/repo; $SL --merge-identities --include '*.go' --top 12; echo ======; $SL --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -25; echo ======; git show --stat 6bf5b04 | head -20; git show --stat d16d05e | head -12
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ours-1/repo; node $S --merge-identities --include '*.go' --top 12; echo ======; node $S --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -25; echo ======; git show --stat 6bf5b04 | head -20; git show --stat d16d05e | head -12
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-ours-1/repo; node $S --merge-identities --include '*.go' --top 12 --ignore-rev 6bf5b04 | head -22; echo '------'; git show --stat 6bf5b04 | head -15; echo '------'; git show --stat d16d05e | head -12; echo '------'; git log --format='%h %an %ad %s' --date=short -1 --author='Eric Paris'; git log --format='%an %ad' --date=short | awk '{print $0}' | grep -E 'Eric Paris|Alex Ogier|Noah Dietz|Jonathan Reyna' | sort -k3 | awk '{n=$1" "$2; last[n]=$3} END{for(k in last)print k, "first-listed-date-sample", last[k]}'
+FINAL ANSWER:
+**Short answer:** the Go code is spread over many authors, but not evenly. Losing one or two people would not be a crisis. Losing the top five would remove half of the surviving lines.
+
+**Basis and scope**
+- Figures are surviving lines at HEAD for `*.go` files, counted with `git blame -w -M -C`. That is 75 files and 12,194 lines, all attributed.
+- Left out of every number: the generated `zz_generated_flags.go` (488 lines) and 2 vendored Go files (1,088 lines). One bot identity was excluded (0 Go lines).
+- No `.mailmap` exists, and the tool found no same-person duplicates. I ran with `--merge-identities`, so nothing was merged.
+
+**Who owns the live Go code**
+
+| Author | Lines | Share | Commits (share) |
+|---|---|---|---|
+| Eric Paris | 2,020 | 16.6% | 46 (18.1%) |
+| Alex Ogier | 1,237 | 10.1% | 33 (13.0%) |
+| Noah Dietz | 1,228 | 10.1% | 2 (0.8%) |
+| Jonathan Reyna | 1,044 | 8.6% | 1 (0.4%) |
+| Tamal Saha | 624 | 5.1% | 2 (0.8%) |
+| Riobard | 538 | 4.4% | 1 (0.4%) |
+| therealmitchconnors | 522 | 4.3% | 5 (2.0%) |
+| Georges Varouchas | 454 | 3.7% | 4 (1.6%) |
+| rpothier | 384 | 3.1% | 1 (0.4%) |
+| wu8685 | 383 | 3.1% | 2 (0.8%) |
+
+There are 77 more authors below these.
+
+**Concentration**
+- **Bus factor (lines-based):** it is 5. That is the smallest number of authors whose surviving lines reach 50% of the lines counted, and the five are Eric Paris, Alex Ogier, Noah Dietz, Jonathan Reyna and Tamal Saha, with 50.5%. Reaching 80% takes 15 authors. Both numbers cover the whole repository, Go files only.
+- **Losing one or two people:** Eric Paris and Alex Ogier together hold about 27% of the lines. The rest is spread across many contributors, so no single departure leaves an area with no one who wrote it.
+- **Single-commit holders:** Noah Dietz, Jonathan Reyna, Riobard, rpothier and Alex Besogonov each hold a large block from one or two commits. Their lines are probably a few large features. If any of them has left, check which files they cover with `--reviewers <path>`.
+- **Most useful reviewers:** Eric Paris and Alex Ogier are the only top owners with many commits behind their lines. Their commits date from 2015 to 2018, so confirm they are still active before relying on them.
+
+**Checks and caveats**
+- **Mechanical rewrites:** I checked them. The tool set aside 0 commits and flagged 3 that look mechanical:
+  - `6bf5b04` (Sam Okafor, the `interface{}` to `any` rewrite): I kept it in the main table. `git show --stat` shows it changed one or two lines per file across many files. Excluding it moves nobody by more than about 20 lines. Eric Paris goes from 2,020 to 2,041, and the bus factor stays 5 (50.7%).
+  - `d16d05e` (bogem, fmt to strconv; 32 lines) and `92abf19` (bogem; 1 line): these are real code changes, so I kept them.
+- **Copy detection:** figures use `-w -M -C`. It moved 618 lines in 16 files to other authors. Without `-C`, Alex Ogier would hold 6.9% (842 lines) instead of 10.1%, and Riobard 7.6% (923 lines) instead of 4.4%. So Ogier's and Riobard's positions depend on this setting. The tool attributes copied code to its original author, which is what you want when picking reviewers.
+- **What this cannot show:** code quality, review work, design done outside the code, or code that was deleted on purpose. Surviving lines measure what is still in the code, not how well anyone understands it.
+
+If you want it, I can run `--reviewers` on specific files, or `--group-by dir` to see whether any one directory depends on a single person.
+META cost=0.09072340000000001 ms=32521 turns=7

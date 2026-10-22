@@ -1,0 +1,26 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -15; echo; git ls-files '*.go' | xargs cat | wc -l
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C` on HEAD, all tracked `.go` files, 15,313 lines including tests):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~14% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Alex Ogier | 1,214 | ~8% |
+| 4 | Jonathan Reyna | 1,062 | ~7% |
+| 5 | Marcus Lindqvist | 956 | ~6% |
+
+Next are Priya Raman (802, ~5%) and Tamal Saha (596, ~4%).
+
+- **Low concentration:** The top five own only about 43% of surviving lines. The rest is spread across many small contributors.
+- **Names not merged:** I grouped by author name only. If someone committed under two names or emails, their share is split and understated. I did not check for a `.mailmap`.
+- **Lines are not importance:** Test files count the same as core code. Some of these counts may come from large test or completion files rather than the parser. I can break the numbers down by directory or exclude `_test.go` if you want.
+- **No recency data:** This shows who wrote the code, not who is still active. For co-maintainer picking, I can add each person's last commit date and recent review activity.
+META cost=0.0507083 ms=13337 turns=3

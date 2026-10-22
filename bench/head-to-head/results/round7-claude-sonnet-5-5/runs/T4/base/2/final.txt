@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-base-2/repo; ls -a . .github docs 2>/dev/null | head -50; find . -iname CODEOWNERS -not -path './node_modules/*'; echo ---; git shortlog -sne --since="18 months ago" -- lib/index.js | head; echo ---; git log -n 8 --format='%h %an %ad %s' --date=short -- lib/index.js
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-base-2/repo; git shortlog -sne HEAD -- lib/index.js | head -20; echo ---; grep -n -A8 -i 'maintainer\|contributors\|author' package.json | head -30
+FINAL ANSWER:
+**Troy Goode** is the best reviewer.
+
+- The repo has no CODEOWNERS file, so this answer comes from git history and `package.json`.
+- Troy is the package author in `package.json` (`"author": "Troy Goode"`).
+- Troy has the most commits to `lib/index.js` (29). The next highest is 4.
+- Troy also made the most recent substantive change, `b2005d9 lib: annotate handlers` (2026-04-10).
+
+Two other people could be a second reviewer:
+- **Douglas Christopher Wilson** has 4 commits to this file. He is a long-time maintainer of Express packages, which is background knowledge and not recorded in this repo. His last commit to the file was in 2017.
+- **Alejandro Caravaca Puchades** also has 4 commits, but I didn't check how recent they are.
+
+Don't use "Fiona Formatter" as a reviewer. Their only commit was the 2026-04-12 reformat (`62628c0`). That commit is also worth knowing about, because it re-indented the whole file. Run `git blame -w`, or add `62628c0` to `.git-blame-ignore-revs`, so that blame points to the real authors.
+
+If the change is about `maxAge`, preflight handling, or the Safari workaround, you could also look at who wrote those lines. I can run `git blame` on the exact region you plan to touch.
+META cost=0.0414384 ms=12678 turns=3

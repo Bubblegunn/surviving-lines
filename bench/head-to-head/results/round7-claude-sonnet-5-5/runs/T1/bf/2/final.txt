@@ -1,0 +1,33 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -vE '(package-lock\.json|yarn\.lock|\.(png|jpg|gif|ico|svg|woff2?)$)' | while IFS= read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -25; echo ---; git ls-files | wc -l; git log --format=%ad --date=short | sed -n '1p;$p'
+ - Bash: git show --stat --format='%h %an <%ae> %ad %s' 62628c0 | head -12; echo ---; git ls-files | grep -vE '(package-lock\.json|yarn\.lock|\.(png|jpg|gif|ico|svg|woff2?)$)' | while IFS= read -r f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -12; echo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the surviving code. Counts come from `git blame` over the 18 tracked files, about 1,960 lines, excluding lockfiles and images.
+
+| Author | Lines surviving | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~2% |
+| Linus Unnebäck | 26 | ~1% |
+| Others (about 12 people) | the rest | under 1% each |
+
+- **Reformat commit:** The latest commit, `62628c0` by Fiona Formatter, re-indented and re-quoted `lib/index.js` and three test files. Plain blame gives her 291 lines, which is wrong.
+  - I re-ran blame with `--ignore-rev 62628c0`, which assigns those lines back to whoever wrote them before the reformat. The table uses that run.
+  - The reformat touched 1,016 lines in 4 files, so Troy's and Douglas's shares also include some of those lines.
+- **Duplicate identity:** `troy@laptop.example` and `<email redacted>` are the same person. The table merges them under the name `Troy Goode`.
+- **Blame flags:** I used `-w -M -C`, so whitespace changes and moved or copied lines don't take over ownership.
+- **Not checked:** I didn't check who is still active. Troy's share is large but may be old code from 2013, when the repo started. If you want a bus-factor view (who is still around to maintain each area), I can run the busfactor script. It weights commits by recency and does not count surviving lines, so its result will differ from this table.
+META cost=0.0726692 ms=20053 turns=6

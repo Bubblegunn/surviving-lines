@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | wc -l; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head -20; git rev-list --count HEAD; git log --format='%ad' --date=short | sed -n '1p;$p'
+ - Bash: git ls-files -z | grep -zvE '(^|/)(package-lock\.json|.*\.(png|jpg|gif|ico))$' | while IFS= read -r -d '' f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -25; echo ---; git ls-files | grep -c .; git shortlog -sn HEAD | head -8
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson" "Íñigo Marquínez Prado" "Jon Church" "Sebastian Beltran" "Ulises Gascón"; do echo "$a: $(git log --author="$a" --format=%ad --date=short -1)"; done; git ls-files | xargs wc -l | sort -rn | head -8
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own about 73% of the surviving lines. I used `git blame` on `HEAD` rather than the busfactor skill, because the skill weights commits by recency instead of counting the lines that remain.
+
+Per-file blame used `-w -M -C`. It also used `--ignore-revs-file .git-blame-ignore-revs`, so the 4-space/double-quote reformat commit (`62628c0`) doesn't count as ownership. The repo has 19 tracked files and 1,995 lines in total.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~2% |
+| Linus Unnebäck | 26 | ~1% |
+
+About 25 other authors share the remaining ~7%. That includes `dependabot[bot]` with 10 lines and Efe with 6.
+
+- **Commits mislead here:** `git shortlog` puts Wilson first (143 commits, against 122 for Troy Goode). Blame puts Goode first, because his lines survived more often.
+- **Wilson's last commit is 2021-09-07:** that is about five years ago, so his 629 lines have no recent committer behind them. Most of the rest of the code is held by people who committed in the last year or so.
+- **Goode's last commit shows 2026-04-10:** I didn't expect that for the original author, whose history starts in 2013. It may be a rewrite or re-author, or I may have matched on name only. I didn't dig into it.
+- **Aliases not merged:** `Alejandro Caravaca Puchades` (30) and `alex94puchades` (4) look like the same person, so I counted them separately. Merged, they would have 34 lines. I haven't checked the other authors for aliases.
+- **Scope:** I excluded images and `package-lock.json`. Blame counts lines, so the 731-line `test/test.js` weighs heavily. Per-file ownership might give a different picture.
+
+I can break the split down per file or per directory, merge aliases through a `.mailmap`, or generate a CODEOWNERS file if you want one.
+META cost=0.0771862 ms=25326 turns=7

@@ -1,0 +1,27 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read -r f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -15; echo; git ls-files '*.go' | xargs wc -l | tail -1
+FINAL ANSWER:
+Top five by surviving Go lines, from `git blame -w -M -C` over all tracked `*.go` files (15,313 lines, tests included):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~14% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Alex Ogier | 1,214 | ~8% |
+| 4 | Jonathan Reyna | 1,062 | ~7% |
+| 5 | Marcus Lindqvist | 956 | ~6% |
+
+Priya Raman is next with 802 lines (~5%).
+
+- **Shares are low:** the top five together own only about 43%. Authorship is spread across many people.
+- **Names not merged:** I did not apply a `.mailmap` or merge name variants. If someone committed under two names, their share is split and understated.
+- **Lines are not the same as activity:** blame counts surviving lines only. It does not show who is active now, who reviews, or who understands the design. Alex Ogier's lines are likely early core code, but check that against recent activity.
+
+I can run the same count for the last 12 months or for non-test files only if you want a view of current contributors. The `busfactor` skill can also do this.
+META cost=0.045509100000000004 ms=13648 turns=3

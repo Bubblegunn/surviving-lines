@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-base-3/repo; ls lib/rack/attack/store_proxy; ls .github CODEOWNERS 2>&1 | head; echo ---; git shortlog -sne HEAD -- lib/rack/attack/store_proxy; echo ---; git log --format='%h %an %ad %s' --date=short -n 15 -- lib/rack/attack/store_proxy
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-base-3/repo; grep -n "authors\|email" *.gemspec; ls; git log --since=2025-01-01 --format='%an' -- . | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+Repo has no `CODEOWNERS` file, so this comes from git history only.
+
+**Ask about the code**
+- **Gonzalo Rodriguez** (<email redacted>). Most commits to `store_proxy` by far (28 across two identities). Latest was 2026-03-09, removing `NullProxy`.
+- **Hye-jin Park**. Recent Redis work: `ttl` on `RedisCacheStoreProxy`, and `multi_increment`, `ttl`, `exists?` on `RedisProxy` (Jan–Feb 2026). Ask them if you touch Redis proxies.
+- **Mei Tanaka**. Extracted `DalliAccessors` (2026-02-09). Ask them if you touch Dalli/memcached proxies.
+- **Divya Rao**. Added `MemoryStoreProxy` (2026-01-28).
+- **Jaroslav Novak**. Added `NullProxy`, which was later removed.
+- **Santiago Bartesaghi**. Fixed `reset!` with namespaced stores (2024), and has the most commits overall in the repo since 2025.
+
+**Reviewer**
+- **Gonzalo Rodriguez** first. Most history in this directory and recently active.
+- Add the person from the list above who owns the proxy you change.
+- **Aaron Suggs** is the only author listed in the gemspec, so likely the maintainer who merges. Confirm with `CONTRIBUTING.md` or the GitHub repo settings. I didn't check either.
+
+Caveats:
+- Commit counts show who touched the code, not who owns it.
+- Several recent author emails use `example.org`, so check who these people are before you tag them on GitHub.
+
+If you tell me which proxy you're changing, I can narrow this list with `git blame` on those files.
+META cost=0.054600800000000005 ms=13807 turns=4

@@ -1,0 +1,40 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk", "max_results": 1}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-hist-3/repo", "max_files": 1000, "top": 15}
+ - Bash: git log --format='%h %an %ad %s' --date=short -3 && git show --stat --format=%h 62628c0 | tail -8; echo ---; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that survives at HEAD. Blame on the repo as-is gives a different answer, which I explain below.
+
+**Raw blame is misleading.** It credits "Fiona Formatter" with 50.9% of lines. Commit `62628c0` (the 4-space indent and double-quote reformat) touched 1016 lines in `lib/index.js` and `test/*.js`. Blame gives all of them to that commit. I re-ran blame with `--ignore-rev 62628c0 -w -M -C`, which attributes those lines to whoever wrote them before the reformat.
+
+**Surviving lines by author, ~1996 lines across 18 tracked files:**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~31% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~3.6% |
+| Sebastian Beltran | 67 | ~3.4% |
+| Ulises Gascón | 52 | ~2.6% |
+| Ignacio Mangas | 44 | ~2.2% |
+| Everyone else (about 40 authors) | ~230 | ~11% |
+
+**Where each person's code is:**
+- **Troy Goode:** most of `lib/index.js` and `test/*.js`, which is the actual library and its tests. They also own much of `README.md` and `test/vary.js`.
+- **Wilson:** most of `HISTORY.md`, `LICENSE`, `.eslintrc.yml`, `package.json` and `ci.yml`. Their code is mostly boilerplate and config, not core logic.
+- **Íñigo, Sebastian, Ulises and Ignacio:** nearly all of the `.github/workflows/*` and `dependabot.yml` files.
+- **Jon Church:** the README.
+
+**Caveats:**
+- The historian tool flags every author as inactive. Its cutoff is 6 months before today (2026-10-22), and the last commit in the repo is 2026-04-12. That says the repo is quiet, not that these authors left.
+- The `--ignore-rev` figures come from my own blame run. The historian tool doesn't support ignoring a commit. Lines changed by both the reformat and an earlier edit may be attributed slightly off.
+- Line counts include docs, config and tests. `lib/index.js` alone is only 238 lines. Run `git blame -w --ignore-rev 62628c0 lib/index.js` if you want the core library's owners on their own.
+META cost=0.08372400000000002 ms=23955 turns=6

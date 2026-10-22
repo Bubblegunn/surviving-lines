@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-1/repo", "path": "src/Parser"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-1/repo", "file": "src/Parser/Lexer.php"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C5-hist-1/repo", "file": "src/Parser/Lexer.php", "limit": 30}
+ - Bash: ls src/Parser && git log --format='%h %ad %an | %s' --date=short -i --grep=escape | head -20
+FINAL ANSWER:
+**Who wrote the live code in `src/Parser` (surviving lines at HEAD):**
+
+| Author | Lines | Files |
+|---|---|---|
+| Graham Campbell | 792 (48.9%) | `Lexer`, `Parser`, `ParserInterface`, `EntryParser`, `Entry`, `Lines`, `Value` |
+| Aiko Tanaka (also committing as "aiko tanaka") | 637 (39.4%) | `Escape.php` (206 lines), `Unicode/CharTable.php` (431 lines) |
+| "root" | 117 (7.2%) | `Quirks.php` |
+| "Your Name" | 69 (4.3%) | `Compat.php` |
+
+- **Inactive authors:** JT Smith (last commit 2022-10-15) and Jonas Staudenmeir (2024-07-20) own 1 line each. No file is orphaned.
+- **Unmapped identities:** "root" and "Your Name" look like unconfigured git identities. They have no real name, so ask the maintainers who they are. `Quirks.php` and `Compat.php` are not attributable to a named person.
+- **Recent work:** Aiko's escape code is new. The `feature/escapes` PR (#1) was merged 2026-08-26. Graham merged it, but the history shows no sign that Graham wrote it.
+
+**Who to ask:**
+- **`Lexer.php`: Graham Campbell.** They wrote 100% of its 58 lines. The file has been stable since 2020-06-07 and has had 7 commits, all by Graham.
+- **Escape handling: Aiko Tanaka.** They own `Escape.php` (about 77% under "Aiko Tanaka" and 23% under "aiko tanaka") and `Unicode/CharTable.php`. Both are very recent, so the audit should treat them as the least-reviewed code.
+- **Escape handling from before 2026:** Graham Campbell wrote the older quote-escape logic, from the 2019 parser rewrite (`21c540a`, #322). Ask Graham about how escapes behaved before Aiko's changes, and about the `Lines.php` and `EntryParser.php` code that handles escaped quotes in multiline values.
+
+I did not read `Lexer.php` itself. It may contain little escape logic, because the escape code lives in `Escape.php`.
+
+For the audit, start with `Escape.php` and `CharTable.php`. They are new and have one author.
+META cost=0.0706219 ms=14250 turns=7

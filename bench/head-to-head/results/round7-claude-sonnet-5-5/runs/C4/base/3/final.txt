@@ -1,0 +1,34 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8; done
+ - Bash: for d in lib test; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{print "total",t; for(i=1;i<=6;i++){split(c[i],a," "); printf "%s  %.0f%%\n", c[i], a[1]*100/t}}'; done; git ls-files lib | sed 's/.*\.//' | sort | uniq -c
+FINAL ANSWER:
+Ask José Valim first. Ask Kaito Mori second.
+
+Share of surviving lines, from `git blame -w -M -C` at HEAD:
+
+**lib/** (1496 lines)
+- José Valim: 57%
+- Kaito Mori: 17%
+- Weblate: 5%. This is a translation bot, so it is not a person to ask. Its lines are the locale `.yml` files.
+- Rafael Mendonça França: 4%
+- Vestimir Markov: 3%
+- Carlos Antonio da Silva: 3%
+
+**test/** (1853 lines)
+- José Valim: 57%
+- Rafael Mendonça França: 10%
+- Kaito Mori: 9%
+- Carlos Antonio da Silva: 6%
+- Lucas Mazza: 4%
+- Jan De Poorter: 4%
+
+José Valim owns both directories at about the same share. The rest differs. Kaito Mori is clearly second in `lib/` but third in `test/`. Rafael Mendonça França and Carlos Antonio da Silva have a bigger share in `test/` than in `lib/`. Lucas Mazza and Jan De Poorter show up in the `test/` top six but not the `lib/` top six. So `test/` has about the same main owner but a wider group of contributors.
+
+Blame shows who last changed a line, not who is active now. Check `git log --since=1.year -- lib` before you pick a person to contact.
+META cost=0.05171680000000001 ms=14594 turns=4

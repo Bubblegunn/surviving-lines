@@ -1,0 +1,44 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && echo --- && git shortlog -sne HEAD -- src/Parser && echo --- && git log --format='%h %an %ad %s' --date=short -- src/Parser/Lexer.php | head -30
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git log --format='%h %an %ad %s' --date=short -- src/Parser/Escape.php; echo; git log -3 --format='%h %an %ad %s' --date=short -- src/Parser/Lexer.php; git blame -w -M -C --line-porcelain HEAD -- src/Parser/Lexer.php | grep -E '^(author |author-time )' | paste - - | sort | uniq -c | sort -rn | head
+ - Bash: grep -rn "Escape\|Quirks\|Compat" src --include=*.php | grep -v "^src/Parser/\(Escape\|Quirks\|Compat\)\.php" | head; echo ---; git log --format='%h %an <%ae> %ad %s' --date=short -- src/Parser/Quirks.php src/Parser/Compat.php src/Parser/Unicode
+ - Bash: grep -rnE "Escape|Quirks|Compat" src | grep -vE "^src/Parser/(Escape|Quirks|Compat)\.php" | head
+FINAL ANSWER:
+Surviving lines in `src/Parser` come from `git blame -w -M -C` on HEAD. Lines that were reformatted, moved or copied are credited to the original author.
+
+**Surviving lines by author**
+
+| Author | Lines | Files |
+|---|---|---|
+| Graham Campbell | about 780 | `Entry`, `EntryParser`, `Lexer`, `Lines`, `Parser`, `ParserInterface`, `Value` |
+| Aiko Tanaka | 637 (206 in `Escape.php`, 431 in `Unicode/CharTable.php`) | `Escape.php`, `Unicode/CharTable.php` |
+| `root <root@localhost>` | 117 | `Quirks.php` |
+| `Your Name <<email redacted>>` | 69 | `Compat.php` |
+| Vance Lucas | 10 | `Lines.php` |
+| Jonas Staudenmeir, JT Smith, StyleCI Bot | 1 each | `Entry.php`, `Lines.php`, `EntryParser.php` |
+
+Aiko Tanaka appears under two spellings in git (`Aiko Tanaka` and `aiko tanaka`). A `.mailmap` entry would merge them.
+
+**Lexer.php**
+- All 58 lines are Graham Campbell's.
+- Most of them date from 2020. The "Tweaked lexing" and "Improved parsing performance" commits are from June 2020.
+- The latest change is `301c079`, from 2026-08-24. It resolves static analysis baseline entries and changed 1 line.
+- Ask Graham Campbell about the lexer.
+
+**Escape handling**
+- `Escape.php` is entirely Aiko Tanaka's. It was added on 2026-08-26 in `4b9b803` ("Add escape sequence handling") and extended in `09f7c5c` ("Escape: more sequences").
+- Aiko also wrote `Unicode/CharTable.php`.
+- Ask Aiko Tanaka about the escape logic.
+
+**For the audit**
+- Nothing in `src` references `Escape`, `Quirks` or `Compat`. That grep covered `src` only, so I did not check tests, config or dynamic loading. If nothing else loads them, they are dead code and not reachable from the lexer or parser.
+- Aiko's escape code is therefore separate from Graham's `Lexer.php`. If the lexer should be using `Escape`, that wiring is missing.
+- `Quirks.php` and `Compat.php` were committed on 2026-08-26 under placeholder identities (`root@localhost` as "fix", and `<email redacted>` as "compat shims"). The author is unknown, so there is nobody to ask about them. Review them as unattributed code.
+- Aiko's files and the two unattributed files all landed on 2026-08-26, two days after Graham's last commit. They are the newest and least reviewed code in the directory.
+META cost=0.0695519 ms=21420 turns=6

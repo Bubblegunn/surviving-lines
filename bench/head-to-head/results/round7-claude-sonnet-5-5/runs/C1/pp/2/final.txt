@@ -1,0 +1,26 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.go' | while read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files '*.go' | xargs wc -l | tail -1
+FINAL ANSWER:
+Top five by surviving Go lines (`git blame -w -M -C` on HEAD, all tracked `*.go` files, 15,313 lines in total):
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Eric Paris | 2,194 | ~14% |
+| 2 | Noah Dietz | 1,240 | ~8% |
+| 3 | Alex Ogier | 1,214 | ~8% |
+| 4 | Jonathan Reyna | 1,062 | ~7% |
+| 5 | Marcus Lindqvist | 956 | ~6% |
+
+Together these five hold about 43% of the lines. Priya Raman (802, ~5%) and Tamal Saha (596, ~4%) are next. The ownership is spread out, so no single author dominates.
+
+- **Includes tests:** the counts cover test files as well as library code. I didn't separate them.
+- **No author merging:** I grouped by author name only. If someone commits under two names or emails, their share is split across rows and understated.
+- **Recent bulk commits:** the license-header and `go fix` commits may have taken over some lines, but `-w` ignores whitespace-only changes.
+- **Not a maintainer ranking:** line share doesn't show who is still active or who reviews PRs. I can pull recent-activity and review data, or a per-file ownership breakdown, if you want it.
+META cost=0.0525583 ms=18434 turns=3

@@ -1,0 +1,26 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history,mcp__git-historian__bus_factor", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T4i-hist-2/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T4i-hist-2/repo", "file": "lib/index.js", "limit": 30}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T4i-hist-2/repo", "path": "lib/index.js"}
+FINAL ANSWER:
+No one active owns `lib/index.js`. Every author is inactive: none has committed since 2026-04-22, the 6-month cutoff.
+
+**Line ownership is misleading.** Fiona Formatter owns 89.9% of the lines, but only through `62628c0`, the 4-space and double-quote reformat. That commit changed no logic, so she is a poor reviewer choice.
+
+**Authors who know the logic:**
+- **Troy Goode** wrote the file in 2013 and made the Vary and preflight changes. He also made the last real change, `b2005d9` (2026-04-10), and is the best reviewer if reachable.
+- **Douglas Christopher Wilson** (`dougwilson`) made the 2017 fixes: `Vary: Access-Control-Request-Headers`, the missing `methods` option, and the frozen options handling. His last commit is 2021-09-07.
+- **Alejandro Caravaca Puchades** wrote the regexp and array `origin` matching (2015). Check whether they are still around.
+
+**Before you change the file:**
+- For Vary or header behavior, run `git log -p -- lib/index.js` on `075c4b5` and `6d2ff29`, which fixed past regressions.
+- Run `git blame -w --ignore-revs-file .git-blame-ignore-revs lib/index.js` to skip the reformat commit and see the real authors.
+- The review will probably fall to whoever maintains the repo now. Ask Troy Goode for a courtesy look if you can reach them.
+META cost=0.066859 ms=13344 turns=6

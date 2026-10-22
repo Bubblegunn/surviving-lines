@@ -1,0 +1,42 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --oneline | wc -l && ls src/itsdangerous && for f in signer.py timed.py; do echo "== $f"; git blame -w -M -C -C --line-porcelain src/itsdangerous/$f | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{c[a" "m]++} END{for(k in c)print c[k],k}' | sort -rn; done; cat <home>/.claude/skills/caveman/SKILL.md | head -30
+ - Bash: git log --format='%h %an %ad %s' --date=short -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -60; echo; git log --author=Ibarra --format='%h %ad %s' --date=short --stat | head -60
+ - Bash: git log -8 --format='%h %an <%ae> | %cn | %ad | %s' --date=short; echo; git show 93695fd | head -150
+ - Bash: cat > /tmp/ign.txt <<EOF
+$(git rev-parse 0635526 7104e55 0e255fc 228b7b1 aed5b26 d9b9514 69a3bca 01001c6 52890d7 9a25d98 2b4057a c294b2f ffeab7f ccc67a1)
+EOF
+for f in signer.py timed.py; do echo "== $f"; git blame -w -M -C -C -C --ignore-revs-file /tmp/ign.txt --line-porcelain src/itsdangerous/$f | awk '/^author /{a=substr($0,8)} /^\t/{c[a]++} END{for(k in c)print c[k],k}' | sort -rn; done
+echo; git log --diff-filter=A --format='%h %an %s' -- src/itsdangerous/signer.py src/itsdangerous/timed.py; git log --follow --format='%h %an %ad %s' --date=short -- src/itsdangerous/timed.py | tail -3; git show 56dba8d | sed -n 1,40p; git show 56dba8d --format=%B -s; git show --stat 0635526 | head
+ - Bash: git show --stat --format= 0635526 | grep -E 'py'; git ls-tree -r --name-only 0635526^ | grep -E '\.py$' | head
+ - Bash: git blame -w --line-porcelain 0635526^ -- src/itsdangerous/__init__.py | awk '/^author /{a=substr($0,8)} /^\t/{sub(/^\t/,"");print a"\t"$0}' > /tmp/old.tsv
+for f in signer.py timed.py; do echo "== $f"; git blame -w --ignore-revs-file /tmp/ign.txt --line-porcelain src/itsdangerous/$f | awk '/^author /{a=substr($0,8)} /^\t/{sub(/^\t/,"");print a"\t"$0}' | python3 -I -c "
+import sys,collections
+old={}
+for l in open('/tmp/old.tsv'):
+    a,_,c=l.rstrip('\n').partition('\t'); old.setdefault(c.strip(),a)
+cnt=collections.Counter()
+for l in sys.stdin:
+    a,_,c=l.rstrip('\n').partition('\t'); s=c.strip()
+    if a=='David Lord' and s and s in old and len(s)>12: a=old[s]+' (orig, moved by DL)'
+    cnt[
+FINAL ANSWER:
+**Ask David Lord first. If your change touches the rotation helpers, also ask Tomás Ibarra.**
+
+I ran `git blame` with whitespace and move detection and ignored the mechanical commits (pyupgrade, typing, the module split, pre-commit). For the lines that moved in the 2018 split, I matched them back to the pre-split file.
+
+| File | Current author lines (surviving) |
+|---|---|
+| `signer.py` | David Lord ~211, Tomás Ibarra 100, Hsiaoming Yang 18, Arnout van Meer 18, Armin Ronacher ~11, others ≤5 |
+| `timed.py` | David Lord ~163, Tomás Ibarra 72, Armin Ronacher ~45, Zach Hugnou 7, Alan Hamlett 4, others ≤2 |
+
+- **David Lord:** they authored most surviving lines, mostly typing, Python 3 cleanup, datetime/timezone fixes and the compat property. They also committed Ibarra's patches, so they have reviewed this code recently. This is the reviewer.
+- **Tomás Ibarra:** they wrote the two newest additions, commits `93695fd` (`signer.py`, 100 lines) and `56dba8d` (`timed.py`, 72 lines). Those lines are `rotate_0`…`rotate_13` and `rotate_ts_0`…`rotate_ts_N`, which look like repetitive placeholders, not key rotation (`value % n`, `value * k + i`). They are new, unused and doing nothing for signing. Check whether they are really wanted before treating Ibarra as the owner of "rotation".
+- **Armin Ronacher:** original design of `Signer` and the fallback signers in `TimedSerializer`, so ~45 lines in `timed.py` and ~11 in `signer.py`. His 2018 email is likely stale, and David Lord has maintained the project since, so Lord is the practical contact.
+
+Most-lines blame would also credit David Lord, but plain `git blame` over-credits the split commit and the pre-commit bot. Lord's real authorship is still the largest, with Ibarra's recent additions second.
+META cost=0.10008800000000001 ms=35156 turns=7

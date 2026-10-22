@@ -1,0 +1,29 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.rs' | xargs -n1 git blame --line-porcelain -w -M -C HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head; echo; git ls-files '*.rs' | wc -l
+ - Bash: git ls-files '*.rs' | xargs -n1 git blame --line-porcelain -w -M -C HEAD -- 2>/dev/null | grep '^author ' | wc -l; git ls-files '*.rs' | xargs cat | wc -l; git log --format='%an <%ae>' | grep -i 'mor[ea]' | sort | uniq -c
+FINAL ANSWER:
+Mostly one person, yes. By `git blame` (with `-w -M -C`) on the 10 tracked `.rs` files, 4,366 lines currently exist:
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,838 | 65% |
+| Sam Okoro | 646 | 15% |
+| Inès Moreau (two spellings, see below) | 217 | 5% |
+| Sebastian Thiel | 74 | 1.7% |
+| Ashley | 68 | 1.6% |
+| Aron Griffis | 59 | 1.4% |
+| mcharsley | 45 | 1.0% |
+| Marvin Löbel | 41 | 0.9% |
+| Martin Sehnoutka | 38 | 0.9% |
+
+- **Concentration:** Gallant owns about two thirds of the lines. Gallant and Okoro together own about 80%. Everyone else is under 5%, and there is a long tail beyond the top 9.
+- **Moreau:** blame lists "Inès Moreau" (120 lines) and "Ines Moreau" (97 lines) separately. The git log shows three identities with different emails: `ines.moreau@university.example`, `ines@moreau.example` and `<email redacted>`. They are probably the same person. I merged them on that assumption, and I didn't check it against a `.mailmap`. If they are different people, the two Moreau rows are 120 and 97 lines, and neither passes Sebastian Thiel's 74 by much.
+- **Caveats:**
+  - Blame credits the last commit that touched a line. The recent "normalize line endings" and "add SPDX headers" commits might hide original authors on the lines they changed. `-w` ignores whitespace-only changes, and I didn't verify that it covers the line-ending commit.
+  - The counts include comments and blank lines.
+META cost=0.04632 ms=12972 turns=3

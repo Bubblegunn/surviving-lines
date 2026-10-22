@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "Rust code authorship concentration: share of surviving lines by author"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -10; git shortlog -sne --no-merges HEAD | head -10
+ - Bash: git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep -a '^author ' | wc -l; git ls-files '*.rs'; git log --format='%an <%ae>' | grep -i -E 'moreau|okoro' | sort | uniq -c
+FINAL ANSWER:
+Mostly one person, but not entirely. Andrew Gallant owns about 65% of the surviving Rust lines.
+
+I ran `git blame` on the 10 tracked `.rs` files at HEAD, which gave 4,366 lines. I used `-w -M -C`, so whitespace-only changes and moved or copied lines don't count as authorship. I did not use the skill's per-file commit-count method, because you asked about lines that still exist.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,838 | 65.0% |
+| 2 | Sam Okoro | 646 | 14.8% |
+| 3 | Inès Moreau (two spellings, merged) | 217 | 5.0% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+- **Inès Moreau:** blame lists "Inès Moreau" (120 lines) and "Ines Moreau" (97 lines) separately. The history shows three identities: two different emails, plus a `noreply` address under the name "ines". I treated them as one person. Without that merge, neither spelling would reach the top three.
+- **Bus factor:** it is 1. Gallant alone is over 50% of the surviving lines, so losing that one person leaves most of the code without a maintainer.
+- **Sam Okoro:** 14.8% of the lines comes from only 2 commits in the whole history. That looks like a few large changes rather than steady contribution. I haven't checked which files those lines are in. It could be a generated file such as `src/ucd_tables.rs`, which would overstate their share.
+- **Tail:** after the top three, nobody has more than 2% of the lines.
+- **Not checked:** I didn't check whether these authors are still active, and I didn't do the per-module or importance breakdown from the skill template.
+
+I can run the per-file breakdown or check the Sam Okoro lines if you want either.
+META cost=0.0684176 ms=17029 turns=6

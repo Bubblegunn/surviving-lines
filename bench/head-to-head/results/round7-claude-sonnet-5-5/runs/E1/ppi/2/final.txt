@@ -1,0 +1,80 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules | wc -l; git ls-files | cut -d/ -f1 | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd
+ - Bash: for f in $(git ls-files | grep -E '\.js$|package.json|README.md|HISTORY.md|^\.github'); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; git log -1 --format='last: %an %cs' -- $f; done; echo; echo ACTIVE; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" | sort | uniq -c; echo; git log --all --no-merges --format='%an|%cs' | awk -F'|' '{l[$1]=(l[$1]==""?$2:l[$1])} END{for(k in l)print k,l[k]}' | sort -k3 | head -20; echo; grep -rn "require(" lib/*.js | head -20; git ls-files lib test | head -20
+ - Bash: for a in "Douglas Christopher Wilson" "Troy Goode" "Ulises Gascón"; do echo "$a: $(git log --all --no-merges --author="$a" -1 --format=%cs) first $(git log --all --no-merges --author="$a" --format=%cs | tail -1)"; done; git log --all --no-merges --format=%an --since=2025-10-22 | sort | uniq -c; git log --all --no-merges --format=%an -- lib/index.js | sort | uniq -c | sort -rn | awk '{s+=$1} END{print s" total"}'
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-22
+
+The repo is small, so I analyzed it directly and did not launch the contributor-analyzer agent. It has 1 library file (`lib/index.js`), 6 test files and 4 CI/doc files, and about 238 non-merge commits.
+
+### Project-Level Bus Factor: 2
+
+Troy Goode and Douglas Christopher Wilson wrote most of the history: 95 and 143 commits, about 100% of human commits combined. Without both of them, no maintainer would have worked deeply in most of the code.
+
+Wilson has not committed since 2021-09-07, so effectively only Troy Goode is active on the core code.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source and config files analyzed | 14 |
+| Files with bus factor 1 (one author ever) | 3 (21%): `test/vary.js`, `test/support/env.js`, `.github/dependabot.yml` |
+| Files where the top author wrote more than 80% of commits | 1: `test/vary.js` (Goode 1/1). `test/support/env.js` and `dependabot.yml` also have a single author, each with a single commit |
+| Files with bus factor 2 | 1 (`test/issue-2.js`) |
+| Files with bus factor 3+ | 10 (71%) |
+| Critical single-owner files | 0 |
+
+The three single-author files have 1 commit each. A single commit is weak evidence of ownership, and none of these files is critical.
+
+### Critical Risk Areas
+
+No file is both single-owner and widely imported. `lib/index.js` is the only library file and has no dependents inside the repo. It is the whole product, though, and its authorship is concentrated.
+
+| File | Main authors | Owner active? | Risk |
+|---|---|---|---|
+| `lib/index.js` | Goode 29, Wilson 4, Caravaca Puchades 4 (62 commits total) | Goode active (2026-04-10) | **[HIGH]**: about 47% Goode, but it is the whole library |
+| `package.json` | Wilson 68, Goode 37 | Wilson inactive since 2021, Goode active | [MEDIUM] |
+| `test/test.js` | Wilson 8, Tom Arad 1, Fiona Formatter 1 | Wilson inactive | [MEDIUM]: 80% from an inactive author |
+| `test/vary.js` | Goode 1 | Active | [LOW] |
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary owner | Ownership % | Bus factor |
+|---|---|---|---|---|
+| `lib/` | 10+ | Troy Goode | about 47% | 2 |
+| `test/` | 5+ | Goode and Wilson | split | 2 |
+| `.github/` | 8 | Wilson (ci.yml: 10 commits) | split, bot-heavy | 3+ |
+| Docs (`README.md`, `HISTORY.md`) | 6+ | Goode (README 29 commits) | about 70% | 2 |
+
+### Knowledge Heat Map
+
+```
+repo/
+├── lib/       [█████░░░░░] 🟡 Bus Factor: 2 (Goode ~47%, Wilson inactive)
+├── test/      [██████░░░░] 🟡 Bus Factor: 2 (Wilson inactive, Goode active)
+├── .github/   [███░░░░░░░] 🟢 Bus Factor: 3+ (CI mostly bot/Wilson/Gascón/Mangas)
+└── docs       [███████░░░] 🟡 Bus Factor: 2 (Goode ~70% of README)
+```
+
+### Who is the single point of dependence?
+
+**Troy Goode.** The other main author, Douglas Christopher Wilson, has been inactive for about 5 years. Goode has been active since 2013, with the latest commit on 2026-04-10. Only 2 commits from Goode fall in the last 12 months, so the "active" status is thin. Nobody has committed to the repo in the last 90 days.
+
+### Recommendations
+
+1. **Immediate**: have a second person review `lib/index.js` changes and become co-maintainer. Ulises Gascón (touches `package.json`, `HISTORY.md` and CI), Jon Church and Ignacio Mangas are the likeliest candidates.
+2. **Short-term**: document the design intent and edge cases in `lib/index.js` (how it handles `Vary` headers and the `app.del()`/`app.delete()` aliases). Wilson's `test/test.js` knowledge is the part most likely to be lost.
+3. **Ongoing**: rotate release and `package.json` ownership. Add a `CODEOWNERS` file listing at least 2 reviewers for `lib/`.
+
+**Caveats:**
+- Authorship counts come from commit names. People who used several identities are split (for example, "Efe" and "Efe Genc").
+- Reformatting commits such as "Fiona Formatter" make the most recent authorship misleading.
+- Bus factor here is judged on commit counts, not on current understanding of the code.
+META cost=0.07823169999999999 ms=28683 turns=6

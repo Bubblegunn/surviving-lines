@@ -1,0 +1,36 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-bf-1/repo --dry-run --no-github
+ - Bash: git log --oneline | wc -l && git ls-files | wc -l && git log -1 --format=%cd && git log --reverse --format='%h %ad %an' --date=short | head -3 && git shortlog -sne --no-merges HEAD && for d in $(git ls-files | awk -F/ 'NF>1{print $1}' | sort -u) .; do echo "== $d"; git log --no-merges --since=2025-04-12 --format='%an <%ae>' -- $d | sort | uniq -c | sort -rn | head -4; done
+ - Bash: git ls-files && for d in lib test; do echo "== $d"; git log --no-merges --format='%ad %an | %s' --date=short -8 -- $d; done; git log --no-merges --format=%an --since=2025-04-12 | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+Bus factor is low for the code itself (`lib/` and `test/`), but the cause is a long-quiet project, not one dominant maintainer. I ran the busfactor script with `--dry-run --no-github`, so it wrote nothing to the repo. I then checked its output against `git log`.
+
+**Who owns what**
+- **`lib/index.js` and `test/`:** the only recent activity is two commits each, on 2026-04-10 and 2026-04-12.
+  - **Troy Goode** made one commit under `troy@laptop.example`, "annotate handlers" and "vary header coverage".
+  - **Fiona Formatter** (`fiona@formatter.example`) made one mechanical reformat commit.
+  - Before those, the last real change to `lib/` was in 2021 and the last to `test/` was in 2024.
+  - Nobody else has touched these paths in the last 12 months, and no one person clearly owns them.
+  - Doug Wilson wrote 143 of the 354 commits, mostly between 2017 and 2019. Those commits are old, so they carry little weight in the script's scoring.
+- **`.github/`:** this is shared. Ulises Gascón, Ignacio Mangas and Sebastian Beltran each made 1–2 commits, and dependabot made 9, so I don't count it as bus factor 1.
+- **Root files** (`package.json`, README, HISTORY and so on): Ulises Gascón (3 commits), Jon Church (3) and dependabot (11) are active here. There is no single owner.
+- **`* fallback` rule:** the generated CODEOWNERS names `fiona@formatter.example`, Ulises Gascón and Jon Church.
+
+**Risk summary**
+- **Bus factor 1:** the dry-run output has no clearly single-owner zone. The closest is `lib/` and `test/`, where one non-reformat contributor, Troy Goode, made the latest changes. Troy Goode is also the original author, with 93 commits since 2013.
+- **Orphaned:** the dry run did not flag any zone. It printed only the fallback and `.github/` rules.
+- I read these two commits as maintenance work, not as someone understanding the code. The practical risk is that nobody has worked on `lib/index.js` in depth since about 2021.
+
+**Caveats**
+- The script's "now" is the newest commit, 2026-04-12. Today is 2026-10-22, so anyone whose last commit was between October 2025 and April 2026 would count as active here but not by the calendar.
+- The script said the history was "imported" because the root commit holds 8 of the 18 tracked files. That is a heuristic. The history starts in 2013 with Troy Goode and has 354 commits, so I wouldn't treat it as a real re-import.
+- `troy@laptop.example` and `fiona@formatter.example` look like placeholder emails. I couldn't map them to GitHub accounts because I ran with `--no-github`.
+- The dry run does not print the full zone table, so I haven't produced a per-person concentration report. To get that, I need to run without `--dry-run`, which writes `.github/CODEOWNERS` and `.github/ownership.json`. Do you want me to do that?
+META cost=0.0831229 ms=23305 turns=7

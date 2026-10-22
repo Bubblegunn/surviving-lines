@@ -1,0 +1,29 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-pp-2/repo; ls lib/rack/attack/store_proxy; find . -iname CODEOWNERS -not -path './node_modules/*'; echo ---; git shortlog -sne --since="2 years ago" -- lib/rack/attack/store_proxy; echo ---; git log --format='%h %an %ad %s' --date=short -n 15 -- lib/rack/attack/store_proxy
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D3-pp-2/repo; git log --format='%an' -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn; echo ---; for f in lib/rack/attack/store_proxy/*; do echo "$f: $(git log --format='%an' -- $f | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done; ls .github 2>/dev/null; grep -il -E 'maintainer|review' README.md CONTRIBUTING.md .github/* 2>/dev/null
+FINAL ANSWER:
+There's no CODEOWNERS file, and nothing in the README, CONTRIBUTING or `.github` names reviewers. These suggestions come from git history only.
+
+**Who to ask**
+- **Gonzalo Rodriguez** is the main person. They have 28 of the commits under `lib/rack/attack/store_proxy`, far more than anyone else. They also lead on `redis_store_proxy.rb` (10), `redis_cache_store_proxy.rb` (9) and `dalli_proxy.rb` (5). Their most recent commit was 2026-03-09 (removing `NullProxy`).
+- **Hye-jin Park** is the person to ask about the newer Redis work. They added `multi_increment`, `ttl` and `exists?` to `RedisProxy` (2026-01-14) and the TTL on `RedisCacheStoreProxy` (2026-02-20).
+- **fatkodima** has 4 commits, tied with Gonzalo on `redis_proxy.rb` and second on `redis_cache_store_proxy.rb`.
+
+Some files have only one or two authors:
+- **Mei Tanaka** is the only author of `dalli_accessors.rb`, which was extracted in 2026-02.
+- **Divya Rao** wrote `memory_store_proxy.rb`.
+
+**Who should review**
+- **Gonzalo Rodriguez** is the best fit as the main reviewer. They know the most history across all the proxies.
+- If your change touches the Redis proxies, add **Hye-jin Park** or **fatkodima** as a second reviewer.
+- If it touches Dalli, add **Mei Tanaka**.
+
+These are inferences from commit counts. I can't tell from the repo who is still active or who the maintainers are. Check the recent PR history on GitHub for current reviewers, or ask for people with merge rights.
+
+I can also run a `git blame` on specific files or lines you plan to change, or look at the history of past decisions in these files, if you want.
+META cost=0.0508631 ms=12878 turns=3

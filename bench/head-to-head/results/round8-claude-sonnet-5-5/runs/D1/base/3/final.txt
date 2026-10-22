@@ -1,0 +1,43 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git log --oneline | wc -l; wc -l cJSON.c cJSON.h
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn > /tmp/blame_$f.txt; done
+cat /tmp/blame_cJSON.c.txt /tmp/blame_cJSON.h.txt | awk '{n=$1; $1=""; a[$0]+=n; t+=n} END{for(k in a) printf "%d %.1f%% %s\n", a[k], 100*a[k]/t, k}' | sort -rn | head -30
+echo; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain cJSON.c cJSON.h >/dev/null; echo ---; git blame --line-porcelain cJSON.c | grep -c '^author-mail <not.committed'; ls .mailmap 2>&1
+ - Bash: cat .mailmap | head -20; for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | awk '/^author /{a=substr($0,8)} /^author-mail /{print a" "$2}'; done | sort | uniq -c | sort -rn | head -20; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain cJSON.c cJSON.h | grep -c '^author '
+FINAL ANSWER:
+Surviving lines in `cJSON.c` + `cJSON.h` (about 3,600 combined), by `git blame`:
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2699 | 75.0% |
+| 2 | Kevin Branigan | 149 | 4.1% |
+| 3 | Alan Wang | 131 | 3.6% |
+| 4 | Dave Gamble | 111 | 3.1% |
+| 5 | Mike Jerris | 76 | 2.1% |
+| 6 | tomasi | 74 | 2.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% |
+| 8 | caglarivriz | 31 | 0.9% |
+| 8 | PeterAlfredLee | 31 | 0.9% |
+| 10 | Nicolas Badoux | 29 | 0.8% |
+| 11 | Zach Hindes | 23 | 0.6% |
+| 12 | miaoerduo | 22 | 0.6% |
+
+About 25 other contributors share the last 4.3%. Each has 13 lines or fewer.
+
+**Method:** `git blame -w -M -C --line-porcelain`. The `-w` flag ignores whitespace changes. The `-M` and `-C` flags follow lines moved or copied within or between the two files. I used `--ignore-revs-file .git-blame-ignore-revs` to skip the clang-format commit `413c6d1`. Without that, the reformat would have credited most lines to whoever ran it. The repo's `.mailmap` already merges Alan Wang's two identities.
+
+**Likely duplicate identities:**
+- `tomasi` (`<email redacted>`) and `Tomás Ibarra` (`tibarra@corp.example`) look like one person. Combined, that is 142 lines, 3.9%, which would rank them 2nd, ahead of Kevin Branigan.
+- `Lee` (`<email redacted>`) and `PeterAlfredLee` also look like one person. Combined, that is about 41 lines, 1.1%. `Lee` has 10 lines in the first count and 9 in the second.
+- I did not merge either pair because `.mailmap` doesn't link them. This is a guess from the names and emails.
+
+**Limits:**
+- Blame credits whoever last touched each line, not who first wrote the idea. Dave Gamble wrote the original library, but only 3.1% of his lines survive. Max Bruckner's 75% includes lines he rewrote from Gamble's version.
+- This measures surviving lines only. It does not measure design influence, bug-finding or review work.
+META cost=0.07053010000000001 ms=22953 turns=5

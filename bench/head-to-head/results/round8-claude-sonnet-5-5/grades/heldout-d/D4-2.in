@@ -1,0 +1,292 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+How concentrated is ownership of the code in src/? I want the bus factor based on who wrote the lines that are still there, not on commit counts.
+
+CRITERIA:
+1. Andrew Gallant owns about 77% of live lines (accept 74.5% to 79.5%), and the answer gives the bus factor as 1 (one person holds more than half). FAIL if his share is below 70% or above 83%, or if the bus factor is stated as 2 or more.
+2. Everyone else together holds about 23% (accept 20.5% to 25.5%); the second-ranked person is Ola Berg with about 3.4% as ONE entry (accept 2.4% to 4.4%), not two. FAIL if Ola Berg is split into two entries without saying they are one person, or if someone else is ranked second.
+3. Kaito Mori (only converted src/error.rs line endings) is credited with at most 0.5%, and src/error.rs remains mostly Andrew Gallant's (about 65%, accept 55% to 75%). FAIL if Kaito Mori has 3% or more.
+4. The generated src/errno_table.rs (Niko Alvarez) is excluded: Niko Alvarez holds at most 0.5% and the total is about 3,320 lines (accept 3,150 to 3,500), not about 4,200. Jun Park (code deleted again) holds 0%. FAIL if Niko Alvarez has 1% or more, or Jun Park is credited.
+5. The answer states what it left out or merged: at least two of (a) ignored whitespace or line-ending-only changes, (b) excluded the generated table, (c) merged the Ola Berg identities. FAIL if fewer than two are stated, or if commit counts are used as the ownership measure.
+
+GROUND TRUTH (computed by a script with git blame):
+HEAD f9f947c74bb99e41581e34bd789dc1aade9badf9
+scope: src/
+files counted: 7  excluded: 1
+  excluded src/errno_table.rs: generated (header says so)
+ignore-revs (0):
+live lines in scope: 3322
+bot-authored live lines (not ranked): 0 
+human live lines (denominator for shares): 3322
+RANKING (share of human live lines)
+ 1. Andrew Gallant: 2554 lines, 76.88%
+ 2. Ola Berg: 113 lines, 3.40%
+ 3. Sebastian Thiel: 74 lines, 2.23%
+ 4. Ashley: 68 lines, 2.05%
+ 5. Aron Griffis: 59 lines, 1.78%
+ 6. Niv Kaminer: 45 lines, 1.35%
+ 7. mcharsley: 45 lines, 1.35%
+ 8. Marvin Löbel: 41 lines, 1.23%
+ 9. Martin Sehnoutka: 38 lines, 1.14%
+10. Yufeng Wang: 36 lines, 1.08%
+11. Garrett Berg: 34 lines, 1.02%
+12. Jonathan Soo: 32 lines, 0.96%
+13. Jos van den Oever: 22 lines, 0.66%
+14. Thayne McCombs: 22 lines, 0.66%
+15. Lukas Kalbertodt: 21 lines, 0.63%
+MERGED IDENTITIES (people with more than one name/email in blame)
+  Ola Berg: Ola Berg <<email redacted>>=58; ola.berg <<email redacted>>=55
+  Niv Kaminer: Niv Kaminer <<email redacted>>=30; nivkner <<email redacted>>=15
+people needed to cover >=50% of human live lines: 1; >=80%: 2
+FACT Andrew Gallant: 2554 lines = 76.88%
+FACT Ola Berg: 113 lines = 3.40%
+FACT Kaito Mori: 0 lines = 0.00%
+FACT Niko Alvarez: 0 lines = 0.00%
+FACT Jun Park: 0 lines = 0.00%
+FACT ola.berg identity (same person as Ola Berg): 113 lines = 3.40%
+FACT file src/error.rs: 262 lines, top author Andrew Gallant 65%
+FACT file src/util.rs: 100 lines, top author ola.berg 55%
+FACT everyone except the top author: 768 lines = 23.12%
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && git rev-list --count HEAD && git ls-files src | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn
+ - Bash: git ls-files src | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author-mail ' | tr 'A-Z' 'a-z' | sed "s|^|$f |"; done | awk '{c[$1" "$3]++; t[$1]++; a[$3]++; T++} END{for(f in t){m=0;for(k in c){split(k,p," ");if(p[1]==f&&c[k]>m){m=c[k];w=p[2]}} printf "FILE %s lines=%d top=%s %.0f%%\n",f,t[f],w,100*m/t[f]} for(x in a)printf "TOT %d %.1f%% %s\n",a[x],100*a[x]/T,x}' | sort -k1,1 -k2,2nr | head -40; git log -1 --format=%ad; ls .mailmap 2>&1 | tail -1
+FINAL ANSWER:
+**Bus factor is 1.** I counted lines that survive at HEAD with `git blame -w -M -C`, over 8 files and 4,206 lines in `src/`. `<email redacted>` owns 60.7% (2,554 lines), which is more than half on their own.
+
+| Author | Lines | Share |
+|---|---|---|
+| <email redacted> | 2,554 | 60.7% |
+| <email redacted> | 883 | 21.0% |
+| <email redacted> | 113 | 2.7% |
+| 31 others | 656 | about 15.6% |
+
+- **Top author, excluding `errno_table.rs`:** `errno_table.rs` is the generated errno table, and `niko` wrote all 883 lines of it. Without it, `jamslam` owns 76.9% of 3,323 lines. `niko` drops out, and the next author is `ola.berg` at 3.4%.
+- **Per file:** `jamslam` is the top author in 6 of the 8 files.
+
+  | File | `jamslam` share |
+  |---|---|
+  | `tests/recursive.rs` | 88% |
+  | `dent.rs` | 83% |
+  | `lib.rs` | 66% |
+  | `error.rs` | 65% |
+  | `tests/mod.rs` | 100% |
+  | `tests/util.rs` | 100% |
+
+  `util.rs` is the exception: `ola.berg` has 55% of its 100 lines. `errno_table.rs` is `niko`'s alone.
+- **Long tail:** 33 authors appear, but 31 of them each have 2% or less. They are mostly small fixes and don't carry knowledge of the code.
+- **Merged emails:** `<email redacted>` and `<email redacted>` were separate mailboxes in blame. I merged them, and there is no `.mailmap` in the repo. I did not check whether other authors use more than one email.
+
+I did not run the `busfactor` skill's `ownership.mjs`. It weights commits with a time decay and does not count surviving lines, so it would not answer your question. I also can't tell from blame whether `jamslam` or `niko` is still active. The skill's orphaned-zone check needs that, so tell me if you want it.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && for f in $(git ls-files src); do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done > /tmp/blame.tsv; awk -F'\t' '{c[$2]++; t++} END{for(a in c) printf "%d\t%.1f%%\t%s\n", c[a], 100*c[a]/t, a; print t" total"}' /tmp/blame.tsv | sort -rn
+ - Bash: awk -F'\t' '{n[$1]++; c[$1 FS $2]++} END{for(k in c){split(k,p,FS); if(c[k]>m[p[1]]){m[p[1]]=c[k];a[p[1]]=p[2]}} for(f in n) printf "%s\t%d lines\ttop: %s %.0f%%\n", f, n[f], a[f], 100*m[f]/n[f]}' /tmp/blame.tsv | sort
+FINAL ANSWER:
+Bus factor of `src/` is **1**. Andrew Gallant wrote 60.7% of the surviving lines, which is more than half on their own.
+
+I ran `git blame -w -M -C` on all 8 files in `src/`. That ignores whitespace-only changes and follows lines moved or copied between files. It covers 4,205 surviving lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| ~35 other contributors | 768 | 18.3% |
+
+- **Two authors cover 81.7%.** After Gallant and Alvarez, no one else has more than 1.8%.
+- **Alvarez's share is one file.** All 883 lines are `src/errno_table.rs`, the generated errno table. Excluding it, Gallant owns about 77% of the hand-written code (2,554 of 3,322 lines).
+- **Per-file ownership.** Gallant's share is high in most files:
+
+| File | Gallant's share |
+|---|---|
+| `src/tests/util.rs` | 100% |
+| `src/tests/mod.rs` | 100% |
+| `src/tests/recursive.rs` | 88% |
+| `src/dent.rs` | 83% |
+| `src/lib.rs` | 66% |
+| `src/error.rs` | 65% |
+
+- **`src/util.rs`** is the only file Gallant doesn't own, and only 100 lines. Its top author is `ola.berg` at 55%.
+- **Author aliases.** Blame counts a few people under more than one name, so their real share is a bit higher. `Ola Berg` (58) and `ola.berg` (55) are likely the same person, about 2.7% together. `Niv Kaminer` and `nivkner` look like the same person, as do `Alisha` and `Alisha Aneja`, and possibly `Ashley` and `Ashley Mannix`. I did not merge them, because there is no `.mailmap`. Merging them does not change the result.
+
+If Gallant is gone, most of the core logic and most of the tests lose their only knowledgeable author.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Bus factor is **1**. One author wrote more than half of the surviving lines in `src/`.
+
+I ran `git blame -w -M -C` on HEAD over the 8 tracked files in `src/`, which gives about 4,205 lines. Authors with a few lines each are grouped as "others" below.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2554 | 60.7% |
+| Niko Alvarez | 883 | 21.0% |
+| Sebastian Thiel | 74 | 1.8% |
+| Ashley, plus Ashley Mannix | 72 | 1.7% |
+| Ola Berg, plus ola.berg | 113 | 2.7% |
+| About 30 others | Under 60 each | About 12% together |
+
+- **Top 1:** 60.7%.
+- **Top 2:** 81.7%.
+- **Bus factor:** 1 if the threshold is 50% of lines. It is 2 if the threshold is 80%.
+
+I merged the author names that look like the same person (Ola Berg and ola.berg, Ashley and Ashley Mannix, Niv Kaminer and nivkner). I did not use a mailmap. That grouping doesn't change the top two. Also, `-w` ignores whitespace changes and `-M -C` follow moved and copied lines. This credits code to its original author instead of whoever reformatted or moved it.
+
+Some of Niko's 883 lines may be the generated errno table (commit `a7c0151`). I didn't check. If that's the case, the share of hand-written code held by the top author would be higher than 60.7%.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__blame_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D4-hist-2/repo/src", "top": 50, "max_files": 1000}
+FINAL ANSWER:
+**Bus factor: 1.** Andrew Gallant alone owns 53.1% of the lines in `src/` that survive at HEAD (2,231 of about 4,200). That is more than half, so one person covers the majority.
+
+This comes from `git blame` on the current lines, not from commit counts. It covers all 8 files in `src/`.
+
+| Author | Surviving lines | Share | Files mainly owned |
+|---|---|---|---|
+| Andrew Gallant | 2,231 | 53.1% | 5 |
+| Niko Alvarez | 883 | 21.0% | 1 (`errno_table.rs`) |
+| Kaito Mori | 262 | 6.2% | 1 (`error.rs`) |
+| nivkner | 147 | 3.5% | 0 |
+| Sebastian Thiel | 96 | 2.3% | 0 |
+| Everyone else (about 25 authors) | under 2% each | about 14% | 1 (`util.rs`, ola.berg) |
+
+Gallant plus Alvarez own 74%. Adding Mori brings that to about 80%.
+
+**Per file:**
+- `src/tests/recursive.rs`: Gallant 83%.
+- `src/dent.rs`: Gallant 98%.
+- `src/tests/util.rs` and `src/tests/mod.rs`: Gallant 100%.
+- `src/lib.rs`: Gallant 54%, nivkner 12%, and the rest spread across many authors.
+- `src/errno_table.rs`: Alvarez 100%. It looks generated, judging by the "Add generated errno table" commit, so the real risk is lower than the number suggests.
+- `src/error.rs`: Mori 100%.
+- `src/util.rs`: ola.berg 75%, Gallant 25%. The same person also commits as "Ola Berg" (66 lines in `src/tests/recursive.rs`), so combined they own about 3.4%. The author names are not merged.
+
+**Activity:**
+- The tool flags every author as inactive, using a cutoff of 2026-04-22 (6 months ago). All 8 files count as orphaned.
+- The most recent last-commit dates are Gallant 2026-04-09, Alvarez 2026-03-20, Mori 2026-02-24 and ola.berg 2026-03-12. These are close to the cutoff, so a longer window would change the "inactive" result. The line shares would not change.
+- The cutoff is the tool's default. I can rerun with a different `inactive_after` if you want.
+- Efe Genc has no surviving lines in `src/`. That fits the history, where `fastpath.rs` was added and then removed.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool>'; $SL -- src; echo ======; $SL --merge-identities -- src
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool> "$@"; }; sl -- src; echo ======; sl --merge-identities -- src
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/<tool> "$@"; }; git show --stat c584a1d | head -20; sl --ignore-rev c584a1d -- src | sed -n 1,16p; sl --merge-identities -- src | sed -n 1,16p
+FINAL ANSWER:
+Ownership of `src/` is highly concentrated. Counting surviving lines, the bus factor is **1**: Andrew Gallant alone holds 76.9% of the code. Reaching 80% of the lines takes 2 authors.
+
+Both numbers cover `src/` only. Bus factor here means the smallest number of authors whose surviving lines add up to at least the threshold (50% or 80%) of the lines counted. It shows how concentrated the remaining code is, not who understands it.
+
+**Method:** `git blame -w -M -C` at HEAD, covering all 7 files and 3,322 attributed lines. Merge commits are excluded.
+
+| Author | Lines | Share of lines | Commits | Share of commits |
+|---|---|---|---|---|
+| Andrew Gallant | 2,554 | 76.9% | 55 | 51.9% |
+| Ola Berg | 113 | 3.4% | 2 | 1.9% |
+| Sebastian Thiel | 74 | 2.2% | 1 | 0.9% |
+| Ashley | 68 | 2.0% | 1 | 0.9% |
+| Aron Griffis | 59 | 1.8% | 1 | 0.9% |
+| Niv Kaminer | 45 | 1.4% | 2 | 1.9% |
+| mcharsley | 45 | 1.4% | 1 | 0.9% |
+| Marvin Löbel | 41 | 1.2% | 1 | 0.9% |
+| Martin Sehnoutka | 38 | 1.1% | 1 | 0.9% |
+| Yufeng Wang | 36 | 1.1% | 3 | 2.8% |
+
+28 more authors hold the rest. None of them is above 1.1%.
+
+**What the output left out or adjusted:**
+- **Generated file:** `src/errno_table.rs` (883 lines) is left out of every number because it is generated. `--keep-generated` would count it.
+- **Rustfmt commit:** Commit `c584a1d` ("style: switch to rustfmt", Andrew Gallant) was flagged as possibly mechanical but not set aside. It rewrote 243 lines across 9 files, 7 of them under `src/`. Excluding it with `--ignore-rev` barely changes the result: Andrew Gallant goes from 2,554 to 2,547 lines (76.7%). The conclusion stands either way.
+- **Other rewrite candidates:** The tool examined 75 commits with surviving lines and set aside none as mechanical.
+- **Copy detection:** The figures use `-w -M -C`. Copy detection moved 151 lines in 3 files to another author. Without it, Andrew Gallant would have 2,705 lines (81.4%), Niv Kaminer 15 lines (0.5%, against 45 with it), and Garrett Berg 0 lines (against 34).
+- **Bots:** None were removed.
+- **`.mailmap`:** I did not write one, since you only asked a question. `--merge-identities` changed none of the figures above.
+
+**Duplicate identities (guesses from names and addresses, not confirmed):**
+- Ashley and Ashley Mannix may be the same person, though the evidence is weak. If they are, they hold 72 lines (2.2%), against 68 and 4 lines unmerged. That would not change the top of the table or the bus factor.
+- The hint also suggested Igor Gnatenko (two addresses) and Alisha / Alisha Aneja (one address). Neither appears among the top authors in `src/`, so they don't affect these figures.
+
+**What these numbers can't show:** line counts say nothing about code quality, review work, design done outside the code, or code deleted on purpose. Gallant's share is high partly because they were the original author and are still the main committer. A commit-count view would understate it (51.9% against 76.9% of lines).
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/ \u2014 based on surviving lines (git blame), not commit counts"}
+ - Bash: git ls-files src | head -200 && echo --- && git ls-files src | wc -l
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo "== per file"; sort /tmp/blame.tsv | uniq -c | sort -k2,2 -k1,1nr; echo "== total"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo "== last commit per author"; git log --format='%an|%ad' --date=short | sort -t'|' -k1,1 -u
+FINAL ANSWER:
+## Bus factor for `src/`: 1
+
+Andrew Gallant owns 2,554 of the 4,205 surviving lines in `src/`, which is 60.7%. That is already past the 50% threshold, so losing that one person leaves most of the code without a knowledgeable maintainer.
+
+I used `git blame -w -M -C` on HEAD for all 8 tracked files in `src/`. The `-w`, `-M` and `-C` flags ignore whitespace changes and credit lines moved or copied between files to their original author. I did not use the skill's commit-count method.
+
+### Surviving lines by author (top 5)
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Andrew Gallant | 2,554 | 60.7% | 2026-04-09 (active) |
+| Niko Alvarez | 883 | 21.0% | 2026-03-20 (active) |
+| Sebastian Thiel | 74 | 1.8% | 2023-09-05 |
+| Ashley | 68 | 1.6% | 2017-07-18 |
+| Aron Griffis | 59 | 1.4% | 2018-08-22 |
+
+- **Aliases:** `Ola Berg` and `ola.berg` (113 lines together) look like one person. Merging them, and the other likely aliases, doesn't change the result.
+- **Long tail:** There are 37 author names in total. Most have fewer than 50 lines, and nearly all of them last committed in 2017–2019.
+- **Excluding generated code:** `errno_table.rs` is generated code. Without it, Gallant owns 2,554 of 3,322 lines (76.9%).
+
+### By file
+
+| File | Lines | Top owner | Share | Bus factor |
+|---|---|---|---|---|
+| `src/lib.rs` | 1,194 | Gallant | 65.8% | 1 |
+| `src/tests/recursive.rs` | 1,158 | Gallant | 87.7% | 1 |
+| `src/errno_table.rs` | 883 | Niko Alvarez | 100% | 1 (generated) |
+| `src/dent.rs` | 352 | Gallant | 82.7% | 1 |
+| `src/tests/util.rs` | 252 | Gallant | 100% | 1 |
+| `src/error.rs` | 264 | Gallant | 64.0% | 1 |
+| `src/util.rs` | 100 | Ola Berg / ola.berg | 55% | 1 |
+| `src/tests/mod.rs` | 4 | Gallant | 100% | 1 |
+
+### By module
+
+| Module | Lines | Top owner | Share | Bus factor |
+|---|---|---|---|---|
+| `src/` (non-test, excluding generated) | 1,910 | Gallant | about 71% | 1 |
+| `src/tests/` | 1,414 | Gallant | about 90% | 1 |
+| `src/errno_table.rs` | 883 | Niko Alvarez | 100% | 1 (generated) |
+
+### Risk assessment
+
+- **Critical:** `lib.rs`, `dent.rs` and `error.rs` hold the core library logic. Gallant owns 64–83% of each, and no one else holds more than about 13% of any of them.
+- **High:** The tests are about 90% Gallant's work, and `tests/util.rs` is 100%. Others would have trouble changing the tests safely.
+- **Low:** `errno_table.rs` is single-author, but generated (commit `a7c0151`). It is better to document or rerun the generator than to treat it as a knowledge risk. I didn't find or check the generator.
+- **Owner activity:** Gallant, Niko Alvarez and Ola Berg all committed within the last 7 months, so none of them is inactive.
+- **Other active committers:** Jun Park and Kaito Mori also committed recently, but they own no surviving lines in `src/`.
+- **If Gallant left:** Niko Alvarez would be the largest remaining owner, with 883 lines of generated code. The next largest is 74 lines. No one would actually know the hand-written code.
+
+### Recommendations
+
+1. **Immediate:** Have a second person, such as Jun Park or Kaito Mori, review changes to `lib.rs`, `dent.rs` and `error.rs`. Review is the quickest way to build knowledge of those files.
+2. **Short-term:** Have Ola Berg or another active contributor take on `util.rs` and `tests/util.rs`. Those are small, self-contained files.
+3. **Ongoing:** Document the design of `lib.rs` and `dent.rs`. Also document how `errno_table.rs` is generated.
+
+**Caveats:**
+- Blame credits the last person to touch a line. Authorship can be skewed by large reformatting commits or squash merges, though `-w -M -C` limits that.
+- The file `/tmp/blame.tsv` holds the raw per-line data if you want to recheck it.

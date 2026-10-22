@@ -1,0 +1,54 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -20; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c
+ - Bash: git ls-files; echo; git log --oneline | wc -l; git log --format='%an' | sort | uniq -c | sort -rn | head -3; echo; for f in $(git ls-files lib test *.js *.json 2>/dev/null | sort -u); do echo "== $f"; git blame -w -M -C --line-porcelain -- $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; echo "commits:"; git shortlog -sn HEAD -- $f | head -3; done
+ - Bash: for f in $(git ls-files); do echo "== $f"; git blame -w -M -C --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -3; echo " commits:"; git shortlog -sn HEAD -- $f | head -3; done; echo; git log -1 --format=%ad; git log --since='2 years ago' --format=%an | sort | uniq -c | sort -rn | head
+ - Bash: for f in lib/index.js test/test.js test/example-app.js test/error-response.js; do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; git log --author="Troy Goode" -1 --format=%ad; git log --author="Douglas" -1 --format=%ad
+FINAL ANSWER:
+Bus factor is low. Two people wrote most of the code, and the single most critical file depends on one of them. This comes from `git blame -w -M -C` and `git shortlog` over 354 commits. I ignored the style-only reformat commit `62628c0`, which blame credits to "Fiona Formatter".
+
+**Contributors overall**
+- Douglas Christopher Wilson: 143 commits. Last commit was 2021-09-07.
+- Troy Goode: about 122 commits, counting the duplicate identity `troy@laptop.example`. Last commit was 2026-04-10.
+- Everyone else has 4 or fewer commits.
+
+**Single-owner areas**
+
+| Area | Owner | Evidence |
+|---|---|---|
+| `lib/index.js` (the whole runtime library) | Troy Goode | 159 of about 215 lines, ~74% (Wilson 22, Caravaca Puchades 12, Raymond Feng 7). Troy has 30 commits on it, Wilson 4. |
+| `test/vary.js` | Troy Goode | 100% of lines, 1 commit |
+| `test/issue-2.js`, `test/example-app.js`, `test/error-response.js` | Troy Goode | 80–87% of lines each (about 67 of 81 in `example-app.js`, 57 of 66 in `error-response.js`) |
+| `README.md` | Troy Goode | 116 of about 215 lines (about 54%), 33 commits. Jon Church has 72 lines. |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, `LICENSE` | Douglas Christopher Wilson | Most or all lines (`LICENSE` is 17 of 22). |
+| `package.json` (release and packaging) | Douglas Christopher Wilson | 68 commits against Troy's 37. |
+| `HISTORY.md` (changelog) | Douglas Christopher Wilson | 50 of about 59 lines |
+| `.github/workflows/codeql.yml` | Sebastian Beltran | 63 of 66 lines, with the remainder from dependabot. |
+| `.github/workflows/scorecard.yml` | Íñigo Marquínez Prado | 69 of 73 lines, with the remainder from dependabot and 1 line from Carlos Serrano. |
+| `.github/dependabot.yml` | Ulises Gascón | 100% of lines, 1 commit |
+
+**Shared areas**
+- `test/test.js` is split between Wilson (339 lines) and Troy (317 lines).
+- `.github/workflows/ci.yml` is mostly Wilson (118 lines), with Mangas (44) and Gascón (30).
+
+**Main risks**
+1. **Troy Goode owns the core.** `lib/index.js` and most tests and docs depend on them. They are still active, so this is a concentration risk rather than an abandonment risk.
+2. **Wilson owns release mechanics.** That covers `package.json`, the changelog and the lint config, and Wilson hasn't committed since 2021. Treat that knowledge as possibly lost.
+3. **Each CI security workflow has one author.** CodeQL and Scorecard are single-author files, but they're small config files, so the impact is low.
+4. **Recent activity is mostly bots and drive-by fixes.** Of the last 2 years of commits, 11 are dependabot and the rest are scattered one-to-three-commit contributors. Gascón, Church, Beltran and Mangas are the realistic candidates to spread ownership.
+
+**Caveats**
+- Blame counts lines, not impact. After the reformat commit is ignored, `lib/index.js` is only 215 lines, so a few lines are a big share.
+- Troy Goode appears under two identities. I added them together for commit counts, but blame matches only the main name.
+- I didn't merge identities for other contributors. If someone used several emails, their share is understated.
+
+**Suggested fixes**
+- Add a second reviewer or maintainer for `lib/index.js`.
+- Write down the release process that currently lives in `package.json` and `HISTORY.md`.
+- Add a `CODEOWNERS` file naming at least two people for `lib/` and `.github/`.
+META cost=0.0746558 ms=26396 turns=6

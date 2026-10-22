@@ -1,0 +1,53 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js'; $SL -- src/Parser; echo ======; $SL --merge-identities -- src/Parser; echo ======; $SL --reviewers src/Parser/Lexer.php; echo ======; $SL --history src/Parser/Lexer.php; echo =====; ls src/Parser; grep -rli escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; sl -- src/Parser; echo ======; sl --merge-identities -- src/Parser; echo ======; sl --reviewers src/Parser/Lexer.php; echo ======; sl --history src/Parser/Lexer.php; echo =====; ls src/Parser; grep -rli escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities -- src/Parser; echo '------'; sl --reviewers src/Parser/Lexer.php; echo '------'; sl --history src/Parser/Lexer.php; echo '------'; ls -R src/Parser; grep -rli escape src/Parser
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers src/Parser/Escape.php; echo '------'; sl --reviewers src/Parser/EntryParser.php | sed -n 1,12p
+FINAL ANSWER:
+**Short version:** Graham Campbell wrote most of `src/Parser` and all of `Lexer.php`. Aiko Tanaka wrote almost all of the escape handling in `Escape.php`.
+
+## src/Parser overall
+These are surviving lines (`git blame -w -M -C -C`) at HEAD: 1,187 lines in 10 files, 41 non-merge commits.
+
+| Author | Lines | Share | Commits |
+|---|---|---|---|
+| Graham Campbell, 3 addresses combined (guess) | 800 | 67.4% | 33 (80.5%) |
+| Aiko Tanaka | 330 | 27.8% | 3 (7.3%) |
+| root | 26 | 2.2% | 1 |
+| Your Name | 18 | 1.5% | 1 |
+| Vance Lucas | 10 | 0.8% | 0 |
+| StyleCI Bot, Jonas Staudenmeir, JT Smith | 1 each | 0.1% each | 1 each |
+
+- **The Graham Campbell merge is a guess.** It's based on names and addresses only, so you should confirm it.
+  - The three addresses are `<email redacted>` (384 lines), `<email redacted>` (414 lines) and `<email redacted>` (2 lines).
+  - Unmerged, the top author is the noreply address at 414 lines (34.9%). The alt-three address has 384 lines (32.4%).
+  - I did not write a `.mailmap`, because you only asked a question.
+- **Bus factor is 1** for the merged Graham Campbell. It means the smallest number of authors holding 50% of the surviving lines. Counting the three addresses separately it is 2. To reach 80% you need 2 authors merged, or 3 unmerged.
+- **Left out of every number:** `src/Parser/Unicode/CharTable.php` (431 lines), because it is a generated file. `--keep-generated` would count it.
+- **No reformat commits** were detected.
+- **Bots:** the one StyleCI Bot line is still counted in the table above.
+
+## Lexer.php
+- **Graham Campbell** holds all 58 lines (100% if the addresses are one person). The split is 53 lines (91.4%) on `<email redacted>` and 5 lines (8.6%) on the noreply address.
+- **Activity:** the alt-three address last committed on 2020-06-07, so it is inactive. The noreply address last committed on 2026-08-24, so it is active. Ask Graham Campbell, and they are reachable through the noreply identity.
+- **Moved code:** 19 of the 58 lines (32.8%) were moved or copied in from other paths, mainly `src/Store/File/Reader.php`, `src/Value.php` and `src/Loader/Value.php`. Credit goes to whoever wrote them there. For history on those lines, check those files too.
+- **Bus factor** for this file is 1.
+
+## Escape handling
+Escape handling is mostly in `src/Parser/Escape.php`. `grep` also finds "escape" in `EntryParser.php`, which I did not read.
+
+- **Escape.php:** Aiko Tanaka holds 200 of 206 lines (97.1%) and made the last commit on 2026-08-26, so they are active. Graham Campbell holds the other 6 lines (2.9%) across two addresses, and is inactive on this file. **Aiko Tanaka is the person to ask about escapes.**
+- **Moved code:** 161 of the 206 lines (78.2%) came from other paths, mainly `Unicode/CharTable.php`, `Value.php` and `Loader/Value.php`. Aiko Tanaka's lines are partly a move or copy, so original authorship of the escape logic may trace back to Graham Campbell's `Value.php` code.
+- **EntryParser.php:** Graham Campbell holds 362 of 363 lines, split 199 and 163 across two addresses. StyleCI Bot holds the last line.
+
+## Audit notes
+- **Concentration:** Escape.php depends on a single person (bus factor 1, 97.1%). Lexer.php and EntryParser.php depend on Graham Campbell.
+- **Line counts don't measure quality or review.** Deleted code counts for nobody, and design discussion leaves no lines. These numbers show whose code is still there, not who understands it best.
+- **Recent commits:** the last commit on `Escape.php` and the StyleCI commit on `EntryParser.php` are both from 2026-08-26. Check what changed recently, since those are the lines nobody has reviewed for long.
+META cost=0.08681829999999999 ms=30090 turns=7

@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/ and test/ ownership by surviving lines (git blame), compare owners"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C4-ppi-2/repo
+for d in lib test; do
+echo "== $d: files=$(git ls-files $d | wc -l)"
+git ls-files -z $d | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | awk '{c=$1; $1=""; n[NR]=$0; v[NR]=c; t+=c} END{for(i=1;i<=NR&&i<=8;i++) printf "%5.1f%% %s (%d)\n", v[i]*100/t, n[i], v[i]; print "total lines", t, "authors", NR}'
+done
+echo; git log -1 --format=%cd; git shortlog -sn --since="90 days ago" HEAD | head
+FINAL ANSWER:
+Ask José Valim first, then Kaito Mori. `test/` has the same top owner but a different second owner.
+
+Shares of surviving lines (`git blame -w -M -C` at HEAD, 17 files in `lib/` and 22 in `test/`):
+
+| | `lib/` (1,496 lines, 31 authors) | `test/` (1,853 lines, 18 authors) |
+|---|---|---|
+| José Valim | ~57% | ~58% |
+| Kaito Mori | ~17% | ~9% |
+| Rafael Mendonça França | ~4% | ~10% |
+| Carlos Antonio da Silva | ~3% | ~6% |
+| Weblate | ~5% | – |
+| Lucas Mazza | ~2% | ~5% |
+| Jan De Poorter | ~2% | ~4% |
+
+- **Same owner, different backups:** José Valim owns a bit over half of both directories. After that, `lib/` is mostly Kaito Mori. `test/` is spread more evenly among Rafael Mendonça França, Kaito Mori, Carlos Antonio da Silva and others.
+- **Who is active:** José Valim has no commits in the last 90 days. The recent committers are Carlos Antonio da Silva (8 commits), Rafael Mendonça França (6) and Kaito Mori (4). Those three are your practical contacts now.
+- **Weblate:** The ~5% in `lib/` is Weblate (translation bot), so it isn't a person to ask. This share is probably locale files.
+- **Bus factor:** It is 1 for both directories. José Valim alone holds more than 50% of the lines in each. The next two or three owners together hold only about 25–30%.
+- **Not run:** I didn't run the skill's importance cross-referencing or the per-file bus-factor breakdown. The numbers above come only from blame at HEAD.
+
+Ask Carlos Antonio da Silva or Rafael Mendonça França for general questions about the code in `lib/`. For code originally written by José Valim, check with Kaito Mori, who is the next biggest `lib/` owner.
+META cost=0.0535214 ms=15229 turns=4

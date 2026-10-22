@@ -1,0 +1,44 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js'; $SL --include '*.go'; echo ======; $SL --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js; node $S --include '*.go'; echo ======; node $S --include '*.go' --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js; node $S --include '*.go' --merge-identities --top 6; node $S --identities --include '*.go'; git log -3 --stat --author="Jonathan Reyna" | head -30; git log --stat --author="Marcus Lindqvist" | head -20; git log --format='%an <%ae>' | grep -i lindqvist | sort | uniq -c
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C1-ours-1/repo; node <home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js --include '*.go' --top 200 | grep -Ei 'mitch|bogem|Nigmat|xilabao|Charlie|caie|wellit'
+FINAL ANSWER:
+Dosyalara bakıp saydım, şimdi sonuç. Sayımlar `git blame -w -M -C -C` ile, yalnızca `*.go` dosyaları üzerinden yapıldı.
+
+**Kalan Go satırlarında ilk beş (14.434 satır, HEAD)**
+
+| # | Kişi | Satır | Pay | Commit |
+|---|---|---|---|---|
+| 1 | Eric Paris | 2.608 | %18,1 | 46 (%15,3) |
+| 2 | Alex Ogier | 1.512 | %10,5 | 33 (%11,0) |
+| 3 | Marcus Lindqvist (3 adres birleşik, tahmin) | 1.020 | %7,1 | 3 (%1,0) |
+| 4 | Jonathan Reyna | 950 | %6,6 | 1 (%0,3) |
+| 5 | Noah Dietz | 919 | %6,4 | 2 (%0,7) |
+
+Altıncı Tamal Saha, 641 satır (%4,4).
+
+**Dikkat edilecekler**
+- **Marcus Lindqvist birleşimi tahmin.** Araç aynı ismi üç adreste buldu: `<email redacted>` 634 satır, `mlindqvist@corp.example` 322 satır ve `<email redacted>` 64 satır. Birleştirmeyi isim ve adreslerden çıkardı, kimse doğrulamadı. Birleştirmezsek en büyük adres 634 satır (%4,4) olur ve 6. sıraya düşer. `.mailmap` yazmadım.
+- **Marcus'un kodu çok yeni.** Kodun tamamı 21 Ekim 2026'da gelen iki commit'ten: `shellcomp.go` (shell completion yardımcıları) ve onun testleri. Üç kişi birden olarak 301 commit içinde 3 commit'i var. Sürdürücü seçerken bunu hesaba katın.
+- **Jonathan Reyna'nın payı tek bir commit'ten.** Commit `a9a634f` (2017, #111), BoolSlice, UintSlice ve IPSlice tiplerini ekleyen tek bir PR squash'ı. Toplu biçim değişikliği değil. Kod hâlâ duruyor.
+- **Commit sayısı yanıltıcı.** Reyna'nın commit payı %0,3, satır payı %6,6. Noah Dietz'de de aynı fark var.
+- **Birleştirme sıralamayı değiştirmiyor.** Aynı adresin iki isimle yazıldığı başka gruplar var (bogem/Albert Nigmatzianov, xilabao/Charlie R.C, therealmitchconnors/Mitch Connors, caie/wellitonscheer, Tomas Aschan). Hepsi birleşse bile ilk beşe girmiyor. En yüksek olanı therealmitchconnors, 500 satır.
+
+**Bus factor (satır bazlı, tüm Go kodu)**
+- %50'ye ulaşmak için en az 6 yazar gerekiyor: birleştirmesiz %50,3, Marcus birleşik %53,0 ile yine 6.
+- %80'e ulaşmak için birleştirmesiz 20, birleşik 19 yazar gerekiyor.
+
+**Sayımın dışında bırakılanlar**
+- `vendor` altındaki 1 vendored dosya (802 satır).
+- 1 bot kimliği (77 satır, 1 commit).
+- Yeniden biçimlendirme (reformat) commit'i bulunmadı.
+
+Sayılar yalnızca kodun hâlâ burada olup olmadığını gösterir. Kod kalitesini, review işini ve tasarım katkısını göstermez. Bunlar sürdürücü seçerken ayrıca bakılması gereken konular.
+META cost=0.0897668 ms=44567 turns=7

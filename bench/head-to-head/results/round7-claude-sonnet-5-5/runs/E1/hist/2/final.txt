@@ -1,0 +1,50 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-2/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-2/repo", "top": 20}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/E1-hist-2/repo"}
+ - Bash: git log --format='%h %an %ad %s' --date=short -3 && for f in lib/index.js test/test.js; do echo $f; git blame -w -M --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; git shortlog -sn --no-merges -- lib | head -4
+FINAL ANSWER:
+Bus factor is **2**. Douglas Christopher Wilson and Troy Goode together wrote 59% of the 326 non-merge commits. No single person holds an outright majority, and the tool flags no directory as a knowledge silo.
+
+**Commit share**
+- Douglas Christopher Wilson: 143 commits (43.9%).
+- Troy Goode: 95 commits (29.1%).
+- Everyone else: 63 other authors, each at 3.4% or less. dependabot is the largest at 11 commits.
+
+**Directories** (no silo: the rule is one author with more than 80% of at least 3 commits)
+- `lib/`: Troy Goode, 50%.
+- `test/`: Troy Goode, 44%.
+- Repo root: Douglas Christopher Wilson, 51%.
+- `.github/`: Douglas Christopher Wilson, 37%.
+
+**Ownership of current lines** (`knowledge_risk` blame)
+- **Raw blame is misleading.** It credits "Fiona Formatter" with 51% of lines, including `lib/index.js` (90%) and `test/test.js` (94%). That comes from the most recent commit, 62628c0, which reformatted the whole codebase. Fiona Formatter looks like a formatter account, not a real maintainer.
+- **Corrected blame.** I re-ran blame ignoring that commit and whitespace changes.
+  - `lib/index.js` is mostly Troy Goode (159 of about 238 lines). Douglas Christopher Wilson owns 22 lines.
+  - `test/test.js` is split between Douglas Christopher Wilson (339 lines) and Troy Goode (317 lines).
+- **Single-person files** (all of the file's lines have one owner):
+  - `test/vary.js`: Troy Goode, 100%.
+  - `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js`: Douglas Christopher Wilson, 100%.
+  - `.github/dependabot.yml`: Ulises Gascón, 100%.
+- **Near-single-person files** (one person owns more than 90% of the lines):
+  - `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado, 93%.
+  - `.github/workflows/codeql.yml`: Sebastian Beltran, 95%.
+
+**Activity**
+- **Wilson.** Their last commit is 2021-09-07. They still own `.github/workflows/ci.yml` (49%), `package.json` (48%), `HISTORY.md` (78%) and `LICENSE` (77%), but have been inactive for 5 years. The CI, release and changelog knowledge for those files is the real risk.
+- **Goode.** They are the main owner of the core library code and the README (38%). Their last commit is 2026-04-10, so they are recent but quiet.
+- **Whole repo.** Commits dropped from 11 in June 2025 to 0–4 per month since. Activity is thin.
+- **Orphan flag.** The tool marks all 18 analyzed files as orphaned. That is an artifact of the 6-month cutoff, which runs from the last commit date of 2026-04-12 rather than today, plus the formatter blame. Don't take it literally.
+
+**Recommendations**
+1. Make sure a second person can work on `lib/index.js` and `test/test.js`, the code Goode and Wilson wrote.
+2. Document how the release and CI process works, since that knowledge sits with Wilson.
+3. Add `62628c0` to a `.git-blame-ignore-revs` file so blame stops crediting the formatter.
+META cost=0.0853968 ms=19650 turns=7

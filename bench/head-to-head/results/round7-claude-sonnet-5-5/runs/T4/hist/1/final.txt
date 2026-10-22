@@ -1,0 +1,23 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history,mcp__git-historian__bus_factor", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-hist-1/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-hist-1/repo", "file": "lib/index.js", "limit": 30}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T4-hist-1/repo", "path": "lib"}
+FINAL ANSWER:
+No one is a clear reviewer. Everyone who has touched `lib/index.js` has been inactive for over 6 months by `knowledge_risk`, so it flags the file as orphaned.
+
+- **Fiona Formatter:** Blame says 89.9% of lines are hers, but that is misleading. Her only commit is the 2026-04-12 reformat (4-space indent, double quotes), which rewrote 214 lines. Don't pick her for logic knowledge.
+- **Troy Goode:** He is the best candidate. He wrote the file in 2013, made most of the early changes, and did the `lib: annotate handlers` commit on 2026-04-10. He has no commits since 2026-04-12, so check he is still reachable.
+- **Douglas Christopher Wilson:** He made the key behavior fixes in 2017: `Vary: Access-Control-Request-Headers`, the missing `methods` option fix, and lint cleanups. He is the best fit for CORS header and `Vary` logic. His last commit in this repo is 2021-09-07.
+- **Others:** Alejandro Caravaca Puchades wrote the origin regexp and array matching in 2015. Raymond Feng did the `applyHeaders` optimization. Both are long gone.
+
+**Recommendation:** Ask Troy Goode first. Add Douglas Wilson if the change touches `Vary`, preflight, or header logic.
+
+If you want a reviewer from the current team rather than the file's history, I can check recent contributors repo-wide. The `knowledge_risk` output lists all five authors as inactive, so this repo may have no active maintainer.
+META cost=0.0667709 ms=13297 turns=6

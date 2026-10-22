@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser && echo --- && for f in src/Parser/*; do echo "== $f"; git blame -w -M -C --line-porcelain "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn; done && echo --- LOG && git shortlog -sne HEAD -- src/Parser && echo --- LEXER && git log --format='%h %an %ad %s' --date=short -- src/Parser/Lexer.php | head -30 && echo --- ESC && git log --format='%h %an %ad %s' --date=short -i --grep=escape | head -20
+ - Bash: ls -R src/Parser/Unicode; git log --format='%h %an <%ae> %ad %s' --date=short -- src/Parser/Unicode src/Parser/Compat.php src/Parser/Quirks.php src/Parser/Escape.php; git grep -n "Escape" -- src | grep -v '^src/Parser/Escape.php' | head
+FINAL ANSWER:
+**Surviving lines in `src/Parser` (`git blame -w -M -C`)**
+
+| File | Lines | Author |
+|---|---|---|
+| `EntryParser.php` | 362 | Graham Campbell (+1 StyleCI Bot) |
+| `Escape.php` | 206 | Aiko Tanaka (198 as "Aiko Tanaka", 8 as "aiko tanaka", same person) |
+| `Lines.php` | 137 | Graham Campbell 126, Vance Lucas 10, JT Smith 1 |
+| `Quirks.php` | 117 | `root <root@localhost>` |
+| `Value.php` | 101 | Graham Campbell |
+| `Compat.php` | 69 | `Your Name <<email redacted>>` |
+| `Lexer.php` | 58 | Graham Campbell |
+| `Parser.php` | 58 | Graham Campbell |
+| `Entry.php` | 59 | Graham Campbell 58, Jonas Staudenmeir 1 |
+| `ParserInterface.php` | 19 | Graham Campbell |
+| `Unicode/CharTable.php` | not blamed (I didn't run blame inside the subdirectory) | Aiko Tanaka added it in `d08cf83` |
+
+**Who to ask**
+- **`Lexer.php`: Graham Campbell.** Every surviving line is theirs. The last change was `301c079` (2026-08-24, static analysis baseline). The core lexing dates from 2020-06.
+- **Escape handling: it depends on which code you mean.**
+  - **Original escape logic** (escaped quotes in multiline values, backslash tests, documented rules): Graham Campbell. It lives in `EntryParser.php`, `Lines.php` and `Value.php`, from `21c540a`, `92ba1f6` and `5d0bb3b`.
+  - **New `Escape.php` and `Unicode/CharTable.php`**: Aiko Tanaka, from the `feature/escapes` PR (#1, merged 2026-08-26 by Graham).
+
+**Audit flags**
+- **`Escape.php` appears to be unused.** `git grep Escape -- src` finds no reference outside the file itself, and `Lexer.php` has no reference to it either. I didn't read the files to check whether it is dead code or wired in another way (for example via `Compat.php`). Check that before you spend audit time on it.
+- **`Quirks.php` and `Compat.php` have no usable author.** They come from `root <root@localhost>` (`7007c6e` "fix") and `Your Name <<email redacted>>` (`b39e8d9` "compat shims"), both dated 2026-08-26. Nobody can be asked about them from git data alone. Graham merged the same day, so they are the likely contact. Treat both files as unreviewed.
+- **Three commits from 2026-08-26 are new and carry little history.** They are Aiko's escape work, `7007c6e` and `b39e8d9`, and together they make up most of the recent change surface.
+
+I can read `Escape.php`, `Quirks.php` and `Compat.php` to check how they connect to the lexer. I can also run blame on `Unicode/CharTable.php` if you want that.
+META cost=0.0660286 ms=22055 turns=4

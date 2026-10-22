@@ -1,0 +1,43 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js; if [ -f "$S" ]; then SL="node $S"; elif command -v surviving-lines >/dev/null; then SL=surviving-lines; else SL="npx --yes surviving-lines"; fi; $SL --reviewers src/itsdangerous/signer.py; echo ======; $SL --reviewers src/itsdangerous/timed.py
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js; ls $S; for f in signer timed; do node $S --reviewers src/itsdangerous/$f.py; echo ======; done
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r7/ours-src/bin/surviving-lines.js; node $S --reviewers src/itsdangerous/timed.py; echo; node $S --reviewers src/itsdangerous/signer.py src/itsdangerous/timed.py; echo; node $S --merge-identities --reviewers src/itsdangerous/timed.py | grep -i -E "identity|possible|merged"
+ - Bash: git log --author="Ibarra" --stat -3 | head -30
+FINAL ANSWER:
+Finished running `surviving-lines --reviewers` on both files and checking Tomás Ibarra's commits. Results below.
+
+**Ask David Lord first. Add Tomás Ibarra as second reviewer.**
+
+Counts are surviving lines by `git blame -w -M` as of 2025-07-08, with one bot identity excluded from each file.
+
+`signer.py` (358 lines attributed):
+- David Lord: 212 lines (59.2%), 10 commits, last commit 2024-04-16, inactive
+- Tomás Ibarra: 100 lines (27.9%), 1 commit, last commit 2025-07-01, active
+- Armin Ronacher: 19 lines (5.3%), last commit 2018-10-26, inactive
+
+`timed.py` (295 lines attributed):
+- David Lord: 172 lines (58.3%), 16 commits, last commit 2025-05-28, active
+- Tomás Ibarra: 72 lines (24.4%), 1 commit, last commit 2025-07-02, active
+- Armin Ronacher: 37 lines (12.5%), last commit 2018-10-27, inactive
+
+- **David Lord** holds the most surviving code in both files. In `signer.py` the activity marker says inactive, because their last commit there was in April 2024. In `timed.py` they are active. The marker does not change the ranking.
+- **Tomás Ibarra** wrote the newest code: the key rotation helpers in `signer.py` (commit 93695fd) and the rotation helpers in `timed.py` (commit 56dba8d). Both were pure additions, not reformatting, so those lines are real authorship. If your change touches rotation, they are the most useful second reviewer.
+- **Armin Ronacher** wrote the original code but has not committed since 2018. Treat them as a historical reference, not a practical reviewer.
+
+**Bus factor** (the smallest number of authors holding 50% of surviving lines), computed per file:
+- `signer.py`: 1 (David Lord alone). 2 authors reach 80%.
+- `timed.py`: 1 (David Lord alone). 2 authors reach 80%.
+
+**Scope notes:**
+- About 9.3% of `signer.py` (34 lines) and 10.7% of `timed.py` (32 lines) were moved or copied from `itsdangerous.py` and `__init__.py`. Credit goes to whoever originally wrote those lines, not to whoever moved them.
+- No reformat commit was detected.
+- No identity merge applies. The tool found no same-person duplicates, and I did not write a `.mailmap`.
+- These numbers show whose code is still here. They say nothing about code quality or about who reviews well.
+META cost=0.08235139999999999 ms=20725 turns=8

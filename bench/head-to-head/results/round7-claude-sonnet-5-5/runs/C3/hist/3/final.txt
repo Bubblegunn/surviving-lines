@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10; git ls-files '*.rs' | xargs cat | wc -l
+ - Bash: git log --format='%an <%ae>' | grep -i 'ines\|inès' | sort | uniq -c; ls .mailmap 2>&1
+FINAL ANSWER:
+Mostly one person, with a second sizeable contributor. I counted surviving lines in the 10 tracked `.rs` files (4,366 lines) with `git blame -w -M -C` at HEAD.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Andrew Gallant | 2,838 | 65% |
+| 2 | Sam Okoro | 646 | 15% |
+| 3 | Inès / Ines Moreau | 217 (120 + 97) | 5% |
+| 4 | Sebastian Thiel | 74 | 1.7% |
+| 5 | Ashley | 68 | 1.6% |
+| 6 | Aron Griffis | 59 | 1.4% |
+
+The rest are smaller: mcharsley (45), Marvin Löbel (41) and Martin Sehnoutka (38).
+
+- **Concentration:** Andrew Gallant wrote about two thirds of the code, and Andrew plus Sam Okoro together wrote about 80%. After those two, no one has more than about 5%.
+- **Moreau split:** Git lists "Inès Moreau" (120 lines) and "Ines Moreau" (97 lines) as separate authors. They look like one person, because there are three commits under Ines/Inès Moreau and one under a GitHub noreply address with the same name. The repo has no `.mailmap`, so git does not merge them. I counted them as one. If they are two people, each has about 2–3% and the third spot goes to Sebastian Thiel.
+- **Non-Rust files:** The numbers cover only the Rust files.
+META cost=0.0602287 ms=15704 turns=5

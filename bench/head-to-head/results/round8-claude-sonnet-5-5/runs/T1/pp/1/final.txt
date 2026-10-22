@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | wc -l && git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' | head -200 && git log --oneline | wc -l && git show --stat --oneline 62628c0 | tail -5
+ - Bash: for mode in raw ignore; do echo "== $mode"; for f in $(git ls-files | grep -v '^LICENSE$'); do if [ $mode = ignore ]; then git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f; else git blame --line-porcelain -- $f; fi | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; done; echo; echo "== by file (ignore-rev)"; for f in lib/index.js test/test.js test/vary.js test/error-response.js test/example-app.js HISTORY.md README.md package.json; do echo "-- $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: for f in $(git ls-files | grep -v '^LICENSE$'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author '; done | sort | uniq -c | sort -rn | awk '{c=$1; $1=""; n[NR]=$0; v[NR]=c; t+=c} END{for(i=1;i<=NR;i++) printf "%5d %5.1f%% %s\n", v[i], 100*v[i]/t, n[i]; print t, "total"}'; git log --format='%an' | sort -u | wc -l; git log --format='%an' --author="Fiona Formatter" | wc -l
+FINAL ANSWER:
+Ownership here means who last wrote each line still in the repo, measured with `git blame`.
+
+Raw `git blame` credits "Fiona Formatter" with 1016 lines. That is the latest commit, `62628c0`, which only reindented the code and changed single quotes to double quotes in 4 files. I removed that commit from the count with `--ignore-rev 62628c0`. I also used `-w -M -C` to ignore whitespace changes and follow moved or copied lines. The count covers all tracked files except `LICENSE`, which gives 1973 lines.
+
+| Owner | Lines | Share |
+|---|---|---|
+| Troy Goode | 805 | 40.8% |
+| Douglas Christopher Wilson | 612 | 31.0% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Alejandro Caravaca Puchades | 30 | 1.5% |
+| Linus Unnebäck | 26 | 1.3% |
+| ~34 others | ≤ 17 each | ~8% combined |
+
+- **Troy Goode** owns the original design:
+  - `lib/index.js`: 159 lines, the most of any author, though Douglas Christopher Wilson's total there is not in the output above.
+  - `test/vary.js`: all 36 lines.
+  - `README.md`: 116 lines.
+  - `test/error-response.js` and `test/example-app.js`: most lines.
+- **Douglas Christopher Wilson** owns most of the test suite maintenance (339 lines in `test/test.js`, against 317 for Goode). He also owns most of `HISTORY.md` (50 lines) and `package.json` (20 lines).
+- **Efe**, who is you, owns 6 lines (0.3%).
+
+Two caveats:
+- `--ignore-rev` passes blame to the previous author. It can mis-assign a line when the reformat commit also changed the line's content, so treat small counts as approximate.
+- Line counts weigh `test/test.js` heavily, and tests are about half of all lines. Goode and Wilson are still the top two owners of `lib/index.js` (159 lines vs 22), so the conclusion holds for production code alone.
+META cost=0.0718949 ms=21695 turns=5

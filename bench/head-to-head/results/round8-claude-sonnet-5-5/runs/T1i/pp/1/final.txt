@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | wc -l; git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files); do case "$f" in *.png|*.ico) continue;; esac; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR;i++){split(a[i],p," "); print a[i]} print t" total"}'
+echo --- by file type, JS only
+for f in $(git ls-files '*.js'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn
+echo --- without ignore
+for f in $(git ls-files); do git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author '; done | sort | uniq -c | 
+FINAL ANSWER:
+Ownership by surviving lines (`git blame -w -M -C`, ignoring the reformat commit `62628c0` through `.git-blame-ignore-revs`). It covers all 1,997 lines in tracked files.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Everyone else (~38 people) | 228 | 11.4% |
+
+- **Two authors own 72% of the code.** Troy Goode and Douglas Christopher Wilson wrote most of what remains.
+- **JS files only:** Troy has 676 lines and Douglas 394. Nobody else has more than 30. Most of the other authors' lines are in YAML, Markdown and JSON files, not source code.
+- **Commit counts mislead here.** Douglas has more commits (143 against 122 for Troy), but fewer surviving lines. Troy's code has lasted longer.
+- **Without the ignore file, blame is wrong.** The reformat commit would credit 293 lines to "Fiona Formatter", which is the reformat commit's author. The ignore file moves those lines back to the people who wrote them.
+- **Limit:** blame credits the last person to change a line meaningfully. The ignore file and `-w` skip pure formatting and whitespace changes. A line that was rewritten is credited to the person who rewrote it, not the original author. Within a file, `-M` and `-C` still credit lines that were moved or copied from other files to their original author.
+META cost=0.0625173 ms=27797 turns=4

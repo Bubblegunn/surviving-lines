@@ -1,0 +1,26 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.rs' | wc -l && git ls-files '*.rs' | while read f; do git blame -w -M -C --ignore-rev c862f48 --ignore-rev a45246e --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Authorship is concentrated but not single-person. Andrew Gallant owns about 65% of the surviving Rust lines.
+
+Counts come from `git blame` over the 10 tracked `.rs` files, 4,366 lines in total. I ignored the line-ending normalization commit (`c862f48`) and the SPDX header commit (`a45246e`), and I ignored whitespace changes. Without that, those two commits would have been credited with most lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,843 | 65.1% |
+| Sam Okoro | 647 | 14.8% |
+| Inès Moreau | 218 | 5.0% |
+| Sebastian Thiel | 74 | 1.7% |
+| Ashley | 68 | 1.6% |
+| Aron Griffis | 59 | 1.4% |
+
+- **Merged aliases:** Inès Moreau is the sum of "Inès Moreau" (121) and "Ines Moreau" (97). I assumed those are the same person, based only on the matching name. Treating them as separate would put them at 2.8% and 2.2%.
+- **Long tail:** Another 30 or so contributors hold the remaining 13%, mostly with fewer than 50 lines each.
+- **Bus factor:** Gallant and Okoro together hold about 80%. If either left, the remaining knowledge of most of the Rust code would sit with a few people.
+META cost=0.050818100000000005 ms=13347 turns=3

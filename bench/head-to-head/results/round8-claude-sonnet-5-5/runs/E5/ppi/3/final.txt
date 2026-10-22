@@ -1,0 +1,49 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -60; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo AUTHORS; git shortlog -sn --follow -- lib/index.js | head; echo BLAME; git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo BLAMEIGN; git blame -w -C -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git log --follow --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn | head -8; git log --follow --reverse --pretty=format:"%h %ad %an" --date=short -- lib/index.js | head -1; git log --all --grep=revert -i --oneline -- lib/index.js
+FINAL ANSWER:
+## 🔍 Code History: lib/index.js
+
+### Quick Context
+> `lib/index.js` is the CORS middleware core. Troy Goode wrote it in January 2013 and still owns most of it. Most other contributors each added one targeted fix or feature.
+
+### Decision Timeline
+| Date | Who | What / why |
+|---|---|---|
+| 2013-01-30 | Troy Goode | First commit (`bcd03d9`). `origin: false` disables CORS. |
+| 2013-02 to 04 | Troy Goode, Damien Klinnert, Simon Mansfield | Request pause/resume for async middleware. Preflight-only headers per the CORS spec. Early `Origin` check. HEAD added to default methods. |
+| 2013-10 | Eric di Domenico, Mathias Buus, Troy Goode | `origin` can be a callback. Connect support without Express (v2.1.0). |
+| 2014 | Typicode, Alberto Leal, Shane Tomlinson, Troy Goode | PATCH added to defaults. Callback-override bug fixed. Method names uppercased. `Access-Control-Expose-Headers`. Express 4 support. |
+| 2014-10 to 11 | Igor Soarez, Troy Goode | `Vary: Origin` for specific origins. Switched to the `vary` module. Non-Express support restored (#33). |
+| 2015 | Raymond Feng, Eran Tiktin, max.laverse, DracoBlue, Alejandro Caravaca Puchades | Removed a closure in `applyHeaders`. `Vary` fix for `*`. Option to pass preflight to `next()`. Exposed headers on OPTIONS. RegExp and array `origin` matching. ESLint switch (Troy Goode). |
+| 2016 | Hannah Wolfe, Troy Goode | Named the anonymous middleware function. v2.8.0 (#66, #73). |
+| 2017 | Saad Tazi, Tomek Kopczuk, Douglas Christopher Wilson, Benjamin Eidelman, Chima Alaebo | Frozen-options fix. `Vary` for regex origins and dynamic `allowedHeaders`. Missing `methods` fix. Safari preflight workaround. Lint cleanups. |
+| 2018 | Tom Arad | Fix for `maxAge: 0`. |
+| 2021 | LuisEGR | Lint: removed unused parameters. |
+| 2026-04 | Troy Goode, Fiona Formatter | Handler annotations (`b2005d9`). Reformat to 4-space indent and double quotes (`62628c0`). |
+
+### Narrative
+The file started as a small Express-only middleware. It grew through bug reports and spec-compliance fixes. Each wave widened the scope: async origin callbacks, then Connect and non-Express support, then `Vary` handling, then RegExp and array origins. Douglas Christopher Wilson made the 2017 fixes, mostly around `Vary` and options edge cases. After 2018 the file barely changed. The only 2021 change was lint. The two 2026 commits are annotations and formatting, with no behavior change. No reverts touch this file.
+
+### Key Takeaways
+1. **Shaper:** Troy Goode made 29 of 62 commits, and the file's structure comes from them.
+2. **Surviving code:** Ignoring the reformat commit, blame still attributes 159 of 238 lines to Troy Goode. Douglas Christopher Wilson has 22. Alejandro Caravaca Puchades has 12. Raymond Feng has 7. About 14 other people hold 1–6 lines each.
+3. **Reformat skews blame:** Plain blame credits 32 lines to "Fiona Formatter". Those lines are only reindented or re-quoted. Their original authors are the ones in the `--ignore-rev 62628c0` count above.
+
+### Metrics
+| Metric | Value |
+|---|---|
+| Total commits | 62 (`--follow`) |
+| Contributors | About 30. Top: Troy Goode (29), Douglas Christopher Wilson (4), Alejandro Caravaca Puchades (4), Simon Mansfield (3) |
+| Age | 2013-01-30 (`bcd03d9`, Troy Goode) |
+| Last changed | 2026-04-12 (formatting) |
+| Churn | High 2013–2017, low since 2018 |
+
+I ran the git commands directly. I did not launch the git-archaeologist agent and did not search PRs.
+META cost=0.07135640000000001 ms=22093 turns=5

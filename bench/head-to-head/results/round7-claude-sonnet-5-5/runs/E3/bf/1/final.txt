@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | while read -r f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,""); print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; split($0,a,"\t"); ext=substr(a[1],2); if(!(ext in seen)){seen[ext]=1; print ext"\t"a[2]"\t"c}} ' ; echo ---; git ls-files | wc -l
+FINAL ANSWER:
+Top owner by surviving lines (`git blame -w`, 18 tracked files):
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension | Douglas Christopher Wilson | 17 |
+
+- **`.js`:** Fiona Formatter is second with 291 lines. Those come from the latest commit (`62628c0`, reformat to double quotes). Quote changes aren't whitespace, so `-w` doesn't skip them. That commit took lines from the original authors, so Troy Goode's real share is probably higher. Douglas Christopher Wilson follows with 245.
+- **`.md`:** Jon Church is second with 72 lines.
+- **`.yml`:** Íñigo Marquínez Prado is second with 95 lines.
+
+If you want formatting commits ignored, I can rerun with `--ignore-rev 62628c0`.
+META cost=0.0396678 ms=11261 turns=2

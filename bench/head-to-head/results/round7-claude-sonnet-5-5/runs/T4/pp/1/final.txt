@@ -1,0 +1,20 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head; echo ---; git shortlog -sn --no-merges -- lib/index.js | head -10; echo ---; git log -n 8 --format='%h %an %ad %s' --date=short -- lib/index.js; echo ---; git shortlog -sn --no-merges --since='12 months ago' -- lib/index.js | head -5
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sn --no-merges HEAD -- lib/index.js | head -10; echo ---; git shortlog -sn --no-merges --since='24 months ago' HEAD -- lib/index.js | head -5; echo ---; git shortlog -sn --no-merges --since='12 months ago' HEAD | head -5; grep -iE 'maintainer|"author"|contributors' package.json | head
+FINAL ANSWER:
+`lib/index.js` has no CODEOWNERS file, so I picked reviewers from git history.
+
+- **Troy Goode** is the best reviewer. They have 29 non-merge commits to the file, far more than anyone else. They are the `author` in `package.json`. They made the latest functional change ("lib: annotate handlers", 2026-04-10) and are active in the repo in the last 12 months.
+- **Douglas Christopher Wilson** is the backup. They have 4 commits to the file. Their last one was in 2017, so they know the history but may not be active now.
+- **Alejandro Caravaca Puchades** also has 4 commits to the file, with no recent activity. I'd only add them if your change touches their areas.
+
+Other recent repo contributors (Jon Church, Ignacio Mangas) have no commits to this file, so I wouldn't use them as primary reviewers.
+
+The latest commit, "style: reformat js with 4-space indent and double quotes", is from a formatter account called "Fiona Formatter". Ignore it when picking reviewers.
+META cost=0.0552652 ms=13306 turns=4

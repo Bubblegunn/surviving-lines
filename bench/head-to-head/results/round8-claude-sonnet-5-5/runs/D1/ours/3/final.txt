@@ -1,0 +1,41 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" ] && node "<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js" --include 'cJSON.c' --include 'cJSON.h' 2>&1 | head -100
+ - Bash: cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' 413c6d1 | tail -5; git show --stat --format='%h %an %s' f831aef | tail -3; S="node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js"; $S --include cJSON.c --include cJSON.h --keep-reformat 2>&1 | sed -n 1,16p
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js --include cJSON.c --include cJSON.h --keep-reformat 2>&1 | sed -n 1,16p
+FINAL ANSWER:
+Max Bruckner wrote about three quarters of the code still in `cJSON.c` and `cJSON.h`. The figures count surviving lines from `git blame -w -M -C` at HEAD: 3,596 of 3,601 lines attributed, across 956 non-merge commits.
+
+| # | Author | Surviving lines | Share | Commits | Commit share |
+|---|---|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 75.1% | 636 | 66.5% |
+| 2 | Kevin Branigan | 149 | 4.1% | 7 | 0.7% |
+| 3 | Alan Wang | 129 | 3.6% | 62 | 6.5% |
+| 4 | Dave Gamble | 111 | 3.1% | 84 | 8.8% |
+| 5 | Mike Jerris | 76 | 2.1% | 2 | 0.2% |
+| 6 | tomasi | 74 | 2.1% | 1 | 0.1% |
+| 7 | Tomás Ibarra | 68 | 1.9% | 1 | 0.1% |
+| 8 | PeterAlfredLee | 32 | 0.9% | 4 | 0.4% |
+| 9 | caglarivriz | 31 | 0.9% | 1 | 0.1% |
+| 10 | Nicolas Badoux | 29 | 0.8% | 8 | 0.8% |
+
+91 more authors hold the remaining lines.
+
+- **Bus factor:** 1, meaning the smallest number of authors whose surviving lines reach 50% of the lines counted. Max alone holds 75.1%. Reaching 80% takes 3 authors. Both numbers cover `cJSON.c` and `cJSON.h` only.
+- **Dave Gamble:** the original author holds 3.1% of the lines despite 8.8% of the commits.
+- **Kevin Branigan:** 7 commits, 4.1% of the lines.
+- **Reformat commit ignored:** `413c6d1` ("style: run clang-format over cJSON.c and cJSON.h", Priya Nair) rewrote 2,303 lines across both files. `.git-blame-ignore-revs` lists it, so the table leaves it out. Passing `--keep-reformat` did not override that file, so I don't have the figures with it counted. Without the exclusion, Priya Nair would hold most of the file.
+- **Alan Wang:** `.mailmap` already merges Alanscut into Alan Wang, which adds 94 lines. The tool also found strong evidence for a further 2 lines under another address, which would make 131 lines (3.6%). Fabrice Fontaine was flagged in the same hint but holds 0 lines.
+- **Possible duplicate (unconfirmed):** tomasi and Tomás Ibarra may be one person. The evidence is weak, so the table keeps them separate. Merged they would hold 142 lines (3.9%) and rank 4th.
+- **Excluded:** one bot identity (5 lines, 1 commit) is left out of both columns. No files were dropped as generated or vendored.
+- **Copy detection:** the figures use `-w -M -C`. The tool printed no note about copy detection moving anyone's share by more than 2 points.
+- **Mechanical rewrites:** the tool examined 320 commits that hold surviving lines and set aside none. It flagged 59 more as looking mechanical and kept them. They are Max's "reformatting: …" commits, such as `f831aef` (59 lines) and `c71cd6c` (40 lines). I inspected only `f831aef`. It adds 28 lines and removes 1 in `cJSON.c`, so it is a real change, not a whitespace-only one. I did not inspect the other 58. If those commits are formatting-only, Max's share would drop somewhat.
+
+Surviving lines show whose code is still here. They don't show review, design work, code that was deleted on purpose, or quality.
+META cost=0.0872906 ms=25552 turns=7

@@ -1,0 +1,30 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/itsdangerous/signer.py src/itsdangerous/timed.py"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ppi-3/repo; ls .git-blame-ignore-revs 2>/dev/null; git log --oneline | wc -l; for f in src/itsdangerous/signer.py src/itsdangerous/timed.py; do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn; echo "-- commits"; git log --follow --no-merges --pretty='%an' -- $f | sort | uniq -c | sort -rn; done; echo "== recent activity"; git log --since="1 year ago" --no-merges --pretty='%an' -- src/itsdangerous/signer.py src/itsdangerous/timed.py | sort | uniq -c | sort -rn; git log -1 --format='%ad' --date=short
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r7/out-C/runs/C2-ppi-3/repo; git log --author="Ibarra" --no-merges --stat --format='%h %ad %s' --date=short -- src/itsdangerous/signer.py src/itsdangerous/timed.py | head -20; echo; for a in "David Lord" "Tomás Ibarra" "Armin Ronacher" "Hsiaoming Yang" "Arnout van Meer"; do echo "$a: $(git log --all --author="$a" -1 --format='%ad' --date=short)"; done; echo; git log -8 --no-merges --format='%h %ad %an %s' --date=short -- src/itsdangerous/signer.py src/itsdangerous/timed.py
+FINAL ANSWER:
+**Ask David Lord. Ask Tomás Ibarra as well if your change touches the key rotation helpers.**
+
+I used `git blame -w -M -C -C` on HEAD. That counts the lines that still exist, ignores whitespace changes, and follows moved or copied code. It is not a commit count.
+
+| File | David Lord | Tomás Ibarra | Armin Ronacher | Others |
+|---|---|---|---|---|
+| `signer.py` | 212 lines | 100 | 19 | Hsiaoming Yang 13, Arnout van Meer 11, bot 8, 2 others 3 |
+| `timed.py` | 172 | 72 | 37 | bot 5, Zach Hugnou 5, 4 others 9 |
+
+- **David Lord:** They own about 55–60% of the surviving lines in both files. They have 10 commits in `signer.py` and 17 in `timed.py`, and their last commit was 2025-07-07. They wrote most of the core signing and unsigning logic, the typing work and the lazy sha1 handling.
+- **Tomás Ibarra:** Their commit counts are low, but they are the second-largest author of surviving code. They wrote the key rotation helpers in `signer.py` (commit `93695fd`, 100 lines) and `timed.py` (commit `56dba8d`, 72 lines). Those two commits are from 2025-07-01 and 2025-07-02. Ask them if your change touches rotation.
+- **Armin Ronacher:** They wrote the original code, and some of it survives (19 and 37 lines). Their last commit was in 2018, so they are not a practical reviewer.
+- **Hsiaoming Yang and Arnout van Meer:** They are in the same position. Their last commits were in 2019 and 2013.
+- **Bot:** `pre-commit-ci[bot]` is listed in the blame output because of auto-format commits. Ignore it.
+
+**Caveats:**
+- Nothing in these two files has changed in over a year. The newest commit in the repo is from 2025-07-08, and today is 2026-10-22. I only checked the git history. It doesn't show who is still active on the project.
+- Bus factor is about 2 for these files. David Lord and Tomás Ibarra together cover about 85% of the surviving lines.
+- I did not run the full skill workflow (the repo-wide file scan and the contributor-analyzer agent). You asked about two files, so I ran the blame check on just those.
+META cost=0.06478900000000001 ms=19636 turns=5

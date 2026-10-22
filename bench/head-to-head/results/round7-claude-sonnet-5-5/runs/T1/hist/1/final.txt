@@ -1,0 +1,40 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-hist-1/repo", "top": 30, "max_files": 1000}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r7/out-P/runs/T1-hist-1/repo"}
+ - Bash: git show -s --format='%an <%ae> %ad %s' 62628c0 && git show --stat --format= 62628c0 | tail -8 && for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -15; git ls-files | xargs wc -l | tail -1
+FINAL ANSWER:
+Surviving code in this repo is mostly Troy Goode's and Douglas Christopher Wilson's, not Fiona Formatter's.
+
+Plain `git blame` credits Fiona Formatter with 51% of the lines. That number is wrong. Their only commit, `62628c0` (2026-04-12), reformatted four files to 4-space indent and double quotes. It changed no logic but took over blame for 1016 lines.
+
+I re-ran blame with `-w --ignore-rev 62628c0`, which skips that commit and whitespace changes. Here are the results across 1993 lines in 18 files:
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 746 | ~37% | 2026-04-10 |
+| Douglas Christopher Wilson | 645 | ~32% | 2021-09-07 |
+| Íñigo Marquínez Prado | 95 | ~5% | 2024-05 |
+| Jon Church | 72 | ~4% | 2026-01 |
+| Sebastian Beltran | 67 | ~3% | 2025-07 |
+| Ignacio Mangas | 54 | ~3% | 2025-12 |
+| Ulises Gascón | 52 | ~3% | 2026-01 |
+| Eric di Domenico, Alejandro Caravaca Puchades, Linus Unnebäck, Alberto Leal | 106 combined | ~5% | — |
+| Everyone else | the remaining ~100 | ~5% | — |
+
+- **Core code:** Troy Goode and Douglas Christopher Wilson wrote most of `lib/index.js` and `test/test.js`. Troy Goode is the larger owner after the reformat is skipped. `lib/index.js` shows Troy Goode at 20 of 238 lines when the reformat is counted, so the reformat hides much of their work.
+- **Config and docs:**
+  - Wilson owns most of `HISTORY.md`, `LICENSE`, `package.json` and `.eslintrc.yml`.
+  - Troy Goode owns most of the README and test fixtures.
+  - The `.github/` workflow files belong to Íñigo Marquínez Prado, Sebastian Beltran, Ignacio Mangas and Ulises Gascón.
+- **Inactivity:** `knowledge_risk` flags every file as orphaned because nobody with a commit since 2026-04-22 owns more than 50% of any file. The last commit in the repo is 2026-04-12, so this reflects a quiet repo more than anyone leaving. Wilson's last commit was 2021, so their code has been unmaintained longest.
+- **Copied code:** `-w` ignores whitespace only. I did not run copy detection (`-C`), so code moved between files is credited to whoever moved it.
+
+The commit counts point the same way: Wilson has 143 commits and Troy Goode 95. The surviving-line ranking is the reverse, with Troy Goode first. That is probably because Troy Goode's later work (tests, README) replaced older lines.
+META cost=0.0855112 ms=23107 turns=6

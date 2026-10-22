@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: echo "files: $(git ls-files '*.rs' | wc -l)"; echo "== plain blame (-w -M -C)"; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo "== ignoring normalize + SPDX commits"; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M --line-porcelain --ignore-rev c862f48 --ignore-rev a45246e HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8
+ - Bash: git log --format='%an <%ae>' | grep -i 'mor' | sort | uniq -c; git ls-files -z '*.rs' | xargs -0 -n1 git blame -w -M --line-porcelain --ignore-rev c862f48 --ignore-rev a45246e HEAD -- | grep -c '^author '
+FINAL ANSWER:
+Andrew Gallant wrote about 69% of the surviving Rust lines, so it is mostly one person, with Sam Okoro a distant second.
+
+I ran `git blame` over the 10 tracked `.rs` files (4,366 lines at HEAD). I used `-w -M` to ignore whitespace and moved lines, and I excluded the two recent bulk commits (`c862f48` line endings, `a45246e` SPDX headers). Including them barely changes the numbers.
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2,994 | ~68.6% |
+| Sam Okoro | 647 | ~14.8% |
+| Inès Moreau (combined, see below) | 218 | ~5.0% |
+| Sebastian Thiel | 74 | ~1.7% |
+| mcharsley | 45 | ~1.0% |
+| Aron Griffis | 45 | ~1.0% |
+| Marvin Löbel | 42 | ~1.0% |
+
+- **Inès Moreau:** git lists "Inès Moreau" (121 lines) and "Ines Moreau" (97 lines) as separate authors. There is also an `ines` commit under a GitHub noreply address that matches the university email. I think these are one person, but the repo has no `.mailmap`, so I merged them myself. Counted separately, neither would rank above Sebastian Thiel.
+- **Where the remainder sits:** the top three account for about 88% of the lines. The rest is a long tail of one-off contributors.
+META cost=0.0602911 ms=18724 turns=5

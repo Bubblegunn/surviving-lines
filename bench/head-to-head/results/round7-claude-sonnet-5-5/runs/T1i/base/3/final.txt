@@ -1,0 +1,43 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -vE '(package-lock|\.png|\.jpg|\.ico|\.gif)$' | wc -l; git rev-list --count HEAD
+ - Bash: git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico|\.gif)$' | while read f; do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -30; echo ---; git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico|\.gif)$'; echo ---; git shortlog -sn HEAD | head
+ - Bash: for set in "lib/index.js" "test/error-response.js test/example-app.js test/issue-2.js test/support/env.js test/test.js test/vary.js" "HISTORY.md README.md"; do echo "== $set"; for f in $set; do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR&&i<=6;i++){split(a[i],p," "); printf "%s  %.1f%%\n",a[i],p[1]/t*100}; print "total",t}'; done
+ - Bash: b(){ for f in "$@"; do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR&&i<=4;i++){split(a[i],p," "); printf "%s  %.1f%%\n",a[i],p[1]/t*100}; print "total",t}'; }; echo ALL; b $(git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico|\.gif)$'); echo TESTS; b test/*.js test/support/env.js; echo DOCS; b HISTORY.md README.md
+FINAL ANSWER:
+Surviving lines by author, from `git blame -w -M -C -C`. This follows moved and copied code and ignores whitespace. It also skips the `62628c0` reformat commit via `.git-blame-ignore-revs`, so that commit doesn't take credit for every line. I excluded lockfiles and images. The total is 1,997 lines across 18 files.
+
+**Whole repo**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| everyone else | | about 11% |
+
+**By area**
+- **`lib/index.js`** (238 lines): Troy Goode 66.8%, Douglas Christopher Wilson 9.2%, Alejandro Caravaca Puchades 5.0%, Raymond Feng 2.9%, max.laverse 2.5%, LuisEGR 2.5%.
+- **Tests** (964 lines): Troy Goode 53.6%, Douglas Christopher Wilson 38.6%, Alejandro Caravaca Puchades 1.9%, Eric di Domenico 1.5%.
+- **`HISTORY.md` and `README.md`** (341 lines): Troy Goode 34.0%, Jon Church 21.1%, Douglas Christopher Wilson 19.6%, Linus Unnebäck 7.6%.
+
+**Commits versus surviving code**
+- By commit count, Douglas Christopher Wilson leads with 143 commits to Troy Goode's 122. By surviving lines, Troy Goode leads.
+- Troy Goode wrote about two-thirds of the main source file, so most of the core logic is theirs.
+- Douglas Christopher Wilson owns roughly a third of the repo, mostly tests and maintenance.
+- Their share of the main code is small (9.2%), so their commits were mostly small fixes and upkeep.
+
+**Caveats**
+- Blame credits whoever last changed a line. A line that was reformatted or edited slightly goes to the editor, not the original author. The reformat is skipped, but earlier small edits still shift credit.
+- Author names are not merged. A person who used two names or emails would appear as two authors. The snapshot shows `Alejandro Caravaca Puchades` and `alex94puchades` separately, and they may be the same person.
+- "Efe" holds 6 lines, which I did not investigate.
+META cost=0.0500542 ms=33116 turns=6

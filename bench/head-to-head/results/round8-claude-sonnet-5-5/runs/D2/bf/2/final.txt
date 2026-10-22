@@ -1,0 +1,47 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-2/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: T=$(mktemp -d) && git clone -q <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-2/repo $T/repo && cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs $T/repo --no-github 2>&1 | tail -20; echo $T; node -e '
+const j=require(process.argv[1]+"/repo/.github/ownership.json");console.log(JSON.stringify({meta:j.meta,unresolved:j.unresolved,authors:j.authors,zones:j.zones&&j.zones.length},null,1).slice(0,4000))' $T
+ - Bash: cd <tmp> && node -e '
+const j=require("./ownership.json");console.log(Object.keys(j));
+console.log(JSON.stringify(j.zones,null,1).slice(0,5000));
+console.log(JSON.stringify(j.authors||j.people||j.roster,null,1)?.slice(0,3000))'; cat CODEOWNERS | tail -5; cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-2/repo; git ls-files | grep '\.go$' | grep -v vendor | wc -l; git log -1 --format=%cd
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-2/repo; git log --author="Okafor" --format='%h %ad %s' --date=short --shortstat; echo ---; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -15; echo; echo ignoring-sam-commit:; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- $f | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -12
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-D/runs/D2-bf-2/repo; git ls-files '*.go' | grep -v '^vendor/' | xargs wc -l | tail -1; git ls-files '*.go' | grep -v '^vendor/' | head -80 | tr '\n' ' '; echo; for e in <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> <email redacted>; do echo "$e $(git log --author=$e --format=%ad --date=short -1)"; done; echo; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame -w -M -C --ignore-rev 6bf5b04 --line-porcelain HEAD -- $f | grep '^author-mail '; done | wc -l; git b
+FINAL ANSWER:
+Live Go code is spread across many people, and most of them are gone. Losing one or two of the people who wrote it would not hurt much. The real risk is that almost nobody who wrote the code is still around to review it.
+
+I measured this with `git blame` (with `-w -M -C`) on the 12,682 non-vendored Go lines at HEAD. I ignored the `interface{}`→`any` commit, 6bf5b04, because it only touched formatting.
+
+| Author | Live lines | Share | Last commit |
+|---|---|---|---|
+| Eric Paris | 2,041 | 16.1% | 2018 |
+| Alex Ogier | 1,237 | 9.8% | 2015 |
+| Noah Dietz | 1,232 | 9.7% | 2018 |
+| JReyLBC | 1,047 | 8.3% | 2017 |
+| Tamal Saha | 626 | 4.9% | 2018 |
+| Rio (riobard) | 538 | 4.2% | 2014 |
+| Mitch Connors | 522 | 4.1% | 2019 |
+| Sam Okafor | 488 | 3.8% | 2026-04 |
+| Georges Varouchas | 454 | 3.6% | 2025-06 |
+
+- **Concentration is low.** The top two authors own about 26% of live lines, and the top five about 49%. No one person is a single point of failure for the Go code.
+- **Most of the code has no active author.** Seven of the top nine left between 2014 and 2019. That is roughly 60% of the live lines. The two active authors in that list, Sam and Georges, together hold about 7%.
+- **Sam is not the owner the script says.** The busfactor script puts Sam at about 51% of the weight and lists them first in CODEOWNERS. That comes from recency weighting. All 488 of Sam's live lines are the generated file `zz_generated_flags.go`, which can be regenerated. Their other commit is a mechanical `gofmt` rewrite and a vendor update. So Sam is probably the maintainer, but they don't understand more of the code than anyone else.
+- **Activity is thin.** The newest commit is 2026-04-08, about six months before today. The script's "active" label means "committed in the 12 months before that commit". It does not mean "active now".
+
+**What this means for you:**
+- You can't rely on the original authors for review. The core files (`flag.go`, the typed flag files and their tests) have no active authors.
+- Sam, Georges, Tomas Aschan and a few 2025 contributors are the only people who have recently touched the code. Learn who they are.
+- Authorship from blame is a rough proxy. It can't tell you who reviews well or who is a maintainer without committing.
+
+**Script output and cleanup:** CODEOWNERS came out as one fallback rule, `* sam.okafor… tomasaschan… georges.varouchas…`. It lists bare emails because I ran it with `--no-github`, and 89 emails are unresolved. I ran it on a temporary clone, so your repo is unchanged and no files were written. I haven't deleted the clone at `<tmp>
+
+If you want, I can resolve the GitHub handles, correct the active/inactive roster and write a real CODEOWNERS into the repo.
+META cost=0.10983180000000001 ms=43927 turns=8

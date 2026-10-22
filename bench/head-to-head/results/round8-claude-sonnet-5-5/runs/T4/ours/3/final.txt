@@ -1,0 +1,30 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js'; $SL --reviewers lib/index.js --merge-identities; echo ------; $SL --history lib/index.js --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js; [ -f "$S" ] && echo exists; node "$S" --reviewers lib/index.js --merge-identities; echo ------; node "$S" --history lib/index.js --merge-identities
+ - Bash: git show --stat --format='%h %an %ad %s' fcd2b56 | head -20; git show --stat --format='%h %an %s' 62628c0 | head; node <home>/claude-kredi-runs/2026-10-22/r8/ours-src/bin/surviving-lines.js --reviewers lib/index.js --merge-identities --ignore-rev fcd2b56 | sed -n 3,12p
+FINAL ANSWER:
+**Reviewers for `lib/index.js`, ranked by surviving lines (238 lines, `git blame -w -M -C`):**
+
+| # | Person | Lines | Share | Last commit | Status |
+|---|---|---|---|---|---|
+| 1 | Troy Goode (2 addresses) | 159 | 66.8% | 2026-04-10 | active |
+| 2 | Douglas Christopher Wilson | 22 | 9.2% | 2017-10-04 | inactive |
+| 3 | alex94puchades | 16 | 6.7% | 2015-05-28 | inactive |
+
+Raymond Feng has 7 lines (2.9%) and LuisEGR has 6 (2.5%). Both are inactive. 19 more authors hold fewer lines.
+
+**Recommendation:** Troy Goode. They hold most of the file and are the only active owner. Douglas Christopher Wilson and alex94puchades are the next owners by lines, but neither has committed in over a year (the tool counts "active" as a commit in the 365 days before 2026-04-12). Treat them as optional context, not as available reviewers.
+
+**Caveats**
+- **Identity merge is a guess.** I counted `<email redacted>` (147 lines, 28 commits) and `troy@laptop.example` (12 lines, 1 commit) as one person, based only on the same name. Without the merge, Troy's main address holds 147 lines (61.8%). The tool suggests the same grouping for alex94puchades and Alejandro Caravaca Puchades, since both use `<email redacted>`. That merge is not applied in the table above. I did not write a `.mailmap`, because you only asked a question.
+- **Reformat commit left out.** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter (2026-04-12) changed 428 lines in this file, all whitespace and quotes. The table does not count it. If you count it, Fiona Formatter would show 32 lines (13.4%) and Troy 138 (58.0%). Don't pick Fiona as a reviewer, because that commit only reformatted the code.
+- **Another mechanical commit kept.** `fcd2b56` (Troy Goode, 2015, "switch to ESLint; clean up") was flagged as possibly mechanical. It touched 30 lines in this file and 6 of them survive. It is not set aside. Re-running with `--ignore-rev fcd2b56` left the top three unchanged.
+- **Bus factor is 1.** Here that means Troy alone holds 66.8% of the surviving lines. It is 3 authors to reach 80%. Without the reformat correction, Troy holds 58.0%, so the bus factor is still 1. Both figures cover this one file only.
+- **Limits of the numbers.** Surviving lines say nothing about code quality, review history or who understands the code. Lockfiles, generated files, vendored code and bots are excluded by default.
+META cost=0.0750711 ms=39991 turns=6

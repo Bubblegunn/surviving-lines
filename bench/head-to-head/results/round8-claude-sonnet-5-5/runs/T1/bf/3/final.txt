@@ -1,0 +1,48 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git ls-files | wc -l; git log --format='%h %an <%ae> %ad %s' --date=short | head -5; git log --oneline | wc -l; git ls-files | grep -vE 'lock|\.(png|jpg|svg|ico)$' | while read f; do git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn; echo ---naive; git ls-files | while read f; do git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author '; done | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files | grep -vE 'lock|\.(png|jpg|svg|ico)$'); do echo "$f $(git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- $f 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -2 | awk '{printf "%s %s %s; ",$1,$3,$4}')"; done; git log --author='Troy Goode' --format='%h %ad %s' --date=short | head -8; git log --author='Troy Goode' --oneline | wc -l
+ - Bash: for f in lib/index.js test/vary.js test/test.js; do echo $f; git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- $f | awk '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author Troy/{print c}' | sort | uniq -c | sort -rn | head -3; done; git show --stat --format='%h %s' b2005d9 02afce3 | head; git log --diff-filter=A --format='%h %an %ad' --date=short -- test/vary.js
+FINAL ANSWER:
+Status: `git blame` finished on every tracked file, and I'm writing up the result.
+
+I didn't use the `busfactor` script for this answer. It scores commits with a decay over time, which is closer to "who has been active" than to "whose lines survive". Its dry-run also produced a fallback owner list that includes `fiona@formatter.example`, the account behind the latest reformat commit. I'd treat that output as unreliable until it's checked.
+
+**Method:** I ran `git blame -w -M -C` on all 18 tracked files, skipping lockfiles and images. I told blame to ignore `62628c0`, the 2026-04-12 reformat commit. Without that, Fiona Formatter would own 291 lines, which are only whitespace and quote changes.
+
+**Who owns the surviving lines** (about 2,000 lines in total, so percentages are approximate):
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~40% |
+| Douglas Christopher Wilson | 629 | ~30% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~3% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+
+The remaining ~14% is spread across about 38 other people, most with fewer than 30 lines each.
+
+**By area:**
+- **`lib/index.js`:** Troy has 159 lines and Douglas has 22. Most of Troy's lines come from older commits (`4f13c63`, `8ec22a9`), not his recent work.
+- **`test/*`:** Troy and Douglas split `test/test.js` almost evenly, 317 lines to 339. Troy owns most of the other test files, and all 36 lines of `test/vary.js`.
+- **`README.md`:** Troy has 116 lines and Jon Church has 72.
+- **`.github/workflows` and `dependabot.yml`:** These belong to recent maintainers: Douglas (118 lines in `ci.yml`), Ignacio Mangas, Sebastian Beltran, Íñigo Marquínez and Ulises Gascón.
+- **`HISTORY.md`, `.eslintrc.yml`, `LICENSE`:** These are mostly Douglas's.
+
+**Caveats:**
+- **Imported history.** The history starts in 2013 with one bulk commit of 8 files. Blame credits the author recorded in that history, which may not be whoever originally wrote the code.
+- **Troy's two recent commits.** Troy also made `b2005d9` (12 lines in `lib/index.js`) and `02afce3` (the new `test/vary.js`) on 2026-04-10. His share would be about 10% lower, ~30% instead of ~40%, if his older code turns out to be a mass import and not his own writing. I haven't checked that.
+- **Who is still active.** Blame shows whose lines remain, not who is still around to maintain them. I haven't checked who is active, so I can't say which of these areas are orphaned.
+- **Re-attribution.** `-C` credits moved or copied lines to their original author. I haven't tried a run without it.
+
+Next, I can run the full `busfactor` report with `--no-github`, check which authors are active, and give you the orphaned and bus-factor-1 zones. Say if you want that.
+META cost=0.09814769999999999 ms=37631 turns=8

@@ -1,0 +1,39 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -E '^cJSON\.(c|h)$'; git log --oneline | wc -l; git config blame.ignoreRevsFile
+ - Bash: for f in cJSON.c cJSON.h; do echo "== $f"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -E '^author ' | sort | uniq -c | sort -rn; wc -l < $f; done; echo "== combined"; for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -E '^author '; done | sort | uniq -c | sort -rn
+ - Bash: for f in cJSON.c cJSON.h; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -E '^(author|author-mail) '; done | paste - - | sort | uniq -c | sort -rn | grep -iE 'tomas|tomás|Max Br|Efe|Dave|Alan' ; git show --stat --format='%an %s' a361795 | head
+FINAL ANSWER:
+Max Bruckner wrote about 75% of the code still in `cJSON.c` and `cJSON.h`. Nobody else has more than about 4%.
+
+I used `git blame -w -M -C` on HEAD. That ignores whitespace changes and follows lines moved or copied between files. I also used `.git-blame-ignore-revs`, which skips the clang-format commit `413c6d1`; without it that commit would own most of the files. The total is 3,601 lines: 3,298 in `cJSON.c` and 303 in `cJSON.h`.
+
+| # | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Max Bruckner | 2,699 | 74.95% |
+| 2 | Kevin Branigan | 149 | 4.14% |
+| 3 | Tomás Ibarra (`tomasi` 74 + `Tomás Ibarra` 68) | 142 | 3.94% |
+| 4 | Alan Wang (two emails, 129 + 2) | 131 | 3.64% |
+| 5 | Dave Gamble | 111 | 3.08% |
+| 6 | Mike Jerris | 76 | 2.11% |
+| 7 | caglarivriz | 31 | 0.86% |
+| 7 | PeterAlfredLee | 31 | 0.86% |
+| 9 | Nicolas Badoux | 29 | 0.81% |
+| 10 | Zach Hindes | 23 | 0.64% |
+| 11 | miaoerduo | 22 | 0.61% |
+| 12 | Sang-Heon Jeon | 13 | 0.36% |
+| 12 | Jiri Zouhar | 13 | 0.36% |
+| 14 | Pawel Winogrodzki | 11 | 0.31% |
+| – | About 25 other authors, 10 lines or fewer each | 120 | 3.3% |
+
+- **Merged identities:** I merged the two Alan Wang emails, since the name is identical. I also merged `tomasi` and `Tomás Ibarra`. That one is a guess from the name and the `<email redacted>` address. If they are different people, `tomasi` has 74 lines (2.05%) and `Tomás Ibarra` has 68 (1.89%), so Alan Wang moves up to #3.
+- **Dave Gamble:** He is the original author, and only 3.1% of his lines survive. Blame credits whoever last touched a line, so Max's 75% includes rewrites and rewordings of Dave's original code. It is not all original design.
+- **Mid-sized contributors:** The mid-sized authors, ranked 2 to 6, each hold 2 to 4% of the lines.
+- **Truncated names:** Some blame names are cut off in the git history itself: `Use`, `Lee`, `Julian Ste`, `Stephan`.
+- **Bot commit:** The latest commit, the SPDX headers, is by `github-actions[bot]`. It shows up with only 5 surviving lines, because it mostly deleted lines.
+META cost=0.0746527 ms=24349 turns=5
