@@ -364,7 +364,7 @@ test("review 5: more than 3000 commits are reported as a partial check, with the
   assert.equal(m.truncated, true);
   const line = mechanicalLine({ mechanicalCheck: m });
   assert.match(line, /examined the 3,000 largest of 3,005 commits holding surviving lines \(the rest were not examined\)/);
-  const small = await findMechanicalCandidates(parseArgs(["-q"]), new Map(blamed.entries().take(3)), new Set(), 0, async () => out);
+  const small = await findMechanicalCandidates(parseArgs(["-q"]), new Map([...blamed.entries()].slice(0, 3)), new Set(), 0, async () => out);
   assert.equal(small?.truncated, false);
   assert.match(skill, /largest of M commits/);
 });

@@ -137,3 +137,32 @@ test("skill rules R9-8 to R9-11", async () => {
   assert.match(skill, /`placeholder identities` line[^\n]*never name those identities/);
   assert.match(skill, /`rewrites looked through`/);
 });
+
+test("R9-11: a rewrite with both signs is not set aside under --keep-reformat or --no-detect-reformat, and no internal field reaches the JSON", async () => {
+  await withRepo(
+    (dir) => {
+      /** @type {Record<string, string>} */
+      const first = {};
+      /** @type {Record<string, string>} */
+      const second = {};
+      for (let i = 0; i < 10; i++) {
+        first[`f${i}.go`] = `x${i} := interface{}\nkeep${i}\n`;
+        second[`f${i}.go`] = `x${i} := any\nkeep${i}\n`;
+      }
+      commitAsIdentity(dir, ["Ann", "ann@x.org"], day(0), "add", first);
+      commitAsIdentity(dir, ["Dana", "dana@x.org"], day(1), "all: go fix ./... (interface{} -> any)", second);
+    },
+    async (dir) => {
+      for (const flag of ["--keep-reformat", "--no-detect-reformat"]) {
+        const r = await run(dir, [flag]);
+        const dana = r.authors.find((/** @type {any} */ a) => a.author === "Dana");
+        assert.equal(dana?.lines, 10, `${flag}: Dana keeps the lines`);
+        assert.equal(r.mechanicalCheck.setAside, 0);
+        assert.equal(r.mechanicalCheck.candidates.length, 1, "still named as a candidate");
+        assert.ok(!("both" in r.mechanicalCheck.candidates[0]), `${flag}: no internal field in the JSON`);
+      }
+      const set = await run(dir);
+      assert.ok(set.mechanicalCheck.setAsideCommits.every((/** @type {any} */ c) => !("both" in c)));
+    },
+  );
+});

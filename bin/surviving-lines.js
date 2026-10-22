@@ -2120,7 +2120,7 @@ export async function analyse(o) {
   // R9-9: a commit that shows both signs of a mechanical rewrite (the same small change in at least 10 files AND a
   // formatter, lint fix or codemod named in the subject) is set aside the way a reformat is: its lines go back to the
   // people who wrote them before it. A commit with only one sign stays a named candidate that is not set aside.
-  const strongRewrites = mechanicalCheck && !o.keepReformat && o.coAuthors !== "share" && supportsIgnoreRevs(versionOutput) ? mechanicalCheck.candidates.filter((c) => c.both) : [];
+  const strongRewrites = mechanicalCheck && detect && !o.keepReformat && o.coAuthors !== "share" && supportsIgnoreRevs(versionOutput) ? mechanicalCheck.candidates.filter((c) => c.both) : [];
   if (applied || strongRewrites.length) {
     const ignored = [...(applied ? suspects.map((x) => ({ sha: x.sha, shortSha: x.shortSha })) : []), ...strongRewrites];
     for (const s of ignored) shownFlags.push("--ignore-rev", s.shortSha, "(auto)");
@@ -2128,8 +2128,11 @@ export async function analyse(o) {
     main = await blamePass(o, sampled, mainArgs, grouping, null);
     if (applied) uncorrected = linesSummary(o, first.authors);
   }
+  if (mechanicalCheck) {
+    // `both` is internal: it never reaches the output, whether or not the commit was set aside.
+    mechanicalCheck.candidates = mechanicalCheck.candidates.filter((c) => !strongRewrites.includes(c)).map(({ both, ...c }) => c);
+  }
   if (mechanicalCheck && strongRewrites.length) {
-    mechanicalCheck.candidates = mechanicalCheck.candidates.filter((c) => !c.both);
     mechanicalCheck.setAside += strongRewrites.length;
     mechanicalCheck.setAsideCommits = strongRewrites.map(({ both, ...c }) => c);
   }
