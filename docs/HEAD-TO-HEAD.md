@@ -618,3 +618,38 @@ Only ours ran: 11 tasks x 3 runs = 33 runs, all finished, plugin loaded and skil
 - Round 5 changed T3 as intended: ours copied the two-address `.mailmap` line in 3 of 3 runs.
 
 Caveats. (1) Ours was graded alone (`--arms ours`), not alongside four answers, so model-judged criteria saw one answer; 49.1% of pairs are decided by script, 76 of 84 model-judged pairs were unanimous. (2) Some grader replies corrected themselves in prose and did not parse; they were asked again. One T4 run 2 call stayed unparsed, so that cell rests on two valid votes. (3) T4 ours was 5.00 here and 5.00 in round 4; T1 ours is 3.67 (one run lost one criterion). (4) The reused rival values come from a different day's grading passes. (5) Not done: held-out tasks (all arms), F9 (Haiku, Opus), F6 audit. Those need a full run of every arm and were not started because of the budget limit. No release, merge or public claim is made.
+
+### Round 5 results
+
+Run on 2026-10-22 under the "Round 5 measurement protocol" above (frozen and pushed in `8b83142` before any run). Ours ran from a `git archive` of `6d1d2cf` (`--identities` and the prompt hint print the exact two-address `.mailmap` line for one address under several names), model `claude-sonnet-5-5`, 3 runs per task, 33 task runs, two at a time. Ours loaded and ran its skill in 33 of 33 runs. pp, ppi and base were not run; their cells are the round 4 values ("r4 reused"). Published: `bench/head-to-head/results/round5-claude-sonnet-5-5/` (the results table and the manifest; transcripts are not committed).
+
+Outcome criteria only (mean criteria passed, 3 runs per cell):
+
+| Task | Criteria | ours (r5) | pp (r4 reused) | ppi (r4 reused) | base (r4 reused) |
+| --- | --- | --- | --- | --- | --- |
+| T1 | 4 | 3.67 | 2.67 | 2.00 | 2.67 |
+| T2 | 4 | 4.00 | 2.67 | 2.33 | 3.67 |
+| T3 | 5 | 5.00 | 3.67 | not in task | 4.33 |
+| T4 | 5 | 5.00 | 3.67 | 4.00 | 3.00 |
+| T1i | 4 | 4.00 | 3.67 | 2.00 | 4.00 |
+| T4i | 5 | 5.00 | 3.00 | 4.67 | 3.00 |
+| E1 | 5 | 5.00 | 3.00 | 3.00 | 3.33 |
+| E2k | 5 | 5.00 | 3.67 | 4.00 | 3.33 |
+| E3 | 4 | 4.00 | 2.33 | not in task | 3.00 |
+| E4h | 5 | 5.00 | 4.33 | not in task | 4.33 |
+| E5 | 5 | 5.00 | 4.00 | 3.33 | 3.67 |
+| Total | 51 | 50.67 | 39.00 (best of pp and ppi per task) | | 38.33 |
+
+Gate (revised rules, reused rival values):
+
+- Rule A: ours lost 51 minus 50.67 = 0.33 points; the limit is 9.60. **Passes.**
+- Rule B: ours is strictly above every other arm on all 10 tasks where ours is below the maximum or a rival is below ours; on T1i ours and base both reach the maximum of 4, which passes. T3 is now 5.00 against base 4.33. **Passes on all 11 tasks.**
+
+T3: ours wrote the two-address line (`Name <a> alias <a>`) in 3 of 3 runs, copying it from `--identities`/the hint. The one-address check is unchanged.
+
+Departures, stated plainly:
+
+- The rival and baseline cells are not re-measured; they are the round 4 values, by the owner's rule. They share the grader noise of round 4 (base T3 moved between grading passes).
+- Ours-only cells were graded with `grade.py --arms ours`: same criteria, script checks and prompt, but the model-judged criteria saw one answer, not four in shuffled order. This differs from round 4's grading condition and could favour or penalise ours; it is not measured here.
+- T4 run 2 (and runs 1 and 3 in earlier passes) had grader replies that corrected themselves in prose and did not parse; those calls were asked again (about 17 passes, T4 only) until two valid votes existed per criterion. One call of T4 run 2 still does not parse; the criterion keeps the other two votes. Grading reliability: 49.7% of pairs decided by script; 76 of 82 model-judged pairs (92.7%) with three identical votes.
+- Not done: held-out tasks (all arms), F9 (Haiku and Opus), F6 audit, release. The budget cap for this session stops new runs before the held-out round.
