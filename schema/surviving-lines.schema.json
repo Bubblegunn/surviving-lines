@@ -5,7 +5,7 @@
   "description": "schemaVersion changes when a key is removed, renamed or changes type. Adding a key does not change it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "mailmap", "reviewers", "history", "authors"],
+  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "mechanicalCheck", "mailmap", "reviewers", "history", "authors"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "tool": {
@@ -179,16 +179,45 @@
     "blame": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["flags", "copyDetection", "ignoreRevsFile", "ignoreRevs", "autoIgnoredRevs"],
+      "required": ["flags", "copyDetection", "copyEffect", "ignoreRevsFile", "ignoreRevs", "autoIgnoredRevs"],
       "properties": {
         "copyDetection": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["on", "reason"],
-          "description": "Whether git blame followed code moved or copied between files (-C -C). It is off with --no-copies, and by default above 2000 files to blame; reason says why it is off and is null when it is on.",
+          "required": ["on", "reason", "flags"],
+          "description": "Whether git blame followed code moved or copied between files (-C by default, -C -C with --copies deep). It is off with --no-copies, and by default above 2000 files to blame; reason says why it is off and is null when it is on.",
           "properties": {
             "on": { "type": "boolean" },
-            "reason": { "type": ["string", "null"] }
+            "reason": { "type": ["string", "null"] },
+            "flags": { "type": ["string", "null"], "description": "The copy detection flags in use, \"-C\" or \"-C -C\"; null when copy detection is off." }
+          }
+        },
+        "copyEffect": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["flags", "files", "lines", "people"],
+          "description": "Present when copy detection moved lines to another author: the files it credited to another path were blamed again without it, and the three people whose share changed most are listed with both figures. Null when it moved nothing, was off, or --co-authors share was used.",
+          "properties": {
+            "flags": { "type": "string" },
+            "files": { "type": "integer", "minimum": 1, "description": "The files blamed twice." },
+            "lines": { "type": "integer", "minimum": 1, "description": "The lines whose author changed because of copy detection." },
+            "people": {
+              "type": "array",
+              "maxItems": 3,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["author", "mail", "lines", "lineShare", "linesWithout", "lineShareWithout"],
+                "properties": {
+                  "author": { "type": "string" },
+                  "mail": { "type": "string" },
+                  "lines": { "type": "number", "minimum": 0, "description": "With copy detection, the figure in the table." },
+                  "lineShare": { "type": "number", "minimum": 0 },
+                  "linesWithout": { "type": "number", "minimum": 0, "description": "With -w -M only." },
+                  "lineShareWithout": { "type": "number", "minimum": 0 }
+                }
+              }
+            }
           }
         },
         "flags": { "type": "array", "items": { "type": "string" }, "description": "The git blame flags used, including --ignore-revs-file and the file's name when one was used, and --ignore-rev with the first seven characters of each revision given." },
@@ -211,6 +240,37 @@
         "authorsFor80Percent": { "type": ["integer", "null"], "minimum": 1, "description": "The fewest authors whose lines reach 80% of the lines counted, a second concentration figure next to value. Not configurable." }
       }
     },
+    "mechanicalCheck": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["examined", "total", "truncated", "setAside", "ignoredByUser", "candidates"],
+      "description": "The mechanical-rewrite check: the commits holding surviving lines that were examined, how many the reformat rule set aside, and the commits that look mechanical (at least 10 files with equal insertions and deletions of at most 3 lines each, or a formatter, lint fix, codemod or rename tool in the subject) and were not set aside. A candidate is never set aside by this check. Null when no commit holds a surviving line.",
+      "properties": {
+        "examined": { "type": "integer", "minimum": 1, "description": "The commits read: at most the 3000 holding the most surviving lines." },
+        "total": { "type": "integer", "minimum": 1, "description": "All commits holding surviving lines." },
+        "truncated": { "type": "boolean", "description": "True when total is more than examined: only the commits holding the most lines were read." },
+        "setAside": { "type": "integer", "minimum": 0 },
+        "ignoredByUser": { "type": "integer", "minimum": 0, "description": "The distinct revisions the user ignored (--ignore-rev, an ignore-revs file). They are not in examined or setAside." },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha", "shortSha", "author", "mail", "subject", "survivingLines", "filesChanged", "reason"],
+            "properties": {
+              "sha": { "type": "string" },
+              "shortSha": { "type": "string" },
+              "author": { "type": "string" },
+              "mail": { "type": "string" },
+              "subject": { "type": "string" },
+              "survivingLines": { "type": "integer", "minimum": 0 },
+              "filesChanged": { "type": "integer", "minimum": 0 },
+              "reason": { "type": "string", "enum": ["files", "subject"] }
+            }
+          }
+        }
+      }
+    },
     "possibleSamePerson": {
       "type": "object",
       "additionalProperties": false,
@@ -224,7 +284,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "mail", "addresses", "lines", "lineShare", "strength", "evidence", "mailmap"],
+            "required": ["name", "mail", "addresses", "lines", "lineShare", "strength", "evidence", "mailmap", "weakAdditions"],
             "properties": {
               "name": { "type": "string" },
               "mail": { "type": "string", "description": "The address to keep." },
@@ -246,7 +306,25 @@
               "lineShare": { "type": "number", "minimum": 0 },
               "strength": { "type": "string", "enum": ["strong", "weak"], "description": "strong: the evidence has a near-conclusive item (names equal once case, accents and punctuation are ignored; two noreply addresses with the same GitHub user name or id) or at least two different kinds. weak: a single contained-in-address, address-stem or initial-form item. Still not merged." },
               "evidence": { "type": "array", "items": { "type": "string" } },
-              "mailmap": { "type": "array", "items": { "type": "string" }, "description": "Exact two-address .mailmap lines, to write only after the owner confirms." }
+              "mailmap": { "type": "array", "items": { "type": "string" }, "description": "Exact two-address .mailmap lines, to write only after the owner confirms." },
+              "weakAdditions": {
+                "type": "array",
+                "description": "Members linked to this suggestion only weakly: not in lines, each with its own lines.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "mail", "lines", "lineShare", "commits", "evidence", "mailmap"],
+                  "properties": {
+                    "name": { "type": "string" },
+                    "mail": { "type": "string" },
+                    "lines": { "type": "number", "minimum": 0 },
+                    "lineShare": { "type": "number", "minimum": 0 },
+                    "commits": { "type": "integer", "minimum": 0 },
+                    "evidence": { "type": "array", "items": { "type": "string" } },
+                    "mailmap": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
             }
           }
         }
@@ -265,12 +343,28 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name", "addresses", "lines", "lineShare"],
+            "required": ["name", "addresses", "lines", "lineShare", "strength", "weakAdditions"],
             "properties": {
               "name": { "type": "string" },
               "addresses": { "type": "array", "minItems": 2, "items": { "type": "string" } },
               "lines": { "type": "integer", "minimum": 0, "description": "The lines of the addresses added up: the figure the person would have if they were one." },
-              "lineShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "lines over the attributed lines, the same basis as the table's lineShare." }
+              "lineShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "lines over the attributed lines, the same basis as the table's lineShare." },
+              "strength": { "type": "string", "enum": ["strong", "weak"], "description": "Decided per pair: strong when the addresses are linked by a same name or a GitHub login, or by two kinds of evidence; weak when only the same address name on two domains links them. --merge-identities merges strong people only." },
+              "weakAdditions": {
+                "type": "array",
+                "description": "Addresses linked to this person only weakly: not in addresses, lines or lineShare, and never merged.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "mail", "lines", "lineShare"],
+                  "properties": {
+                    "name": { "type": "string" },
+                    "mail": { "type": "string" },
+                    "lines": { "type": "number", "minimum": 0 },
+                    "lineShare": { "type": "number", "minimum": 0 }
+                  }
+                }
+              }
             }
           }
         }

@@ -150,7 +150,7 @@ test("the table of a small repository with no reformat suspect is exactly the he
     const r = await analyse(parseArgs(["--cwd", dir]));
     const expected = [
       "ref HEAD  ·  files 3/3 sampled (1 in 1)  ·  21 of 21 lines attributed",
-      "git blame -w -M -C -C  ·  commits 3, merges excluded",
+      "git blame -w -M -C  ·  commits 3, merges excluded",
       "",
       "author      lines   share  commits   share",
       "------------------------------------------",
@@ -159,6 +159,8 @@ test("the table of a small repository with no reformat suspect is exactly the he
       "",
       "bus factor 1: Ada alone holds 52.4% of 21 surviving lines · to reach 80%: 2 authors",
       "bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.",
+      "",
+      "mechanical rewrites checked: examined 2 commits holding surviving lines, set aside 0; no other commit looks mechanical (at least 10 files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).",
       "",
       "What this cannot show: quality of the lines, review work, design done in documents,",
       "or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.",

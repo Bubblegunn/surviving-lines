@@ -28,7 +28,7 @@ const execFileP = promisify(execFile);
  */
 export const SCHEMA_VERSION = 1;
 
-/** Above this many files to blame, copy detection (-C -C) is off by default: it makes each blame search the whole commit. */
+/** Above this many files to blame, copy detection (-C) is off by default: it makes each blame search the whole commit. */
 const COPY_DETECTION_MAX_FILES = 2000;
 
 /** The package version, read from the package.json this file ships with. */
@@ -55,8 +55,11 @@ Measure who wrote the code that is still alive in a git ref.
   --exclude <glob>     skip files matching the glob (repeatable)
   --since <date>       commit-share window start (passed to git log)
   --until <date>       commit-share window end
-  --copies             follow copies even above 2000 files to blame (default: git blame -w -M -C -C, which follows moved
-                       and copied code to its first author; copy detection is off above 2000 files)
+  --copies [deep]      follow copies even above 2000 files to blame (default: git blame -w -M -C, which follows code
+                       moved out of a file changed in the same commit; copy detection is off above 2000 files).
+                       "deep" uses -C -C, which also looks in files of the commit that created the file.
+                       The word right after --copies is read as this value, so never put a path named "deep" there
+                       (paths go after --)
   --no-copies          blame with -w -M only: code moved or copied into a new path is credited to who moved it
   --keep-generated     count lockfiles, generated files (marked or minified) and vendored code (default: leave them
                        out of every number and print what was left out)
@@ -110,7 +113,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -134,7 +137,7 @@ export function parseArgs(argv) {
     else if (a === "--exclude") o.exclude.push(next());
     else if (a === "--since") o.since = next();
     else if (a === "--until") o.until = next();
-    else if (a === "--copies") o.copies = true;
+    else if (a === "--copies") { o.copies = true; if (argv[i + 1] === "deep") { o.copiesDeep = true; i++; } }
     else if (a === "--no-copies") o.noCopies = true;
     else if (a === "--keep-generated") o.keepGenerated = true;
     else if (a === "--co-authors") { const mode = next(); if (mode !== "none" && mode !== "share") throw new Error("--co-authors must be none or share"); o.coAuthors = mode; }
@@ -994,11 +997,27 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
   /** @type {Map<string, ReturnType<typeof countBlameOrigins>>} */
   const origins = new Map();
   const wantOrigins = o.reviewers !== undefined || o.history !== undefined;
+  const followsCopies = blameArgs.includes("-C");
+  /** Files where a line's origin path differs from the path blamed: copy detection (or a rename) credited them. Their counts, to compare. */
+  /** @type {Map<string, Map<string, { name: string, lines: number }>>} */
+  const copiedFiles = new Map();
+  /** The counts per file of a pass without -C, for the comparison with copiedFiles. */
+  /** @type {Map<string, Map<string, { name: string, lines: number }>>} */
+  const fileCounts = new Map();
   const worker = async () => {
     while (cursor < sampled.length) {
       const file = sampled[cursor++];
       const out = await git([...blameArgs, o.ref, "--", file.path], o.cwd);
       const counts = countBlameLines(out);
+      if (!followsCopies) fileCounts.set(file.path, counts);
+      if (followsCopies) {
+        for (const m of out.matchAll(/^filename (.+)$/gm)) {
+          if (unquoteGitPath(m[1]) !== file.path) {
+            copiedFiles.set(file.path, counts);
+            break;
+          }
+        }
+      }
       if (wantOrigins) origins.set(file.path, countBlameOrigins(out, file.path));
       for (const [mail, { name, lines }] of counts) {
         const a = authors.get(mail) ?? { name, lines: 0, commits: 0 };
@@ -1030,7 +1049,87 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(o.jobs, sampled.length || 1) }, worker));
-  return { authors, attributed, groupAcc, blamedByCommit, origins };
+  return { authors, attributed, groupAcc, blamedByCommit, origins, copiedFiles, fileCounts };
+}
+
+/**
+ * What copy detection changed: the files it credited to another path are blamed again with the same arguments minus
+ * -C, and each author's lines in those files are compared. Null when no file was credited to another path or the
+ * second blame gives the same lines.
+ * @param {Options} o
+ * @param {{ path: string, lines: number }[]} sampled
+ * @param {Map<string, Map<string, { name: string, lines: number }>>} copiedFiles the files the -C pass credited to another path, with its counts
+ * @param {string[]} blameArgs the arguments of the pass that gave copiedFiles
+ * @returns {Promise<{ files: number, delta: Map<string, { name: string, lines: number }> } | null>} lines with copy detection minus lines without, per address
+ */
+async function copyShiftOf(o, sampled, copiedFiles, blameArgs) {
+  if (!copiedFiles.size) return null;
+  const plain = await blamePass(o, sampled.filter((f) => copiedFiles.has(f.path)), blameArgs.filter((a) => a !== "-C"), null, null);
+  /** @type {Map<string, { name: string, lines: number }>} */
+  const delta = new Map();
+  const add = (/** @type {string} */ mail, /** @type {string} */ name, /** @type {number} */ lines) => {
+    const d = delta.get(mail) ?? { name, lines: 0 };
+    d.lines += lines;
+    delta.set(mail, d);
+  };
+  // A file whose origin path differs only through a rename gives the same counts without -C: it is not counted as changed.
+  let changedFiles = 0;
+  for (const [path, counts] of copiedFiles) {
+    const without = plain.fileCounts.get(path) ?? new Map();
+    let changed = counts.size !== without.size;
+    for (const [mail, c] of counts) if (without.get(mail)?.lines !== c.lines) changed = true;
+    if (changed) changedFiles++;
+    for (const [mail, c] of counts) add(mail, c.name, c.lines);
+    for (const [mail, a] of without) add(mail, a.name, -a.lines);
+  }
+  for (const [mail, d] of delta) if (d.lines === 0) delta.delete(mail);
+  return delta.size ? { files: changedFiles, delta } : null;
+}
+
+/**
+ * The note data: the three people whose share moved most because of copy detection, each with the figure with it and
+ * the figure without it, on the table's own basis (bots left out the way the table leaves them out, addresses merged
+ * when the rows are).
+ * @param {Options} o
+ * @param {NonNullable<Awaited<ReturnType<typeof copyShiftOf>>>} shift
+ * @param {{ author: string, mail: string, lines: number }[]} rows the table's rows
+ * @param {number} attributed the table's line total
+ * @param {Map<string, { mail: string }>} canonicalOf
+ * @param {string} flags the copy detection flags in use
+ */
+function copyEffectOf(o, shift, rows, attributed, canonicalOf, flags) {
+  /** @type {Map<string, { name: string, lines: number }>} */
+  const byPerson = new Map();
+  let counted = 0;
+  let moved = 0;
+  for (const [mail, d] of shift.delta) {
+    if (!o.includeBots && isBotIdentity(d.name, mail)) continue;
+    const key = canonicalOf.get(mail)?.mail ?? mail;
+    const p = byPerson.get(key) ?? { name: d.name, lines: 0 };
+    p.lines += d.lines;
+    byPerson.set(key, p);
+    counted += d.lines;
+    if (d.lines > 0) moved += d.lines;
+  }
+  const without = attributed - counted;
+  const people = [...byPerson]
+    .filter(([, p]) => p.lines !== 0)
+    .map(([mail, p]) => {
+      const row = rows.find((x) => x.mail === mail);
+      const lines = row?.lines ?? 0;
+      const linesWithout = lines - p.lines;
+      return {
+        author: row?.author ?? p.name,
+        mail,
+        lines,
+        lineShare: attributed ? lines / attributed : 0,
+        linesWithout,
+        lineShareWithout: without ? linesWithout / without : 0,
+      };
+    })
+    .sort((x, y) => Math.abs(y.lineShare - y.lineShareWithout) - Math.abs(x.lineShare - x.lineShareWithout) || x.mail.localeCompare(y.mail))
+    .slice(0, 3);
+  return people.length ? { flags, files: shift.files, lines: moved, people } : null;
 }
 
 /** Extensions of the languages where `'x'` and `"x"` are the same string, so a quote change is layout there. */
@@ -1285,6 +1384,67 @@ export async function findReformatSuspects(o, blamedByCommit, blamedTotal, run =
   return suspects.filter(Boolean);
 }
 
+/** At most this many commits holding surviving lines are examined for the mechanical-rewrite check, most surviving lines first. */
+const MECHANICAL_MAX_COMMITS = 3000;
+/** A commit touching at least this many files with the same small change in each looks mechanical ... */
+const MECHANICAL_MIN_FILES = 10;
+/** ... when no file changed by more than this many inserted (and as many deleted) lines. */
+const MECHANICAL_MAX_LINES_PER_FILE = 3;
+/** Subjects that name a formatting tool, a lint fix, a codemod or a rename tool: tool names and explicit phrases only, not a bare "rename", "format" or "black". */
+const MECHANICAL_SUBJECT = /\b(?:fmt|gofmt|rustfmt|clang-format|scalafmt|autopep8|isort|prettier|black\s+formatt(?:ing|er|ed)|(?:run|ran|apply|applied|apply|using|with)\s+(?:the\s+)?(?:black|formatter)|format\s+(?:all|everything|the\s+(?:code|codebase|repo(?:sitory)?))|reformat(?:ting|ted)?|lint(?:ing)?\s+fix(?:es)?|fix(?:ed|es)?\s+lint|eslint(?:\s+--fix)?|codemods?|(?:rename|renaming)\s+tool|(?:mass|bulk)\s+rename|go\s+fix|gofix)\b|(?:^|\s)--fix\b/i;
+
+/**
+ * The mechanical-rewrite check (R8-2): every commit that holds surviving lines is read once. A commit looks mechanical
+ * when it touches at least 10 files with equal insertions and deletions in each, at most 3 lines per file, or when its
+ * subject names a formatter, a lint fix, a codemod or a rename tool. There is no size floor. A candidate is only
+ * listed: the tool never sets one aside by this check, only by the reformat rule.
+ * @param {Options} o
+ * @param {Map<string, { name: string, mail: string, lines: number }>} blamedByCommit
+ * @param {Set<string>} setAside the commits the reformat rule set aside
+ * @param {number} [ignoredByUser] the revisions the user ignored (--ignore-rev, an ignore-revs file); they hold no blamed line, so they are only counted
+ * @param {GitRun} [run]
+ * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" }[] } | null>}
+ */
+export async function findMechanicalCandidates(o, blamedByCommit, setAside, ignoredByUser = 0, run = (args, opts) => git(args, o.cwd, opts)) {
+  const total = blamedByCommit.size;
+  const list = [...blamedByCommit].sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0])).slice(0, MECHANICAL_MAX_COMMITS);
+  if (!list.length) return null;
+  /** @type {string} */
+  let out;
+  try {
+    out = await run(["log", "--no-walk=unsorted", "--numstat", "--no-renames", "--format=%x1e%H%x1f%s", "--stdin"], { input: `${list.map(([sha]) => sha).join("\n")}\n` });
+  } catch {
+    return null;
+  }
+  /** @type {Map<string, { subject: string, files: number, small: boolean }>} */
+  const facts = new Map();
+  for (const chunk of out.split("\x1e")) {
+    if (!chunk) continue;
+    const [head, ...rest] = chunk.split("\n");
+    const [sha, ...subject] = head.split("\x1f");
+    let files = 0;
+    let small = true;
+    for (const line of rest) {
+      const m = /^(\d+|-)\t(\d+|-)\t/.exec(line);
+      if (!m) continue;
+      files++;
+      if (m[1] === "-" || m[1] !== m[2] || Number(m[1]) < 1 || Number(m[1]) > MECHANICAL_MAX_LINES_PER_FILE) small = false;
+    }
+    facts.set(sha, { subject: subject.join("\x1f"), files, small });
+  }
+  /** @type {NonNullable<Awaited<ReturnType<typeof findMechanicalCandidates>>>["candidates"]} */
+  const candidates = [];
+  for (const [sha, b] of list) {
+    const f = facts.get(sha);
+    if (!f || setAside.has(sha)) continue;
+    const byFiles = f.files >= MECHANICAL_MIN_FILES && f.small;
+    const bySubject = MECHANICAL_SUBJECT.test(f.subject);
+    if (!byFiles && !bySubject) continue;
+    candidates.push({ sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, survivingLines: b.lines, filesChanged: f.files, reason: byFiles ? "files" : "subject" });
+  }
+  return { examined: list.length, total, truncated: total > list.length, setAside: setAside.size, ignoredByUser, candidates };
+}
+
 /** An author is active when their newest commit at the reviewed path is no more than this many days before the as-of date. */
 const INACTIVE_AFTER_DAYS = 365;
 
@@ -1443,6 +1603,8 @@ export function scopeNotes(r, opts = {}) {
   const left = [botsLine(r), mailmapLine(r)].filter(Boolean);
   add(left.length ? left.join("\n").split("\n") : null);
   add(reformatBlock(r));
+  add(mechanicalLine(r));
+  add(copyEffectLine(r));
   if (opts.identityHints !== false) add(identityLine(r)?.split("\n"));
   add(opts.view ? movedInLine(opts.view) : null);
   return out;
@@ -1667,6 +1829,47 @@ function rowLabel(a, nameCount) {
 }
 
 /**
+ * The figure the --history headline gives for a person: the one the tool recommends leading with when the person's
+ * address belongs to an identity hint or a possible-same-person suggestion, with the other next to it (R8-4).
+ * Strong evidence leads with the merged figure; weak evidence leads with the address alone. Nothing is merged.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @param {{ mail: string, lines: number, lineShare: number }} a
+ */
+function leadFigure(r, a) {
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const alone = `${n(a.lines)} lines, ${pct(a.lineShare)}`;
+  const group = identityGroupOf(r, a);
+  if (!group) return alone;
+  const merged = `${n(group.lines)} lines, ${pct(group.lineShare)}`;
+  const others = capped(group.others, ", ");
+  return group.strength === "strong"
+    ? `${merged} counting this address and ${others} as one person, strong evidence, not merged by the tool; this address alone: ${alone}`
+    : `${alone} for this address alone; ${merged} if ${others} is the same person, weak evidence`;
+}
+
+/**
+ * The identity hint or suggestion the person's address belongs to, with its strength and merged figure, or null when
+ * there is none, the figure or strength is missing (a result from before they existed), or --merge-identities already
+ * merged the rows.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @param {{ mail: string }} a
+ * @returns {{ strength: "strong" | "weak", lines: number, lineShare: number, others: string[] } | null}
+ */
+function identityGroupOf(r, a) {
+  if (r.identityMerge?.applied) return null;
+  /** @type {{ strength?: string, lines?: number, lineShare?: number, others: string[] } | null} */
+  let group = null;
+  for (const p of r.identityHints?.people ?? []) {
+    if (!group && p.addresses.includes(a.mail)) group = { strength: p.strength, lines: p.lines, lineShare: p.lineShare, others: p.addresses.filter((m) => m !== a.mail) };
+  }
+  for (const s of r.possibleSamePerson?.suggestions ?? []) {
+    if (!group && s.addresses.some((x) => x.mail === a.mail)) group = { strength: s.strength, lines: s.lines, lineShare: s.lineShare, others: s.addresses.map((x) => x.mail).filter((m) => m !== a.mail) };
+  }
+  if (!group || typeof group.lines !== "number" || typeof group.lineShare !== "number" || (group.strength !== "strong" && group.strength !== "weak")) return null;
+  return { strength: group.strength, lines: group.lines, lineShare: group.lineShare, others: group.others };
+}
+
+/**
  * The line under the table when --merge-identities applied: each merged person with the lines and commits of every
  * address, so a reader sees what was added up. People are separated by semicolons and addresses by commas; past three
  * of either, the rest are counted.
@@ -1777,15 +1980,18 @@ export async function analyse(o) {
   const errStream = o.stderr ?? process.stderr;
   const showProgress = !o.quiet && Boolean(errStream && errStream.isTTY);
 
-  // -C -C follows code moved or copied into a new path (and into the commit that created the file) back to its first
-  // author. Every blame then looks in every file of the commit, so above this many files it is off unless asked for.
+  // -C follows code moved out of a file changed in the same commit back to its first author; --copies deep (-C -C) also
+  // looks in the files of the commit that created the file. Every blame then looks in more files, so above this many
+  // files it is off unless asked for.
   const copyOn = !o.noCopies && (o.copies || all.length <= COPY_DETECTION_MAX_FILES);
   const copyDetection = {
     on: copyOn,
     reason: copyOn ? null : o.noCopies ? "--no-copies" : `${all.length} files in the ref, more than ${COPY_DETECTION_MAX_FILES}`,
+    flags: copyOn ? (o.copiesDeep ? "-C -C" : "-C") : null,
   };
   const blameArgs = ["blame", "--line-porcelain", "-w", "-M"];
-  if (copyOn) blameArgs.push("-C", "-C");
+  if (copyOn) blameArgs.push("-C");
+  if (copyOn && o.copiesDeep) blameArgs.push("-C");
   const shownFlags = blameArgs.slice(2);
   const ignoreRevs = await resolveIgnoreRevs(o, versionOutput);
   if (ignoreRevs) {
@@ -1810,14 +2016,22 @@ export async function analyse(o) {
   // The correction: the main numbers are a second pass with the suspects ignored, so every output reads one result.
   // --keep-reformat keeps the first pass, and --co-authors share keeps it too: its split is not a plain line count.
   const applied = suspects.length > 0 && !o.keepReformat && o.coAuthors !== "share";
+  const ignoredByUser = new Set(userRevs);
+  if (ignoreRevs) for (const m of readFileSync(ignoreRevs.path, "utf8").matchAll(/^\s*([0-9a-f]{40}|[0-9a-f]{64})\b/gim)) ignoredByUser.add(m[1].toLowerCase());
+  const mechanicalCheck = await findMechanicalCandidates(o, first.blamedByCommit, new Set(applied ? suspects.map((x) => x.sha) : []), ignoredByUser.size);
   /** @type {ReturnType<typeof linesSummary> | null} */
   let uncorrected = null;
   let main = first;
+  let mainArgs = blameArgs;
   if (applied) {
     for (const s of suspects) shownFlags.push("--ignore-rev", s.shortSha, "(auto)");
-    main = await blamePass(o, sampled, [...blameArgs, ...suspects.flatMap((s) => ["--ignore-rev", s.sha])], grouping, null);
+    mainArgs = [...blameArgs, ...suspects.flatMap((s) => ["--ignore-rev", s.sha])];
+    main = await blamePass(o, sampled, mainArgs, grouping, null);
     uncorrected = linesSummary(o, first.authors);
   }
+  // Where copy detection credited lines to another path, the same files are blamed again without it, so the notes can
+  // name who gained or lost. Only those files are blamed twice. Under --co-authors share the split is not a line count.
+  const copyShift = copyOn && o.coAuthors !== "share" ? await copyShiftOf(o, sampled, main.copiedFiles, mainArgs) : null;
   const authors = main.authors;
   let attributed = main.attributed;
   const blamedByCommit = main.blamedByCommit;
@@ -1980,9 +2194,11 @@ export async function analyse(o) {
   const suggested = suggestSamePerson(rows, linked);
   /** @type {Map<string, { author: string, mail: string }>} */
   const canonicalOf = new Map();
-  for (const g of linked) for (const m of g.members) canonicalOf.set(m.mail, { author: g.canonical.author, mail: g.canonical.mail });
+  // --merge-identities merges the strong groups only (R8-5): a weak group, or a weak addition, stays on its own row.
+  const mergeable = linked.filter((g) => g.strength === "strong");
+  for (const g of mergeable) for (const m of g.members) canonicalOf.set(m.mail, { author: g.canonical.author, mail: g.canonical.mail });
   /** @type {Map<string, string[]> | null} */
-  const membersOf = o.mergeIdentities ? new Map(linked.map((g) => [g.canonical.mail, g.members.map((m) => m.mail)])) : null;
+  const membersOf = o.mergeIdentities ? new Map(mergeable.map((g) => [g.canonical.mail, g.members.map((m) => m.mail)])) : null;
   if (o.mergeIdentities) {
     rows = foldAddresses(rows, canonicalOf).map((a) => ({ ...a, lineShare: attributed ? a.lines / attributed : 0, commitShare: commits ? a.commits / commits : 0 }));
     sortRows(rows);
@@ -2011,15 +2227,16 @@ export async function analyse(o) {
     grouping: grouping && groups ? { by: grouping.kind === "dir" ? `dir:${grouping.depth}` : "ext", groups } : null,
     bots: { included: o.includeBots, excluded: botRows },
     dropped,
-    blame: { flags: shownFlags, copyDetection, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: applied ? suspects.map((s) => s.sha) : [] },
+    blame: { flags: shownFlags, copyDetection, copyEffect: copyShift ? copyEffectOf(o, copyShift, rows, attributed, o.mergeIdentities ? canonicalOf : new Map(), copyDetection.flags ?? "") : null, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: applied ? suspects.map((s) => s.sha) : [] },
     reformat: { detection: detect, applied, suspects, uncorrected },
+    mechanicalCheck,
     busFactor: runBusFactor && { thresholdPercent: o.busFactorThreshold, ...runBusFactor, authorsFor80Percent: busFactor(byLines, 80)?.value ?? null },
     identityHints: identityHintSummary(linked),
     possibleSamePerson: samePersonSummary(suggested),
     // Written whether or not the merge ran, so a consumer can tell a plain table from a merged one without a missing-key check.
     identityMerge: {
       applied: o.mergeIdentities,
-      groups: o.mergeIdentities ? linked.map((g) => ({ name: g.canonical.author, mail: g.canonical.mail, addresses: [...g.members].sort(byCommitsThenLines).map((m) => ({ mail: m.mail, lines: m.lines, commits: m.commits })), lines: g.members.reduce((sum, m) => sum + m.lines, 0), commits: g.members.reduce((sum, m) => sum + m.commits, 0) })) : [],
+      groups: o.mergeIdentities ? mergeable.map((g) => ({ name: g.canonical.author, mail: g.canonical.mail, addresses: [...g.members].sort(byCommitsThenLines).map((m) => ({ mail: m.mail, lines: m.lines, commits: m.commits })), lines: g.members.reduce((sum, m) => sum + m.lines, 0), commits: g.members.reduce((sum, m) => sum + m.commits, 0) })) : [],
     },
     mailmap,
     reviewers,
@@ -2194,6 +2411,40 @@ function botsLine(r) {
     out.push(`copy detection off: ${copies.reason}, so code moved or copied between files is credited to whoever moved it (-w -M only). --copies turns it on (slower)`);
   }
   return out.length ? out.join("\n") : null;
+}
+
+/**
+ * The one line of the mechanical-rewrite check: how many commits holding surviving lines were examined, how many were
+ * set aside, and each commit that looks mechanical and was not set aside, with its author, subject and surviving
+ * lines. Null for a result without the check.
+ * @param {{ mechanicalCheck?: Awaited<ReturnType<typeof findMechanicalCandidates>> }} r
+ * @returns {string | null}
+ */
+export function mechanicalLine(r) {
+  const m = r.mechanicalCheck;
+  if (!m) return null;
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const scope = m.truncated ? `the ${n(m.examined)} largest of ${n(m.total)} commits` : `${n(m.examined)} commit${m.examined === 1 ? "" : "s"}`;
+  const head = `mechanical rewrites checked: examined ${scope} holding surviving lines${m.truncated ? " (the rest were not examined)" : ""}, set aside ${n(m.setAside)}${m.ignoredByUser ? `, ignored by you ${n(m.ignoredByUser)}` : ""}`;
+  if (!m.candidates.length) return `${head}; no other commit looks mechanical (at least ${MECHANICAL_MIN_FILES} files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).`;
+  const one = (/** @type {typeof m.candidates[number]} */ c) => `${c.shortSha} "${c.subject}" by ${c.author}, ${n(c.survivingLines)} surviving line${c.survivingLines === 1 ? "" : "s"}`;
+  const shown = m.candidates.slice(0, 5).map(one);
+  const rest = m.candidates.length - shown.length;
+  return `${head}; ${m.candidates.length} more look${m.candidates.length === 1 ? "s" : ""} mechanical and ${m.candidates.length === 1 ? "was" : "were"} not set aside: ${shown.join("; ")}${rest > 0 ? `; and ${rest} more` : ""}. Inspect with git show --stat; to count without one, re-run with --ignore-rev.`;
+}
+
+/**
+ * The one scope note about copy detection: when it moved lines, the three people whose share changed most against a
+ * run without it, each with both figures. Null when copy detection moved nothing or was off.
+ * @param {{ blame?: { copyEffect?: { flags: string, files: number, lines: number, people: { author: string, lines: number, lineShare: number, linesWithout: number, lineShareWithout: number }[] } | null } }} r
+ * @returns {string | null}
+ */
+export function copyEffectLine(r) {
+  const e = r.blame?.copyEffect;
+  if (!e) return null;
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const people = e.people.map((p) => `${p.author} ${pct(p.lineShare)} (${n(p.lines)} lines) with, ${pct(p.lineShareWithout)} (${n(p.linesWithout)} lines) without`);
+  return `copy detection (-w -M ${e.flags}) moved ${n(e.lines)} line${e.lines === 1 ? "" : "s"} in ${n(e.files)} file${e.files === 1 ? "" : "s"} to another author. Largest changes in share against -w -M only: ${people.join("; ")}. --no-copies counts without it.`;
 }
 
 /**
@@ -2461,13 +2712,19 @@ export function renderHistory(r, top) {
     if (h.authors.length > top) lines.push(`… ${h.authors.length - top} more ${h.authors.length - top === 1 ? "person" : "people"}`);
     // The first committer is the oldest row; the holder of most lines is the largest, the older one on a tie.
     const first = h.authors[0];
-    const most = h.authors.reduce((best, a) => (a.lines > best.lines ? a : best));
-    const figures = `${most.lines.toLocaleString("en-US")} lines, ${pct(most.lineShare)}`;
+    // A person a strong suggestion counts as one is compared by the merged figure, the one the headline leads with.
+    const leadLines = (/** @type {typeof h.authors[number]} */ a) => {
+      const g = identityGroupOf(r, a);
+      return g?.strength === "strong" ? g.lines : a.lines;
+    };
+    const most = h.authors.reduce((best, a) => (leadLines(a) > leadLines(best) ? a : best));
+    const figuresOf = (/** @type {{ mail: string, lines: number, lineShare: number }} */ a) => leadFigure(r, a);
+    const figures = figuresOf(most);
     // Lines moved or copied in belong to people with no commit on this path, so they are not in the rows above.
     const holder = r.authors.reduce((best, a) => (a.lines > (best?.lines ?? -1) ? a : best), /** @type {(typeof r.authors)[number] | undefined} */ (undefined));
     const onPath = (/** @type {{ mail: string }} */ a) => h.authors.some((x) => x.mail === a.mail);
-    if (holder && holder.lines > most.lines && !onPath(holder)) {
-      lines.push(`${first.author} made the first commit, on ${first.firstCommit}; ${holder.author} holds the most lines now (${holder.lines.toLocaleString("en-US")} lines, ${pct(holder.lineShare)}) and has no commit on this path, because those lines were written in other paths and moved or copied here.`);
+    if (holder && leadLines(holder) > leadLines(most) && !onPath(holder)) {
+      lines.push(`${first.author} made the first commit, on ${first.firstCommit}; ${holder.author} holds the most lines now (${figuresOf(holder)}) and has no commit on this path, because those lines were written in other paths and moved or copied here.`);
     } else lines.push(
       most === first
         ? `${first.author} made the first commit, on ${first.firstCommit}, and holds the most lines now (${figures}).`
@@ -2695,16 +2952,16 @@ export function linkIdentities(authors) {
   const people = authors.filter((a) => !isBotAddress(a.mail));
   /** @type {Map<number, Set<number>>} */
   const edges = new Map();
-  /** @type {Map<string, string[]>} */
+  /** @type {Map<string, { kind: "name" | "login" | "stem", text: string }[]>} */
   const why = new Map();
-  const link = (/** @type {number} */ i, /** @type {number} */ j, /** @type {string} */ reason) => {
+  const link = (/** @type {number} */ i, /** @type {number} */ j, /** @type {"name" | "login" | "stem"} */ kind, /** @type {string} */ reason) => {
     if (!edges.has(i)) edges.set(i, new Set());
     if (!edges.has(j)) edges.set(j, new Set());
     edges.get(i)?.add(j);
     edges.get(j)?.add(i);
     const key = i < j ? `${i}:${j}` : `${j}:${i}`;
     const list = why.get(key) ?? [];
-    if (!list.includes(reason)) list.push(reason);
+    if (!list.some((e) => e.text === reason)) list.push({ kind, text: reason });
     why.set(key, list);
   };
 
@@ -2713,27 +2970,27 @@ export function linkIdentities(authors) {
       const a = people[i];
       const b = people[j];
       if (a.author && b.author && foldIdentity(a.author) === foldIdentity(b.author)) {
-        link(i, j, `the same name, "${a.author}", on two addresses`);
+        link(i, j, "name", `the same name, "${a.author}", on two addresses`);
       }
       const [la, lb] = [githubLogin(a.mail), githubLogin(b.mail)];
       const localOf = (/** @type {string} */ m) => m.split("@")[0].replace(/^\d+\+/, "");
       for (const [login, other] of /** @type {[string | null, typeof a][]} */ ([[la, b], [lb, a]])) {
         if (!login) continue;
         if (loose(login) === loose(localOf(other.mail)) || (other.author && loose(login) === loose(other.author))) {
-          link(i, j, `the GitHub login "${login}" also appears as ${loose(login) === loose(localOf(other.mail)) ? "the address" : "the name"} on the other`);
+          link(i, j, "login", `the GitHub login "${login}" also appears as ${loose(login) === loose(localOf(other.mail)) ? "the address" : "the name"} on the other`);
         }
       }
       if (!la && !lb) {
         const [pa, pb] = [localOf(a.mail), localOf(b.mail)];
         if (pa === pb && pa.length >= 3 && !GENERIC_LOCAL.has(pa) && a.mail !== b.mail) {
-          link(i, j, `the same address name, "${pa}", on two domains`);
+          link(i, j, "stem", `the same address name, "${pa}", on two domains`);
         }
       }
     }
   }
 
   /** @type {number[][]} */
-  const groups = [];
+  const components = [];
   const seen = new Set();
   for (let i = 0; i < people.length; i++) {
     if (seen.has(i) || !edges.has(i)) continue;
@@ -2747,23 +3004,105 @@ export function linkIdentities(authors) {
       members.push(n);
       for (const m of edges.get(n) ?? []) if (!seen.has(m)) stack.push(m);
     }
-    if (members.length > 1) groups.push(members.sort((x, y) => x - y));
+    if (members.length > 1) components.push(members.sort((x, y) => x - y));
   }
 
-  return groups.map((members) => {
-    const rows = members.map((i) => people[i]);
-    // The address someone commits from most often is the one to keep; lines are a weaker signal
-    // because one big import can outweigh years of work.
-    const canonical = [...rows].sort((x, y) => y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
+  const pairKey = (/** @type {number} */ i, /** @type {number} */ j) => (i < j ? `${i}:${j}` : `${j}:${i}`);
+  const evidenceOf = (/** @type {number} */ i, /** @type {number} */ j) => why.get(pairKey(i, j)) ?? [];
+  /** A name or login link is conclusive; an address name on two domains is weak alone and strong with another kind of evidence. */
+  const strongPair = (/** @type {number} */ i, /** @type {number} */ j) => {
+    const list = evidenceOf(i, j);
+    return list.some((e) => e.kind !== "stem") || new Set(list.map((e) => e.kind)).size >= 2;
+  };
+  const textsOf = (/** @type {number[]} */ idx, /** @type {(i: number, j: number) => boolean} */ pairs) => {
     /** @type {string[]} */
-    const reasons = [];
-    for (let a = 0; a < members.length; a++) {
-      for (let b = a + 1; b < members.length; b++) {
-        for (const r of why.get(`${members[a]}:${members[b]}`) ?? []) if (!reasons.includes(r)) reasons.push(r);
+    const texts = [];
+    for (let a = 0; a < idx.length; a++) {
+      for (let b = a + 1; b < idx.length; b++) {
+        if (!pairs(idx[a], idx[b])) continue;
+        for (const e of evidenceOf(idx[a], idx[b])) if (!texts.includes(e.text)) texts.push(e.text);
       }
     }
-    return { canonical, members: rows, reasons };
-  });
+    return texts;
+  };
+
+  /** @type {{ canonical: typeof people[number], members: typeof people, reasons: string[], strength: "strong" | "weak", weakAdditions: { member: typeof people[number], reasons: string[] }[] }[]} */
+  const out = [];
+  for (const component of components) {
+    for (const part of splitByStrength(component, edges, strongPair)) {
+      const rows = part.members.map((i) => people[i]);
+      // The address someone commits from most often is the one to keep; lines are a weaker signal
+      // because one big import can outweigh years of work.
+      const canonical = [...rows].sort((x, y) => y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
+      out.push({
+        canonical,
+        members: rows,
+        reasons: textsOf(part.members, part.strong ? strongPair : () => true),
+        strength: part.strong ? "strong" : "weak",
+        weakAdditions: part.additions.map((i) => ({ member: people[i], reasons: textsOf([...part.members, i], (a, b) => (a === i || b === i) && edges.get(a)?.has(b) === true) })),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Splits one connected group of identities by the strength of each pair (R8-5). The pairs that are strong join the
+ * members they link into one strong part. A member linked only weakly to a strong
+ * part is a weak addition of that part. Members left over, linked to each other only weakly, form weak parts.
+ * @param {number[]} component
+ * @param {Map<number, Set<number>>} edges every linked pair
+ * @param {(i: number, j: number) => boolean} isStrong whether a linked pair is strong
+ * @returns {{ members: number[], additions: number[], strong: boolean }[]}
+ */
+function splitByStrength(component, edges, isStrong) {
+  /** @type {number[][]} */
+  const strongParts = [];
+  const placed = new Set();
+  for (const start of component) {
+    if (placed.has(start)) continue;
+    const stack = [start];
+    /** @type {number[]} */
+    const part = [];
+    const here = new Set();
+    while (stack.length) {
+      const n = /** @type {number} */ (stack.pop());
+      if (here.has(n)) continue;
+      here.add(n);
+      part.push(n);
+      for (const m of edges.get(n) ?? []) if (!here.has(m) && isStrong(n, m)) stack.push(m);
+    }
+    if (part.length > 1) {
+      for (const n of part) placed.add(n);
+      strongParts.push(part.sort((x, y) => x - y));
+    }
+  }
+  const parts = strongParts.map((members) => ({ members, additions: /** @type {number[]} */ ([]), strong: true }));
+  /** @type {number[]} */
+  const rest = [];
+  for (const n of component) {
+    if (placed.has(n)) continue;
+    const home = parts.find((p) => p.members.some((m) => edges.get(n)?.has(m)));
+    if (home) home.additions.push(n);
+    else rest.push(n);
+  }
+  const left = new Set(rest);
+  const taken = new Set();
+  for (const start of rest) {
+    if (taken.has(start)) continue;
+    const stack = [start];
+    /** @type {number[]} */
+    const members = [];
+    while (stack.length) {
+      const n = /** @type {number} */ (stack.pop());
+      if (taken.has(n)) continue;
+      taken.add(n);
+      members.push(n);
+      for (const m of edges.get(n) ?? []) if (left.has(m) && !taken.has(m)) stack.push(m);
+    }
+    if (members.length > 1) parts.push({ members: members.sort((x, y) => x - y), additions: [], strong: false });
+  }
+  return parts;
 }
 
 /**
@@ -2780,6 +3119,9 @@ export function identityHintSummary(groups) {
       // The figure the person would have if the addresses were one: the member rows added up, on the table's share basis.
       lines: g.members.reduce((sum, m) => sum + m.lines, 0),
       lineShare: g.members.reduce((sum, m) => sum + m.lineShare, 0),
+      strength: g.strength,
+      // Members linked to the group only weakly (R8-5): not in the figure above, each with its own lines.
+      weakAdditions: g.weakAdditions.map((w) => ({ name: w.member.author, mail: w.member.mail, lines: w.member.lines, lineShare: w.member.lineShare })),
     })),
   };
 }
@@ -2850,7 +3192,7 @@ export function suggestSamePerson(authors, linked) {
     });
   /** @type {Map<string, number>} */
   const groupOf = new Map();
-  linked.forEach((g, i) => g.members.forEach((m) => groupOf.set(m.mail, i)));
+  linked.forEach((g, i) => [...g.members, ...g.weakAdditions.map((w) => w.member)].forEach((m) => groupOf.set(m.mail, i)));
   /** @type {Map<number, Set<number>>} */
   const edges = new Map();
   /** @type {Map<string, { kind: EvidenceKind, text: string }[]>} */
@@ -2878,36 +3220,54 @@ export function suggestSamePerson(authors, linked) {
       why.set(`${i}:${j}`, evidence);
     }
   }
-  /** @type {{ canonical: typeof authors[number], members: typeof authors, evidence: string[], strength: "strong" | "weak", mailmap: string[] }[]} */
+  /** @type {{ canonical: typeof authors[number], members: typeof authors, evidence: string[], strength: "strong" | "weak", mailmap: string[], weakAdditions: { member: typeof authors[number], evidence: string[], mailmap: string[] }[] }[]} */
   const out = [];
   const seen = new Set();
   const hasSpace = (/** @type {string} */ n) => (/\s/.test(n.trim()) ? 1 : 0);
+  const pairList = (/** @type {number} */ p, /** @type {number} */ q) => why.get(p < q ? `${p}:${q}` : `${q}:${p}`) ?? [];
+  const evidenceFor = (/** @type {number[]} */ idx, /** @type {(p: number, q: number) => boolean} */ pairs) => {
+    /** @type {string[]} */
+    const texts = [];
+    for (let a = 0; a < idx.length; a++) {
+      for (let b = a + 1; b < idx.length; b++) {
+        if (!pairs(idx[a], idx[b])) continue;
+        for (const e of pairList(idx[a], idx[b])) if (!texts.includes(e.text)) texts.push(e.text);
+      }
+    }
+    return texts;
+  };
   for (let i = 0; i < people.length; i++) {
     if (seen.has(i) || !edges.has(i)) continue;
     const stack = [i];
     /** @type {number[]} */
-    const idx = [];
+    const component = [];
     while (stack.length) {
       const n = /** @type {number} */ (stack.pop());
       if (seen.has(n)) continue;
       seen.add(n);
-      idx.push(n);
+      component.push(n);
       for (const m of edges.get(n) ?? []) if (!seen.has(m)) stack.push(m);
     }
-    idx.sort((x, y) => x - y);
-    const members = idx.map((n) => people[n].row);
-    const canonical = [...members].sort((x, y) => hasSpace(y.author ?? "") - hasSpace(x.author ?? "") || y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
-    /** @type {string[]} */
-    const evidence = [];
-    let strong = true;
-    for (const [key, list] of why) {
-      const [p, q] = key.split(":").map(Number);
-      if (!idx.includes(p) || !idx.includes(q)) continue;
-      for (const e of list) if (!evidence.includes(e.text)) evidence.push(e.text);
-      if (!isStrongEvidence(list)) strong = false;
+    component.sort((x, y) => x - y);
+    // Strength is decided per pair (R8-5): the strongly linked members are one strong suggestion, and a member linked
+    // only weakly is a weak addition of it, with its own lines.
+    for (const part of splitByStrength(component, edges, (p, q) => isStrongEvidence(pairList(p, q)))) {
+      const members = part.members.map((n) => people[n].row);
+      const canonical = [...members].sort((x, y) => hasSpace(y.author ?? "") - hasSpace(x.author ?? "") || y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
+      const mailmapOf = (/** @type {typeof members} */ list) => list.filter((m) => m.mail !== canonical.mail).map((m) => `${canonical.author || canonical.mail} <${canonical.mail}> <${m.mail}>`);
+      out.push({
+        canonical,
+        members,
+        evidence: evidenceFor(part.members, part.strong ? (p, q) => isStrongEvidence(pairList(p, q)) : () => true),
+        strength: part.strong ? "strong" : "weak",
+        mailmap: mailmapOf(members),
+        weakAdditions: part.additions.map((n) => ({
+          member: people[n].row,
+          evidence: evidenceFor([...part.members, n], (p, q) => (p === n || q === n) && edges.get(p)?.has(q) === true),
+          mailmap: mailmapOf([people[n].row]),
+        })),
+      });
     }
-    const mailmap = members.filter((m) => m.mail !== canonical.mail).map((m) => `${canonical.author || canonical.mail} <${canonical.mail}> <${m.mail}>`);
-    out.push({ canonical, members, evidence, strength: strong ? "strong" : "weak", mailmap });
   }
   const total = (/** @type {typeof out[number]} */ s) => s.members.reduce((sum, m) => sum + m.lines, 0);
   return out.sort((x, y) => total(y) - total(x) || x.canonical.mail.localeCompare(y.canonical.mail));
@@ -2931,6 +3291,8 @@ export function samePersonSummary(suggestions) {
       strength: s.strength,
       evidence: s.evidence,
       mailmap: s.mailmap,
+      // Members linked to the suggestion only weakly (R8-5): not in `lines`, each with its own lines and .mailmap line.
+      weakAdditions: s.weakAdditions.map((w) => ({ name: w.member.author, mail: w.member.mail, lines: w.member.lines, lineShare: w.member.lineShare, commits: w.member.commits, evidence: w.evidence, mailmap: w.mailmap })),
     })),
   };
 }
@@ -2938,12 +3300,21 @@ export function samePersonSummary(suggestions) {
 /**
  * The line under the table that names the "possible same person" suggestions, or null when there are none. It says the
  * shares above may be split and that nothing was merged.
- * @param {{ count: number, suggestions: { name: string, mail: string, lines: number, lineShare: number, addresses: { name: string, mail: string }[], strength?: string }[] } | null | undefined} s
+ * @param {{ count: number, suggestions: { name: string, mail: string, lines: number, lineShare: number, addresses: { name: string, mail: string, lines?: number }[], strength?: string, weakAdditions?: { name: string, mail: string, lines: number, lineShare: number }[] }[] } | null | undefined} s
  * @returns {string | null}
  */
 export function samePersonLine(s) {
   if (!s || s.count === 0) return null;
-  const pair = (/** @type {typeof s.suggestions[number]} */ x) => `${x.addresses.map((a) => `${a.name || a.mail} <${a.mail}>`).join(" / ")}: ${x.lines.toLocaleString("en-US")} ${x.lines === 1 ? "line" : "lines"}, ${pct(x.lineShare)} if one person, ${x.strength} suggestion`;
+  const n = (/** @type {number} */ x) => `${x.toLocaleString("en-US")} ${x === 1 ? "line" : "lines"}`;
+  const pair = (/** @type {typeof s.suggestions[number]} */ x) => {
+    const names = x.addresses.map((a) => `${a.name || a.mail} <${a.mail}>`).join(" / ");
+    const merged = `${n(x.lines)}, ${pct(x.lineShare)}`;
+    const separate = x.addresses.map((a) => `${a.name || a.mail} ${n(a.lines ?? 0)}`).join(", ");
+    // R8-4: the line says which figure to lead with. Strong evidence leads with the merged figure, weak evidence with the unmerged ones.
+    const lead = x.strength === "strong" ? `, ${x.strength} suggestion: lead with ${merged} if one person, unmerged ${separate}` : x.strength === "weak" ? `, ${x.strength} suggestion: lead with the unmerged figures (${separate}), ${merged} only as a possibility` : `, ${merged} if one person`;
+    const added = (x.weakAdditions ?? []).map((w) => `weak addition ${w.name || w.mail} <${w.mail}> ${n(w.lines)} (${pct(w.lineShare)}), not in the figure above`);
+    return `${names}: ${lead.slice(2)}${added.length ? `; ${added.join("; ")}` : ""}`;
+  };
   return `possible same person: ${s.count} suggestion${s.count === 1 ? "" : "s"}, not merged, so the shares above may be split (${cappedList(s.suggestions.map(pair))}). Run --identities for the evidence and the .mailmap lines; only you can confirm it is one person.`;
 }
 
@@ -2962,21 +3333,34 @@ function cappedList(items) {
  * names the command that shows the .mailmap lines; only the reader can confirm the people are one. The last sentence
  * gives the figure each person would have if their addresses were one. A result from before that figure was added has
  * no lines, so the sentence is left out rather than printed with a blank number.
- * @param {{ count: number, people: { name: string, addresses: string[], lines?: number, lineShare?: number }[] } | null | undefined} hints
+ * @param {{ count: number, people: { name: string, addresses: string[], lines?: number, lineShare?: number, strength?: string, weakAdditions?: { name: string, mail: string, lines: number, lineShare: number }[] }[] } | null | undefined} hints
  * @returns {string | null}
  */
 export function identityHintLine(hints) {
   if (!hints || hints.count === 0) return null;
   const figured = hints.people.every((p) => typeof p.lines === "number" && typeof p.lineShare === "number");
+  const n = (/** @type {number} */ x) => `${x.toLocaleString("en-US")} ${x === 1 ? "line" : "lines"}`;
   /** @param {{ name: string, lines?: number, lineShare?: number }} p */
   const figure = (p) => `${p.name} ${p.lines?.toLocaleString("en-US")} ${p.lines === 1 ? "line" : "lines"} (${pct(p.lineShare ?? 0)})`;
+  // R8-4: say which figure to lead with. Strong evidence leads with the merged figure, weak evidence with the unmerged ones.
+  const known = figured && hints.people.every((p) => p.strength === "strong" || p.strength === "weak");
+  const strong = hints.people.filter((p) => p.strength === "strong");
+  const weak = hints.people.filter((p) => p.strength === "weak");
+  const lead = !known
+    ? ""
+    : ` ${[
+        strong.length ? `Strong evidence: lead with the merged figure (${cappedList(strong.map(figure))}) and give the unmerged figures next to it.` : "",
+        weak.length ? `Weak evidence: lead with the unmerged figures and give the merged one (${cappedList(weak.map(figure))}) only as a possibility.` : "",
+      ].filter(Boolean).join(" ")}`;
+  const additions = hints.people.flatMap((p) => (p.weakAdditions ?? []).map((w) => `${w.name} <${w.mail}> ${n(w.lines)} (${pct(w.lineShare)})`));
+  const extra = additions.length ? ` Weak additions, not in the merged figure: ${cappedList(additions)}.` : "";
   if (hints.count === 1) {
     const [p] = hints.people;
-    const merged = figured ? ` If they are one person, ${p.name} holds ${p.lines?.toLocaleString("en-US")} ${p.lines === 1 ? "line" : "lines"} (${pct(p.lineShare ?? 0)}).` : "";
-    return `identity hint: 1 person may be counted twice (${p.name}: ${cappedList(p.addresses)}). The table counts each address separately. Run --identities for the .mailmap lines; only you can confirm it is one person.${merged}`;
+    const merged = figured && !known ? ` If they are one person, ${p.name} holds ${p.lines?.toLocaleString("en-US")} ${p.lines === 1 ? "line" : "lines"} (${pct(p.lineShare ?? 0)}).` : "";
+    return `identity hint: 1 person may be counted twice (${p.name}: ${cappedList(p.addresses)}). The table counts each address separately. Run --identities for the .mailmap lines; only you can confirm it is one person.${merged}${lead}${extra}`;
   }
-  const merged = figured ? ` If merged: ${cappedList(hints.people.map(figure))}.` : "";
-  return `identity hint: ${hints.count} people may be counted twice (${cappedList(hints.people.map((p) => p.name))}); run --identities for the .mailmap lines. The table counts each address separately; only you can confirm they are one person each.${merged}`;
+  const merged = figured && !known ? ` If merged: ${cappedList(hints.people.map(figure))}.` : "";
+  return `identity hint: ${hints.count} people may be counted twice (${cappedList(hints.people.map((p) => p.name))}); run --identities for the .mailmap lines. The table counts each address separately; only you can confirm they are one person each.${merged}${lead}${extra}`;
 }
 
 /**
@@ -3062,19 +3446,30 @@ export function renderIdentities(groups, sameAddress = [], possible = { count: 0
       lines.push(`  ${mark} ${m.mail}  ${m.commits} commit${m.commits === 1 ? "" : "s"}, ${m.lines.toLocaleString("en-US")} line${m.lines === 1 ? "" : "s"}`);
     }
     for (const r of g.reasons) lines.push(`  because ${r}`);
+    lines.push(`  strength: ${g.strength}${g.strength === "strong" ? "" : " (a guess; not merged by --merge-identities, confirm before writing a .mailmap line)"}`);
+    for (const w of g.weakAdditions ?? []) lines.push(`  weak addition, not in the group above and not merged by --merge-identities: ${w.member.mail}  ${w.member.commits} commit${w.member.commits === 1 ? "" : "s"}, ${w.member.lines.toLocaleString("en-US")} line${w.member.lines === 1 ? "" : "s"}, because ${w.reasons.join("; ")}`);
     lines.push("");
   }
-  if (total) lines.push("Add these to a .mailmap file at the repository root:", "");
-  for (const g of groups) {
-    for (const m of g.members) {
-      if (m.mail === g.canonical.mail) continue;
-      lines.push(`${g.canonical.author} <${g.canonical.mail}> <${m.mail}>`);
+  const mailmapLines = (/** @type {typeof groups} */ gs) => {
+    for (const g of gs) {
+      for (const m of g.members) {
+        if (m.mail === g.canonical.mail) continue;
+        lines.push(`${g.canonical.author} <${g.canonical.mail}> <${m.mail}>`);
+      }
     }
-  }
+  };
+  const strongGroups = groups.filter((g) => g.strength === "strong");
+  const weakGroups = groups.filter((g) => g.strength !== "strong");
+  if (strongGroups.length || sameAddress.length) lines.push("Add these to a .mailmap file at the repository root:", "");
+  mailmapLines(strongGroups);
   // One address under several names has no second address to map, so the line repeats the address: the proper name
   // and address first, then the name to replace and the same address. Copy it as printed.
   for (const s of sameAddress) {
     for (const alias of s.aliases) lines.push(`${s.canonical} <${s.mail}> ${alias} <${s.mail}>`);
+  }
+  if (weakGroups.length) {
+    lines.push("", "Weakly linked (strength weak): the evidence is thin, and --merge-identities does not merge these. Only if you confirm they are one person, add these to a .mailmap file at the repository root:", "");
+    mailmapLines(weakGroups);
   }
   lines.push("");
   lines.push("These are guesses from names and addresses in this repository's own history; only you");

@@ -39,7 +39,7 @@ test("by default the main rows leave the reformat commit out, and the block says
     assert.equal(r.reformat.suspects.length, 1);
     const [s] = r.reformat.suspects;
     assert.deepEqual(r.blame.autoIgnoredRevs, [s.sha]);
-    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "-C", "--ignore-rev", s.shortSha, "(auto)"]);
+    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "--ignore-rev", s.shortSha, "(auto)"]);
     assert.equal(r.busFactor.authors.length, 1);
     assert.equal(r.busFactor.authors[0], PEOPLE.ada[0]);
     // The first pass numbers, the ones a plain count gives: Bob 30, Ada 5.
@@ -110,7 +110,7 @@ test("--csv is corrected, and the stderr note names the commit that was ignored"
     const rows = run.stdout.trim().split("\n");
     assert.ok(rows.some((row) => row.startsWith(`${PEOPLE.bob[0]},${mailOf("bob")},0,0.0000,`)), run.stdout);
     assert.ok(rows.some((row) => row.startsWith(`${PEOPLE.ada[0]},${mailOf("ada")},35,1.0000,`)), run.stdout);
-    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines:   .*\n)*$/);
+    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines: {1,3}.*\n)*$/);
     assert.match(run.stderr, /surviving-lines:   [0-9a-f]{7} .*--keep-reformat counts it/s);
   });
 });

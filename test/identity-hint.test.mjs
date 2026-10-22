@@ -130,7 +130,7 @@ test("the split fixture shows one hint in the table, and the JSON key validates 
     const rowsOf = r.authors.filter((a) => mails.includes(a.mail));
     assert.deepEqual(r.identityHints, {
       count: 1,
-      people: [{ name: PEOPLE.ada[0], addresses: [PEOPLE.ada[1], PEOPLE.adaLaptop[1]].sort(), lines: rowsOf.reduce((s, a) => s + a.lines, 0), lineShare: rowsOf.reduce((s, a) => s + a.lineShare, 0) }],
+      people: [{ name: PEOPLE.ada[0], addresses: [PEOPLE.ada[1], PEOPLE.adaLaptop[1]].sort(), lines: rowsOf.reduce((s, a) => s + a.lines, 0), lineShare: rowsOf.reduce((s, a) => s + a.lineShare, 0), strength: "strong", weakAdditions: [] }],
     });
     assert.ok(r.identityHints.people[0].lines > 0, "the merged figure is not zero");
     const table = renderTable(r, 10);

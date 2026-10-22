@@ -217,7 +217,7 @@ line of the table prints.
 --exclude <glob>     skip files matching the glob (repeatable)
 --since <date>       commit-share window start (passed to git log)
 --until <date>       commit-share window end
---copies             follow copies even above 2000 files (default: -w -M -C -C below that)
+--copies [deep]      follow copies even above 2000 files (default: -w -M -C below that; deep: -C -C)
 --no-copies          blame with -w -M only
 --keep-generated     count lockfiles, generated files and vendored code
 --jobs <n>           parallel blame processes (default: 4)

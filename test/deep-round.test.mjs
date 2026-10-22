@@ -148,7 +148,7 @@ test("copy detection: a block moved to a new file is credited to its first autho
     },
     async (dir) => {
       const on = await run(dir);
-      assert.deepEqual(on.blame.flags, ["-w", "-M", "-C", "-C"]);
+      assert.deepEqual(on.blame.flags, ["-w", "-M", "-C"]);
       assert.equal(on.blame.copyDetection.on, true);
       assert.equal(on.authors.find((a) => a.mail === "ada@example.com")?.lines, 40);
       assert.equal(on.authors.find((a) => a.mail === "bob@example.com")?.lines, 0);
@@ -156,7 +156,10 @@ test("copy detection: a block moved to a new file is credited to its first autho
       assert.deepEqual(off.blame.flags, ["-w", "-M"]);
       assert.equal(off.authors.find((a) => a.mail === "bob@example.com")?.lines, 30);
       const explicit = await run(dir, ["--copies"]);
-      assert.deepEqual(explicit.blame.flags, ["-w", "-M", "-C", "-C"]);
+      assert.deepEqual(explicit.blame.flags, ["-w", "-M", "-C"]);
+      const deep = await run(dir, ["--copies", "deep"]);
+      assert.deepEqual(deep.blame.flags, ["-w", "-M", "-C", "-C"]);
+      assert.equal(deep.blame.copyDetection.flags, "-C -C");
       assert.throws(() => parseArgs(["--copies", "--no-copies"]), /mutually exclusive|--copies/);
     },
   );

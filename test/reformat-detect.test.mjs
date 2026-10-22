@@ -104,7 +104,7 @@ test("--ignore-rev gives a revision's lines back, is repeatable, and is printed 
     const r = await analyse(parseArgs(["--cwd", dir, "--ignore-rev", bob, "--ignore-rev", notes]));
     assert.deepEqual(linesByMail(r), { [mailOf("ada")]: 35, [mailOf("bob")]: 0 });
     assert.deepEqual(r.blame.ignoreRevs, [bob, notes]);
-    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "-C", "--ignore-rev", bob.slice(0, 7), "--ignore-rev", notes.slice(0, 7)]);
+    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "--ignore-rev", bob.slice(0, 7), "--ignore-rev", notes.slice(0, 7)]);
     // A revision that the blame already skips is not a candidate again.
     assert.deepEqual(r.reformat.suspects, []);
   });
@@ -132,7 +132,7 @@ test("--no-detect-reformat prints no block and leaves the suspects empty, and de
 /** The bots table as it printed before the reformat feature existed. Changing it means changing what users see. */
 const SNAPSHOT_BOTS_TABLE = [
   `ref HEAD  ·  files 8/8 sampled (1 in 1)  ·  23 of 43 lines attributed`,
-  `git blame -w -M -C -C  ·  commits 5, merges excluded`,
+  `git blame -w -M -C  ·  commits 5, merges excluded`,
   ``,
   `author           lines   share  commits   share`,
   `-----------------------------------------------`,
@@ -145,6 +145,8 @@ const SNAPSHOT_BOTS_TABLE = [
   `bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.`,
   ``,
   `bots excluded: 2 identities, 20 lines, 3 commits (--include-bots counts them)`,
+  ``,
+  `mechanical rewrites checked: examined 8 commits holding surviving lines, set aside 0; no other commit looks mechanical (at least 10 files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).`,
   ``,
   `What this cannot show: quality of the lines, review work, design done in documents,`,
   `or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.`,
@@ -188,7 +190,7 @@ test("--csv keeps stdout to the data and names the suspects on stderr", async ()
     const run = spawnSync(process.execPath, [bin, "--cwd", dir, "--csv"], { encoding: "utf8" });
     assert.equal(run.status, 0, run.stderr);
     assert.doesNotMatch(run.stdout, /reformat/);
-    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines:   .*\n)*$/);
+    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines: {1,3}.*\n)*$/);
     assert.match(run.stderr, /surviving-lines:   [0-9a-f]{7} .*--keep-reformat counts it/s);
   });
 });
