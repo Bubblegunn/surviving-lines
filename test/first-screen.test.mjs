@@ -103,7 +103,8 @@ test("README samples show no real person's email address", () => {
     const t = read(f);
     const emails = t.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g) ?? [];
     for (const e of emails) {
-      assert.match(e, /@(example\.(com|org)|laptop\.example\.org|anthropic\.com)$/, `${f} contains ${e}`);
+      // .example is reserved for documentation (RFC 2606), so a name under it is never a real person's address.
+      assert.match(e, /@(example\.(com|org)|[a-z0-9-]+\.example|laptop\.example\.org|anthropic\.com)$/, `${f} contains ${e}`);
     }
     assert.doesNotMatch(t, /Colin Francis|Brace Sproul|zan22ye/, `${f} names an openwiki author`);
   }

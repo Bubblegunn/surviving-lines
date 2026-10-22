@@ -1,5 +1,61 @@
 # Changelog
 
+## Unreleased
+
+**Added: prompt hint.** A Claude Code hook (`hooks/hooks.json` and `hooks/surviving-lines-hint.sh`) reads each prompt. When the prompt is about duplicate identities or code ownership, it adds a short note that points the agent at the skill and the tool, and lists up to four suspected same-person groups with the rule that suggested each. It runs read-only git, is silent outside a repository and above 20,000 commits, and adds at most 1,200 characters. `SURVIVING_LINES_HINT_CAP` changes the cap. It works only in the plugin, not in the npm command. To remove it, empty `hooks/hooks.json` in a local copy of the plugin or disable the plugin.
+
+**Changed: the skill rules for per-type, per-directory, CODEOWNERS and window questions.** The skill now names the command for each: `--group-by ext` for a file type, `--group-by dir` for a directory, `--suggest-codeowners` for CODEOWNERS lines (an owner is named only where one person holds at least half of the surviving lines), and `--since` with `--until` for a window, which limits the commit column only. Those answers merge suggested identities and say the merge is a guess.
+
+**Changed: a detected reformat commit is left out of the numbers by default.** A commit whose changes are only
+whitespace or quote changes used to stay in the table, with a note under it. Now the table does not count it, and
+the block under the table says so, names the commit, and gives the figures without the correction for the authors it
+would move most. This changes the numbers of any run on a repository with a detected formatter commit: the table, the
+groups view, the CSV output, the reviewers suggestion and the AI breakdown. To get the old numbers, pass
+`--keep-reformat`, which counts the commit again and says so in the block. `--co-authors share` does not apply the
+correction, and its block says that too. `--no-detect-reformat` still turns the detection off.
+
+**Added: `--merge-identities`.** Counts the addresses that the identity hint suggests are one person as one person,
+for that run only. Nothing is written. The merged row comes first, the table names each merge, and the bus factor
+uses the merged rows. A `.mailmap` file is still the way to make a merge permanent.
+
+**Reformat suspects name their files.** Each suspect in the `--json` `reformat.suspects` list now carries a `files`
+list, the files the commit changed, so a suspect can be matched to a path. The `--history` view uses it to set commits
+aside.
+
+**Added: `--history <path>`.** Lists the people who changed one file or directory, oldest first, with their first and
+last commit there, their commits there, and the lines they still hold. Commits that only reformatted the path are set
+aside and are not counted. `--since` and `--until` do not change the dates or commit counts of this view, though they
+can drop a person who has no surviving lines and no commit in the window.
+
+**Reformatting commits, first listing (round 1).** The table was followed by a list of suspected reformat commits. The
+current behaviour is in the Changed entry above, and `--ignore-rev <rev>` still skips one commit when blaming
+(repeatable; git 2.23 or newer), the same way `.git-blame-ignore-revs` does.
+
+**Who should review a file.** `--reviewers <path>` lists the authors of one file or directory, most surviving
+lines first, with their lines and commits under that path, their newest commit there, and whether they were
+active in the year before the ref's author date. The `suggested` line names up to three people.
+
+**Bus factor.** The table is followed by a bus factor line: the smallest number of authors whose surviving lines
+together reach 50% of the lines counted. `--bus-factor-threshold <n>` changes the share.
+
+**Identity hint.** When one person appears on two addresses, one `identity hint:` line under the table names them
+and points at `--identities`. Its last sentence gives the figure that person would have if the addresses were one,
+for example `810 lines (40.8%)`, so the table figure and the merged figure can both be reported. The JSON `identityHints`
+people carry `lines` and `lineShare` for that. It is printed once per run, also with `--group-by`.
+
+**One-time star hint.** The first time a person at a terminal reads a table, groups or reviewers view, one line
+asks for a star on GitHub. `SURVIVING_LINES_NO_STAR_HINT=1` turns it off for good, and `--quiet` skips it for one
+run. It is never printed in CI, when `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_SANDBOX` or `AI_AGENT` is set, or with `--json`, `--csv`, `--markdown` or `--identities`.
+
+**Head-to-head comparison.** `docs/HEAD-TO-HEAD.md` fixes eleven public tasks before the round runs, and
+`bench/head-to-head/` runs them. The round 0 and round 1 results are recorded there and published. The round 1 gate failed (our total 46.00 against 42.67 on the blind grading, the rule needs 20% more), and the independent re-grade has not been done.
+
+**Faster reformat check.** Looking for reformat commits no longer costs several git calls per candidate commit. A default run on a repository with no suspect now takes about the same time as `--no-detect-reformat` instead of about seven times as long. The limit on files per commit rose from 300 to 1000. In shell scripts and other files outside the JavaScript, Python, JSON and CSS families, a quote change is no longer treated as layout. The `suggested:` line now shows lines as well as shares.
+
+**Changed.** The default output now includes the reformat block when a suspect exists, and the identity hint when
+a split exists. The bus factor line is printed by default. The Claude Code skill was rewritten: it runs the
+plugin's own binary and uses `--reviewers`, the bus factor and the reformat follow-up.
+
 ## 0.3.0 (2026-10-20)
 
 **A reformatting commit can be left out of blame.** `--ignore-revs-file <file>` passes a file of revisions to

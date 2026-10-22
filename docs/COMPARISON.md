@@ -8,7 +8,7 @@ Machine: darwin arm64, node v24.13.0, git version 2.50.1 (Apple Git-155). Fixtur
 
 | Tool | Version | Licence | Used as |
 | --- | --- | --- | --- |
-| surviving-lines | 0.3.0 (commit 19879ce) | MIT | this repository |
+| surviving-lines | 0.3.0 (commit 56839bd) | MIT | this repository |
 | git-fame | 4.2.1 | MPL-2.0 | oracle only: run, never copied |
 | git-who | v1.3 (commit aa656b04) | MIT License | run; `table` and `tree` |
 | git-extras | 7.5.0 (commit 2bdeb59a) | (The MIT License) | run `git summary --line` |
@@ -37,10 +37,11 @@ No competitor code is copied into this repository. git-fame is MPL-2.0 and is on
 | P14 | Output formats | git-fame | basic | json, csv, markdown | json, csv, md, svg, yaml | ours lacks (stated loss) | ours has no svg, yaml |
 | P15 | Deterministic file sampling (--sample, --seed) | git-fame | wide | two runs agree: 27 of 120 files | no sampling option | ours only | same seed, same files, same numbers |
 | P16 | Suggest .mailmap lines for one person on two addresses | git-fame | split | found the split and printed .mailmap lines | no such option | ours only | git-fame prints no suggestions and groups authors by name, so it merges one name on two addresses without saying so and never links two different names |
-| P17 | Wall time, 120 files of 40 lines | git-fame | wide | 0.55 s for every file, 0.20 s with --sample 5 | 0.33 s | info | median of three runs on this machine; not a claim about large repositories (issue #35) |
+| P17 | Wall time, 120 files of 40 lines | git-fame | wide | 1.79 s for every file, 1.06 s with --sample 5 | 1.18 s | info | median of three runs on this machine; not a claim about large repositories (issue #35) |
 | P18 | Visual workspace for a repository | git-truck | basic | terminal tables only | browser visualisation (installed 5.0.0) | ours lacks (stated loss) | stated loss; git-truck prints no numbers to compare |
 | P19 | Burndown of lines over time, per author | hercules | basic | a single point in time (issues #15, #18) | not run: could not be installed: /bin/sh: protoc: command not found \| make: *** [internal/pb/pb.pb.go] Error 127 | ours lacks (stated loss) | stated loss; hercules was last released in 2020 |
 | P20 | git-fame shows surviving share and commit share side by side (distribution column) | git-fame (distribution column) | split | table prints a lines share and a commits share side by side | distribution column, 2 author rows of loc/commits/files shares | tie | both put the surviving-line share next to the commit share; git-fame also prints a files share in the same cell |
+| P21 | Reformat commit nobody listed: detected and the numbers with it ignored | git-fame | quoteIndent | suspect a66423c (Bob); ignored: Ada=25 | lines: bob=20, ada=5; no suspect list | ours only | git-fame 4.2.1 has no reformat detection, so its plain numbers credit the formatter with the lines it rewrote |
 
 ## Stated losses
 
@@ -69,3 +70,4 @@ Only rows where the verdict is `tie` or `ours only`:
 - P15: Deterministic file sampling (--sample, --seed) against git-fame (ours only)
 - P16: Suggest .mailmap lines for one person on two addresses against git-fame (ours only)
 - P20: git-fame shows surviving share and commit share side by side (distribution column) against git-fame (distribution column) (tie)
+- P21: Reformat commit nobody listed: detected and the numbers with it ignored against git-fame (ours only)

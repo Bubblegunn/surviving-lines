@@ -144,7 +144,7 @@ test("analyse attributes surviving lines, follows renames, skips binaries, and c
   }
 });
 
-test("default table output stays byte for byte unchanged", async () => {
+test("the table of a small repository with no reformat suspect is exactly the header, the rows, the bus factor lines and the closing lines pinned here", async () => {
   const dir = await fixtureRepo();
   try {
     const r = await analyse(parseArgs(["--cwd", dir]));
@@ -156,6 +156,9 @@ test("default table output stays byte for byte unchanged", async () => {
       "------------------------------------------",
       "Ada            11   52.4%        1   33.3%",
       "Bob            10   47.6%        2   66.7%",
+      "",
+      "bus factor 1: Ada alone holds 52.4% of 21 surviving lines",
+      "bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.",
       "",
       "What this cannot show: quality of the lines, review work, design done in documents,",
       "or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.",

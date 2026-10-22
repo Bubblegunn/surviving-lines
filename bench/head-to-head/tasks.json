@@ -1,0 +1,1102 @@
+{
+  "version": 1,
+  "frozen": "2026-10-21",
+  "fixtures": {
+    "noignore": "expressjs/cors at 5317ebe plus three added commits, no .git-blame-ignore-revs",
+    "ignore": "the same repository plus a fourth commit that adds .git-blame-ignore-revs naming the reformat commit"
+  },
+  "tasks": [
+    {
+      "id": "T1",
+      "fixture": "noignore",
+      "prompt": "Who actually owns the code in this repo? I want to know whose code is still here today, not who has made the most commits.",
+      "criteria": [
+        "Names Troy Goode as top owner by surviving lines with a count between 780 and 840 (both addresses counted as one person).",
+        "Names Douglas Christopher Wilson second with a count between 600 and 660.",
+        "The reformatter (Fiona Formatter) is NOT shown with more than 100 lines.",
+        "dependabot is not ranked as an author (absent, or stated as excluded).",
+        "The number comes from a line-level command on the repo (git blame or a tool that wraps it), not from shortlog or commit counts alone."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "process"
+      ],
+      "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. Who actually owns the code in this repo? I want to know whose code is still here today, not who has made the most commits.",
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 780,
+              "max": 840
+            }
+          ]
+        },
+        {
+          "type": "number_near",
+          "names": [
+            "Douglas Christopher Wilson",
+            "Douglas",
+            "Wilson"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 600,
+              "max": 660
+            }
+          ]
+        },
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": "T2",
+      "fixture": "noignore",
+      "prompt": "What is the bus factor of the lib directory? If people leave, how many does it take before nobody understands it?",
+      "criteria": [
+        "States a bus factor of 1 for lib/ (or says one person, Troy Goode, holds the majority).",
+        "Troy Goode share of lib/ between 60% and 72% (or lines 150 to 170 of about 238).",
+        "The reformatter is not named as the dominant owner of lib/.",
+        "States how the figure was computed (definition, unit: lines or commits).",
+        "Numbers are reproducible: a command is shown or the run used a script, not a guess over a few sampled files."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "process"
+      ],
+      "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. What is the bus factor of the lib directory? If people leave, how many does it take before nobody understands it?",
+      "checks": [
+        null,
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 150,
+              "max": 170
+            },
+            {
+              "unit": "percent",
+              "min": 60,
+              "max": 72
+            }
+          ]
+        },
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": "T3",
+      "fixture": "noignore",
+      "prompt": "Does anyone show up in this repo's history under more than one name or email? If so, fix it so each person is counted once, then tell me the new top author.",
+      "criteria": [
+        "Finds that Troy Goode appears under two addresses: troy@laptop.example and the one that comes from the upstream history.",
+        "Writes a correct .mailmap in the repository: Troy Goode's second address mapped to Troy Goode, and no two different people merged. Unifying the two spellings of one person who uses a single address (Alejandro Caravaca Puchades and alex94puchades, five commits on one address between 2015-05-26 and 2015-05-28) is correct and allowed.",
+        "Re-runs a count after the fix and names a top author with the basis stated: Troy Goode if counted by surviving lines, Douglas Christopher Wilson if counted by commits. A top author with no stated basis fails.",
+        "Does not claim a merge for Douglas Wilson or any unrelated pair.",
+        "States that the mapping is a guess or assumption, or asks for confirmation (any hedging sentence)."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "ppInvokedPrompt": null,
+      "checks": [
+        {
+          "type": "regex_all",
+          "patterns": [
+            "troy@laptop\\.example",
+            "troygoode@"
+          ]
+        },
+        {
+          "type": "mailmap",
+          "person": "Troy Goode",
+          "address": "troy@laptop.example",
+          "allowSameAddress": true
+        },
+        null,
+        null,
+        {
+          "type": "regex_any",
+          "patterns": [
+            "(?i)\\bguess",
+            "(?i)assum",
+            "(?i)confirm",
+            "(?i)\\bmay be\\b",
+            "(?i)\\bmight\\b",
+            "(?i)\\bprobably\\b",
+            "(?i)looks like",
+            "(?i)appears to",
+            "(?i)if (that|this|these|they|it)",
+            "(?i)not sure",
+            "(?i)unless"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "T4",
+      "fixture": "noignore",
+      "prompt": "I'm about to change lib/index.js. Who should review it?",
+      "criteria": [
+        "Names Troy Goode first, or as the main reviewer.",
+        "Gives evidence with numbers for him (surviving lines or share) rather than only commit counts.",
+        "Does not name Fiona Formatter as the main owner and does not name dependabot at all as a reviewer.",
+        "Counts Troy's two addresses as one person (a Troy figure above 150 lines, or share above 60%).",
+        "Names at least one second reviewer."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. I'm about to change lib/index.js. Who should review it?",
+      "checks": [
+        {
+          "type": "first_named",
+          "names": [
+            [
+              "Troy Goode",
+              "Troy"
+            ],
+            [
+              "Douglas Christopher Wilson",
+              "Douglas",
+              "Wilson"
+            ],
+            [
+              "Alejandro"
+            ],
+            [
+              "Raymond Feng"
+            ],
+            [
+              "LuisEGR"
+            ],
+            [
+              "max.laverse"
+            ],
+            [
+              "Igor Soarez"
+            ],
+            [
+              "Simon Mansfield"
+            ],
+            [
+              "Alberto Leal"
+            ],
+            [
+              "Benjamin Eidelman"
+            ],
+            [
+              "Eric di Domenico"
+            ],
+            [
+              "Mathias Buus"
+            ],
+            [
+              "Hannah Wolfe"
+            ],
+            [
+              "Saad Tazi"
+            ],
+            [
+              "Chima Alaebo"
+            ],
+            [
+              "Vansh"
+            ],
+            [
+              "Jon Church"
+            ],
+            [
+              "Sebastian Beltran"
+            ],
+            [
+              "Ulises Gasc"
+            ],
+            [
+              "Ignacio Mangas"
+            ],
+            [
+              "Fiona Formatter",
+              "Fiona"
+            ]
+          ],
+          "expect": 0
+        },
+        null,
+        null,
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 150,
+              "max": 1000
+            },
+            {
+              "unit": "percent",
+              "min": 60,
+              "max": 100
+            }
+          ]
+        },
+        {
+          "type": "named_with",
+          "names": [
+            [
+              "Douglas Christopher Wilson",
+              "Douglas",
+              "Wilson"
+            ],
+            [
+              "Alejandro"
+            ],
+            [
+              "Raymond Feng"
+            ],
+            [
+              "LuisEGR"
+            ],
+            [
+              "max.laverse"
+            ],
+            [
+              "Igor Soarez"
+            ],
+            [
+              "Simon Mansfield"
+            ],
+            [
+              "Alberto Leal"
+            ],
+            [
+              "Benjamin Eidelman"
+            ],
+            [
+              "Eric di Domenico"
+            ],
+            [
+              "Mathias Buus"
+            ],
+            [
+              "Hannah Wolfe"
+            ],
+            [
+              "Saad Tazi"
+            ],
+            [
+              "Chima Alaebo"
+            ],
+            [
+              "Vansh"
+            ],
+            [
+              "Jon Church"
+            ],
+            [
+              "Sebastian Beltran"
+            ],
+            [
+              "Ulises Gasc"
+            ],
+            [
+              "Ignacio Mangas"
+            ]
+          ],
+          "min": 1
+        }
+      ]
+    },
+    {
+      "id": "T1i",
+      "fixture": "ignore",
+      "prompt": "Who actually owns the code in this repo? I want to know whose code is still here today, not who has made the most commits.",
+      "criteria": [
+        "Names Troy Goode as top owner by surviving lines with a count between 780 and 840 (both addresses counted as one person).",
+        "Names Douglas Christopher Wilson second with a count between 600 and 660.",
+        "The reformatter (Fiona Formatter) is NOT shown with more than 100 lines.",
+        "dependabot is not ranked as an author (absent, or stated as excluded).",
+        "The number comes from a line-level command on the repo (git blame or a tool that wraps it), not from shortlog or commit counts alone."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "process"
+      ],
+      "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. Who actually owns the code in this repo? I want to know whose code is still here today, not who has made the most commits.",
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 780,
+              "max": 840
+            }
+          ]
+        },
+        {
+          "type": "number_near",
+          "names": [
+            "Douglas Christopher Wilson",
+            "Douglas",
+            "Wilson"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 600,
+              "max": 660
+            }
+          ]
+        },
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": "T4i",
+      "fixture": "ignore",
+      "prompt": "I'm about to change lib/index.js. Who should review it?",
+      "criteria": [
+        "Names Troy Goode first, or as the main reviewer.",
+        "Gives evidence with numbers for him (surviving lines or share) rather than only commit counts.",
+        "Does not name Fiona Formatter as the main owner and does not name dependabot at all as a reviewer.",
+        "Counts Troy's two addresses as one person (a Troy figure above 150 lines, or share above 60%).",
+        "Names at least one second reviewer."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. I'm about to change lib/index.js. Who should review it?",
+      "checks": [
+        {
+          "type": "first_named",
+          "names": [
+            [
+              "Troy Goode",
+              "Troy"
+            ],
+            [
+              "Douglas Christopher Wilson",
+              "Douglas",
+              "Wilson"
+            ],
+            [
+              "Alejandro"
+            ],
+            [
+              "Raymond Feng"
+            ],
+            [
+              "LuisEGR"
+            ],
+            [
+              "max.laverse"
+            ],
+            [
+              "Igor Soarez"
+            ],
+            [
+              "Simon Mansfield"
+            ],
+            [
+              "Alberto Leal"
+            ],
+            [
+              "Benjamin Eidelman"
+            ],
+            [
+              "Eric di Domenico"
+            ],
+            [
+              "Mathias Buus"
+            ],
+            [
+              "Hannah Wolfe"
+            ],
+            [
+              "Saad Tazi"
+            ],
+            [
+              "Chima Alaebo"
+            ],
+            [
+              "Vansh"
+            ],
+            [
+              "Jon Church"
+            ],
+            [
+              "Sebastian Beltran"
+            ],
+            [
+              "Ulises Gasc"
+            ],
+            [
+              "Ignacio Mangas"
+            ],
+            [
+              "Fiona Formatter",
+              "Fiona"
+            ]
+          ],
+          "expect": 0
+        },
+        null,
+        null,
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 150,
+              "max": 1000
+            },
+            {
+              "unit": "percent",
+              "min": 60,
+              "max": 100
+            }
+          ]
+        },
+        {
+          "type": "named_with",
+          "names": [
+            [
+              "Douglas Christopher Wilson",
+              "Douglas",
+              "Wilson"
+            ],
+            [
+              "Alejandro"
+            ],
+            [
+              "Raymond Feng"
+            ],
+            [
+              "LuisEGR"
+            ],
+            [
+              "max.laverse"
+            ],
+            [
+              "Igor Soarez"
+            ],
+            [
+              "Simon Mansfield"
+            ],
+            [
+              "Alberto Leal"
+            ],
+            [
+              "Benjamin Eidelman"
+            ],
+            [
+              "Eric di Domenico"
+            ],
+            [
+              "Mathias Buus"
+            ],
+            [
+              "Hannah Wolfe"
+            ],
+            [
+              "Saad Tazi"
+            ],
+            [
+              "Chima Alaebo"
+            ],
+            [
+              "Vansh"
+            ],
+            [
+              "Jon Church"
+            ],
+            [
+              "Sebastian Beltran"
+            ],
+            [
+              "Ulises Gasc"
+            ],
+            [
+              "Ignacio Mangas"
+            ]
+          ],
+          "min": 1
+        }
+      ]
+    },
+    {
+      "id": "E1",
+      "fixture": "noignore",
+      "source": "project-pilot README and commands/bus-factor.md: the bus factor report",
+      "prompt": "Run a bus factor analysis of this project. Which parts of the codebase depend on a single contributor, and who is that person?",
+      "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. Run a bus factor analysis of this project. Which parts of the codebase depend on a single contributor, and who is that person?",
+      "criteria": [
+        "Names Troy Goode as the single contributor that lib/ depends on, with a share between 60% and 72% or between 150 and 170 lines.",
+        "Reports the result per directory or module (at least lib/ and test/), not only one number for the whole repository.",
+        "Does not name the formatter (Fiona Formatter) or a bot as an owner of lib/ or test/.",
+        "States the definition and the unit of the bus factor it reports (lines or commits, and the threshold or rule).",
+        "Does not rank dependabot as a person who holds knowledge of the code."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 150,
+              "max": 170
+            },
+            {
+              "unit": "percent",
+              "min": 60,
+              "max": 72
+            }
+          ]
+        },
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "id": "E2k",
+      "fixture": "noignore",
+      "source": "project-pilot README sprint-health --team, harder variant: commits in the window next to the lines that survive today, formatting-only commit and bots set aside, each person counted once",
+      "prompt": "Which people committed in the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12)? For each person give their commits in that window and how many lines of theirs are still in the code today. Set aside formatting-only commits and bots, and count each person once.",
+      "ppInvokedPrompt": "Use the /project-pilot:sprint-health command with --team for this. Which people committed in the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12)? For each person give their commits in that window and how many lines of theirs are still in the code today. Set aside formatting-only commits and bots, and count each person once.",
+      "criteria": [
+        "Reports 2 commits in the window for Troy Goode.",
+        "Reports between 780 and 840 lines of Troy Goode that are still in the code today (both of his addresses counted as one person).",
+        "Reports Vansh Sharma with 1 commit in the window and 1 line still in the code today.",
+        "Does not list Fiona Formatter as a contributor of real work, and names her commit as a formatting-only commit that was set aside, with the reason (whitespace, indentation and quote changes only).",
+        "Lists no other person or bot as having committed in the window, and states the date window it used."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "count",
+              "min": 2,
+              "max": 2
+            }
+          ]
+        },
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 780,
+              "max": 840
+            }
+          ]
+        },
+        {
+          "type": "number_near",
+          "names": [
+            "Vansh Sharma",
+            "Vansh"
+          ],
+          "ranges": [
+            {
+              "unit": "count",
+              "min": 1,
+              "max": 1
+            }
+          ]
+        },
+        null,
+        null
+      ]
+    },
+    {
+      "id": "E3",
+      "fixture": "noignore",
+      "source": "git-fame --bytype, docs/COMPARISON.md row P11",
+      "prompt": "For each file type in this repo (by extension), who owns the most surviving lines?",
+      "ppInvokedPrompt": null,
+      "criteria": [
+        "Names Troy Goode as the top owner of .js files with a count between 640 and 700 lines.",
+        "Names Douglas Christopher Wilson as the top owner of .yml files.",
+        "Names Troy Goode as the top owner of .md files.",
+        "Does not name the formatter (Fiona Formatter) or a bot as the top owner of any file type.",
+        "The numbers come from a line-level command on the repository (git blame or a tool that wraps it)."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "process"
+      ],
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            ".js"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 640,
+              "max": 700
+            }
+          ]
+        },
+        {
+          "type": "co_occur",
+          "a": [
+            ".yml",
+            "yml"
+          ],
+          "b": [
+            "Douglas Christopher Wilson",
+            "Douglas",
+            "Wilson"
+          ]
+        },
+        {
+          "type": "co_occur",
+          "a": [
+            ".md",
+            "markdown"
+          ],
+          "b": [
+            "Troy Goode",
+            "Troy"
+          ]
+        },
+        null,
+        null
+      ]
+    },
+    {
+      "id": "E4h",
+      "fixture": "noignore",
+      "source": "git-who tree and git-fame, docs/COMPARISON.md row P12, harder variant: owners only where one person holds half, bots and the formatting-only commit ignored, each person counted once",
+      "prompt": "Suggest CODEOWNERS lines for this repo's top-level directories (lib, test, .github) and the root files. Only name an owner where one person holds at least half of the surviving lines; ignore bots and formatting-only commits and count each person once. Where nobody holds half, say so.",
+      "ppInvokedPrompt": null,
+      "criteria": [
+        "Assigns lib/ to Troy Goode.",
+        "Assigns test/ to Troy Goode (his two addresses together hold just over half; one address alone is under half).",
+        "Gives .github/ no owner and says that nobody holds half of its lines.",
+        "Gives the root files no owner and says that nobody holds half of their lines.",
+        "Writes CODEOWNERS-syntax lines (a path followed by an owner) for lib/ and test/."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "checks": [
+        {
+          "type": "co_occur",
+          "a": [
+            "lib/",
+            "lib"
+          ],
+          "b": [
+            "Troy Goode",
+            "Troy"
+          ]
+        },
+        {
+          "type": "co_occur",
+          "a": [
+            "test/",
+            "test"
+          ],
+          "b": [
+            "Troy Goode",
+            "Troy"
+          ]
+        },
+        null,
+        null,
+        {
+          "type": "regex_all",
+          "patterns": [
+            "(?m)^\\s*/?lib/?\\s+\\S+",
+            "(?m)^\\s*/?test/?\\s+\\S+"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "fixture": "noignore",
+      "source": "project-pilot README and commands/history.md: the code history of a file",
+      "prompt": "Explain the history of lib/index.js: who shaped it, and whose code is still in it today?",
+      "ppInvokedPrompt": "Use the /project-pilot:history command for this. Explain the history of lib/index.js: who shaped it, and whose code is still in it today?",
+      "criteria": [
+        "Names Troy Goode as the main author of the code still in lib/index.js, with a count between 150 and 170 lines.",
+        "Names Douglas Christopher Wilson as the second contributor to the code still in lib/index.js, with a count between 15 and 30 lines.",
+        "Says that one commit only reformatted the file (style, indentation or quotes) and does not credit its author with the code.",
+        "Does not credit Fiona Formatter with more than 30 lines of lib/index.js.",
+        "Names at least three different people who changed lib/index.js over time."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 150,
+              "max": 170
+            }
+          ]
+        },
+        {
+          "type": "number_near",
+          "names": [
+            "Douglas Christopher Wilson",
+            "Douglas",
+            "Wilson"
+          ],
+          "ranges": [
+            {
+              "unit": "lines",
+              "min": 15,
+              "max": 30
+            }
+          ]
+        },
+        null,
+        null,
+        {
+          "type": "named_with",
+          "names": [
+            [
+              "Troy Goode",
+              "Troy"
+            ],
+            [
+              "Douglas Christopher Wilson",
+              "Douglas",
+              "Wilson"
+            ],
+            [
+              "Alejandro"
+            ],
+            [
+              "Raymond Feng"
+            ],
+            [
+              "LuisEGR"
+            ],
+            [
+              "max.laverse"
+            ],
+            [
+              "Igor Soarez"
+            ],
+            [
+              "Simon Mansfield"
+            ],
+            [
+              "Alberto Leal"
+            ],
+            [
+              "Benjamin Eidelman"
+            ],
+            [
+              "Eric di Domenico"
+            ],
+            [
+              "Mathias Buus"
+            ],
+            [
+              "Hannah Wolfe"
+            ],
+            [
+              "Saad Tazi"
+            ],
+            [
+              "Chima Alaebo"
+            ],
+            [
+              "Vansh"
+            ],
+            [
+              "Jon Church"
+            ],
+            [
+              "Sebastian Beltran"
+            ],
+            [
+              "Ulises Gasc"
+            ],
+            [
+              "Ignacio Mangas"
+            ]
+          ],
+          "min": 3
+        }
+      ]
+    }
+  ],
+  "labels": {
+    "labelledBy": "fresh Sonnet auditor that had read only the prompts and criteria, never the tool's code",
+    "file": "criteria-labels.json",
+    "labelledOn": "2026-10-21"
+  },
+  "extraTasks": "E1 to E5 added 2026-10-21 under fairness rule F8, frozen in the commit that adds them, before any round 1 run; labels from the same independent auditor",
+  "retiredTasks": [
+    {
+      "id": "E2",
+      "fixture": "noignore",
+      "source": "project-pilot README: sprint-health --team, the per-contributor breakdown",
+      "prompt": "Give me a per-contributor breakdown of activity for the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12). How many commits did each person make?",
+      "ppInvokedPrompt": "Use the /project-pilot:sprint-health command with --team for this. Give me a per-contributor breakdown of activity for the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12). How many commits did each person make?",
+      "criteria": [
+        "Reports 2 commits for Troy Goode in the window.",
+        "Reports 1 commit for Vansh Sharma in the window.",
+        "Reports 1 commit for Fiona Formatter in the window.",
+        "Lists no other person with commits in the window (no dependabot, nobody else).",
+        "States the date window it used."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "retired": "2026-10-21",
+      "reason": "every arm scored 5 of 5 in round 1 (no discrimination); replaced by E2h, a harder variant of the same user pain, frozen before any round 2 code change"
+    },
+    {
+      "id": "E2h",
+      "fixture": "noignore",
+      "source": "project-pilot README sprint-health --team, harder variant of E2: real work only, a formatting-only commit and bots set aside",
+      "prompt": "Give me a per-contributor breakdown of the real work done in the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12). Set aside formatting-only commits and bots, count each person once, and tell me which commit you set aside and why.",
+      "ppInvokedPrompt": "Use the /project-pilot:sprint-health command with --team for this. Give me a per-contributor breakdown of the real work done in the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12). Set aside formatting-only commits and bots, count each person once, and tell me which commit you set aside and why.",
+      "criteria": [
+        "Reports 2 commits for Troy Goode in the window.",
+        "Reports 1 commit for Vansh Sharma in the window.",
+        "Does not list Fiona Formatter as a contributor of real work (her commit is set aside).",
+        "Names the set-aside commit as a formatting-only commit (the style reformat commit by Fiona Formatter, by its subject or short hash) and gives the reason (whitespace, indentation and quote changes only).",
+        "Lists no other person with commits in the window and no bot, and states the date window it used."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "checks": [
+        {
+          "type": "number_near",
+          "names": [
+            "Troy Goode",
+            "Troy"
+          ],
+          "ranges": [
+            {
+              "unit": "count",
+              "min": 2,
+              "max": 2
+            }
+          ]
+        },
+        {
+          "type": "number_near",
+          "names": [
+            "Vansh Sharma",
+            "Vansh"
+          ],
+          "ranges": [
+            {
+              "unit": "count",
+              "min": 1,
+              "max": 1
+            }
+          ]
+        },
+        null,
+        null,
+        null
+      ],
+      "retired": "2026-10-22",
+      "reason": "every arm scored 5.00 on all three runs in round 2 (no discrimination); replaced by E2k, a harder variant of the same pain, frozen before any round 3 change"
+    },
+    {
+      "id": "E4",
+      "fixture": "noignore",
+      "source": "git-who tree and git-fame, docs/COMPARISON.md row P12 and the CODEOWNERS suggestion",
+      "prompt": "Who owns each top-level directory of this repo? Suggest CODEOWNERS lines.",
+      "ppInvokedPrompt": null,
+      "criteria": [
+        "Names Troy Goode as the owner of lib/.",
+        "Names Troy Goode as the owner of test/.",
+        "For .github/ names Douglas Christopher Wilson as the largest owner, or says that no single person holds a majority.",
+        "Does not name the formatter (Fiona Formatter) or a bot as the owner of lib/ or test/.",
+        "Gives CODEOWNERS-syntax lines (a path followed by an owner) for at least lib/ and test/."
+      ],
+      "criteriaKinds": [
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome",
+        "outcome"
+      ],
+      "checks": [
+        {
+          "type": "co_occur",
+          "a": [
+            "lib/",
+            "lib"
+          ],
+          "b": [
+            "Troy Goode",
+            "Troy"
+          ]
+        },
+        {
+          "type": "co_occur",
+          "a": [
+            "test/",
+            "test"
+          ],
+          "b": [
+            "Troy Goode",
+            "Troy"
+          ]
+        },
+        {
+          "type": "regex_any",
+          "patterns": [
+            "(?is)\\.github.{0,200}(Douglas|Wilson)",
+            "(?is)\\.github.{0,200}(no single|no one|nobody|no majority|no person|split)"
+          ]
+        },
+        null,
+        {
+          "type": "regex_all",
+          "patterns": [
+            "(?m)^\\s*/?lib/?\\s+\\S+",
+            "(?m)^\\s*/?test/?\\s+\\S+"
+          ]
+        }
+      ],
+      "retired": "2026-10-22",
+      "reason": "every arm scored 5.00 in round 2 (no discrimination); replaced by E4h, a harder variant, frozen before any round 3 change"
+    }
+  ],
+  "checksNote": "2026-10-21 (round 2): every check restates a number, name or range already in the criterion text; checks run on the final answer by grade.py with no model call; a null check means a model judges that criterion (3 calls, majority). Written from truth.py output, not from the tool's code.",
+  "revisions": [
+    {
+      "date": "2026-10-22",
+      "task": "T3",
+      "criterion": 2,
+      "oldText": "Writes a correct .mailmap in the repo (Troy only mapped to Troy; no other person merged into someone else).",
+      "oldCheck": {
+        "type": "mailmap",
+        "person": "Troy Goode",
+        "address": "troy@laptop.example"
+      },
+      "newText": "Writes a correct .mailmap in the repository: Troy Goode's second address mapped to Troy Goode, and no two different people merged. Unifying the two spellings of one person who uses a single address (Alejandro Caravaca Puchades and alex94puchades, five commits on one address between 2015-05-26 and 2015-05-28) is correct and allowed.",
+      "newCheck": {
+        "type": "mailmap",
+        "person": "Troy Goode",
+        "address": "troy@laptop.example",
+        "allowSameAddress": true
+      },
+      "evidence": "git log in the fixture: the 5 commits authored as 'Alejandro Caravaca Puchades' (4) and 'alex94puchades' (1) carry one and the same author address, are dated 2015-05-26 to 2015-05-28 and belong to one pull request (a regexp origin option). Round 2 showed every arm failed the old check because every run unified the two spellings; the old rule counted a correct fix as a wrong merge. The earlier text stays in git history (the commit titled 'docs(bench): freeze round 2: replace the saturated E2 with E2h and add script checks') and above in oldText.",
+      "truthChange": "truth.py now credits the lines of 'alex94puchades' to 'Alejandro Caravaca Puchades'"
+    }
+  ],
+  "round3Note": "2026-10-22 (round 3): E2h and E4 retired (saturated), E2k and E4h added, T3 criterion 2 revised with evidence. Frozen before any round 3 tool change."
+}

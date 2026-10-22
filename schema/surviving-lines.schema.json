@@ -5,7 +5,7 @@
   "description": "schemaVersion changes when a key is removed, renamed or changes type. Adding a key does not change it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "blame", "authors"],
+  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "blame", "reformat", "busFactor", "identityHints", "identityMerge", "reviewers", "history", "authors"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "tool": {
@@ -56,7 +56,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["key", "filesSampled", "lines", "authors"],
+            "required": ["key", "filesSampled", "lines", "authors", "busFactor"],
             "properties": {
               "key": { "type": "string", "description": "The directory (\".\" for files at the root) or the extension." },
               "filesSampled": { "type": "integer", "minimum": 0, "description": "Sampled files in the group, so a group resting on one file is visible." },
@@ -71,8 +71,22 @@
                     "author": { "type": "string" },
                     "mail": { "type": "string" },
                     "lines": { "type": "integer", "minimum": 0 },
-                    "lineShare": { "type": "number", "minimum": 0, "maximum": 1 }
+                    "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person in this list: how many." }
                   }
+                }
+              },
+              "busFactor": {
+                "type": ["object", "null"],
+                "description": "The bus factor: the fewest authors whose surviving lines reach thresholdPercent of the lines counted, most lines first. Null when no lines were counted. Bots are left out unless --include-bots.",
+                "additionalProperties": false,
+                "required": ["thresholdPercent", "value", "authors", "covered", "total"],
+                "properties": {
+                  "thresholdPercent": { "type": "number", "exclusiveMinimum": 0, "maximum": 100, "description": "Set by --bus-factor-threshold; 50 by default." },
+                  "value": { "type": "integer", "minimum": 1, "description": "The number of authors; equal to the length of authors." },
+                  "authors": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "The names of the first value authors, most lines first." },
+                  "covered": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of the lines counted that those authors hold, as a fraction." },
+                  "total": { "type": "number", "minimum": 0, "description": "The lines counted: an integer unless --co-authors share is used." }
                 }
               }
             }
@@ -128,10 +142,259 @@
     "blame": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["flags", "ignoreRevsFile"],
+      "required": ["flags", "ignoreRevsFile", "ignoreRevs", "autoIgnoredRevs"],
       "properties": {
-        "flags": { "type": "array", "items": { "type": "string" }, "description": "The git blame flags used, including --ignore-revs-file and the file's name when one was used." },
-        "ignoreRevsFile": { "type": ["string", "null"], "description": "The ignore-revs file passed to git blame, as named on the command line or .git-blame-ignore-revs; null when none was used." }
+        "flags": { "type": "array", "items": { "type": "string" }, "description": "The git blame flags used, including --ignore-revs-file and the file's name when one was used, and --ignore-rev with the first seven characters of each revision given." },
+        "ignoreRevsFile": { "type": ["string", "null"], "description": "The ignore-revs file passed to git blame, as named on the command line or .git-blame-ignore-revs; null when none was used." },
+        "ignoreRevs": { "type": "array", "items": { "type": "string" }, "description": "Full ids of the --ignore-rev values, in the order given; empty when none was given." },
+        "autoIgnoredRevs": { "type": "array", "items": { "type": "string" }, "description": "Full ids of the suspected reformat commits the correction left out of the numbers, in the order of reformat.suspects; empty when the correction is not applied (no suspects, --keep-reformat, --co-authors share, or detection off)." }
+      }
+    },
+    "busFactor": {
+      "type": ["object", "null"],
+      "description": "The bus factor: the fewest authors whose surviving lines reach thresholdPercent of the lines counted, most lines first. Null when no lines were counted. Bots are left out unless --include-bots.",
+      "additionalProperties": false,
+      "required": ["thresholdPercent", "value", "authors", "covered", "total"],
+      "properties": {
+        "thresholdPercent": { "type": "number", "exclusiveMinimum": 0, "maximum": 100, "description": "Set by --bus-factor-threshold; 50 by default." },
+        "value": { "type": "integer", "minimum": 1, "description": "The number of authors; equal to the length of authors." },
+        "authors": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "The names of the first value authors, most lines first." },
+        "covered": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of the lines counted that those authors hold, as a fraction." },
+        "total": { "type": "number", "minimum": 0, "description": "The lines counted: an integer unless --co-authors share is used." }
+      }
+    },
+    "identityHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "people"],
+      "description": "Addresses that look like one person (same name, or the same address name on two domains, or a GitHub login). A guess from the history: --identities shows the evidence, and only the reader can confirm it. Bots are left out.",
+      "properties": {
+        "count": { "type": "integer", "minimum": 0, "description": "The number of people. Zero when no hint; then people is an empty list." },
+        "people": {
+          "type": "array",
+          "description": "One entry per person. name is the author the person commits from most; addresses are every address grouped under them, sorted.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "addresses", "lines", "lineShare"],
+            "properties": {
+              "name": { "type": "string" },
+              "addresses": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+              "lines": { "type": "integer", "minimum": 0, "description": "The lines of the addresses added up: the figure the person would have if they were one." },
+              "lineShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "lines over the attributed lines, the same basis as the table's lineShare." }
+            }
+          }
+        }
+      }
+    },
+    "identityMerge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "groups"],
+      "description": "--merge-identities: the people whose addresses were counted as one in memory. applied is false and groups empty unless the flag was given. identityHints is never merged; it is computed from the rows as blamed.",
+      "properties": {
+        "applied": { "type": "boolean" },
+        "groups": {
+          "type": "array",
+          "description": "One entry per person the linker grouped, named by the address they commit from most.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "mail", "addresses", "lines", "commits"],
+            "properties": {
+              "name": { "type": "string" },
+              "mail": { "type": "string", "description": "The canonical address: the one the person commits from most." },
+              "addresses": {
+                "type": "array",
+                "minItems": 2,
+                "description": "Every address of the person, most commits first.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["mail", "lines", "commits"],
+                  "properties": {
+                    "mail": { "type": "string" },
+                    "lines": { "type": "integer", "minimum": 0 },
+                    "commits": { "type": "integer", "minimum": 0 }
+                  }
+                }
+              },
+              "lines": { "type": "integer", "minimum": 0, "description": "The addresses' lines added up." },
+              "commits": { "type": "integer", "minimum": 0, "description": "The addresses' commits added up." }
+            }
+          }
+        }
+      }
+    },
+    "reformat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detection", "applied", "suspects", "uncorrected"],
+      "description": "Commits that only changed whitespace or quotes. When applied, the table leaves them out and uncorrected holds the plain count they were part of. Detection is off with --no-detect-reformat and when git is older than 2.23.",
+      "properties": {
+        "detection": { "type": "boolean" },
+        "applied": { "type": "boolean", "description": "True when the suspects are left out of the main numbers: suspects found, and neither --keep-reformat nor --co-authors share was given." },
+        "suspects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha", "shortSha", "subject", "author", "mail", "date", "filesChanged", "changedLines", "survivingLines", "files"],
+            "properties": {
+              "sha": { "type": "string", "description": "Full commit id." },
+              "shortSha": { "type": "string", "description": "The first seven characters of sha." },
+              "subject": { "type": "string" },
+              "author": { "type": "string" },
+              "mail": { "type": "string", "description": "Lowercased." },
+              "date": { "type": "string", "description": "Author date, YYYY-MM-DD." },
+              "filesChanged": { "type": "integer", "minimum": 0 },
+              "changedLines": { "type": "integer", "minimum": 0, "description": "Lines added plus lines deleted, from git's numstat." },
+              "survivingLines": { "type": "integer", "minimum": 0, "description": "Lines the first blame pass gave to this commit, before it was ignored." },
+              "files": { "type": "array", "items": { "type": "string" }, "description": "Paths the commit changed, as git lists them (no renames). The --history view uses them to find the set-aside commits of one path." }
+            }
+          }
+        },
+        "uncorrected": {
+          "type": ["object", "null"],
+          "description": "The plain count (suspects counted), with bots left out as the table leaves them out. Null unless applied.",
+          "additionalProperties": false,
+          "required": ["linesAttributed", "authors", "busFactor"],
+          "properties": {
+            "linesAttributed": { "type": "integer", "minimum": 0, "description": "Attributed lines with the suspects counted, after bots are removed." },
+            "authors": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["author", "mail", "lines", "lineShare"],
+                "properties": {
+                  "author": { "type": "string" },
+                  "mail": { "type": "string" },
+                  "lines": { "type": "integer", "minimum": 0 },
+                  "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person in this list: how many." }
+                }
+              }
+            },
+            "busFactor": {
+              "type": ["object", "null"],
+              "description": "The bus factor of the plain count, on the same threshold as the run's busFactor. Null when no lines remain.",
+              "additionalProperties": false,
+              "required": ["thresholdPercent", "value", "authors", "covered", "total"],
+              "properties": {
+                "thresholdPercent": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+                "value": { "type": "integer", "minimum": 1 },
+                "authors": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+                "covered": { "type": "number", "minimum": 0, "maximum": 1 },
+                "total": { "type": "number", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reviewers": {
+      "type": ["object", "null"],
+      "description": "The --reviewers view: the authors of one path, most surviving lines first. Null unless --reviewers was given.",
+      "additionalProperties": false,
+      "required": ["path", "asOf", "inactiveAfterDays", "suggestedBasis", "suggested", "topOwner", "authors"],
+      "properties": {
+        "path": { "type": "string", "description": "The path as given on the command line." },
+        "asOf": { "type": "string", "description": "Author date of the ref commit, YYYY-MM-DD. The clock is never read." },
+        "inactiveAfterDays": { "type": "integer", "minimum": 0, "description": "An author whose last commit at the path is more than this many days before asOf is not active." },
+        "suggestedBasis": { "type": "string", "enum": ["table", "reformatIgnored"], "description": "reformatIgnored when the suggestion uses the shares with the suspected reformat commits ignored (there were suspects and the second pass ran); table otherwise." },
+        "suggested": {
+          "type": "array",
+          "maxItems": 3,
+          "description": "Up to three people, active ones first, then by lines. Entries whose names fold to one identity are one person.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "mails", "lines", "lineShare", "lastCommit", "active"],
+            "properties": {
+              "author": { "type": "string" },
+              "mails": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Lowercased addresses of this person, sorted." },
+              "lines": { "type": "number", "minimum": 0 },
+              "lineShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "On the basis named by suggestedBasis." },
+              "lastCommit": { "type": ["string", "null"], "description": "The newest lastCommit of the addresses, YYYY-MM-DD." },
+              "active": { "type": "boolean", "description": "True when any address is active." }
+            }
+          }
+        },
+        "topOwner": {
+          "type": ["object", "null"],
+          "description": "The person with the most lines on the suggestion basis; null when nobody holds a line.",
+          "additionalProperties": false,
+          "required": ["author", "lastCommit", "active"],
+          "properties": {
+            "author": { "type": "string" },
+            "lastCommit": { "type": ["string", "null"] },
+            "active": { "type": "boolean" }
+          }
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "mail", "lines", "lineShare", "commits", "lastCommit", "active"],
+            "properties": {
+              "author": { "type": "string" },
+              "mail": { "type": "string", "description": "Lowercased, as .mailmap resolved it." },
+              "lines": { "type": "number", "minimum": 0, "description": "An integer unless --co-authors share is used." },
+              "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "commits": { "type": "number", "minimum": 0, "description": "Commits touching the path in the window; an integer unless --co-authors share is used." },
+              "lastCommit": { "type": ["string", "null"], "description": "Author date, YYYY-MM-DD, of the newest non-merge commit touching the path at the ref; null when there is none." },
+              "active": { "type": "boolean", "description": "True when lastCommit is no more than inactiveAfterDays before asOf." },
+              "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person in this list: how many." }
+            }
+          }
+        }
+      }
+    },
+    "history": {
+      "type": ["object", "null"],
+      "description": "The --history view: the people who changed one path, oldest first by their first counted commit there. Null unless --history was given.",
+      "additionalProperties": false,
+      "required": ["path", "asOf", "authors", "setAside"],
+      "properties": {
+        "path": { "type": "string", "description": "The path as given on the command line." },
+        "asOf": { "type": "string", "description": "Author date of the ref commit, YYYY-MM-DD. The clock is never read." },
+        "authors": {
+          "type": "array",
+          "description": "Ordered by firstCommit, ties by mail. A person whose only commit at the path is set aside is not listed.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "mail", "firstCommit", "lastCommit", "commits", "lines", "lineShare"],
+            "properties": {
+              "author": { "type": "string" },
+              "mail": { "type": "string", "description": "Lowercased, as .mailmap resolved it; the canonical address under --merge-identities." },
+              "firstCommit": { "type": "string", "description": "Author date, YYYY-MM-DD, of the oldest counted commit at the path." },
+              "lastCommit": { "type": "string", "description": "Author date, YYYY-MM-DD, of the newest counted commit at the path." },
+              "commits": { "type": "integer", "minimum": 1, "description": "Counted non-merge commits at the path; set-aside commits are not counted when the correction applies." },
+              "lines": { "type": "number", "minimum": 0, "description": "Surviving lines in the path, after the reformat correction and any --merge-identities merge." },
+              "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person: how many." }
+            }
+          }
+        },
+        "setAside": {
+          "type": "array",
+          "description": "Formatting-only commits that touch the path, oldest first. Left out of the counts when the correction applies; under --keep-reformat they are counted and this list still names them.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha", "shortSha", "subject", "author", "date"],
+            "properties": {
+              "sha": { "type": "string", "description": "Full commit id." },
+              "shortSha": { "type": "string" },
+              "subject": { "type": "string" },
+              "author": { "type": "string" },
+              "date": { "type": "string", "description": "Author date, YYYY-MM-DD." }
+            }
+          }
+        }
       }
     },
     "authors": {
@@ -146,7 +409,8 @@
           "lines": { "type": "number", "minimum": 0, "description": "An integer unless --co-authors share is used." },
           "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
           "commits": { "type": "number", "minimum": 0, "description": "An integer unless --co-authors share is used." },
-          "commitShare": { "type": "number", "minimum": 0, "maximum": 1 }
+          "commitShare": { "type": "number", "minimum": 0, "maximum": 1 },
+          "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person in this list: how many." }
         }
       }
     }

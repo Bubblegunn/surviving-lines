@@ -29,8 +29,9 @@ Measured with git-fame 4.2.1, git-who v1.3 and git-extras 7.5.0 on the same fixt
 | Totals per file extension | Same totals as git-fame `--bytype`. | P11 |
 | Sampling | The same seed picks the same files and gives the same numbers. git-fame has no sampling. | P15 |
 | One person on two addresses | Prints the evidence and ready `.mailmap` lines. git-fame prints no suggestions and groups authors by name only. | P16 |
+| A reformat commit that no ignore file names | Left out of the table by default, and the block under the table says so and gives the plain figures. git-fame 4.2.1 has no such list, and its plain numbers credit the formatter. | P21 |
 
-git-fame is ahead on other rows of the same file: several repositories in one run (P13), svg and yaml output (P14), and a `--since` window that also applies to blame (P05). It also installs through pip and conda and estimates cost. Questions people ask are answered in [`docs/FAQ.md`](docs/FAQ.md).
+git-fame is ahead on other rows of the same file: several repositories in one run (P13), svg and yaml output (P14), and a `--since` window that also applies to blame (P05). It also installs through pip and conda, and it estimates cost. Questions people ask are answered in [`docs/FAQ.md`](docs/FAQ.md).
 
 <p>
   <img src="https://img.shields.io/npm/v/surviving-lines?style=flat-square&color=111111&label=npm" alt="npm">
@@ -46,6 +47,12 @@ that replaced other people's; one whose blame share is below wrote code that was
 replaced.
 
 One file, no dependencies, Node 22 or newer, git 2.15 or newer, any repository `git` can read.
+
+Three ways to run it:
+
+- `npx surviving-lines` runs it once, without an install.
+- `/plugin install surviving-lines --marketplace Bubblegunn/surviving-lines` adds the Claude Code plugin; see [As a Claude Code plugin](#as-a-claude-code-plugin) below for the minimum Claude Code version.
+- `npx skills add Bubblegunn/surviving-lines` adds the agent skill through the skills CLI.
 
 Install globally to use it through Git as well:
 
@@ -67,7 +74,15 @@ That one-step form works on Claude Code 2.1.275 or newer. On an older version, u
 /plugin install surviving-lines@surviving-lines
 ```
 
-The plugin adds one skill. When you ask the agent the question this tool answers, it runs `npx surviving-lines` itself instead of estimating.
+The plugin adds one skill. When you ask the agent the question this tool answers, it runs the tool itself, from the plugin's own folder (falling back to the installed command, then to `npx`), instead of estimating. The skill covers who owns or wrote code, who should review a path, the history of a file or directory, the bus factor, formatter commits that take over ownership, duplicate authors and per-author line totals.
+
+The plugin also adds a prompt hint. When a prompt is about duplicate identities or code ownership, a hook reads the prompt and the working directory and adds a short note for the agent. The note says to use the skill and the tool instead of counting by hand. When the repository has suspected same-person groups, the note lists up to four of them, each with the rule that suggested it (one name on two addresses, one address under two names, one name before the `@` on two domains, or a GitHub noreply login equal to another name or address name) and each address's commit count. The note always says the groups are guesses until you confirm them, and when you ask for the duplicates to be fixed it tells the agent to write them to `.mailmap` under a comment line that marks them as proposals.
+
+The hook runs only read-only git commands (`rev-parse`, `rev-list --count` and `shortlog -sne --no-merges`). It writes nothing and makes no network calls. It stays silent outside a git repository, when git is missing, and above 20,000 commits; `SURVIVING_LINES_HINT_CAP` changes that cap and is mainly for tests. The note adds at most 1,200 characters. It works only in the Claude Code plugin, not in the npm command.
+
+Measured on a generated repository of 10,000 commits by 60 authors, a prompt that matches took about 149 ms and one that does not took about 22 ms (on a busy machine, so read these as orders of magnitude). None of 20 unrelated test prompts triggered it. Of 10 borderline prompts, 5 triggered, for example a general question about what `git blame` does, because the hook cannot tell a general question from a request about your repository.
+
+To remove the hook, delete `hooks/hooks.json` in a local copy of the plugin (or empty it), or disable the plugin.
 
 ## Example
 
@@ -221,6 +236,16 @@ line of the table prints.
 --ignore-revs-file <f>  skip the revisions listed in <f> when blaming (git 2.23 or newer);
                        default: .git-blame-ignore-revs at the repository root, when it exists
 --no-ignore-revs     do not read .git-blame-ignore-revs
+--ignore-rev <rev>   skip one commit when blaming (repeatable; git 2.23 or newer)
+--no-detect-reformat turn off the reformat heuristic (on by default): it finds suspected whitespace or quote
+                     commits and, unless --keep-reformat, leaves them out of the numbers
+--keep-reformat      count the suspected reformat commits in the numbers, as before the correction; the block
+                     still lists them. Not applied under --co-authors share
+--merge-identities   count the suggested same-person addresses as one, in memory (nothing written)
+--bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach (default: 50)
+--reviewers <path>   list who should review a file or directory
+--history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
+                       --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
 --allow-shallow      run in a shallow clone anyway; every output is marked "shallow clone"
 --cwd <dir>          repository directory (default: current directory)
 ```
@@ -228,6 +253,8 @@ line of the table prints.
 While blaming, an interactive run shows `blamed k/n files` on stderr, updated in place. Nothing is
 written when stderr is not a terminal, or with `--quiet`, so piped `--json` and `--csv` output stays
 clean. Contributed by [@Enard52](https://github.com/Enard52) ([#42](https://github.com/Bubblegunn/surviving-lines/pull/42)).
+
+The first time a person at a terminal reads a table, the groups view or the reviewers view, one line on stderr asks for a star on GitHub. A marker file then stops it from printing again for that user. `SURVIVING_LINES_NO_STAR_HINT=1` turns it off, and `-q` or `--quiet` skips it for one run. It is never printed in CI (when `CI` is set), when one of the variables `CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CODEX_SANDBOX` or `AI_AGENT` is set, or with `--json`, `--csv`, `--markdown` or `--identities`.
 
 Paths after `--` are passed to git as pathspecs, so `-- src packages/core` restricts both
 the blame and the commit count to those directories. A glob without a slash matches
@@ -311,6 +338,77 @@ weak statement about a team. Commit share stays a whole-repository number and is
 at least half of the sampled surviving lines, and a comment for the others. Nothing is written. Who wrote the
 code that is left is not the same as who should review changes to it; treat the lines as a starting point.
 
+## Who should review a file
+
+`--reviewers <path>` lists the authors of one file or directory, most surviving lines first. For each one it shows the lines under that path, their commits there, the date of their newest commit there, and whether they are active. Active means they committed at that path in the year before the as-of date. The as-of date is the author date of the ref's commit, not the clock, so the answer does not change with the day you run it.
+
+```sh
+npx surviving-lines --reviewers lib
+```
+
+The `suggested` line names up to three people, active ones first. It reads the same rows as the table, so a reformat commit that is left out by default is already left out of the suggestion. It is a starting point: who wrote the code that is left is not always who should review the next change to it.
+
+`--reviewers` and the bus factor count two addresses of one person separately until a `.mailmap` joins them. The `suggested` line is the one exception: it merges addresses that share a name, and nothing else.
+
+## Who shaped a path
+
+`--history <path>` takes a file or a directory and lists the people who changed it, oldest first. Each row gives the first and last commit at that path, the commits there, and the lines that person still holds at the ref. A commit that only reformatted the path is set aside: it is not counted, and a person whose only commit there was a formatting change has no row. The line under the list names who made the first commit and who holds the most lines now.
+
+```sh
+npx surviving-lines --history lib/index.js
+```
+
+`--since` and `--until` do not narrow the dates or the commit counts of this view, which always covers the whole ref. They can still drop a row, because a person with no surviving lines and no commit inside the window is left out. A person whose lines were all overwritten later still shows, with 0 lines, in a run without a window.
+
+`--history` prints its own view, so it can be combined only with `--json`. It cannot be combined with `--reviewers`, `--csv`, `--markdown`, `--identities`, `--group-by`, `--suggest-codeowners` or pathspecs after `--`.
+
+## Reformatting commits
+
+`git blame -w` ignores whitespace, but not a quote change. A formatter run that switches single quotes to double quotes therefore takes every line it rewrote, even though the code did not change. surviving-lines looks for such commits by default and leaves them out of the numbers. A commit whose changes are only whitespace or quote changes is a detected reformat commit. The table does not count the lines it holds, and the block under the table names it, gives the surviving lines it holds, and gives the figures without the correction for up to five authors whose lines it would move most, plus the bus factor without the correction.
+
+The detection is a suspicion, not a proof. Read the commit with `git show <id>` before trusting the correction. The correction applies to the table, the groups view, the reviewers suggestion, the CSV output and the `--history` view, and `--ai-breakdown` reads the corrected pass.
+
+- `--keep-reformat` counts the commit in the numbers, as before the correction. The block still lists it, and says that the numbers include it.
+- `--co-authors share` does not apply the correction. Its block says so, and the numbers include the commit.
+- Adding the commit's id to `.git-blame-ignore-revs` at the repository root, which is read by default, or passing `--ignore-rev <rev>` for one run (repeatable; git 2.23 or newer), ignores it in blame. The detection then finds no suspect, and no block is printed.
+
+`--no-detect-reformat` turns the detection off. It needs git 2.23 or newer, like the ignore file.
+
+What the check does not recognise:
+
+- It looks at whitespace changes and, in JavaScript, TypeScript, Python, JSON, CSS, SCSS, Vue and Svelte files (extensions js, jsx, mjs, cjs, ts, tsx, py, json, css, scss, vue, svelte), at single quotes turned into double quotes. In other files only whitespace is folded, because a quote change can change a program there (a shell script, for one).
+- Trailing commas, semicolons and parentheses are not recognised. A commit that adds or removes them is not listed.
+- A commit that adds, deletes or renames files, or changes more than 1000 files, is not judged.
+- It is a heuristic. A listed commit is a suspect, not proof; read it with `git show <id>` before ignoring it.
+
+## Bus factor
+
+The bus factor is the smallest number of authors whose surviving lines together reach a share of the lines counted. The default share is 50%. `--bus-factor-threshold <n>` changes it, to any value above 0 and at most 100. The line is printed under the table:
+
+```
+bus factor 2: Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 56.5% of 1,985 surviving lines
+```
+
+It follows the lines, not the commit counts. It measures how concentrated the code that is left is, not who understands it.
+
+## What the new lines look like
+
+On the head-to-head test repository (a copy of `expressjs/cors` with three synthetic commits, described in [`docs/HEAD-TO-HEAD.md`](docs/HEAD-TO-HEAD.md)), the code in this repository (`node bin/surviving-lines.js`, and `npx surviving-lines` after the next release) prints these lines under the table by default. The only change is that one real address is replaced by `troy@work.example`:
+
+```
+identity hint: 1 person may be counted twice (Troy Goode: troy@laptop.example, troy@work.example). The table counts each address separately. Run --identities for the .mailmap lines; only you can confirm it is one person. If they are one person, Troy Goode holds 810 lines (40.8%).
+
+bus factor 2: Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 70.1% of 1,985 surviving lines
+bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.
+
+reformat commit ignored (looks like whitespace and quote changes only): 1 commit
+  62628c0 "style: reformat js with 4-space indent and double quotes" by Fiona Formatter, 2026-04-12, 291 lines in the plain count
+  The table above does not count it. Without the correction: Fiona Formatter 291 (14.7%), Douglas Christopher Wilson 454 (22.9%), Troy Goode <troy@work.example> 667 (33.6%), alex94puchades 31 (1.6%), Saad Tazi 7 (0.4%). --keep-reformat counts it.
+  bus factor without the correction: 2 (Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 56.5% of 1,985 lines)
+```
+
+With `--keep-reformat` the formatter's commit is counted, the block says so, and the identity hint's last sentence reads `... If they are one person, Troy Goode holds 715 lines (36.0%).`
+
 ## Who is one person
 
 A person who has committed from two addresses is in the table twice, and every count splits them in
@@ -374,6 +472,40 @@ name match itself and a decomposed accent match a precomposed one.
 Nothing is written, and the tool cannot know whether two identities are really one person. It
 shows the evidence and stops there.
 
+`--merge-identities` counts the suggested addresses as one person for that run only. The merged row comes first and the table names each merge under it. The bus factor and the reformat comparison use the merged rows as well. On the head-to-head test repository, with the default reformat correction:
+
+```
+ref HEAD  ·  files 18/18 sampled (1 in 1)  ·  1,985 of 1,995 lines attributed
+git blame -w -M --ignore-rev 62628c0 (auto)  ·  commits 315, merges excluded
+bots excluded: 1 identity, 10 lines, 11 commits (--include-bots counts them)
+
+author                          lines   share  commits   share
+--------------------------------------------------------------
+Troy Goode (2 addresses)          810   40.8%       95   30.2%
+Douglas Christopher Wilson        629   31.7%      143   45.4%
+Íñigo Marquínez Prado              95    4.8%        2    0.6%
+Jon Church                         72    3.6%        3    1.0%
+Sebastian Beltran                  67    3.4%        2    0.6%
+Ulises Gascón                      52    2.6%        3    1.0%
+Ignacio Mangas                     44    2.2%        2    0.6%
+alex94puchades                     34    1.7%        5    1.6%
+Linus Unnebäck                     26    1.3%        1    0.3%
+Ollie Buck                         17    0.9%        1    0.3%
+… 52 more authors
+identities merged in memory (nothing written): Troy Goode = troy@work.example 762 lines 93 commits, troy@laptop.example 48 lines 2 commits; this is a guess from names and addresses; leave out --merge-identities for the unmerged table.
+
+bus factor 2: Troy Goode (2 addresses) and Douglas Christopher Wilson together hold 72.5% of 1,985 surviving lines
+bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.
+
+reformat commit ignored (looks like whitespace and quote changes only): 1 commit
+  62628c0 "style: reformat js with 4-space indent and double quotes" by Fiona Formatter, 2026-04-12, 291 lines in the plain count
+  The table above does not count it. Without the correction: Fiona Formatter 291 (14.7%), Douglas Christopher Wilson 454 (22.9%), Troy Goode (2 addresses) 715 (36.0%), alex94puchades 31 (1.6%), Saad Tazi 7 (0.4%). --keep-reformat counts it.
+  bus factor without the correction: 2 (Troy Goode (2 addresses) and Douglas Christopher Wilson together hold 58.9% of 1,985 lines)
+```
+
+
+When a suggestion exists, the table is followed by one `identity hint:` line. It names the person and the addresses and points at `--identities`. Its last sentence gives the figure that person would have if the addresses were one, so both the table figure and the merged figure can be reported. It is printed once per run, also with `--group-by`.
+
 ## Names in every script
 
 A name is not ASCII, and getting that wrong shows up in two different ways. One is a column that
@@ -430,9 +562,11 @@ svg and yaml output, installation through pip, conda, snap and docker, and cost 
 result, including the ones this tool loses. The two give the same numbers for surviving lines, commits,
 ignored revisions, co-author credit and totals per extension. Only this tool samples files by a seeded hash,
 leaves bots out of both shares by default, suggests `.mailmap` lines for one person on two addresses, finishes
-on an `Assisted-by:` trailer that has no address, and breaks out AI-assistant trailers. Use git-fame when you
+on an `Assisted-by:` trailer that has no address, and breaks out AI-assistant trailers, and lists reformatting commits that no ignore file names. Use git-fame when you
 need something from its list above; use this one when you need a reproducible sample, or the identity
 and bot handling.
+
+[`docs/HEAD-TO-HEAD.md`](docs/HEAD-TO-HEAD.md) describes a second comparison: this tool, another Claude Code plugin and plain Claude on the same eleven public tasks (six core and five extra), with the tasks fixed before the runs. Round 0 and round 1 results are recorded there and published in `bench/head-to-head/results/`. The round 1 gate failed: our total was 7.8% above project-pilot's and the rule needs 20%, and we were strictly ahead on 5 of 11 tasks. The independent re-grade has not been done, so these are not launch claims.
 
 ## What it cannot show
 
@@ -501,5 +635,7 @@ npm test        # node:test, builds a throwaway repository with two authors, a r
 npm run lint    # node --check
 npm run coverage  # the tests with Node's built-in coverage of bin/; CI fails below the thresholds in package.json
 ```
+
+If this helped, a star on GitHub helps others find it.
 
 MIT.

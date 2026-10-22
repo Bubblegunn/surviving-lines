@@ -226,6 +226,27 @@ export const PROBES = [
       };
     },
   },
+  {
+    id: "P21", feature: "Reformat commit nobody listed: detected and the numbers with it ignored", competitor: "git-fame", fixture: "quoteIndent",
+    run: ({ dir }) => {
+      // No ignore file in this fixture, so the only way to learn the formatter's commit is the reformat heuristic.
+      const ours = runOurs(dir);
+      const theirs = runGitFame(dir, FAME);
+      if (failed(ours) || failed(theirs)) return { verdict: "not-run", ours: failed(ours) ? why(ours, "ours") : "ran", theirs: failed(theirs) ? why(theirs, "them") : "ran", note: "a tool did not run" };
+      const suspects = ours.extra.reformat?.suspects ?? [];
+      const ignored = ours.extra.reformat?.ifIgnored?.authors ?? [];
+      const bobSuspected = suspects.some((/** @type {any} */ s) => s.mail === "bob@example.com");
+      const adaCredited = ignored.some((/** @type {any} */ a) => a.mail === "ada@example.com" && a.lines > 0) && !ignored.some((/** @type {any} */ a) => a.mail === "bob@example.com");
+      const fameCreditsBob = (theirs.rows?.get("bob@example.com")?.lines ?? 0) > 0;
+      const oursOk = bobSuspected && adaCredited;
+      return {
+        verdict: oursOk && fameCreditsBob ? "ours-only" : "differs",
+        ours: oursOk ? `suspect ${suspects.map((/** @type {any} */ s) => s.shortSha).join(", ")} (Bob); ignored: ${ignored.map((/** @type {any} */ a) => `${a.author}=${a.lines}`).join(", ")}` : "no suspect, or the ignored numbers do not credit Ada",
+        theirs: `lines: ${compact(theirs.rows, "lines")}; no suspect list`,
+        note: "git-fame 4.2.1 has no reformat detection, so its plain numbers credit the formatter with the lines it rewrote",
+      };
+    },
+  },
 ];
 
 /** Features a competitor has that no probe can run, kept visible. */

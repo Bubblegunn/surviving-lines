@@ -6,7 +6,7 @@ Category sentence, used identically in the README, the package description, `llm
 
 > surviving-lines is a command-line tool that counts the lines of code each author still has in a git repository, using git blame, and shows them next to each author's share of commits.
 
-Not applicable: VS Code Marketplace, skills.sh, the Claude, Codex and Cursor plugin directories, and MCP registries. This project is a command-line tool and a GitHub Action. It ships no extension, skill, plugin or MCP server.
+Not applicable: the VS Code Marketplace, the Codex and Cursor plugin directories, and MCP registries. This project is a command-line tool and a GitHub Action, and it ships no extension or MCP server. It does ship one Claude Code plugin with one skill, so the Claude plugin directory listing applies; the owner submits it, with the same description as below.
 
 ## npm
 
