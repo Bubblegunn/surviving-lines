@@ -51,6 +51,7 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 - Say that mechanical rewrites were checked, and name each commit of the `mechanical rewrites checked` line as set aside or kept.
 - Order people by surviving lines. Activity is information only.
 - When the question names files and also asks about the package, the repository or a directory ("in the package", "in the repo", "under lib/"), also run the tool on that wider scope and give its shares. Per-file tables alone do not answer it.
+- When the header says `(non-blank; N with blank lines)`, the shares count non-blank lines. When you state the size of the code, give both numbers (for example "2,941 non-blank lines, 3,322 with blank lines").
 - When the output has a `placeholder identities` line, say that those lines (give the count and the share) cannot be attributed to a person, and never name those identities as someone to ask.
 - Name the bots the `bots excluded` line lists and say their lines are not credited. When the `mechanical rewrites checked` line says `rewrites looked through`, say those commits were looked through and their lines went back to the earlier authors.
 - When the output has a `one address, several names, counted as one` line, name those people and their names in the answer. Never write "no duplicates" or "no one appears twice" while that line is printed.

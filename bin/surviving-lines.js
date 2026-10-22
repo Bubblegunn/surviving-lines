@@ -403,6 +403,16 @@ export function selected(path, include, exclude, includeIsBare, excludeIsBare) {
 }
 
 /**
+ * R9-14: true for a personal name of two or more alphabetic words ("Albert Nigmatzianov"), false for a handle.
+ * @param {string} author
+ * @returns {boolean}
+ */
+export function hasFullName(author) {
+  const words = author.trim().split(/\s+/);
+  return words.length >= 2 && words.every((w) => /^\p{L}[\p{L}.'-]*$/u.test(w));
+}
+
+/**
  * Remove the entries of lines that hold only whitespace from `git blame --line-porcelain` output. An empty line has no
  * author in any useful sense (it carries no logic, and `-w` already ignores whitespace changes), and counting it moves
  * a share toward whoever formats with more blank lines. Each entry ends with its content line, which starts with a tab.
@@ -427,10 +437,11 @@ export function dropBlankBlameLines(porcelain) {
  * Parse `git blame --line-porcelain` output into a map of author-mail -> line count.
  * With --line-porcelain every line repeats its commit headers, so a simple scan works.
  * @param {string} porcelain
- * @returns {Map<string, { name: string, lines: number }>}
+ * Each entry also holds `fullName`, the first personal name (R9-14) that address committed under, when it has one.
+ * @returns {Map<string, { name: string, lines: number, fullName?: string }>}
  */
 export function countBlameLines(porcelain) {
-  /** @type {Map<string, { name: string, lines: number }>} */
+  /** @type {Map<string, { name: string, lines: number, fullName?: string }>} */
   const counts = new Map();
   let name = "";
   for (const line of porcelain.split("\n")) {
@@ -439,6 +450,7 @@ export function countBlameLines(porcelain) {
       const mail = line.slice(12).replace(/^<|>$/g, "").toLowerCase();
       const entry = counts.get(mail) ?? { name, lines: 0 };
       entry.lines++;
+      if (entry.fullName === undefined && hasFullName(name)) entry.fullName = name;
       counts.set(mail, entry);
     }
   }
@@ -1042,13 +1054,16 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
   /** @type {Map<string, Map<string, { name: string, lines: number }>>} */
   const fileCounts = new Map();
   /** The index of the file that gave each address its name: blames finish in any order, so the name is the first file's. */
-  /** @type {Map<string, number>} */
+  /** @type {Map<string, { idx: number, rank: number }>} */
   const nameFrom = new Map();
   const worker = async () => {
     while (cursor < sampled.length) {
       const idx = cursor++;
       const file = sampled[idx];
-      const out = dropBlankBlameLines(await git([...blameArgs, o.ref, "--", file.path], o.cwd));
+      const raw = await git([...blameArgs, o.ref, "--", file.path], o.cwd);
+      const out = dropBlankBlameLines(raw);
+      // R9-13: the size with its blank lines, stated beside the non-blank size.
+      file.withBlank = (raw.match(/^filename /gm) ?? []).length;
       const counts = countBlameLines(out);
       // The file's size as the table counts it: without its blank lines.
       file.lines = (out.match(/^filename /gm) ?? []).length;
@@ -1062,11 +1077,15 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
         }
       }
       if (wantOrigins) origins.set(file.path, countBlameOrigins(out, file.path));
-      for (const [mail, { name, lines }] of counts) {
+      for (const [mail, { name, lines, fullName }] of counts) {
         const a = authors.get(mail) ?? { name, lines: 0, commits: 0 };
-        if ((nameFrom.get(mail) ?? Infinity) > idx) {
-          a.name = name;
-          nameFrom.set(mail, idx);
+        // R9-14: an address that committed under a handle and under a personal name is shown by the personal name.
+        const best = fullName ?? name;
+        const rank = fullName !== undefined ? 0 : 1;
+        const had = nameFrom.get(mail);
+        if (had === undefined || rank < had.rank || (rank === had.rank && idx < had.idx)) {
+          a.name = best;
+          nameFrom.set(mail, { idx, rank });
         }
         a.lines += lines;
         attributed += lines;
@@ -2309,7 +2328,7 @@ export async function analyse(o) {
     ref: o.ref,
     sort: o.sort,
     shallow,
-    sample: { every: o.sample, seed: o.seed, filesTotal: all.length, filesSampled: sampled.length, linesInRef: all.reduce((s, f) => s + f.lines, 0), linesAttributed: attributed },
+    sample: { every: o.sample, seed: o.seed, filesTotal: all.length, filesSampled: sampled.length, linesInRef: all.reduce((s, f) => s + f.lines, 0), linesWithBlank: all.reduce((s, f) => s + (f.withBlank ?? f.lines), 0), linesAttributed: attributed },
     commitWindow: { since: o.since ?? null, until: o.until ?? null, commits, mergesExcluded: true },
     coAuthors: o.coAuthors,
     aiAssisted,
@@ -2448,7 +2467,7 @@ export const SHALLOW_MARK = "shallow clone, history before the cut is blamed on 
  */
 function headerLine(r) {
   const s = r.sample;
-  return `ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed${r.shallow ? `  ·  ${SHALLOW_MARK}` : ""}`;
+  return `ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed${s.linesWithBlank > s.linesInRef ? ` (non-blank; ${s.linesWithBlank.toLocaleString("en-US")} with blank lines)` : ""}${r.shallow ? `  ·  ${SHALLOW_MARK}` : ""}`;
 }
 
 /**
