@@ -55,6 +55,26 @@ test("R9-1: fullNameIsAddressName needs two words, letters only, and an exact ma
   assert.equal(fullNameIsAddressName("Tomás García", "tomas.garcia2"), false, "a digit is not equal");
   assert.equal(fullNameIsAddressName("Tomas", "tomas"), false, "one word is not a full name");
   assert.equal(fullNameIsAddressName("Tomás García", "garcia"), false, "part of a name is not equal");
+  assert.equal(fullNameIsAddressName("J. Smith", "jsmith"), false, "an initial plus a surname is not a full name");
+  assert.equal(fullNameIsAddressName("John S.", "johns"), false, "a trailing initial is not a full name");
+  assert.equal(fullNameIsAddressName("Al Li", "alli"), true, "four letters is the lowest address name");
+  assert.equal(fullNameIsAddressName("Al Y", "aly"), false, "an initial word and a three-letter address");
+  assert.equal(fullNameIsAddressName("Tomas Garcia 2", "tomasgarcia"), false, "a digit in the name is not letters only");
+});
+
+test("R9-1: an initial plus a surname does not link two addresses", async () => {
+  await withPeople(
+    [
+      [["J. Smith", "js@work.example"], 20],
+      [["jenny", "jsmith@home.example"], 10],
+      [["Other Person", "other@three.example"], 30],
+    ],
+    async (dir) => {
+      const r = await run(dir);
+      assert.equal(r.identityHints.count, 0);
+      assert.equal((await run(dir, ["--merge-identities"])).authors.length, 3);
+    },
+  );
 });
 
 test("R9-1: a full name equal to the address name of another identity is a strong group, and --merge-identities merges it", async () => {

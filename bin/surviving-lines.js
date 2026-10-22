@@ -3000,15 +3000,18 @@ const loose = (/** @type {string} */ s) => foldIdentity(s).replace(/[\s._-]/g, "
 /**
  * Whether a full name equals an address name (R9-1): the name has two or more words made of letters, and its letters
  * (case and accents folded) are exactly the letters of the address name once the separators . _ - are removed. An
- * address name with a digit or any other character never matches.
+ * address name with a digit or any other character never matches. Every name word has at least two letters (an initial
+ * plus a surname, "J. Smith" and jsmith, is not a full name), the address name has at least four letters, and a name
+ * with a digit never matches.
  * @param {string} name
  * @param {string} local the part of the address before the @, without a GitHub noreply id prefix
  */
 export function fullNameIsAddressName(name, local) {
   const words = foldIdentity(name).normalize("NFD").replace(/\p{M}/gu, "").split(/[^\p{L}]+/u).filter(Boolean);
-  if (words.length < 2 || !/^[\p{L}._-]+$/u.test(local)) return false;
+  if (/\p{N}/u.test(name) || words.length < 2 || words.some((w) => [...w].length < 2) || !/^[\p{L}._-]+$/u.test(local)) return false;
   const joined = words.join("");
-  return joined.length >= 4 && joined === local.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[._-]/g, "");
+  const address = local.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[._-]/g, "");
+  return address.length >= 4 && joined === address;
 }
 
 /**
