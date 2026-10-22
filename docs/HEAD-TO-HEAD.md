@@ -658,3 +658,22 @@ Departures: no invoked arm for `hist` and `bf` (budget); a competitor is set up 
 **Budget.** At most 18 USD for all `claude -p` runs and grading. No new run starts once 14.4 USD is spent; the results so far are then written and reported, with what is missing named.
 
 **Claim scope.** A "first" claim is written only for the tasks, models and date that were completed, names the rivals that were in the comparison, and names the scan candidates that were not run.
+
+### Results, final gate
+
+Run on 2026-10-22 under the "Final gate protocol" above (frozen in `b916ac3`, tooling in `abca92c`, both pushed before any run). Held-out tasks H1 to H3 (`origin/heldout-2026-10` at `e78052b`), model `claude-sonnet-5-5`, 3 runs per task and arm, six arms, 54 task runs, two at a time. Ours ran from a `git archive` of `a2650c2`. All arms of a cell were graded together in a shuffled order, three votes per cell. The hooks and mcpServers guard passed on every competitor run. Ours loaded and ran its skill in every run. Published: `bench/head-to-head/results/final-gate-claude-sonnet-5-5/` (table, per-criterion votes, label maps, manifest).
+
+Outcome criteria (mean criteria passed, runs in brackets):
+
+| Task | Criteria | ours | pp | ppi | hist | bf | base |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| H1 | 5 | 2.00 (2/2/2) | 5.00 (5/5/5) | 5.00 (5/5/5) | 5.00 (5/5/5) | 5.00 (5/5/5) | 4.33 (5/5/3) |
+| H2 | 5 | 0.00 (0/0/0) | 4.00 (4/5/3) | 3.67 (3/5/3) | 4.00 (4/4/4) | 2.33 (3/3/1) | 2.67 (4/2/2) |
+| H3 | 5 | 1.00 (1/1/1) | 3.00 (5/0/4) | 2.00 (2/2/2) | 0.00 (0/0/0) | 2.00 (3/0/3) | 1.33 (0/0/4) |
+| Total | 15 | 3.00 | 12.00 (best of pp and ppi per task) | | 9.00 | 9.33 | 8.33 |
+
+**The gate failed.** Rule B: ours is below every rival on H1, H2 and H3. Rule A: ours lost 12.00 points; the best rival (project-pilot, best of pp and ppi per task) lost 3.00, so the limit is 2.40. Both rules fail.
+
+Why, from the graders' reasons for ours: the tool's headline table counts vendored files (a human-committed copy of a library) and the person who committed them as owners, and does not drop lockfile or generated files by default; it does not merge identities that differ in both name and address, so the shares of one person split; on H3 (reviewers for a file whose code was moved out of another file) it ranks the person who did the move first, because its blame view starts at the new path. The H1 and H2 answers sometimes mention the right fix in a secondary note, but the headline numbers were wrong, and the criteria need the headline. On the public tasks these cases were not present, so the round 5 result does not carry over.
+
+Not done: F9 (Haiku, Opus), the F6 audit and the new arms on the public set. The gate was already lost on the Sonnet held-out step, and the protocol says no task may be lost on any model, so later steps could not change the verdict; they were skipped to save budget (spent 11.11 USD of 18). The "first" claim is not made. What holds is the round 5 public-set result (11 tasks, Sonnet, 2026-10-22, rivals project-pilot and plain Claude), which the held-out result limits: it does not generalise to new repositories with vendored code, split identities or moved code.
