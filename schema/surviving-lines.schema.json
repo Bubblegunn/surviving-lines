@@ -5,7 +5,7 @@
   "description": "schemaVersion changes when a key is removed, renamed or changes type. Adding a key does not change it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "blame", "reformat", "busFactor", "identityHints", "identityMerge", "reviewers", "history", "authors"],
+  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "reviewers", "history", "authors"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "tool": {
@@ -139,11 +139,58 @@
         }
       }
     },
+    "dropped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "files", "lines", "classes", "paths", "otherPaths"],
+      "description": "Lockfiles, generated files (marked, minified or map files) and vendored code that were left out of every number, chosen by path and file content only, never by author. applied is false under --keep-generated, and then nothing was left out.",
+      "properties": {
+        "applied": { "type": "boolean" },
+        "files": { "type": "integer", "minimum": 0 },
+        "lines": { "type": "integer", "minimum": 0 },
+        "classes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lockfile", "generated", "vendored"],
+          "properties": {
+            "lockfile": { "type": "object", "additionalProperties": false, "required": ["files", "lines"], "properties": { "files": { "type": "integer", "minimum": 0 }, "lines": { "type": "integer", "minimum": 0 } } },
+            "generated": { "type": "object", "additionalProperties": false, "required": ["files", "lines"], "properties": { "files": { "type": "integer", "minimum": 0 }, "lines": { "type": "integer", "minimum": 0 } } },
+            "vendored": { "type": "object", "additionalProperties": false, "required": ["files", "lines"], "properties": { "files": { "type": "integer", "minimum": 0 }, "lines": { "type": "integer", "minimum": 0 } } }
+          }
+        },
+        "paths": {
+          "type": "array",
+          "description": "The largest left-out paths, most lines first: a vendor directory, or a single file.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "class", "files", "lines"],
+            "properties": {
+              "path": { "type": "string" },
+              "class": { "type": "string", "enum": ["lockfile", "generated", "vendored"] },
+              "files": { "type": "integer", "minimum": 1 },
+              "lines": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "otherPaths": { "type": "integer", "minimum": 0, "description": "How many further paths were left out beyond those listed." }
+      }
+    },
     "blame": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["flags", "ignoreRevsFile", "ignoreRevs", "autoIgnoredRevs"],
+      "required": ["flags", "copyDetection", "ignoreRevsFile", "ignoreRevs", "autoIgnoredRevs"],
       "properties": {
+        "copyDetection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["on", "reason"],
+          "description": "Whether git blame followed code moved or copied between files (-C -C). It is off with --no-copies, and by default above 2000 files to blame; reason says why it is off and is null when it is on.",
+          "properties": {
+            "on": { "type": "boolean" },
+            "reason": { "type": ["string", "null"] }
+          }
+        },
         "flags": { "type": "array", "items": { "type": "string" }, "description": "The git blame flags used, including --ignore-revs-file and the file's name when one was used, and --ignore-rev with the first seven characters of each revision given." },
         "ignoreRevsFile": { "type": ["string", "null"], "description": "The ignore-revs file passed to git blame, as named on the command line or .git-blame-ignore-revs; null when none was used." },
         "ignoreRevs": { "type": "array", "items": { "type": "string" }, "description": "Full ids of the --ignore-rev values, in the order given; empty when none was given." },
@@ -160,7 +207,48 @@
         "value": { "type": "integer", "minimum": 1, "description": "The number of authors; equal to the length of authors." },
         "authors": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "The names of the first value authors, most lines first." },
         "covered": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of the lines counted that those authors hold, as a fraction." },
-        "total": { "type": "number", "minimum": 0, "description": "The lines counted: an integer unless --co-authors share is used." }
+        "total": { "type": "number", "minimum": 0, "description": "The lines counted: an integer unless --co-authors share is used." },
+        "authorsFor80Percent": { "type": ["integer", "null"], "minimum": 1, "description": "The fewest authors whose lines reach 80% of the lines counted, a second concentration figure next to value. Not configurable." }
+      }
+    },
+    "possibleSamePerson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "merged", "suggestions"],
+      "description": "Identities whose names and addresses both differ but that carry fixed evidence of being one person. They are suggestions: no flag merges them, and the owner decides by writing the .mailmap lines.",
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "merged": { "type": "boolean", "const": false },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "mail", "addresses", "lines", "lineShare", "evidence", "mailmap"],
+            "properties": {
+              "name": { "type": "string" },
+              "mail": { "type": "string", "description": "The address to keep." },
+              "addresses": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["name", "mail", "lines", "commits"],
+                  "properties": {
+                    "name": { "type": "string" },
+                    "mail": { "type": "string" },
+                    "lines": { "type": "number", "minimum": 0 },
+                    "commits": { "type": "integer", "minimum": 0 }
+                  }
+                }
+              },
+              "lines": { "type": "number", "minimum": 0 },
+              "lineShare": { "type": "number", "minimum": 0 },
+              "evidence": { "type": "array", "items": { "type": "string" } },
+              "mailmap": { "type": "array", "items": { "type": "string" }, "description": "Exact two-address .mailmap lines, to write only after the owner confirms." }
+            }
+          }
+        }
       }
     },
     "identityHints": {
@@ -299,6 +387,18 @@
       "additionalProperties": false,
       "required": ["path", "asOf", "inactiveAfterDays", "suggestedBasis", "suggested", "topOwner", "authors"],
       "properties": {
+        "movedIn": {
+          "type": ["object", "null"],
+          "description": "Lines of this path that were written in other paths and moved or copied here, from the origin path git blame reports. Null when no line was blamed under the path.",
+          "additionalProperties": false,
+          "required": ["lines", "of", "share", "largest"],
+          "properties": {
+            "lines": { "type": "integer", "minimum": 0, "description": "Blamed lines whose origin path differs from the blamed path." },
+            "of": { "type": "integer", "minimum": 1, "description": "Blamed lines under the path." },
+            "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "lines divided by of." },
+            "largest": { "type": "array", "maxItems": 3, "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer", "minimum": 1 } } }, "description": "The three origin paths with the most lines." }
+          }
+        },
         "path": { "type": "string", "description": "The path as given on the command line." },
         "asOf": { "type": "string", "description": "Author date of the ref commit, YYYY-MM-DD. The clock is never read." },
         "inactiveAfterDays": { "type": "integer", "minimum": 0, "description": "An author whose last commit at the path is more than this many days before asOf is not active." },
@@ -358,6 +458,18 @@
       "additionalProperties": false,
       "required": ["path", "asOf", "authors", "setAside"],
       "properties": {
+        "movedIn": {
+          "type": ["object", "null"],
+          "description": "Lines of this path that were written in other paths and moved or copied here, from the origin path git blame reports. Null when no line was blamed under the path.",
+          "additionalProperties": false,
+          "required": ["lines", "of", "share", "largest"],
+          "properties": {
+            "lines": { "type": "integer", "minimum": 0, "description": "Blamed lines whose origin path differs from the blamed path." },
+            "of": { "type": "integer", "minimum": 1, "description": "Blamed lines under the path." },
+            "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "lines divided by of." },
+            "largest": { "type": "array", "maxItems": 3, "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer", "minimum": 1 } } }, "description": "The three origin paths with the most lines." }
+          }
+        },
         "path": { "type": "string", "description": "The path as given on the command line." },
         "asOf": { "type": "string", "description": "Author date of the ref commit, YYYY-MM-DD. The clock is never read." },
         "authors": {

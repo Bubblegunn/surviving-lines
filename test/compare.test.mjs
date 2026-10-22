@@ -39,7 +39,7 @@ test("the fixtures hold the numbers their comments state", async () => {
   }
   const wide = buildFixture("wide");
   try {
-    const r = await analyse(parseArgs(["--cwd", wide]));
+    const r = await analyse(parseArgs(["--cwd", wide, "--no-copies"]));
     assert.equal(r.sample.filesTotal, 120);
     assert.deepEqual(r.authors.map((a) => a.lines), [1600, 1600, 1600]);
   } finally {

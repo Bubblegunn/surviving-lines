@@ -106,7 +106,7 @@ test("the Markdown output carries the same line and definition as plain text lin
     const text = renderMarkdown(await analyse(parseArgs(["--cwd", dir, "--markdown"])), 10);
     assert.equal(count(text, ADA_ALONE), 1);
     assert.equal(count(text, DEFINITION), 1);
-    assert.ok(text.includes(`\n\n${ADA_ALONE}\n`), "a blank line keeps the line out of the Markdown table");
+    assert.ok(text.includes(`\n\n${ADA_ALONE} · to reach 80%: `), "a blank line keeps the line out of the Markdown table");
   });
 });
 

@@ -16,8 +16,8 @@ test("a repository's .git-blame-ignore-revs is read by default and named in the 
     // Bob's formatter commit is listed, so its 20 lines go back to Ada (20 + 10 extra + 2 in the ignore file itself).
     assert.deepEqual(linesOf(r), { "ada@example.com": 32, "bob@example.com": 0 });
     assert.equal(r.blame.ignoreRevsFile, ".git-blame-ignore-revs");
-    assert.deepEqual(r.blame.flags, ["-w", "-M", "--ignore-revs-file", ".git-blame-ignore-revs"]);
-    assert.match(renderTable(r, 10), /git blame -w -M --ignore-revs-file \.git-blame-ignore-revs {2}·/);
+    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "-C", "--ignore-revs-file", ".git-blame-ignore-revs"]);
+    assert.match(renderTable(r, 10), /git blame -w -M -C -C --ignore-revs-file \.git-blame-ignore-revs {2}·/);
   } finally {
     removeRepo(dir);
   }
@@ -29,7 +29,7 @@ test("--no-ignore-revs reads nothing, and the run says so by printing no ignore 
     const r = await analyse(parseArgs(["--cwd", dir, "--no-ignore-revs"]));
     assert.deepEqual(linesOf(r), { "bob@example.com": 20, "ada@example.com": 12 });
     assert.equal(r.blame.ignoreRevsFile, null);
-    assert.deepEqual(r.blame.flags, ["-w", "-M"]);
+    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "-C"]);
   } finally {
     removeRepo(dir);
   }

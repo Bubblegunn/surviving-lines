@@ -217,7 +217,9 @@ line of the table prints.
 --exclude <glob>     skip files matching the glob (repeatable)
 --since <date>       commit-share window start (passed to git log)
 --until <date>       commit-share window end
---copies             pass -C to git blame as well as -w -M (follows copies)
+--copies             follow copies even above 2000 files (default: -w -M -C -C below that)
+--no-copies          blame with -w -M only
+--keep-generated     count lockfiles, generated files and vendored code
 --jobs <n>           parallel blame processes (default: 4)
 --top <k>            rows to print (default: 10)
 --sort <key>         lines (default), commits, or gap (absolute share difference)

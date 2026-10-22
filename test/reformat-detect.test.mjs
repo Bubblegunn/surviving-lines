@@ -104,7 +104,7 @@ test("--ignore-rev gives a revision's lines back, is repeatable, and is printed 
     const r = await analyse(parseArgs(["--cwd", dir, "--ignore-rev", bob, "--ignore-rev", notes]));
     assert.deepEqual(linesByMail(r), { [mailOf("ada")]: 35, [mailOf("bob")]: 0 });
     assert.deepEqual(r.blame.ignoreRevs, [bob, notes]);
-    assert.deepEqual(r.blame.flags, ["-w", "-M", "--ignore-rev", bob.slice(0, 7), "--ignore-rev", notes.slice(0, 7)]);
+    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "-C", "--ignore-rev", bob.slice(0, 7), "--ignore-rev", notes.slice(0, 7)]);
     // A revision that the blame already skips is not a candidate again.
     assert.deepEqual(r.reformat.suspects, []);
   });
@@ -132,7 +132,7 @@ test("--no-detect-reformat prints no block and leaves the suspects empty, and de
 /** The bots table as it printed before the reformat feature existed. Changing it means changing what users see. */
 const SNAPSHOT_BOTS_TABLE = [
   `ref HEAD  ·  files 8/8 sampled (1 in 1)  ·  23 of 43 lines attributed`,
-  `git blame -w -M  ·  commits 5, merges excluded`,
+  `git blame -w -M -C -C  ·  commits 5, merges excluded`,
   `bots excluded: 2 identities, 20 lines, 3 commits (--include-bots counts them)`,
   ``,
   `author           lines   share  commits   share`,
@@ -142,7 +142,7 @@ const SNAPSHOT_BOTS_TABLE = [
   `Botticelli           4   17.4%        1   20.0%`,
   `Bot Hawkins          2    8.7%        1   20.0%`,
   ``,
-  `bus factor 2: Ada and Bob together hold 73.9% of 23 surviving lines`,
+  `bus factor 2: Ada and Bob together hold 73.9% of 23 surviving lines · to reach 80%: 3 authors`,
   `bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.`,
   ``,
   `What this cannot show: quality of the lines, review work, design done in documents,`,

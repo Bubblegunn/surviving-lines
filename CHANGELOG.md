@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lockfiles, generated files and vendored directories leave every number by default (`dropped:` line, JSON `dropped`; `--keep-generated` counts them). Blame follows moves and copies (`-w -M -C -C`; `--no-copies` turns it off; off above 2000 files). `possible same person` suggestions are never merged. `--reviewers`/`--history` print a `moved or copied here` line (`movedIn`). The bus factor line adds `to reach 80%: N authors`.
+
 **Added: prompt hint.** A Claude Code hook (`hooks/hooks.json` and `hooks/surviving-lines-hint.sh`) reads each prompt. When the prompt is about duplicate identities or code ownership, it adds a short note that points the agent at the skill and the tool, and lists up to four suspected same-person groups with the rule that suggested each. It runs read-only git, is silent outside a repository and above 20,000 commits, and adds at most 1,200 characters. `SURVIVING_LINES_HINT_CAP` changes the cap. It works only in the plugin, not in the npm command. To remove it, empty `hooks/hooks.json` in a local copy of the plugin or disable the plugin.
 
 **Changed: the skill rules for per-type, per-directory, CODEOWNERS and window questions.** The skill now names the command for each: `--group-by ext` for a file type, `--group-by dir` for a directory, `--suggest-codeowners` for CODEOWNERS lines (an owner is named only where one person holds at least half of the surviving lines), and `--since` with `--until` for a window, which limits the commit column only. Those answers merge suggested identities and say the merge is a guess.

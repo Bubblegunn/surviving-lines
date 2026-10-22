@@ -39,7 +39,7 @@ test("by default the main rows leave the reformat commit out, and the block says
     assert.equal(r.reformat.suspects.length, 1);
     const [s] = r.reformat.suspects;
     assert.deepEqual(r.blame.autoIgnoredRevs, [s.sha]);
-    assert.deepEqual(r.blame.flags, ["-w", "-M", "--ignore-rev", s.shortSha, "(auto)"]);
+    assert.deepEqual(r.blame.flags, ["-w", "-M", "-C", "-C", "--ignore-rev", s.shortSha, "(auto)"]);
     assert.equal(r.busFactor.authors.length, 1);
     assert.equal(r.busFactor.authors[0], PEOPLE.ada[0]);
     // The first pass numbers, the ones a plain count gives: Bob 30, Ada 5.

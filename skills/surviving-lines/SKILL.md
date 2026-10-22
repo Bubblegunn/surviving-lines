@@ -32,6 +32,10 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 - For CODEOWNERS lines, run `<sl> --group-by dir --suggest-codeowners --merge-identities`. An owner is named only where one person holds at least half of the surviving lines; for every other directory, and for the root files, say that nobody holds half. Do not add an owner line for those.
 - For "who committed in the last N days and how much of their code is still here": `--since` and `--until` limit the commit column only; the lines column is always for the ref. Run `<sl> --since <date> --until <date> --merge-identities`, read commits in the window from the commit column and surviving lines from the lines column, and set aside a reformat commit the tool names.
 - A note from the surviving-lines prompt hint that lists suspected same-person groups is a set of guesses from names and addresses. Say so and show the groups. If the user asked you to fix the duplicates, write them to `.mailmap` under a comment line that marks them as proposals to confirm, re-run `<sl>`, and say in the answer that the merges are guesses until the user confirms them. Copy each `.mailmap` line exactly as the hint or `<sl> --identities` prints it, including the two-address line for one address under two names (`Full Name <a> login <a>`); do not write a line of your own.
+- When the output lists a `possible same person` suggestion, report the unmerged headline. Next to it, give the figure "if one person" with the evidence, and label it unconfirmed. Give the `.mailmap` line. Nothing is merged without a `.mailmap`.
+- State what the output says was left out: lockfiles, generated files and vendored code, with the one-line reason. State the reformat commits that were ignored. `--keep-generated` counts the dropped files.
+- When the output has a `moved or copied here` line, state it. Do not recommend the person who only moved the code. Recommend the authors who wrote it.
+- Give both bus factor numbers (`bus factor` and `to reach 80%`) with the scope they were computed on: the whole repository, a path, or a group.
 
 ## Who shaped a path, and who should review it
 

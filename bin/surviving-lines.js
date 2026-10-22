@@ -28,6 +28,9 @@ const execFileP = promisify(execFile);
  */
 export const SCHEMA_VERSION = 1;
 
+/** Above this many files to blame, copy detection (-C -C) is off by default: it makes each blame search the whole commit. */
+const COPY_DETECTION_MAX_FILES = 2000;
+
 /** The package version, read from the package.json this file ships with. */
 function toolVersion() {
   return JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
@@ -52,7 +55,11 @@ Measure who wrote the code that is still alive in a git ref.
   --exclude <glob>     skip files matching the glob (repeatable)
   --since <date>       commit-share window start (passed to git log)
   --until <date>       commit-share window end
-  --copies             pass -C to git blame as well as -w -M (slower, follows copies)
+  --copies             follow copies even above 2000 files to blame (default: git blame -w -M -C -C, which follows moved
+                       and copied code to its first author; copy detection is off above 2000 files)
+  --no-copies          blame with -w -M only: code moved or copied into a new path is credited to who moved it
+  --keep-generated     count lockfiles, generated files (marked or minified) and vendored code (default: leave them
+                       out of every number and print what was left out)
   --co-authors <mode>  none (default) or share: split each line and commit equally between the author
                        and the Co-authored-by trailer identities (.mailmap applies to them);
                        cannot be combined with --group-by
@@ -103,7 +110,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -111,7 +118,7 @@ groupBy?: string, reviewers?: string, history?: string, topGiven: boolean, sugge
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, busFactorThreshold: 50, copies: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -128,6 +135,8 @@ export function parseArgs(argv) {
     else if (a === "--since") o.since = next();
     else if (a === "--until") o.until = next();
     else if (a === "--copies") o.copies = true;
+    else if (a === "--no-copies") o.noCopies = true;
+    else if (a === "--keep-generated") o.keepGenerated = true;
     else if (a === "--co-authors") { const mode = next(); if (mode !== "none" && mode !== "share") throw new Error("--co-authors must be none or share"); o.coAuthors = mode; }
     else if (a === "--ai-breakdown") o.aiBreakdown = true;
     else if (a === "--group-by") { o.groupBy = next(); parseGroupBy(o.groupBy); }
@@ -176,6 +185,7 @@ export function parseArgs(argv) {
   if (grouping && o.coAuthors === "share") throw new Error("--co-authors share cannot be combined with --group-by yet");
   // The merge joins addresses that the table shows apart; --identities shows them apart on purpose, and a split
   // count is not a plain line count, so the two cannot be asked for together.
+  if (o.copies && o.noCopies) throw new Error("--copies and --no-copies are mutually exclusive");
   if (o.mergeIdentities && o.identities) throw new Error("--merge-identities cannot be combined with --identities, which lists the addresses as they are");
   if (o.mergeIdentities && o.coAuthors === "share") throw new Error("--merge-identities cannot be combined with --co-authors share");
   if (o.aiBreakdown && (o.csv || o.identities)) throw new Error("--ai-breakdown prints with the table, --markdown or --json; it cannot be combined with --csv or --identities");
@@ -396,6 +406,52 @@ export function countBlameLines(porcelain) {
 }
 
 /**
+ * A path as git prints it in porcelain output: quoted with C escapes (octal bytes for non-ASCII letters) when it holds a
+ * quote, a backslash, a control character or a non-ASCII letter, plain otherwise.
+ * @param {string} s
+ */
+export function unquoteGitPath(s) {
+  if (s.length < 2 || !s.startsWith('"') || !s.endsWith('"')) return s;
+  /** @type {number[]} */
+  const bytes = [];
+  const named = /** @type {Record<string, number>} */ ({ n: 10, t: 9, r: 13, a: 7, b: 8, f: 12, v: 11, '"': 34, "\\": 92 });
+  const inner = s.slice(1, -1);
+  for (let i = 0; i < inner.length; i++) {
+    const c = inner[i];
+    if (c !== "\\") {
+      bytes.push(...Buffer.from(c, "utf8"));
+    } else if (/[0-7]/.test(inner[i + 1] ?? "")) {
+      bytes.push(parseInt(inner.slice(i + 1, i + 4), 8));
+      i += 3;
+    } else {
+      bytes.push(named[inner[i + 1]] ?? inner.charCodeAt(i + 1));
+      i += 1;
+    }
+  }
+  return Buffer.from(bytes).toString("utf8");
+}
+
+/**
+ * Where the lines of one blamed file were written, from the `filename` header of `git blame --line-porcelain`: the path
+ * the line had in the commit that wrote it. A line whose origin path is not the blamed path was moved or copied here.
+ * @param {string} porcelain
+ * @param {string} path the blamed path
+ * @returns {{ total: number, from: Map<string, number> }} every line, and the lines per other origin path
+ */
+export function countBlameOrigins(porcelain, path) {
+  /** @type {Map<string, number>} */
+  const from = new Map();
+  let total = 0;
+  for (const line of porcelain.split("\n")) {
+    if (!line.startsWith("filename ")) continue;
+    total++;
+    const origin = unquoteGitPath(line.slice(9));
+    if (origin !== path) from.set(origin, (from.get(origin) ?? 0) + 1);
+  }
+  return { total, from };
+}
+
+/**
  * Settings pinned on every call so the same repository answers the same way on any machine.
  *
  * `core.precomposeunicode` is true in every repository git creates on macOS, and it rewrites
@@ -540,6 +596,192 @@ async function listTextFiles(o) {
     files.push({ path, lines: Number(added) });
   }
   return files;
+}
+
+/** File names of dependency lockfiles. A lockfile is written by a tool, so whoever committed it did not write its lines. */
+const LOCKFILE_NAMES = new Set([
+  "package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "cargo.lock", "gemfile.lock", "poetry.lock",
+  "pipfile.lock", "composer.lock", "go.sum", "podfile.lock", "pubspec.lock", "flake.lock", "mix.lock", "packages.lock.json", "gradle.lockfile",
+  "package.resolved", "cartfile.resolved", "uv.lock", "conan.lock",
+  "pdm.lock", "pixi.lock", "deno.lock", "gopkg.lock", "glide.lock", "module.bazel.lock", ".terraform.lock.hcl", "bun.lockb",
+]);
+
+/** Directory names that hold code copied in from somewhere else. Compared in lower case. */
+const VENDOR_DIRS = new Set(["vendor", "vendored", "third_party", "third-party", "node_modules", "bower_components", "extern", "external"]);
+
+/** A marker in the first lines of a file that says a tool wrote it. */
+const GENERATED_MARKER = "@generated|DO NOT EDIT|Code generated|[Aa]uto-?[Gg]enerated";
+const GENERATED_MARKER_LINES = 10;
+
+/** The kinds of file that are left out, in the order the output lists them. */
+const DROP_CLASSES = ["lockfile", "generated", "vendored"];
+
+/**
+ * The class a path falls in by its name alone, or null. `root` is what the output names: the vendor directory for
+ * vendored code, the file itself otherwise.
+ * @param {string} path
+ * @returns {{ kind: "lockfile" | "generated" | "vendored", root: string } | null}
+ */
+export function classifyPath(path) {
+  const parts = path.split("/");
+  const base = parts[parts.length - 1];
+  const dir = parts.slice(0, -1).findIndex((p) => VENDOR_DIRS.has(p.toLowerCase()) || p === "Pods");
+  if (dir >= 0) return { kind: "vendored", root: parts.slice(0, dir + 1).join("/") };
+  if (LOCKFILE_NAMES.has(base.toLowerCase())) return { kind: "lockfile", root: path };
+  if (/\.min\.[^./]+$/i.test(base) || /\.map$/i.test(base)) return { kind: "generated", root: path };
+  return null;
+}
+
+/**
+ * What the .gitattributes files at the ref say about each path: linguist-generated and linguist-vendored, set (true) or
+ * unset (false). A deeper file wins over a shallower one and a later line over an earlier one. Read from the ref, not
+ * from the working tree, so the answer is the same for any checkout.
+ * @param {Options} o
+ * @param {{ path: string }[]} files every file of the ref
+ * @returns {Promise<Map<string, { generated?: boolean, vendored?: boolean }>>}
+ */
+async function readLinguistAttributes(o, files) {
+  const isAttr = (/** @type {string} */ p) => p === ".gitattributes" || p.endsWith("/.gitattributes");
+  // A path given on the command line narrows `files`, but the rules that apply to those files may sit above them.
+  const attrFiles = o.paths.length ? (await git(["ls-tree", "-r", "--name-only", o.ref], o.cwd)).split("\n").filter(isAttr) : files.map((f) => f.path).filter(isAttr);
+  attrFiles.sort((x, y) => x.split("/").length - y.split("/").length || x.localeCompare(y));
+  /** @type {{ dir: string, re: RegExp, bare: boolean, generated?: boolean, vendored?: boolean }[]} */
+  const rules = [];
+  for (const file of attrFiles) {
+    let text;
+    try {
+      text = await git(["show", `${o.ref}:${file}`], o.cwd);
+    } catch {
+      continue;
+    }
+    const dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/") + 1) : "";
+    for (const raw of text.split("\n")) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#") || line.startsWith('"') || line.startsWith("[attr]")) continue;
+      const [pattern, ...attrs] = line.split(/\s+/);
+      /** @type {{ generated?: boolean, vendored?: boolean }} */
+      const set = {};
+      for (const a of attrs) {
+        const m = /^(-|!)?linguist-(generated|vendored)(?:=(.*))?$/.exec(a);
+        if (!m) continue;
+        const value = m[1] ? false : m[3] === undefined ? true : !/^(false|0|no|off)$/i.test(m[3]);
+        if (m[1] === "!") continue;
+        set[/** @type {"generated" | "vendored"} */ (m[2])] = value;
+      }
+      if (set.generated === undefined && set.vendored === undefined) continue;
+      const anchored = pattern.replace(/\/+$/, "").includes("/");
+      rules.push({ dir, re: globToRegExp(pattern.replace(/^\//, "").replace(/\/+$/, "")), bare: !anchored, ...set });
+    }
+  }
+  /** @type {Map<string, { generated?: boolean, vendored?: boolean }>} */
+  const out = new Map();
+  if (rules.length === 0) return out;
+  for (const f of files) {
+    for (const r of rules) {
+      if (!f.path.startsWith(r.dir)) continue;
+      const rel = f.path.slice(r.dir.length);
+      if (!(r.bare ? r.re.test(rel.slice(rel.lastIndexOf("/") + 1)) : r.re.test(rel))) continue;
+      const have = out.get(f.path) ?? {};
+      if (r.generated !== undefined) have.generated = r.generated;
+      if (r.vendored !== undefined) have.vendored = r.vendored;
+      out.set(f.path, have);
+    }
+  }
+  return out;
+}
+
+/**
+ * The text files whose first lines carry a generated-file marker. One `git grep` over the tree; a file with no match
+ * (or no text) simply does not come back.
+ * @param {Options} o
+ * @returns {Promise<Set<string>>}
+ */
+async function readGeneratedMarkers(o) {
+  const tree = (await git(["rev-parse", "--verify", `${o.ref}^{tree}`], o.cwd)).trim();
+  /** @type {Set<string>} */
+  const marked = new Set();
+  let out;
+  try {
+    out = await git(["grep", "-n", "-z", "-I", "-E", "-e", GENERATED_MARKER, tree, "--", ...o.paths], o.cwd);
+  } catch {
+    return marked;
+  }
+  for (const rec of out.split("\n")) {
+    const a = rec.indexOf("\0");
+    const b = a < 0 ? -1 : rec.indexOf("\0", a + 1);
+    if (b < 0) continue;
+    if (Number(rec.slice(a + 1, b)) <= GENERATED_MARKER_LINES) marked.add(rec.slice(tree.length + 1, a));
+  }
+  return marked;
+}
+
+/**
+ * Split the files into those that count and those left out as lockfiles, generated files and vendored code. By path and
+ * file content only, never by author. With --keep-generated nothing is left out.
+ * @param {Options} o
+ * @param {{ path: string, lines: number }[]} files the files the --include and --exclude globs let through
+ * @param {{ path: string }[]} everyFile every file of the ref, for the .gitattributes files
+ */
+export async function dropGenerated(o, files, everyFile) {
+  /** @type {{ path: string, lines: number }[]} */
+  const kept = [];
+  const dropped = {
+    applied: !o.keepGenerated,
+    files: 0,
+    lines: 0,
+    classes: Object.fromEntries(DROP_CLASSES.map((k) => [k, { files: 0, lines: 0 }])),
+    /** @type {{ path: string, class: string, files: number, lines: number }[]} */
+    paths: [],
+    otherPaths: 0,
+  };
+  if (o.keepGenerated) return { kept: files, dropped };
+  const attrs = await readLinguistAttributes(o, everyFile);
+  const markers = await readGeneratedMarkers(o);
+  /** @type {Map<string, { path: string, class: string, files: number, lines: number }>} */
+  const byRoot = new Map();
+  for (const f of files) {
+    const attr = attrs.get(f.path) ?? {};
+    const byPath = classifyPath(f.path);
+    /** @type {{ kind: string, root: string } | null} */
+    let hit = null;
+    if (attr.vendored === true) hit = { kind: "vendored", root: f.path };
+    else if (attr.generated === true) hit = { kind: "generated", root: f.path };
+    else if (byPath && !(byPath.kind === "vendored" ? attr.vendored === false : attr.generated === false)) hit = byPath;
+    else if (markers.has(f.path) && attr.generated !== false) hit = { kind: "generated", root: f.path };
+    if (!hit) {
+      kept.push(f);
+      continue;
+    }
+    dropped.files++;
+    dropped.lines += f.lines;
+    const c = dropped.classes[hit.kind];
+    c.files++;
+    c.lines += f.lines;
+    const key = `${hit.kind}\0${hit.root}`;
+    const e = byRoot.get(key) ?? { path: hit.root, class: hit.kind, files: 0, lines: 0 };
+    e.files++;
+    e.lines += f.lines;
+    byRoot.set(key, e);
+  }
+  const ranked = [...byRoot.values()].sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
+  dropped.paths = ranked.slice(0, 10);
+  dropped.otherPaths = Math.max(0, ranked.length - 10);
+  return { kept, dropped };
+}
+
+/**
+ * The line that says what was left out, or null when nothing was.
+ * @param {{ dropped?: { applied: boolean, files: number, lines: number, classes: Record<string, { files: number, lines: number }>, paths: { path: string, files: number, lines: number }[], otherPaths: number } }} r
+ * @returns {string | null}
+ */
+export function droppedLine(r) {
+  const d = r.dropped;
+  if (!d || !d.applied || d.files === 0) return null;
+  const n = (/** @type {number} */ x, /** @type {string} */ noun) => `${x.toLocaleString("en-US")} ${noun}${x === 1 ? "" : "s"}`;
+  const classes = DROP_CLASSES.filter((k) => d.classes[k]?.files).map((k) => `${k} ${n(d.classes[k].files, "file")} ${n(d.classes[k].lines, "line")}`);
+  const paths = d.paths.slice(0, 3).map((p) => `${p.path} (${n(p.lines, "line")})`);
+  const more = d.paths.length - paths.length + d.otherPaths;
+  return `dropped: ${n(d.files, "file")}, ${n(d.lines, "line")} left out of every number (${classes.join(", ")}); largest: ${paths.join(", ")}${more > 0 ? `, and ${more} more` : ""}. --keep-generated counts them`;
 }
 
 /**
@@ -749,11 +991,15 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
   let cursor = 0;
   let completed = 0;
   const total = sampled.length;
+  /** @type {Map<string, ReturnType<typeof countBlameOrigins>>} */
+  const origins = new Map();
+  const wantOrigins = o.reviewers !== undefined || o.history !== undefined;
   const worker = async () => {
     while (cursor < sampled.length) {
       const file = sampled[cursor++];
       const out = await git([...blameArgs, o.ref, "--", file.path], o.cwd);
       const counts = countBlameLines(out);
+      if (wantOrigins) origins.set(file.path, countBlameOrigins(out, file.path));
       for (const [mail, { name, lines }] of counts) {
         const a = authors.get(mail) ?? { name, lines: 0, commits: 0 };
         a.lines += lines;
@@ -784,7 +1030,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(o.jobs, sampled.length || 1) }, worker));
-  return { authors, attributed, groupAcc, blamedByCommit };
+  return { authors, attributed, groupAcc, blamedByCommit, origins };
 }
 
 /** Extensions of the languages where `'x'` and `"x"` are the same string, so a quote change is layout there. */
@@ -1070,6 +1316,32 @@ async function readPathCommits(o, path) {
 }
 
 /**
+ * The lines under one path of a view that were written in other paths, with the share of the blamed lines and the three
+ * largest origin paths. Null when nothing was blamed under the path.
+ * @param {Map<string, ReturnType<typeof countBlameOrigins>>} origins the origin counts of every blamed file
+ * @param {string} path the view's path, a file or a directory
+ * @returns {{ lines: number, of: number, share: number, largest: { path: string, lines: number }[] } | null}
+ */
+function movedInFor(origins, path) {
+  const dir = path.replace(/\/+$/, "");
+  let of = 0;
+  /** @type {Map<string, number>} */
+  const from = new Map();
+  for (const [file, c] of origins) {
+    if (dir !== "" && dir !== "." && file !== dir && !file.startsWith(`${dir}/`)) continue;
+    of += c.total;
+    for (const [origin, n] of c.from) from.set(origin, (from.get(origin) ?? 0) + n);
+  }
+  if (of === 0) return null;
+  const lines = [...from.values()].reduce((sum, n) => sum + n, 0);
+  const largest = [...from].map(([p, n]) => ({ path: p, lines: n })).sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path)).slice(0, 3);
+  return { lines, of, share: lines / of, largest };
+}
+
+/** The share of moved-in lines from which the path views print a line about it. */
+const MOVED_IN_MIN_SHARE = 0.05;
+
+/**
  * The --reviewers view: the authors of one path, most surviving lines first, each with the newest non-merge commit
  * that touched the path and whether it is recent. The as-of date is the author date of the ref commit, so the same
  * repository answers the same way on any day; the clock is never read. Bots are already out of `rows`.
@@ -1316,7 +1588,9 @@ function capped(items, sep) {
  * @param {Awaited<ReturnType<typeof analyse>>} r
  */
 function identityLine(r) {
-  return r.identityMerge?.applied ? identityMergeLine(r.identityMerge) : identityHintLine(r.identityHints);
+  const first = r.identityMerge?.applied ? identityMergeLine(r.identityMerge) : identityHintLine(r.identityHints);
+  const second = samePersonLine(r.possibleSamePerson);
+  return first && second ? `${first}\n${second}` : first ?? second;
 }
 
 /**
@@ -1358,7 +1632,13 @@ export async function analyse(o) {
   const excludeBare = o.exclude.map((g) => !g.includes("/"));
 
   const listed = await listTextFiles(o);
-  const all = listed.filter((f) => selected(f.path, includeRe, excludeRe, includeBare, excludeBare));
+  const wanted = listed.filter((f) => selected(f.path, includeRe, excludeRe, includeBare, excludeBare));
+  // Lockfiles, generated files and vendored code are not the committer's writing. They leave every number, and the
+  // result says how much left. The user's own --include and --exclude globs have already applied.
+  const { kept: all, dropped } = await dropGenerated(o, wanted, listed);
+  if (all.length === 0 && wanted.length > 0) {
+    throw new Error(`every one of the ${wanted.length} files at ref "${o.ref}" is a lockfile, a generated file or vendored code, so none is counted; pass --keep-generated to count them`);
+  }
   if (all.length === 0) {
     if (o.include.length) {
       throw new Error(`no files matched include pattern${o.include.length > 1 ? "s" : ""}: ${o.include.join(", ")}`);
@@ -1384,8 +1664,15 @@ export async function analyse(o) {
   const errStream = o.stderr ?? process.stderr;
   const showProgress = !o.quiet && Boolean(errStream && errStream.isTTY);
 
+  // -C -C follows code moved or copied into a new path (and into the commit that created the file) back to its first
+  // author. Every blame then looks in every file of the commit, so above this many files it is off unless asked for.
+  const copyOn = !o.noCopies && (o.copies || all.length <= COPY_DETECTION_MAX_FILES);
+  const copyDetection = {
+    on: copyOn,
+    reason: copyOn ? null : o.noCopies ? "--no-copies" : `${all.length} files in the ref, more than ${COPY_DETECTION_MAX_FILES}`,
+  };
   const blameArgs = ["blame", "--line-porcelain", "-w", "-M"];
-  if (o.copies) blameArgs.push("-C");
+  if (copyOn) blameArgs.push("-C", "-C");
   const shownFlags = blameArgs.slice(2);
   const ignoreRevs = await resolveIgnoreRevs(o, versionOutput);
   if (ignoreRevs) {
@@ -1576,6 +1863,8 @@ export async function analyse(o) {
 
   // The identity links are read from the rows as blamed, before any merge, as the hint always was.
   const linked = linkIdentities(rows);
+  // Looser evidence (names and addresses that differ), offered to the reader and never merged by any flag.
+  const suggested = suggestSamePerson(rows, linked);
   /** @type {Map<string, { author: string, mail: string }>} */
   const canonicalOf = new Map();
   for (const g of linked) for (const m of g.members) canonicalOf.set(m.mail, { author: g.canonical.author, mail: g.canonical.mail });
@@ -1595,8 +1884,8 @@ export async function analyse(o) {
   // One log call at the path serves both path views; --reviewers and --history cannot be asked for together.
   const pathView = o.reviewers ?? o.history;
   const pathCommits = pathView === undefined ? [] : await readPathCommits(o, pathView);
-  const reviewers = o.reviewers === undefined ? null : await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits);
-  const history = o.history === undefined ? null : await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied);
+  const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers) };
+  const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history) };
   return {
     ref: o.ref,
     sort: o.sort,
@@ -1607,10 +1896,12 @@ export async function analyse(o) {
     aiAssisted,
     grouping: grouping && groups ? { by: grouping.kind === "dir" ? `dir:${grouping.depth}` : "ext", groups } : null,
     bots: { included: o.includeBots, excluded: botRows },
-    blame: { flags: shownFlags, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: applied ? suspects.map((s) => s.sha) : [] },
+    dropped,
+    blame: { flags: shownFlags, copyDetection, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: applied ? suspects.map((s) => s.sha) : [] },
     reformat: { detection: detect, applied, suspects, uncorrected },
-    busFactor: runBusFactor && { thresholdPercent: o.busFactorThreshold, ...runBusFactor },
+    busFactor: runBusFactor && { thresholdPercent: o.busFactorThreshold, ...runBusFactor, authorsFor80Percent: busFactor(byLines, 80)?.value ?? null },
     identityHints: identityHintSummary(linked),
+    possibleSamePerson: samePersonSummary(suggested),
     // Written whether or not the merge ran, so a consumer can tell a plain table from a merged one without a missing-key check.
     identityMerge: {
       applied: o.mergeIdentities,
@@ -1766,17 +2057,28 @@ export function renderAiBreakdown(r, sample, windowCommits) {
 }
 
 /**
- * The line that says bots were left out, or null when none were. Silent filtering in a tool about
- * attribution would be the wrong default.
- * @param {{ bots?: { included: boolean, excluded: { lines: number, commits: number }[] } }} r
+ * The lines under the header that say what was left out of the numbers: bots, then lockfiles, generated files and
+ * vendored code, then the note that copy detection is off when size turned it off. Null when nothing applies. Silent
+ * filtering in a tool about attribution would be the wrong default.
+ * @param {{ bots?: { included: boolean, excluded: { lines: number, commits: number }[] }, dropped?: Parameters<typeof droppedLine>[0]["dropped"], blame?: { copyDetection?: { on: boolean, reason: string | null } } }} r
  * @returns {string | null}
  */
 function botsLine(r) {
+  /** @type {string[]} */
+  const out = [];
   const n = r.bots?.excluded.length ?? 0;
-  if (!r.bots || r.bots.included || n === 0) return null;
-  const lines = r.bots.excluded.reduce((s, b) => s + b.lines, 0);
-  const commits = r.bots.excluded.reduce((s, b) => s + b.commits, 0);
-  return `bots excluded: ${n} identit${n === 1 ? "y" : "ies"}, ${lines.toLocaleString("en-US")} lines, ${commits.toLocaleString("en-US")} commits (--include-bots counts them)`;
+  if (r.bots && !r.bots.included && n > 0) {
+    const lines = r.bots.excluded.reduce((s, b) => s + b.lines, 0);
+    const commits = r.bots.excluded.reduce((s, b) => s + b.commits, 0);
+    out.push(`bots excluded: ${n} identit${n === 1 ? "y" : "ies"}, ${lines.toLocaleString("en-US")} lines, ${commits.toLocaleString("en-US")} commits (--include-bots counts them)`);
+  }
+  const dropped = droppedLine(r);
+  if (dropped) out.push(dropped);
+  const copies = r.blame?.copyDetection;
+  if (copies && !copies.on && copies.reason && copies.reason !== "--no-copies") {
+    out.push(`copy detection off: ${copies.reason}, so code moved or copied between files is credited to whoever moved it (-w -M only). --copies turns it on (slower)`);
+  }
+  return out.length ? out.join("\n") : null;
 }
 
 /**
@@ -1804,13 +2106,15 @@ function busFactorWords(bf, noun, names = bf.authors) {
 
 /**
  * The line that states a bus factor, or null when there is none.
- * @param {{ value: number, authors: string[], covered: number, total: number } | null | undefined} bf
+ * @param {{ value: number, authors: string[], covered: number, total: number, authorsFor80Percent?: number | null } | null | undefined} bf
  * @param {{ author: string, mail: string, lines: number }[]} [rows] the rows the bus factor was computed from; with them a shared name shows its address
  * @returns {string | null}
  */
 export function busFactorLine(bf, rows) {
   if (!bf) return null;
-  return `bus factor ${bf.value}: ${busFactorWords(bf, "surviving lines", labelledBusNames(bf, rows))}`;
+  const n = "authorsFor80Percent" in bf ? bf.authorsFor80Percent : null;
+  const reach = typeof n === "number" ? ` · to reach 80%: ${n} author${n === 1 ? "" : "s"}` : "";
+  return `bus factor ${bf.value}: ${busFactorWords(bf, "surviving lines", labelledBusNames(bf, rows))}${reach}`;
 }
 
 /**
@@ -1986,6 +2290,8 @@ export function renderReviewers(r, top) {
   if (v.authors.length > top) lines.push(`… ${v.authors.length - top} more author${v.authors.length - top === 1 ? "" : "s"}`);
   const hint = identityLine(r);
   if (hint) lines.push(hint);
+  const moved = movedInLine(v);
+  if (moved) lines.push(moved);
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus, "");
@@ -2012,6 +2318,17 @@ export function renderReviewers(r, top) {
   const reformat = reformatBlock(r);
   if (reformat) lines.push("", ...reformat);
   return lines.join("\n");
+}
+
+/**
+ * The line that says part of a path's lines were written elsewhere, or null below the share that matters.
+ * @param {{ path: string, movedIn?: { lines: number, of: number, share: number, largest: { path: string, lines: number }[] } | null }} v
+ * @returns {string | null}
+ */
+function movedInLine(v) {
+  const m = v.movedIn;
+  if (!m || m.share < MOVED_IN_MIN_SHARE) return null;
+  return `${m.lines.toLocaleString("en-US")} of ${m.of.toLocaleString("en-US")} lines (${pct(m.share)}) in ${v.path} were written in other paths and moved or copied here (largest source: ${m.largest.map((l) => l.path).join(", ")}); the credit goes to the people who wrote them, not to whoever moved them.`;
 }
 
 /**
@@ -2046,7 +2363,12 @@ export function renderHistory(r, top) {
     const first = h.authors[0];
     const most = h.authors.reduce((best, a) => (a.lines > best.lines ? a : best));
     const figures = `${most.lines.toLocaleString("en-US")} lines, ${pct(most.lineShare)}`;
-    lines.push(
+    // Lines moved or copied in belong to people with no commit on this path, so they are not in the rows above.
+    const holder = r.authors.reduce((best, a) => (a.lines > (best?.lines ?? -1) ? a : best), /** @type {(typeof r.authors)[number] | undefined} */ (undefined));
+    const onPath = (/** @type {{ mail: string }} */ a) => h.authors.some((x) => x.mail === a.mail);
+    if (holder && holder.lines > most.lines && !onPath(holder)) {
+      lines.push(`${first.author} made the first commit, on ${first.firstCommit}; ${holder.author} holds the most lines now (${holder.lines.toLocaleString("en-US")} lines, ${pct(holder.lineShare)}) and has no commit on this path, because those lines were written in other paths and moved or copied here.`);
+    } else lines.push(
       most === first
         ? `${first.author} made the first commit, on ${first.firstCommit}, and holds the most lines now (${figures}).`
         : `${first.author} made the first commit, on ${first.firstCommit}; ${most.author} holds the most lines now (${figures}).`,
@@ -2056,6 +2378,8 @@ export function renderHistory(r, top) {
   }
   const hint = identityLine(r);
   if (hint) lines.push(hint);
+  const moved = movedInLine(h);
+  if (moved) lines.push(moved);
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
@@ -2202,7 +2526,7 @@ export function renderMarkdown(r, top) {
 
   // A blank line first: a plain line directly under a Markdown table would be read as another row.
   const hint = identityLine(r);
-  if (hint) lines.push("", hint);
+  if (hint) lines.push("", hint.replaceAll("\n", "\n\n"));
   // Markdown joins neighbouring lines into one paragraph, so each of these gets a blank line around it.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", bus[0], "", bus[1]);
@@ -2370,6 +2694,152 @@ export function identityHintSummary(groups) {
   };
 }
 
+/** The letters of a name with case, accents and everything else folded away: "Zoë O'Neil" and "zoe.oneil" both give "zoeoneil". */
+const lettersOnly = (/** @type {string} */ s) => foldIdentity(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\p{L}]/gu, "");
+
+/** Whether `short` is the initial form of `full`: the same last word and only first initials before it ("J. Gee" and "John Gee"). */
+function isInitialForm(/** @type {string} */ short, /** @type {string} */ full) {
+  const words = (/** @type {string} */ n) => foldIdentity(n).split(/[\s.]+/).filter(Boolean);
+  const s = words(short);
+  const f = words(full);
+  if (s.length < 2 || f.length < 2 || s[s.length - 1] !== f[f.length - 1]) return false;
+  const sGiven = s.slice(0, -1);
+  const fGiven = f.slice(0, -1);
+  if (sGiven.length > fGiven.length || !sGiven.every((w) => w.length === 1)) return false;
+  return sGiven.every((w, i) => fGiven[i].startsWith(w)) && sGiven.join("") !== fGiven.join("");
+}
+
+/**
+ * Identities whose names differ and whose addresses differ, but that carry fixed evidence of being one person. These
+ * are offered to the reader with the evidence and the .mailmap line; nothing here merges anything, and no flag does.
+ * Evidence, any one of which is enough:
+ *   - a name, letters only and at least four of them, is contained in the other identity's address name (or the reverse);
+ *   - the address names are equal once trailing digits and separators are removed;
+ *   - two GitHub noreply addresses carry the same numeric user id;
+ *   - one name is the other's initial form;
+ *   - the names are equal once accents are removed (letters only, at least four of them, not a role name);
+ *   - two GitHub noreply addresses name the same user, one with the numeric id and one without.
+ * Pairs the same-name and same-address rules already group are left to those rules.
+ * @param {{author: string, mail: string, lines: number, lineShare: number, commits: number}[]} authors
+ * @param {ReturnType<typeof linkIdentities>} linked
+ */
+export function suggestSamePerson(authors, linked) {
+  const MAX_IDENTITIES = 4000;
+  const people = authors
+    .filter((a) => !isBotAddress(a.mail) && !/\[bot\]/i.test(a.author))
+    .sort((x, y) => y.lines - x.lines || y.commits - x.commits || x.mail.localeCompare(y.mail))
+    .slice(0, MAX_IDENTITIES)
+    .map((a) => {
+      const local = a.mail.split("@")[0].replace(/^\d+\+/, "").toLowerCase();
+      const trimmed = local.replace(/[\d._-]+$/, "");
+      return {
+        row: a,
+        folded: foldIdentity(a.author ?? ""),
+        plain: foldIdentity(a.author ?? "").normalize("NFD").replace(/\p{M}/gu, "").replace(/\s+/g, " "),
+        letters: lettersOnly(a.author ?? ""),
+        localLetters: lettersOnly(local),
+        local,
+        stem: trimmed.length >= 3 && !GENERIC_LOCAL.has(trimmed) ? trimmed : "",
+        id: /^(\d+)\+[^@]+@users\.noreply\.github\.com$/i.exec(a.mail)?.[1] ?? null,
+        noreplyUser: /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i.exec(a.mail)?.[1]?.toLowerCase() ?? null,
+        generic: GENERIC_LOCAL.has(local),
+      };
+    });
+  /** @type {Map<string, number>} */
+  const groupOf = new Map();
+  linked.forEach((g, i) => g.members.forEach((m) => groupOf.set(m.mail, i)));
+  /** @type {Map<number, Set<number>>} */
+  const edges = new Map();
+  /** @type {Map<string, string[]>} */
+  const why = new Map();
+  for (let i = 0; i < people.length; i++) {
+    for (let j = i + 1; j < people.length; j++) {
+      const a = people[i];
+      const b = people[j];
+      if (a.row.mail === b.row.mail || (a.folded !== "" && a.folded === b.folded)) continue;
+      const ga = groupOf.get(a.row.mail);
+      if (ga !== undefined && ga === groupOf.get(b.row.mail)) continue;
+      /** @type {string[]} */
+      const evidence = [];
+      for (const [x, y] of /** @type {[typeof a, typeof a][]} */ ([[a, b], [b, a]])) {
+        if (x.letters.length >= 4 && !y.generic && y.localLetters.includes(x.letters)) evidence.push(`the name "${x.row.author}" is contained in the address ${y.row.mail}`);
+      }
+      if (a.stem && a.stem === b.stem && a.local !== b.local) evidence.push(`the address names "${a.local}" and "${b.local}" are equal once trailing digits and separators are removed`);
+      if (a.id && a.id === b.id) evidence.push(`both noreply addresses carry the GitHub user id ${a.id}`);
+      if (a.noreplyUser && a.noreplyUser === b.noreplyUser && (a.id === null) !== (b.id === null)) evidence.push(`both noreply addresses name the GitHub user "${a.noreplyUser}", one with the numeric id and one without`);
+      if (a.plain === b.plain && lettersOnly(a.plain).length >= 4 && !GENERIC_LOCAL.has(a.plain)) evidence.push(`the names "${a.row.author}" and "${b.row.author}" are equal once accents are removed`);
+      if (isInitialForm(a.row.author ?? "", b.row.author ?? "")) evidence.push(`"${a.row.author}" is the initial form of "${b.row.author}"`);
+      else if (isInitialForm(b.row.author ?? "", a.row.author ?? "")) evidence.push(`"${b.row.author}" is the initial form of "${a.row.author}"`);
+      if (evidence.length === 0) continue;
+      for (const [p, q] of [[i, j], [j, i]]) edges.set(p, (edges.get(p) ?? new Set()).add(q));
+      why.set(`${i}:${j}`, evidence);
+    }
+  }
+  /** @type {{ canonical: typeof authors[number], members: typeof authors, evidence: string[], mailmap: string[] }[]} */
+  const out = [];
+  const seen = new Set();
+  const hasSpace = (/** @type {string} */ n) => (/\s/.test(n.trim()) ? 1 : 0);
+  for (let i = 0; i < people.length; i++) {
+    if (seen.has(i) || !edges.has(i)) continue;
+    const stack = [i];
+    /** @type {number[]} */
+    const idx = [];
+    while (stack.length) {
+      const n = /** @type {number} */ (stack.pop());
+      if (seen.has(n)) continue;
+      seen.add(n);
+      idx.push(n);
+      for (const m of edges.get(n) ?? []) if (!seen.has(m)) stack.push(m);
+    }
+    idx.sort((x, y) => x - y);
+    const members = idx.map((n) => people[n].row);
+    const canonical = [...members].sort((x, y) => hasSpace(y.author ?? "") - hasSpace(x.author ?? "") || y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
+    /** @type {string[]} */
+    const evidence = [];
+    for (const [key, list] of why) {
+      const [p, q] = key.split(":").map(Number);
+      if (idx.includes(p) && idx.includes(q)) for (const e of list) if (!evidence.includes(e)) evidence.push(e);
+    }
+    const mailmap = members.filter((m) => m.mail !== canonical.mail).map((m) => `${canonical.author || canonical.mail} <${canonical.mail}> <${m.mail}>`);
+    out.push({ canonical, members, evidence, mailmap });
+  }
+  const total = (/** @type {typeof out[number]} */ s) => s.members.reduce((sum, m) => sum + m.lines, 0);
+  return out.sort((x, y) => total(y) - total(x) || x.canonical.mail.localeCompare(y.canonical.mail));
+}
+
+/**
+ * The part of the result the JSON and the hint read: one entry per suggestion, with the figure the person would have if
+ * the addresses were one (the shares the table prints, added up). Not merged anywhere.
+ * @param {ReturnType<typeof suggestSamePerson>} suggestions
+ */
+export function samePersonSummary(suggestions) {
+  return {
+    count: suggestions.length,
+    merged: false,
+    suggestions: suggestions.map((s) => ({
+      name: s.canonical.author,
+      mail: s.canonical.mail,
+      addresses: [...s.members].sort(byCommitsThenLines).map((m) => ({ name: m.author, mail: m.mail, lines: m.lines, commits: m.commits })),
+      lines: s.members.reduce((sum, m) => sum + m.lines, 0),
+      lineShare: s.members.reduce((sum, m) => sum + m.lineShare, 0),
+      evidence: s.evidence,
+      mailmap: s.mailmap,
+    })),
+  };
+}
+
+/**
+ * The line under the table that names the "possible same person" suggestions, or null when there are none. It says the
+ * shares above may be split and that nothing was merged.
+ * @param {{ count: number, suggestions: { name: string, mail: string, lines: number, lineShare: number, addresses: { name: string, mail: string }[] }[] } | null | undefined} s
+ * @returns {string | null}
+ */
+export function samePersonLine(s) {
+  if (!s || s.count === 0) return null;
+  const pair = (/** @type {typeof s.suggestions[number]} */ x) => `${x.addresses.map((a) => `${a.name || a.mail} <${a.mail}>`).join(" / ")}: ${x.lines.toLocaleString("en-US")} ${x.lines === 1 ? "line" : "lines"}, ${pct(x.lineShare)} if one person`;
+  return `possible same person: ${s.count} suggestion${s.count === 1 ? "" : "s"}, not merged, so the shares above may be split (${cappedList(s.suggestions.map(pair))}). Run --identities for the evidence and the .mailmap lines; only you can confirm it is one person.`;
+}
+
 /**
  * Up to three items, then a count of the rest, so the hint stays one line.
  * @param {string[]} items
@@ -2459,9 +2929,10 @@ async function readAddressNames(o) {
 /**
  * @param {ReturnType<typeof linkIdentities>} groups
  * @param {ReturnType<typeof sameAddressNames>} [sameAddress] addresses that several names commit from
+ * @param {ReturnType<typeof samePersonSummary>} [possible] identities with different names and addresses and evidence of one person; never merged
  */
-export function renderIdentities(groups, sameAddress = []) {
-  if (!groups.length && !sameAddress.length) {
+export function renderIdentities(groups, sameAddress = [], possible = { count: 0, merged: false, suggestions: [] }) {
+  if (!groups.length && !sameAddress.length && !possible.count) {
     return [
       "No split identities found.",
       "",
@@ -2470,7 +2941,8 @@ export function renderIdentities(groups, sameAddress = []) {
     ].join("\n");
   }
   const total = groups.length + sameAddress.length;
-  const lines = [`${total} identit${total === 1 ? "y looks" : "ies look"} split across more than one address.`, ""];
+  /** @type {string[]} */
+  const lines = total ? [`${total} identit${total === 1 ? "y looks" : "ies look"} split across more than one address.`, ""] : [];
   for (const s of sameAddress) {
     lines.push(`${s.canonical}`, `  keep ${s.mail}  as "${s.canonical}"`);
     for (const alias of s.aliases) lines.push(`  map  ${s.mail}  committed as "${alias}"`);
@@ -2485,7 +2957,7 @@ export function renderIdentities(groups, sameAddress = []) {
     for (const r of g.reasons) lines.push(`  because ${r}`);
     lines.push("");
   }
-  lines.push("Add these to a .mailmap file at the repository root:", "");
+  if (total) lines.push("Add these to a .mailmap file at the repository root:", "");
   for (const g of groups) {
     for (const m of g.members) {
       if (m.mail === g.canonical.mail) continue;
@@ -2501,11 +2973,24 @@ export function renderIdentities(groups, sameAddress = []) {
   lines.push("These are guesses from names and addresses in this repository's own history; only you");
   lines.push("can tell whether two of them are really one person. Nothing was written. git log, git");
   lines.push("blame, git shortlog and this tool all read .mailmap, so one file fixes every count.");
-  lines.push("");
+  if (total) lines.push("");
+  if (possible.count) {
+    lines.push("", `Possible same person: ${possible.count} suggestion${possible.count === 1 ? "" : "s"}. Names and addresses both differ, so nothing here is merged by default,`);
+    lines.push("and --merge-identities does not merge them. The evidence is listed; only the repository owner can confirm it, by writing the .mailmap lines.", "");
+    for (const s of possible.suggestions) {
+      lines.push(`${s.name || s.mail}  ${s.lines.toLocaleString("en-US")} line${s.lines === 1 ? "" : "s"} (${pct(s.lineShare)}) if these are one person`);
+      for (const a of s.addresses) lines.push(`  ${a.mail === s.mail ? "keep" : "map "} ${a.name ? `"${a.name}" ` : ""}<${a.mail}>  ${a.commits} commit${a.commits === 1 ? "" : "s"}, ${a.lines.toLocaleString("en-US")} line${a.lines === 1 ? "" : "s"}`);
+      for (const e of s.evidence) lines.push(`  because ${e}`);
+      lines.push("");
+    }
+    lines.push("Only if you confirm they are one person, add these to a .mailmap file at the repository root:", "");
+    for (const s of possible.suggestions) lines.push(...s.mailmap);
+    lines.push("");
+  }
   lines.push("The address lines above are the reliable ones. git matches a .mailmap name ignoring");
   lines.push("case for ASCII letters only, so a name mapped by name alone must be written with its");
   lines.push("accents and its non-Latin letters exactly as the commit spells them.");
-  return lines.join("\n");
+  return lines.join("\n").replace(/^\n+/, "");
 }
 
 /** The one-time line. The URL is the repository a reader would star, so it is written out rather than read from package.json. */
@@ -2579,11 +3064,14 @@ async function main() {
       // The table's block cannot go in CSV, so the suspects are named on stderr, where the reader still sees them.
       if (r.reformat.applied) console.error(`surviving-lines: reformat ${r.reformat.suspects.length > 1 ? "commits" : "commit"} ignored (looks like whitespace and quote changes only): ${r.reformat.suspects.map((x) => x.shortSha).join(" ")}, --keep-reformat counts ${r.reformat.suspects.length > 1 ? "them" : "it"}`);
       else if (r.reformat.suspects.length) console.error(`surviving-lines: reformat suspected: ${r.reformat.suspects.map((x) => x.shortSha).join(" ")}, re-run with --ignore-rev`);
+      const left = droppedLine(r);
+      if (left) console.error(`surviving-lines: ${left}`);
+      if (r.blame.copyDetection.reason && r.blame.copyDetection.reason !== "--no-copies") console.error(`surviving-lines: copy detection off: ${r.blame.copyDetection.reason}`);
       output = renderCsv(r);
     } else if (o.markdown) {
       output = renderMarkdown(r, o.top);
     } else if (o.identities) {
-      output = renderIdentities(linkIdentities(r.authors), sameAddressNames(await readAddressNames(o)));
+      output = renderIdentities(linkIdentities(r.authors), sameAddressNames(await readAddressNames(o)), r.possibleSamePerson);
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
     } else if (r.reviewers) {
       // Five rows unless --top was given: the owners of one path are a short list.

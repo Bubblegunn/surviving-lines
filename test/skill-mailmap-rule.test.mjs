@@ -24,3 +24,11 @@ test("no gate that waits for confirmation before writing", () => {
     assert.doesNotMatch(bullet, /ask before writing|confirm before writing|wait for (the user|confirmation)/i);
   }
 });
+
+test("deep round rules: unconfirmed same-person figure, what was left out, moved code, both bus factor numbers", () => {
+  assert.match(skill, /`possible same person` suggestion, report the unmerged headline/);
+  assert.match(skill, /label it unconfirmed/);
+  assert.match(skill, /lockfiles, generated files and vendored code/);
+  assert.match(skill, /Do not recommend the person who only moved the code/);
+  assert.match(skill, /Give both bus factor numbers/);
+});
