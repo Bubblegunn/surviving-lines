@@ -2799,6 +2799,19 @@ function isInitialForm(/** @type {string} */ short, /** @type {string} */ full) 
   return sGiven.every((w, i) => fGiven[i].startsWith(w)) && sGiven.join("") !== fGiven.join("");
 }
 
+/** @typedef {"contained" | "stem" | "noreplyId" | "noreplyUser" | "accent" | "initial"} EvidenceKind */
+
+/**
+ * Whether the evidence for one pair is strong (R7-4): one near-conclusive item (names equal once case, accents and
+ * punctuation are ignored; two noreply addresses with the same GitHub user name or id), or at least two different kinds.
+ * A single contained-in-address, address-stem or initial-form item is weak. A group is strong only when every pair in it is.
+ * @param {{ kind: EvidenceKind }[]} items
+ */
+function isStrongEvidence(items) {
+  const conclusive = new Set(["noreplyId", "noreplyUser", "accent"]);
+  return items.some((e) => conclusive.has(e.kind)) || new Set(items.map((e) => e.kind)).size >= 2;
+}
+
 /**
  * Identities whose names differ and whose addresses differ, but that carry fixed evidence of being one person. These
  * are offered to the reader with the evidence and the .mailmap line; nothing here merges anything, and no flag does.
@@ -2840,7 +2853,7 @@ export function suggestSamePerson(authors, linked) {
   linked.forEach((g, i) => g.members.forEach((m) => groupOf.set(m.mail, i)));
   /** @type {Map<number, Set<number>>} */
   const edges = new Map();
-  /** @type {Map<string, string[]>} */
+  /** @type {Map<string, { kind: EvidenceKind, text: string }[]>} */
   const why = new Map();
   for (let i = 0; i < people.length; i++) {
     for (let j = i + 1; j < people.length; j++) {
@@ -2849,23 +2862,23 @@ export function suggestSamePerson(authors, linked) {
       if (a.row.mail === b.row.mail || (a.folded !== "" && a.folded === b.folded)) continue;
       const ga = groupOf.get(a.row.mail);
       if (ga !== undefined && ga === groupOf.get(b.row.mail)) continue;
-      /** @type {string[]} */
+      /** @type {{ kind: EvidenceKind, text: string }[]} */
       const evidence = [];
       for (const [x, y] of /** @type {[typeof a, typeof a][]} */ ([[a, b], [b, a]])) {
-        if (x.letters.length >= 4 && !y.generic && y.localLetters.includes(x.letters)) evidence.push(`the name "${x.row.author}" is contained in the address ${y.row.mail}`);
+        if (x.letters.length >= 4 && !y.generic && y.localLetters.includes(x.letters)) evidence.push({ kind: "contained", text: `the name "${x.row.author}" is contained in the address ${y.row.mail}` });
       }
-      if (a.stem && a.stem === b.stem && a.local !== b.local) evidence.push(`the address names "${a.local}" and "${b.local}" are equal once trailing digits and separators are removed`);
-      if (a.id && a.id === b.id) evidence.push(`both noreply addresses carry the GitHub user id ${a.id}`);
-      if (a.noreplyUser && a.noreplyUser === b.noreplyUser && (a.id === null) !== (b.id === null)) evidence.push(`both noreply addresses name the GitHub user "${a.noreplyUser}", one with the numeric id and one without`);
-      if (a.plain === b.plain && lettersOnly(a.plain).length >= 4 && !GENERIC_LOCAL.has(a.plain)) evidence.push(`the names "${a.row.author}" and "${b.row.author}" are equal once accents are removed`);
-      if (isInitialForm(a.row.author ?? "", b.row.author ?? "")) evidence.push(`"${a.row.author}" is the initial form of "${b.row.author}"`);
-      else if (isInitialForm(b.row.author ?? "", a.row.author ?? "")) evidence.push(`"${b.row.author}" is the initial form of "${a.row.author}"`);
+      if (a.stem && a.stem === b.stem && a.local !== b.local) evidence.push({ kind: "stem", text: `the address names "${a.local}" and "${b.local}" are equal once trailing digits and separators are removed` });
+      if (a.id && a.id === b.id) evidence.push({ kind: "noreplyId", text: `both noreply addresses carry the GitHub user id ${a.id}` });
+      if (a.noreplyUser && a.noreplyUser === b.noreplyUser && (a.id === null) !== (b.id === null)) evidence.push({ kind: "noreplyUser", text: `both noreply addresses name the GitHub user "${a.noreplyUser}", one with the numeric id and one without` });
+      if (lettersOnly(a.plain) === lettersOnly(b.plain) && lettersOnly(a.plain).length >= 4 && !GENERIC_LOCAL.has(lettersOnly(a.plain))) evidence.push({ kind: "accent", text: `the names "${a.row.author}" and "${b.row.author}" are equal once accents${a.plain === b.plain ? "" : " and punctuation"} are removed` });
+      if (isInitialForm(a.row.author ?? "", b.row.author ?? "")) evidence.push({ kind: "initial", text: `"${a.row.author}" is the initial form of "${b.row.author}"` });
+      else if (isInitialForm(b.row.author ?? "", a.row.author ?? "")) evidence.push({ kind: "initial", text: `"${b.row.author}" is the initial form of "${a.row.author}"` });
       if (evidence.length === 0) continue;
       for (const [p, q] of [[i, j], [j, i]]) edges.set(p, (edges.get(p) ?? new Set()).add(q));
       why.set(`${i}:${j}`, evidence);
     }
   }
-  /** @type {{ canonical: typeof authors[number], members: typeof authors, evidence: string[], mailmap: string[] }[]} */
+  /** @type {{ canonical: typeof authors[number], members: typeof authors, evidence: string[], strength: "strong" | "weak", mailmap: string[] }[]} */
   const out = [];
   const seen = new Set();
   const hasSpace = (/** @type {string} */ n) => (/\s/.test(n.trim()) ? 1 : 0);
@@ -2886,12 +2899,15 @@ export function suggestSamePerson(authors, linked) {
     const canonical = [...members].sort((x, y) => hasSpace(y.author ?? "") - hasSpace(x.author ?? "") || y.commits - x.commits || y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
     /** @type {string[]} */
     const evidence = [];
+    let strong = true;
     for (const [key, list] of why) {
       const [p, q] = key.split(":").map(Number);
-      if (idx.includes(p) && idx.includes(q)) for (const e of list) if (!evidence.includes(e)) evidence.push(e);
+      if (!idx.includes(p) || !idx.includes(q)) continue;
+      for (const e of list) if (!evidence.includes(e.text)) evidence.push(e.text);
+      if (!isStrongEvidence(list)) strong = false;
     }
     const mailmap = members.filter((m) => m.mail !== canonical.mail).map((m) => `${canonical.author || canonical.mail} <${canonical.mail}> <${m.mail}>`);
-    out.push({ canonical, members, evidence, mailmap });
+    out.push({ canonical, members, evidence, strength: strong ? "strong" : "weak", mailmap });
   }
   const total = (/** @type {typeof out[number]} */ s) => s.members.reduce((sum, m) => sum + m.lines, 0);
   return out.sort((x, y) => total(y) - total(x) || x.canonical.mail.localeCompare(y.canonical.mail));
@@ -2912,6 +2928,7 @@ export function samePersonSummary(suggestions) {
       addresses: [...s.members].sort(byCommitsThenLines).map((m) => ({ name: m.author, mail: m.mail, lines: m.lines, commits: m.commits })),
       lines: s.members.reduce((sum, m) => sum + m.lines, 0),
       lineShare: s.members.reduce((sum, m) => sum + m.lineShare, 0),
+      strength: s.strength,
       evidence: s.evidence,
       mailmap: s.mailmap,
     })),
@@ -2921,12 +2938,12 @@ export function samePersonSummary(suggestions) {
 /**
  * The line under the table that names the "possible same person" suggestions, or null when there are none. It says the
  * shares above may be split and that nothing was merged.
- * @param {{ count: number, suggestions: { name: string, mail: string, lines: number, lineShare: number, addresses: { name: string, mail: string }[] }[] } | null | undefined} s
+ * @param {{ count: number, suggestions: { name: string, mail: string, lines: number, lineShare: number, addresses: { name: string, mail: string }[], strength?: string }[] } | null | undefined} s
  * @returns {string | null}
  */
 export function samePersonLine(s) {
   if (!s || s.count === 0) return null;
-  const pair = (/** @type {typeof s.suggestions[number]} */ x) => `${x.addresses.map((a) => `${a.name || a.mail} <${a.mail}>`).join(" / ")}: ${x.lines.toLocaleString("en-US")} ${x.lines === 1 ? "line" : "lines"}, ${pct(x.lineShare)} if one person`;
+  const pair = (/** @type {typeof s.suggestions[number]} */ x) => `${x.addresses.map((a) => `${a.name || a.mail} <${a.mail}>`).join(" / ")}: ${x.lines.toLocaleString("en-US")} ${x.lines === 1 ? "line" : "lines"}, ${pct(x.lineShare)} if one person, ${x.strength} suggestion`;
   return `possible same person: ${s.count} suggestion${s.count === 1 ? "" : "s"}, not merged, so the shares above may be split (${cappedList(s.suggestions.map(pair))}). Run --identities for the evidence and the .mailmap lines; only you can confirm it is one person.`;
 }
 
@@ -3068,7 +3085,7 @@ export function renderIdentities(groups, sameAddress = [], possible = { count: 0
     lines.push("", `Possible same person: ${possible.count} suggestion${possible.count === 1 ? "" : "s"}. Names and addresses both differ, so nothing here is merged by default,`);
     lines.push("and --merge-identities does not merge them. The evidence is listed; only the repository owner can confirm it, by writing the .mailmap lines.", "");
     for (const s of possible.suggestions) {
-      lines.push(`${s.name || s.mail}  ${s.lines.toLocaleString("en-US")} line${s.lines === 1 ? "" : "s"} (${pct(s.lineShare)}) if these are one person`);
+      lines.push(`${s.name || s.mail}  ${s.lines.toLocaleString("en-US")} line${s.lines === 1 ? "" : "s"} (${pct(s.lineShare)}) if these are one person (${s.strength} suggestion)`);
       for (const a of s.addresses) lines.push(`  ${a.mail === s.mail ? "keep" : "map "} ${a.name ? `"${a.name}" ` : ""}<${a.mail}>  ${a.commits} commit${a.commits === 1 ? "" : "s"}, ${a.lines.toLocaleString("en-US")} line${a.lines === 1 ? "" : "s"}`);
       for (const e of s.evidence) lines.push(`  because ${e}`);
       lines.push("");

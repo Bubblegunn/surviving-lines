@@ -247,3 +247,11 @@ test("R7 fix 6: CSV notes on stderr are the scope notes, each prefixed", async (
 test("R7 fix 7: the schema says co-author trailer identities are not in the mailmap note", () => {
   assert.match(schema.properties.mailmap.description, /Co-authored-by trailers are not listed/);
 });
+
+test("R7-4: names equal once punctuation is removed are a strong accent-kind item", async () => {
+  const { suggestSamePerson } = await import("../bin/surviving-lines.js");
+  const row = (author, mail) => ({ author, mail, lines: 10, commits: 1 });
+  const out = suggestSamePerson([row("Zoe ONeil", "a@x.test"), row("Zoë O'Neil", "b@y.test")], []);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].strength, "strong");
+});
