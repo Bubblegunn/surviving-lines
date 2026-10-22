@@ -35,7 +35,12 @@ printf '%s\n' "$lc" | grep -Eq \
   -e 'top committers?' \
   -e 'ownership by' \
   -e 'who (touched|changed)' \
-  -e 'who is responsible for' || exit 0
+  -e 'who is responsible for' \
+  -e 'who actually (wrote|built|owns|maintains|knows)' \
+  -e 'which (people|persons|authors|developers|engineers|contributors) (wrote|own|maintain|know|are|is|still|should)' \
+  -e 'still (alive )?in (this|the) (repo|repository|code|codebase)' \
+  -e 'losing (one|two|a few|a couple of)( or (one|two|three|a few))? (people|persons|developers|engineers|contributors)' \
+  -e 'concentrated (in|among|with|on)' || exit 0
 
 # Everything below is silent when git is missing, the directory is not a work tree, or the history is larger
 # than the cap. Commit counting stops at 20001, so a huge repository is never walked to the end.

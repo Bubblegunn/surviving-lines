@@ -105,7 +105,7 @@ test("possible same person: accent-folded names, a name contained in an address 
       commitAsIdentity(dir, ["Quinn Park", "12345+quinnp@users.noreply.github.com"], D("03"), "c", { "c.js": lines("c", 5) });
       commitAsIdentity(dir, ["Q Rivera", "quinnp@users.noreply.github.com"], D("04"), "d", { "d.js": lines("d", 4) });
       commitAsIdentity(dir, ["Maria Santos", "msantos@work.example"], D("05"), "e", { "e.js": lines("e", 3) });
-      commitAsIdentity(dir, ["Maria S", "maria.santos@home.example"], D("06"), "f", { "f.js": lines("f", 2) });
+      commitAsIdentity(dir, ["Maria S", "maria.santos2@home.example"], D("06"), "f", { "f.js": lines("f", 2) });
     },
     async (dir) => {
       for (const args of [[], ["--merge-identities"]]) {

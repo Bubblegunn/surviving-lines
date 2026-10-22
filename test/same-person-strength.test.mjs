@@ -57,8 +57,8 @@ test("R7-4: two noreply addresses with the same GitHub user id are strong", asyn
 });
 
 test("R7-4: two different kinds of evidence are strong", async () => {
-  // "John Smith" is contained in the second address, and "J. Smith" is the initial form of "John Smith".
-  await withPeople([["John Smith", "jsmith@one.example"], ["J. Smith", "johnsmith@two.example"], ["Other Person", "other@three.example"]], (r) => {
+  // "John Smith" is contained in the second address (a digit keeps R9-1 out), and "J. Smith" is the initial form of "John Smith".
+  await withPeople([["John Smith", "jsmith1@one.example"], ["J. Smith", "johnsmith1@two.example"], ["Other Person", "other@three.example"]], (r) => {
     const kinds = suggestions(r)[0]?.evidence ?? [];
     assert.ok(kinds.length >= 2, kinds.join("; "));
     assert.equal(suggestions(r)[0].strength, "strong");

@@ -80,7 +80,8 @@ Measure who wrote the code that is still alive in a git ref.
                        still lists them. Not applied under --co-authors share
   --bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach, above 0 and at most 100 (default: 50)
   --jobs <n>           parallel blame processes (default: 4)
-  --top <k>            rows to print (default: 10)
+  --top <k>            rows to print (default: every author with at least 1% of the lines, 10 to 25 rows,
+                       then one line for the rest, and a last-commit column)
   --reviewers <path>   list who should review a file or directory: lines, commits, last commit, and whether active
   --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -1584,6 +1585,32 @@ function mailmapLine(r) {
 }
 
 /**
+ * The line for addresses that appear under several author names and are counted as one person (R9-3), or null. Names
+ * are listed up to five per address and up to three addresses, then counted.
+ * @param {{ sameAddress?: { mail: string, name: string, aliases: string[], lines: number }[] }} r
+ * @returns {string | null}
+ */
+export function sameAddressLine(r) {
+  const groups = r.sameAddress ?? [];
+  if (!groups.length) return null;
+  const n = (/** @type {number} */ x) => `${x.toLocaleString("en-US")} line${x === 1 ? "" : "s"}`;
+  const names = (/** @type {string[]} */ list) => (list.length > 5 ? `${list.slice(0, 5).join(", ")} and ${list.length - 5} more` : list.join(", "));
+  const parts = capped(groups.map((g) => `${g.name} <${g.mail}> also appears as ${names(g.aliases)} (${n(g.lines)})`), "; ");
+  return `one address, several names, counted as one: ${parts}`;
+}
+
+/**
+ * The note for --copies deep (R9-7), or null. Deep copy detection looks in every file of the commit that created a file,
+ * so it can give lines to a commit that was later reverted.
+ * @param {{ blame?: { copyDetection?: { flags?: string | null } } }} r
+ * @returns {string | null}
+ */
+export function deepCopyLine(r) {
+  if (r.blame?.copyDetection?.flags !== "-C -C") return null;
+  return "deep copy detection (-C -C) can credit lines to a commit that was later reverted; compare with the default (-C)";
+}
+
+/**
  * The scope notes every view prints, in one place: what was left out of the numbers (bots, lockfiles and generated
  * files, copy detection off), the reformat commits ignored or suspected, the identities a .mailmap merged, the identity
  * hints and "possible same person" suggestions, and the lines moved in from other paths. A view calls this once and
@@ -1605,6 +1632,8 @@ export function scopeNotes(r, opts = {}) {
   add(reformatBlock(r));
   add(mechanicalLine(r));
   add(copyEffectLine(r));
+  add(deepCopyLine(r));
+  add(sameAddressLine(r));
   if (opts.identityHints !== false) add(identityLine(r)?.split("\n"));
   add(opts.view ? movedInLine(opts.view) : null);
   return out;
@@ -2188,6 +2217,9 @@ export async function analyse(o) {
   };
   sortRows(rows);
 
+  // R9-3: addresses that carry more than one author name are one row each (rows are keyed by address). The names and
+  // the lines are read here, before any merge, so every view can say so.
+  const sameAddress = sameAddressLines(sameAddressNames(await readAddressNames(o)), rows);
   // The identity links are read from the rows as blamed, before any merge, as the hint always was.
   const linked = linkIdentities(rows);
   // Looser evidence (names and addresses that differ), offered to the reader and never merged by any flag.
@@ -2216,6 +2248,7 @@ export async function analyse(o) {
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers) };
   const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history) };
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
+  const lastCommits = await readLastCommits(o, rows, membersOf);
   return {
     ref: o.ref,
     sort: o.sort,
@@ -2239,6 +2272,8 @@ export async function analyse(o) {
       groups: o.mergeIdentities ? mergeable.map((g) => ({ name: g.canonical.author, mail: g.canonical.mail, addresses: [...g.members].sort(byCommitsThenLines).map((m) => ({ mail: m.mail, lines: m.lines, commits: m.commits })), lines: g.members.reduce((sum, m) => sum + m.lines, 0), commits: g.members.reduce((sum, m) => sum + m.commits, 0) })) : [],
     },
     mailmap,
+    sameAddress,
+    lastCommits,
     reviewers,
     history,
     authors: rows,
@@ -2597,6 +2632,15 @@ function appliedBlock(r, counted, suspects, it) {
  * @param {Awaited<ReturnType<typeof analyse>>} r
  * @param {number} top
  */
+/** The default table (R9-4): every author with at least this share of the lines, within MIN_ROWS and MAX_ROWS rows. */
+const DEFAULT_ROW_SHARE = 0.01;
+const DEFAULT_MIN_ROWS = 10;
+const DEFAULT_MAX_ROWS = 25;
+
+/**
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @param {number | null} top an explicit --top, or null for the default rows (R9-4) and the last-commit column
+ */
 export function renderTable(r, top) {
   const lines = [];
   lines.push(headerLine(r));
@@ -2606,15 +2650,26 @@ export function renderTable(r, top) {
   const nameCount = new Map();
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
-  const rows = r.authors.slice(0, top);
+  const byDefault = top === null;
+  const shown = byDefault ? Math.min(DEFAULT_MAX_ROWS, Math.max(DEFAULT_MIN_ROWS, r.authors.filter((a) => a.lineShare >= DEFAULT_ROW_SHARE).length)) : top;
+  const rows = r.authors.slice(0, shown);
   const nameW = Math.max(6, ...rows.map((a) => displayWidth(label(a))));
-  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"share".padStart(6)}`;
+  const lastOf = (/** @type {{ mail: string }} */ a) => (r.lastCommits?.[a.mail] ?? "").padEnd(10);
+  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"share".padStart(6)}${byDefault ? "  last commit" : ""}`;
   lines.push(head);
   lines.push("-".repeat(displayWidth(head)));
   for (const a of rows) {
-    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}`);
+    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}${byDefault ? `  ${lastOf(a)}`.trimEnd() : ""}`);
   }
-  if (r.authors.length > top) lines.push(`… ${r.authors.length - top} more author${r.authors.length - top === 1 ? "" : "s"}`);
+  const tail = r.authors.slice(shown);
+  if (tail.length && byDefault) {
+    // The tail line names the count, the combined share and the largest tail author, so a reader can still say who is there.
+    const largest = [...tail].sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail))[0];
+    const together = tail.reduce((sum, a) => sum + a.lineShare, 0);
+    lines.push(`… ${tail.length} more author${tail.length === 1 ? "" : "s"} hold${tail.length === 1 ? "s" : ""} ${pct(together)} together; largest: ${label(largest)} ${pct(largest.lineShare)}`);
+  } else if (tail.length) {
+    lines.push(`… ${tail.length} more author${tail.length === 1 ? "" : "s"}`);
+  }
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
   const notes = scopeNotes(r);
@@ -2943,6 +2998,20 @@ export function githubLogin(mail) {
 const loose = (/** @type {string} */ s) => foldIdentity(s).replace(/[\s._-]/g, "");
 
 /**
+ * Whether a full name equals an address name (R9-1): the name has two or more words made of letters, and its letters
+ * (case and accents folded) are exactly the letters of the address name once the separators . _ - are removed. An
+ * address name with a digit or any other character never matches.
+ * @param {string} name
+ * @param {string} local the part of the address before the @, without a GitHub noreply id prefix
+ */
+export function fullNameIsAddressName(name, local) {
+  const words = foldIdentity(name).normalize("NFD").replace(/\p{M}/gu, "").split(/[^\p{L}]+/u).filter(Boolean);
+  if (words.length < 2 || !/^[\p{L}._-]+$/u.test(local)) return false;
+  const joined = words.join("");
+  return joined.length >= 4 && joined === local.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[._-]/g, "");
+}
+
+/**
  * Group addresses that look like one person, with the signal behind each grouping. This reads
  * only what is already in the repository's own history, proposes and never writes, and cannot
  * know whether two identities really are one person: it reports the evidence and stops.
@@ -2978,6 +3047,14 @@ export function linkIdentities(authors) {
         if (!login) continue;
         if (loose(login) === loose(localOf(other.mail)) || (other.author && loose(login) === loose(other.author))) {
           link(i, j, "login", `the GitHub login "${login}" also appears as ${loose(login) === loose(localOf(other.mail)) ? "the address" : "the name"} on the other`);
+        }
+      }
+      // R9-1: the full name of one identity (two or more words) is exactly the address name of the other, once case,
+      // accents, punctuation and the dots or dashes of the address are removed. Part of a name inside an address is not
+      // this rule; suggestSamePerson keeps that as weak evidence.
+      for (const [named, addressed] of /** @type {[typeof a, typeof a][]} */ ([[a, b], [b, a]])) {
+        if (fullNameIsAddressName(named.author ?? "", localOf(addressed.mail))) {
+          link(i, j, "name", `the full name "${named.author}" is the address name of ${addressed.mail}`);
         }
       }
       if (!la && !lb) {
@@ -3396,6 +3473,60 @@ export function sameAddressNames(entries) {
 }
 
 /**
+ * The addresses with more than one author name that also hold lines in the table (R9-3), with the lines of the row.
+ * An address with no lines is left out: nothing in the numbers depends on it.
+ * @param {ReturnType<typeof sameAddressNames>} groups
+ * @param {{ author: string, mail: string, lines: number }[]} rows the table rows before any merge
+ * @returns {{ mail: string, name: string, aliases: string[], lines: number }[]}
+ */
+export function sameAddressLines(groups, rows) {
+  const byMail = new Map(rows.map((a) => [a.mail.toLowerCase(), a]));
+  /** @type {{ mail: string, name: string, aliases: string[], lines: number }[]} */
+  const out = [];
+  for (const g of groups) {
+    const row = byMail.get(g.mail);
+    if (!row || row.lines <= 0) continue;
+    const key = foldIdentity(row.author ?? "");
+    const names = [g.canonical, ...g.aliases];
+    const name = names.find((n) => foldIdentity(n) === key) ?? row.author ?? g.canonical;
+    out.push({ mail: g.mail, name, aliases: names.filter((n) => n !== name), lines: row.lines });
+  }
+  return out.sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
+}
+
+/**
+ * The newest author date (YYYY-MM-DD) of every row of the table, from one git log call over the whole ref, merges left
+ * out and .mailmap applied, as the commit counts are. A merged row takes the newest date of its addresses.
+ * @param {Options} o
+ * @param {{ mail: string }[]} rows
+ * @param {Map<string, string[]> | null} membersOf
+ * @returns {Promise<Record<string, string>>}
+ */
+async function readLastCommits(o, rows, membersOf) {
+  /** @type {Map<string, string>} */
+  const newest = new Map();
+  for (const line of (await git(["log", "--no-merges", "--format=%aE%x09%aI", o.ref], o.cwd)).split("\n")) {
+    if (!line) continue;
+    const [mail, date] = line.split("\t");
+    if (!date) continue;
+    const key = mail.toLowerCase();
+    const day = date.slice(0, 10);
+    if (!newest.has(key) || day > /** @type {string} */ (newest.get(key))) newest.set(key, day);
+  }
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const a of rows) {
+    let best = "";
+    for (const m of membersOf?.get(a.mail) ?? [a.mail]) {
+      const day = newest.get(m.toLowerCase());
+      if (day && day > best) best = day;
+    }
+    if (best) out[a.mail] = best;
+  }
+  return out;
+}
+
+/**
  * Every (name, address) pair that author commits carry at the ref, with its commit count, merges left out. The name and
  * address go through .mailmap, as the commit counts do.
  * @param {Options} o
@@ -3584,7 +3715,7 @@ async function main() {
       output = renderGroups(r, o.top);
       if (o.suggestCodeowners) output += `\n\n${renderCodeowners(r)}`;
     } else {
-      output = renderTable(r, o.top);
+      output = renderTable(r, o.topGiven ? o.top : null);
     }
     const ai = o.json ? null : renderAiBreakdown(r, r.sample, r.commitWindow.commits);
     if (ai) output += `\n\n${ai}`;

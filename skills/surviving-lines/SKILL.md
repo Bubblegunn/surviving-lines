@@ -50,6 +50,10 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 - Say which copy detection setting the figures use, and give both figures for a person the `copy detection` note names as moved by more than 2 points.
 - Say that mechanical rewrites were checked, and name each commit of the `mechanical rewrites checked` line as set aside or kept.
 - Order people by surviving lines. Activity is information only.
+- When the output has a `one address, several names, counted as one` line, name those people and their names in the answer. Never write "no duplicates" or "no one appears twice" while that line is printed.
+- For a question about which people wrote the code, list every row the table shows and state the tail line (`N more authors hold X% together; largest: <name>`). The default table shows every author with at least 1% of the lines, 10 to 25 rows, and a `last commit` column; `--top <k>` shows exactly k rows and no `last commit` column.
+- In the default view a name that appears only in a `Co-authored-by` trailer carries no lines. Trailer names get lines only with `--co-authors share`; say so when a trailer-only name is asked about.
+- When the output has a `deep copy detection` line (`--copies deep`), state that it can credit lines to a commit that was later reverted, and compare with the default (`-C`) figures.
 - The scope notes are the same in every view, including `--reviewers`, `--history` (with or without a path), `--identities` and `--json`. Read them in whichever view you used.
 
 ## Who shaped a path, and who should review it
