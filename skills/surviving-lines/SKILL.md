@@ -37,11 +37,21 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 - When the output has a `moved or copied here` line, state it. Do not recommend the person who only moved the code. Recommend the authors who wrote it.
 - Give both bus factor numbers (`bus factor` and `to reach 80%`) with the scope they were computed on: the whole repository, a path, or a group.
 
+## Rules for every ownership answer
+
+- For each person you name, give the share in percent next to the line count, as the output prints them.
+- State what the output says was left out and why: dropped files (lockfiles, generated files, vendored code), bots excluded, and the reformat commits ignored, by their short ids.
+- State the identities merged by `.mailmap`, naming the file and the lines they add. These are already in the numbers.
+- Give both bus factor numbers with the scope each was computed on.
+- Report a `possible same person` suggestion as unconfirmed, next to the unmerged figure.
+- Order people by surviving lines. Activity is information only.
+- The scope notes are the same in every view, including `--reviewers`, `--history` (with or without a path), `--identities` and `--json`. Read them in whichever view you used.
+
 ## Who shaped a path, and who should review it
 
 `<sl> --history <path>` takes a file or directory and lists the people who changed it, oldest first, with their first and last commit, their commits and the lines of theirs that survive today. Commits that only reformatted the path are listed as set aside. Use it for "explain the history of this file" and say who made the first commit and who holds the most lines now.
 
-`<sl> --reviewers <path>` takes a file or directory. It prints the owners of that path by surviving lines, the commits and the last commit date of each, and a `suggested:` line of up to three people, active ones first. People with no commit in the year before the ref are marked. Name the first suggested person, give their lines and share, name a second reviewer, and say whether the top owner is still active. Same-name addresses are merged for the suggestion only; the identity hint rule above still applies.
+`<sl> --reviewers <path>` takes a file or directory. It prints the owners of that path by surviving lines, the commits and the last commit date of each, and a `suggested by surviving lines:` line of the three people with the most lines. Each person has a last commit date and an `active` or `inactive` marker; these are information and never change the order. Name the people in line order, give their lines and share, and say what the marker says about each. Do not drop a top-three owner or call a larger owner less relevant because of the marker. When an `active only` line is printed, give the line-ranked list first and the active-only list next to it. Same-name addresses are merged for the suggestion only; the identity hint rule above still applies.
 
 ## Other options
 

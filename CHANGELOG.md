@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Round 7: every view (table, groups, Markdown, `--reviewers`, `--history`, `--identities`) prints the same scope notes from one function. New note and JSON field `mailmap`: the identities a `.mailmap` merged and the lines they add. `--reviewers` orders by surviving lines, prints each person's last commit and an active or inactive marker for information only, and prints the active-only cut as a second line (JSON `suggestedActiveOnly`). The old "prefer the active authors" line is gone.
+
 - Lockfiles, generated files and vendored directories leave every number by default (`dropped:` line, JSON `dropped`; `--keep-generated` counts them). Blame follows moves and copies (`-w -M -C -C`; `--no-copies` turns it off; off above 2000 files). `possible same person` suggestions are never merged. `--reviewers`/`--history` print a `moved or copied here` line (`movedIn`). The bus factor line adds `to reach 80%: N authors`.
 
 **Added: prompt hint.** A Claude Code hook (`hooks/hooks.json` and `hooks/surviving-lines-hint.sh`) reads each prompt. When the prompt is about duplicate identities or code ownership, it adds a short note that points the agent at the skill and the tool, and lists up to four suspected same-person groups with the rule that suggested each. It runs read-only git, is silent outside a repository and above 20,000 commits, and adds at most 1,200 characters. `SURVIVING_LINES_HINT_CAP` changes the cap. It works only in the plugin, not in the npm command. To remove it, empty `hooks/hooks.json` in a local copy of the plugin or disable the plugin.

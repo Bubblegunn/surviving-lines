@@ -5,7 +5,7 @@
   "description": "schemaVersion changes when a key is removed, renamed or changes type. Adding a key does not change it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "reviewers", "history", "authors"],
+  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "mailmap", "reviewers", "history", "authors"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "tool": {
@@ -275,6 +275,33 @@
         }
       }
     },
+    "mailmap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "merges"],
+      "description": "Identities a .mailmap file at the repository root merged into other names, for authors in the output. git blame prints the mapped name, so this is read from the raw author fields of the history and git check-mailmap. The merge is already applied to every number. Identities that appear only in Co-authored-by trailers are not listed in the note.",
+      "properties": {
+        "file": { "type": ["string", "null"], "description": "The source: .mailmap at the repository root, mailmap.file or mailmap.blob from the git config (comma separated when several), \"mailmap configured elsewhere\" when none of these is set, or null when there is no mapping." },
+        "merges": {
+          "type": "array",
+          "description": "One entry per person in the output that absorbed other names or addresses, most added lines first.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["into", "lines", "from"],
+            "properties": {
+              "into": { "type": "object", "additionalProperties": false, "required": ["name", "mail"], "properties": { "name": { "type": "string" }, "mail": { "type": "string" } } },
+              "lines": { "type": "integer", "minimum": 0, "description": "The surviving lines the merged names add to the person." },
+              "from": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "object", "additionalProperties": false, "required": ["name", "mail", "lines"], "properties": { "name": { "type": "string" }, "mail": { "type": "string" }, "lines": { "type": "integer", "minimum": 0 } } }
+              }
+            }
+          }
+        }
+      }
+    },
     "identityMerge": {
       "type": "object",
       "additionalProperties": false,
@@ -385,7 +412,7 @@
       "type": ["object", "null"],
       "description": "The --reviewers view: the authors of one path, most surviving lines first. Null unless --reviewers was given.",
       "additionalProperties": false,
-      "required": ["path", "asOf", "inactiveAfterDays", "suggestedBasis", "suggested", "topOwner", "authors"],
+      "required": ["path", "asOf", "inactiveAfterDays", "suggestedBasis", "suggested", "suggestedActiveOnly", "topOwner", "authors"],
       "properties": {
         "movedIn": {
           "type": ["object", "null"],
@@ -406,7 +433,7 @@
         "suggested": {
           "type": "array",
           "maxItems": 3,
-          "description": "Up to three people, active ones first, then by lines. Entries whose names fold to one identity are one person.",
+          "description": "Up to three people with the most surviving lines, most first; activity never reorders or removes anyone. Entries whose names fold to one identity are one person.",
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -420,6 +447,12 @@
               "active": { "type": "boolean", "description": "True when any address is active." }
             }
           }
+        },
+        "suggestedActiveOnly": {
+          "type": ["array", "null"],
+          "maxItems": 3,
+          "description": "The same cut taken from active people only, in line order; null when it equals suggested. It is shown beside suggested and never replaces it.",
+          "items": {"type": "object", "additionalProperties": false, "required": ["author", "mails", "lines", "lineShare", "lastCommit", "active"], "properties": {"author": {"type": "string"}, "mails": {"type": "array", "items": {"type": "string"}, "minItems": 1, "description": "Lowercased addresses of this person, sorted."}, "lines": {"type": "number", "minimum": 0}, "lineShare": {"type": "number", "minimum": 0, "maximum": 1, "description": "On the basis named by suggestedBasis."}, "lastCommit": {"type": ["string", "null"], "description": "The newest lastCommit of the addresses, YYYY-MM-DD."}, "active": {"type": "boolean", "description": "True when any address is active."}}}
         },
         "topOwner": {
           "type": ["object", "null"],

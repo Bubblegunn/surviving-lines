@@ -54,21 +54,23 @@ test("a second address that .mailmap folds into one person counts as that person
   });
 });
 
-test("an author whose last commit at the path is more than a year before the ref is not active, and the top owner is named", async () => {
+test("an author whose last commit at the path is more than a year before the ref is not active, and is marked, not dropped", async () => {
   await withOwners(async (dir) => {
     const r = await analyse(parseArgs(["--cwd", dir, "--reviewers", "lib"]));
     const text = renderReviewers(r, 5);
     assert.ok(text.includes("not active in the year before 2026-04-12: Charlie"), text);
-    assert.ok(text.includes("top owner Charlie last committed on 2024-01-05; prefer the active authors above"), text);
+    assert.ok(!text.includes("prefer the active"), text);
+    assert.match(text, /^Charlie +40 +54\.1% +1 +2024-01-05 +inactive$/m);
   });
 });
 
-test("the suggestion lists active authors first by lines, up to three, each with its share", async () => {
+test("the suggestion lists the three largest owners by lines, each with its share and activity, and the active-only cut next to it", async () => {
   await withOwners(async (dir) => {
     const r = await analyse(parseArgs(["--cwd", dir, "--reviewers", "lib"]));
     const text = renderReviewers(r, 5);
-    // Total 74 lines: Ada 35.1%, Bob 10.8%, then the inactive Charlie 54.1% last.
-    assert.ok(text.includes("suggested: Ada (26 lines, 35.1%), Bob (8 lines, 10.8%), Charlie (40 lines, 54.1%)"), text);
+    // Total 74 lines: the inactive Charlie 54.1% stays first, then Ada 35.1% and Bob 10.8%.
+    assert.ok(text.includes("suggested by surviving lines: Charlie (40 lines, 54.1%, last commit 2024-01-05, inactive), Ada (26 lines, 35.1%, last commit 2026-04-10, active), Bob (8 lines, 10.8%, last commit 2026-04-01, active)"), text);
+    assert.ok(text.includes("active only (a cut by recent commits; the line-ranked list above is the ownership answer): Ada (26 lines, 35.1%, last commit 2026-04-10, active), Bob (8 lines, 10.8%, last commit 2026-04-01, active)"), text);
     assert.ok(text.includes("who should review lib  (surviving lines in lib, as of 2026-04-12)"), text);
   });
 });
@@ -160,9 +162,9 @@ test("the table and the suggestion both leave out the suspected formatter commit
     assert.equal(r.reviewers?.suggestedBasis, "reformatIgnored");
     assert.deepEqual(r.reviewers?.suggested.map((p) => [p.author, p.lines]), [[PEOPLE.ada[0], 40], [PEOPLE.charlie[0], 3]]);
     const text = renderReviewers(r, 5);
-    assert.ok(text.includes("suggested (with the suspected reformat commit ignored): Ada (40 lines, 93.0%), Charlie (3 lines, 7.0%)"), text);
+    assert.ok(text.includes("suggested by surviving lines (with the suspected reformat commit ignored): Ada (40 lines, 93.0%, last commit 2026-03-01, active), Charlie (3 lines, 7.0%, last commit 2024-01-05, inactive)"), text);
     assert.ok(text.includes(`${PEOPLE.bob[0]}`) && text.includes("69.8%"), text);
-    assert.equal(text.includes("top owner"), false, "the basis top owner is Ada, who is active");
+    assert.equal(text.includes("top owner"), false);
   });
 });
 
@@ -172,7 +174,7 @@ test("one person on two addresses with the same name is one suggested entry, wit
     assert.equal(r.reviewers?.authors.length, 3, "the table keeps the two addresses as two rows");
     assert.deepEqual(r.reviewers?.suggested.map((p) => [p.author, p.mails.length, p.lines]), [[PEOPLE.ada[0], 2, 20], [PEOPLE.bob[0], 1, 10]]);
     assert.deepEqual(r.reviewers?.suggested[0].mails, [mailOf("ada"), mailOf("adaLaptop")].sort());
-    assert.ok(renderReviewers(r, 5).includes(`suggested: ${PEOPLE.ada[0]} (20 lines, 66.7%, 2 addresses), ${PEOPLE.bob[0]} (10 lines, 33.3%)`));
+    assert.ok(renderReviewers(r, 5).includes(`suggested by surviving lines: ${PEOPLE.ada[0]} (20 lines, 66.7%, 2 addresses, last commit`));
   });
 });
 

@@ -142,12 +142,12 @@ test("the split fixture shows one hint in the table, and the JSON key validates 
   });
 });
 
-test("the hint comes before the bus factor line and after the author rows", async () => {
+test("the hint is one of the scope notes: after the author rows and the bus factor line", async () => {
   await withFixture("split", async (dir) => {
     const table = renderTable(await analyse(parseArgs(["--cwd", dir])), 10);
     const hint = table.indexOf(HINT);
     assert.ok(hint > table.indexOf("-----"), "after the table header");
-    assert.ok(hint < table.indexOf("bus factor"), "before the bus factor line");
+    assert.ok(hint > table.indexOf("bus factor"), "after the bus factor line, with the other scope notes");
   });
 });
 
@@ -193,11 +193,11 @@ test("the reviewers view prints the hint once, under its table", async () => {
     const r = await analyse(parseArgs(["--cwd", dir, "--reviewers", "src"]));
     const text = renderReviewers(r, 5);
     assert.equal(hintCount(text), 1);
-    assert.ok(text.indexOf(HINT) < text.indexOf("suggested"), "before the suggestion");
+    assert.ok(text.indexOf(HINT) > text.indexOf("suggested"), "after the suggestion, with the other scope notes");
   });
 });
 
-test("the group view prints the hint once, after the last group, in the order: table, bus factor, blank, hint, definition", async () => {
+test("the group view prints the hint once, after the last group, in the order: table, bus factor, blank, definition, blank, hint", async () => {
   await withFixture("groupSplit", async (dir) => {
     const r = await analyse(parseArgs(["--cwd", dir, "--group-by", "dir:1"]));
     assert.ok(r.grouping && r.grouping.groups.length >= 2, "a real grouping with at least two groups");
@@ -212,7 +212,7 @@ test("the group view prints the hint once, after the last group, in the order: t
     assert.equal(out[hintAt - 1], "", "a blank line before the hint");
     assert.equal(out[hintAt + 1], "", "a blank line after the hint");
     const definitionAt = out.findIndex((line) => line.startsWith("bus factor = "));
-    assert.ok(definitionAt > hintAt, "the definition line comes after the hint");
+    assert.ok(definitionAt < hintAt, "the definition line comes before the hint, which is a scope note");
     assert.ok(out.slice(0, hintAt).some((line) => line.startsWith(`${last.key}  ·`)), "the last group's header is before the hint");
   });
 });

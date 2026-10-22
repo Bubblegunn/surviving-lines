@@ -1342,6 +1342,113 @@ function movedInFor(origins, path) {
 const MOVED_IN_MIN_SHARE = 0.05;
 
 /**
+ * The names a `.mailmap` file at the repository root merged into other names, for the authors in the output.
+ * git blame already prints the mapped name, so the merge cannot be seen in its output. The history is read with the raw
+ * author fields (%an, %ae; %aN and %aE apply the mapping), each distinct identity is run through `git check-mailmap`, which reads the same file, and an
+ * identity that comes back different was merged. The lines it adds are the blamed lines of its commits. Only a merge
+ * whose target is a row of the output is reported.
+ * @param {Options} o
+ * @param {Map<string, { lines: number }>} blamedByCommit
+ * @param {{ author: string, mail: string }[]} rows the output rows
+ * @returns {Promise<{ file: string | null, merges: { into: { name: string, mail: string }, lines: number, from: { name: string, mail: string, lines: number }[] }[] }>}
+ */
+export async function readMailmapMerges(o, blamedByCommit, rows) {
+  const none = { file: null, merges: [] };
+  let top;
+  try {
+    top = (await git(["rev-parse", "--show-toplevel"], o.cwd)).trim();
+  } catch {
+    return none;
+  }
+  const sources = [];
+  if (existsSync(join(top, ".mailmap"))) sources.push(".mailmap");
+  for (const key of ["mailmap.file", "mailmap.blob"]) {
+    try {
+      if ((await git(["config", "--get", key], o.cwd)).trim()) sources.push(key);
+    } catch {
+      // the key is not set
+    }
+  }
+  /** @type {Map<string, { name: string, mail: string, lines: number }>} */
+  const raw = new Map();
+  // NUL separates the fields and the records (-z), so a tab or any other character in a name cannot split a field.
+  const fields = (await git(["log", "-z", "--no-merges", "--format=%H%x00%an%x00%ae", o.ref], o.cwd)).split("\0");
+  for (let i = 0; i + 2 < fields.length; i += 3) {
+    const sha = fields[i].replace(/^\n/, "");
+    const name = fields[i + 1];
+    const mail = fields[i + 2];
+    if (/\n/.test(name) || /\n/.test(mail)) continue;
+    const key = `${name}\0${mail}`;
+    const e = raw.get(key) ?? { name, mail, lines: 0 };
+    e.lines += blamedByCommit.get(sha)?.lines ?? 0;
+    raw.set(key, e);
+  }
+  const file = sources.length ? sources.join(", ") : "mailmap configured elsewhere";
+  const ids = [...raw.values()];
+  if (!ids.length) return sources.length ? { file, merges: [] } : none;
+  const mapped = (await gitWithInput(["check-mailmap", "--stdin"], `${ids.map((i) => `${i.name} <${i.mail}>`).join("\n")}\n`, o.cwd)).split("\n");
+  /** @type {Map<string, { into: { name: string, mail: string }, lines: number, from: { name: string, mail: string, lines: number }[] }>} */
+  const merges = new Map();
+  ids.forEach((id, i) => {
+    const m = /^(.*) <(.*)>$/.exec(mapped[i] ?? "");
+    if (!m || (m[1] === id.name && m[2].toLowerCase() === id.mail.toLowerCase())) return;
+    // The mail address decides; the name is the fallback only for a row whose mail is unknown.
+    const present = rows.some((r) => (r.mail ? r.mail === m[2].toLowerCase() : r.author === m[1]));
+    if (!present) return;
+    const key = `${m[2].toLowerCase()}\t${m[1]}`;
+    const e = merges.get(key) ?? { into: { name: m[1], mail: m[2] }, lines: 0, from: [] };
+    e.lines += id.lines;
+    e.from.push({ name: id.name, mail: id.mail, lines: id.lines });
+    merges.set(key, e);
+  });
+  // A name that adds no line to this view (a path-scoped one) is not worth a note.
+  const out = [...merges.values()]
+    .map((e) => ({ ...e, from: e.from.filter((f) => f.lines > 0).sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail)) }))
+    .filter((e) => e.from.length);
+  out.sort((x, y) => y.lines - x.lines || x.into.mail.localeCompare(y.into.mail));
+  if (!out.length && !sources.length) return none;
+  return { file, merges: out };
+}
+
+/**
+ * The line that names the identities a .mailmap merged, or null when none affects the output.
+ * @param {{ mailmap?: { file: string | null, merges: { into: { name: string, mail: string }, lines: number, from: { name: string, mail: string, lines: number }[] }[] } }} r
+ * @returns {string | null}
+ */
+function mailmapLine(r) {
+  const m = r.mailmap;
+  if (!m || !m.file || !m.merges.length) return null;
+  const n = (/** @type {number} */ x) => `${x.toLocaleString("en-US")} line${x === 1 ? "" : "s"}`;
+  const parts = capped(m.merges.map((e) => `${e.into.name} <${e.into.mail}> includes ${capped(e.from.map((f) => `${f.name} <${f.mail}> (${n(f.lines)})`), ", ")}, ${n(e.lines)} added`), "; ");
+  return `identities merged by ${m.file} (already applied to every number above): ${parts}`;
+}
+
+/**
+ * The scope notes every view prints, in one place: what was left out of the numbers (bots, lockfiles and generated
+ * files, copy detection off), the reformat commits ignored or suspected, the identities a .mailmap merged, the identity
+ * hints and "possible same person" suggestions, and the lines moved in from other paths. A view calls this once and
+ * prints the result; the notes are not written per view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @param {{ view?: Parameters<typeof movedInLine>[0] | null, identityHints?: boolean }} [opts]
+ * @returns {string[]} lines, with a blank line between blocks; empty when nothing applies
+ */
+export function scopeNotes(r, opts = {}) {
+  /** @type {string[]} */
+  const out = [];
+  const add = (/** @type {string | string[] | null | undefined} */ block) => {
+    if (!block || !block.length) return;
+    if (out.length) out.push("");
+    out.push(...(Array.isArray(block) ? block : [block]));
+  };
+  const left = [botsLine(r), mailmapLine(r)].filter(Boolean);
+  add(left.length ? left.join("\n").split("\n") : null);
+  add(reformatBlock(r));
+  if (opts.identityHints !== false) add(identityLine(r)?.split("\n"));
+  add(opts.view ? movedInLine(opts.view) : null);
+  return out;
+}
+
+/**
  * The --reviewers view: the authors of one path, most surviving lines first, each with the newest non-merge commit
  * that touched the path and whether it is recent. The as-of date is the author date of the ref commit, so the same
  * repository answers the same way on any day; the clock is never read. Bots are already out of `rows`.
@@ -1394,7 +1501,12 @@ async function reviewersView(o, path, rows, applied, membersOf, pathCommits) {
     people.set(key, p);
   }
   const ranked = [...people.values()].sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
-  const suggested = [...ranked.filter((p) => p.active), ...ranked.filter((p) => !p.active)].slice(0, 3).map((p) => ({ ...p, mails: [...p.mails].sort() }));
+  // Activity never reorders or removes a person: the suggestion is the three people with the most lines. The active-only
+  // cut is a second list, given only when it differs.
+  const cut = (/** @type {typeof ranked} */ list) => list.slice(0, 3).map((p) => ({ ...p, mails: [...p.mails].sort() }));
+  const suggested = cut(ranked);
+  const activeOnly = cut(ranked.filter((p) => p.active));
+  const sameCut = activeOnly.length === suggested.length && activeOnly.every((p, i) => p.author === suggested[i].author);
   const top = ranked[0];
   const topOwner = top ? { author: top.author, lastCommit: top.lastCommit, active: top.active } : null;
   return {
@@ -1403,6 +1515,7 @@ async function reviewersView(o, path, rows, applied, membersOf, pathCommits) {
     inactiveAfterDays: INACTIVE_AFTER_DAYS,
     suggestedBasis: applied ? /** @type {const} */ ("reformatIgnored") : /** @type {const} */ ("table"),
     suggested,
+    suggestedActiveOnly: sameCut ? null : activeOnly,
     topOwner,
     authors,
   };
@@ -1886,6 +1999,7 @@ export async function analyse(o) {
   const pathCommits = pathView === undefined ? [] : await readPathCommits(o, pathView);
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers) };
   const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history) };
+  const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
   return {
     ref: o.ref,
     sort: o.sort,
@@ -1907,6 +2021,7 @@ export async function analyse(o) {
       applied: o.mergeIdentities,
       groups: o.mergeIdentities ? linked.map((g) => ({ name: g.canonical.author, mail: g.canonical.mail, addresses: [...g.members].sort(byCommitsThenLines).map((m) => ({ mail: m.mail, lines: m.lines, commits: m.commits })), lines: g.members.reduce((sum, m) => sum + m.lines, 0), commits: g.members.reduce((sum, m) => sum + m.commits, 0) })) : [],
     },
+    mailmap,
     reviewers,
     history,
     authors: rows,
@@ -2236,8 +2351,6 @@ export function renderTable(r, top) {
   lines.push(headerLine(r));
   const w = r.commitWindow;
   lines.push(`git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded${coAuthorsNote(r)}`);
-  const excludedBots = botsLine(r);
-  if (excludedBots) lines.push(excludedBots);
   lines.push("");
   const nameCount = new Map();
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
@@ -2251,12 +2364,10 @@ export function renderTable(r, top) {
     lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}`);
   }
   if (r.authors.length > top) lines.push(`… ${r.authors.length - top} more author${r.authors.length - top === 1 ? "" : "s"}`);
-  const hint = identityLine(r);
-  if (hint) lines.push(hint);
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
-  const reformat = reformatBlock(r);
-  if (reformat) lines.push("", ...reformat);
+  const notes = scopeNotes(r);
+  if (notes.length) lines.push("", ...notes);
   lines.push("");
   lines.push("What this cannot show: quality of the lines, review work, design done in documents,");
   lines.push("or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.");
@@ -2273,38 +2384,29 @@ export function renderReviewers(r, top) {
   const v = r.reviewers;
   if (!v) throw new Error("renderReviewers needs a result from --reviewers");
   const lines = [headerLine(r)];
-  const excludedBots = botsLine(r);
-  if (excludedBots) lines.push(excludedBots);
   lines.push("", `who should review ${v.path}  (surviving lines in ${v.path}, as of ${v.asOf})`);
   const nameCount = new Map();
   for (const a of v.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
   const shown = v.authors.slice(0, top);
   const nameW = Math.max(6, ...shown.map((a) => displayWidth(label(a))));
-  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  last commit`;
+  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"last commit".padEnd(11)}  activity`;
   lines.push(head);
   lines.push("-".repeat(displayWidth(head)));
   for (const a of shown) {
-    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${a.lastCommit ?? "-"}`);
+    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${(a.lastCommit ?? "-").padEnd(11)}  ${a.active ? "active" : "inactive"}`);
   }
   if (v.authors.length > top) lines.push(`… ${v.authors.length - top} more author${v.authors.length - top === 1 ? "" : "s"}`);
-  const hint = identityLine(r);
-  if (hint) lines.push(hint);
-  const moved = movedInLine(v);
-  if (moved) lines.push(moved);
+  lines.push(`rows are ordered by surviving lines; the last commit date and the active marker (a commit in the ${v.inactiveAfterDays} days before ${v.asOf}) are information and do not change the order.`);
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus, "");
   const manySuspects = (r.reformat?.suspects.length ?? 0) > 1;
-  const heading = v.suggestedBasis === "reformatIgnored" ? `suggested (with the suspected reformat commit${manySuspects ? "s" : ""} ignored)` : "suggested";
-  lines.push(
-    v.suggested.length
-      ? `${heading}: ${v.suggested.map((p) => `${p.author} (${p.lines.toLocaleString("en-US")} lines, ${pct(p.lineShare)}${p.mails.length > 1 ? `, ${p.mails.length} addresses` : ""})`).join(", ")}`
-      : "suggested: none, no author holds a surviving line here",
-  );
-  // The top owner is named only when a person the suggestion offers is active: then "prefer" tells the reader something.
-  if (v.topOwner && !v.topOwner.active && v.suggested.some((p) => p.active)) {
-    lines.push(`top owner ${v.topOwner.author} last committed on ${v.topOwner.lastCommit ?? "an unknown date"}; prefer the active authors above`);
+  const heading = v.suggestedBasis === "reformatIgnored" ? `suggested by surviving lines (with the suspected reformat commit${manySuspects ? "s" : ""} ignored)` : "suggested by surviving lines";
+  const person = (/** @type {typeof v.suggested[number]} */ p) => `${p.author} (${p.lines.toLocaleString("en-US")} lines, ${pct(p.lineShare)}${p.mails.length > 1 ? `, ${p.mails.length} addresses` : ""}, last commit ${p.lastCommit ?? "unknown"}, ${p.active ? "active" : "inactive"})`;
+  lines.push(v.suggested.length ? `${heading}: ${v.suggested.map(person).join(", ")}` : "suggested: none, no author holds a surviving line here");
+  if (v.suggestedActiveOnly) {
+    lines.push(v.suggestedActiveOnly.length ? `active only (a cut by recent commits; the line-ranked list above is the ownership answer): ${v.suggestedActiveOnly.map(person).join(", ")}` : "active only: nobody with lines here committed in the active window; the line-ranked list above is the ownership answer");
   }
   // Only the rows the table shows are named here, three at most, so the line stays one line.
   // A person is active when any of their addresses is, so two addresses under one name are judged together.
@@ -2315,8 +2417,8 @@ export function renderReviewers(r, top) {
     const more = idle.length - named.length;
     lines.push(`not active in the year before ${v.asOf}: ${named.join(", ")}${more ? `, and ${more} more` : ""}`);
   }
-  const reformat = reformatBlock(r);
-  if (reformat) lines.push("", ...reformat);
+  const notes = scopeNotes(r, { view: v });
+  if (notes.length) lines.push("", ...notes);
   return lines.join("\n");
 }
 
@@ -2342,8 +2444,6 @@ export function renderHistory(r, top) {
   const h = r.history;
   if (!h) throw new Error("renderHistory needs a result from --history");
   const lines = [headerLine(r)];
-  const excludedBots = botsLine(r);
-  if (excludedBots) lines.push(excludedBots);
   const people = h.authors.length;
   lines.push("", `history of ${h.path} (${people} ${people === 1 ? "person" : "people"} changed it, oldest first; surviving lines as of ${h.asOf})`);
   const nameCount = new Map();
@@ -2376,13 +2476,11 @@ export function renderHistory(r, top) {
   } else {
     lines.push("no counted commit touches this path: every commit here is a set-aside formatting change");
   }
-  const hint = identityLine(r);
-  if (hint) lines.push(hint);
-  const moved = movedInLine(h);
-  if (moved) lines.push(moved);
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
+  const notes = scopeNotes(r, { view: h });
+  if (notes.length) lines.push("", ...notes);
   if (h.setAside.length) {
     // Under --keep-reformat the same commits are counted, so the block says so rather than claiming they are left out.
     lines.push("", r.reformat.applied ? "set aside (formatting-only commits touching this path, left out of the counts):" : "formatting-only commits touching this path (counted, because of --keep-reformat):");
@@ -2402,8 +2500,6 @@ export function renderGroups(r, top) {
   lines.push(headerLine(r));
   const w = r.commitWindow;
   lines.push(`git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded`);
-  const excludedBots = botsLine(r);
-  if (excludedBots) lines.push(excludedBots);
   const nameCount = new Map();
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
@@ -2426,11 +2522,9 @@ export function renderGroups(r, top) {
     }
   }
   // The hint is about the whole run's authors, not one group, so it is its own paragraph after every group.
-  const hint = identityLine(r);
-  if (hint) lines.push("", hint);
   if (groupThreshold !== null) lines.push("", busFactorDefinition(groupThreshold));
-  const reformat = reformatBlock(r);
-  if (reformat) lines.push("", ...reformat);
+  const notes = scopeNotes(r);
+  if (notes.length) lines.push("", ...notes);
   lines.push("");
   lines.push("What this cannot show: quality of the lines, review work, design done in documents,");
   lines.push("or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.");
@@ -2492,9 +2586,6 @@ export function renderMarkdown(r, top) {
   lines.push(
     `git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded${coAuthorsNote(r)}`
   );
-  const excludedBots = botsLine(r);
-  if (excludedBots) lines.push(excludedBots);
-
   lines.push("");
 
   const nameCount = new Map();
@@ -2525,13 +2616,12 @@ export function renderMarkdown(r, top) {
   }
 
   // A blank line first: a plain line directly under a Markdown table would be read as another row.
-  const hint = identityLine(r);
-  if (hint) lines.push("", hint.replaceAll("\n", "\n\n"));
   // Markdown joins neighbouring lines into one paragraph, so each of these gets a blank line around it.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", bus[0], "", bus[1]);
-  const reformat = reformatBlock(r);
-  if (reformat) lines.push("", ...reformat);
+  // A note block is plain lines in the table; here every line of it is its own paragraph.
+  const notes = scopeNotes(r);
+  if (notes.length) lines.push("", ...notes.map((l) => (l === "" ? l : `${l}\n`)));
   lines.push("");
   lines.push(
     "What this cannot show: quality of the lines, review work, design done in documents,"
@@ -3061,17 +3151,16 @@ async function main() {
     } else if (o.csv) {
       // CSV has no header line beyond the column names, which parsers read; the mark goes to stderr.
       if (r.shallow) console.error(`surviving-lines: ${SHALLOW_MARK}`);
-      // The table's block cannot go in CSV, so the suspects are named on stderr, where the reader still sees them.
-      if (r.reformat.applied) console.error(`surviving-lines: reformat ${r.reformat.suspects.length > 1 ? "commits" : "commit"} ignored (looks like whitespace and quote changes only): ${r.reformat.suspects.map((x) => x.shortSha).join(" ")}, --keep-reformat counts ${r.reformat.suspects.length > 1 ? "them" : "it"}`);
-      else if (r.reformat.suspects.length) console.error(`surviving-lines: reformat suspected: ${r.reformat.suspects.map((x) => x.shortSha).join(" ")}, re-run with --ignore-rev`);
-      const left = droppedLine(r);
-      if (left) console.error(`surviving-lines: ${left}`);
+      // The table's blocks cannot go in CSV, so the same scope notes go to stderr, where the reader still sees them.
+      for (const note of scopeNotes(r)) if (note) console.error(`surviving-lines: ${note}`);
       if (r.blame.copyDetection.reason && r.blame.copyDetection.reason !== "--no-copies") console.error(`surviving-lines: copy detection off: ${r.blame.copyDetection.reason}`);
       output = renderCsv(r);
     } else if (o.markdown) {
       output = renderMarkdown(r, o.top);
     } else if (o.identities) {
       output = renderIdentities(linkIdentities(r.authors), sameAddressNames(await readAddressNames(o)), r.possibleSamePerson);
+      const notes = scopeNotes(r, { identityHints: false });
+      if (notes.length) output += `\n\n${notes.join("\n")}`;
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
     } else if (r.reviewers) {
       // Five rows unless --top was given: the owners of one path are a short list.

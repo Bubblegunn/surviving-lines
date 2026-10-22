@@ -133,7 +133,6 @@ test("--no-detect-reformat prints no block and leaves the suspects empty, and de
 const SNAPSHOT_BOTS_TABLE = [
   `ref HEAD  ·  files 8/8 sampled (1 in 1)  ·  23 of 43 lines attributed`,
   `git blame -w -M -C -C  ·  commits 5, merges excluded`,
-  `bots excluded: 2 identities, 20 lines, 3 commits (--include-bots counts them)`,
   ``,
   `author           lines   share  commits   share`,
   `-----------------------------------------------`,
@@ -144,6 +143,8 @@ const SNAPSHOT_BOTS_TABLE = [
   ``,
   `bus factor 2: Ada and Bob together hold 73.9% of 23 surviving lines · to reach 80%: 3 authors`,
   `bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.`,
+  ``,
+  `bots excluded: 2 identities, 20 lines, 3 commits (--include-bots counts them)`,
   ``,
   `What this cannot show: quality of the lines, review work, design done in documents,`,
   `or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.`,
@@ -187,7 +188,8 @@ test("--csv keeps stdout to the data and names the suspects on stderr", async ()
     const run = spawnSync(process.execPath, [bin, "--cwd", dir, "--csv"], { encoding: "utf8" });
     assert.equal(run.status, 0, run.stderr);
     assert.doesNotMatch(run.stdout, /reformat/);
-    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): [0-9a-f]{7}, --keep-reformat counts it\n$/);
+    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines:   .*\n)*$/);
+    assert.match(run.stderr, /surviving-lines:   [0-9a-f]{7} .*--keep-reformat counts it/s);
   });
 });
 

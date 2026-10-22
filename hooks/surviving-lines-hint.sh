@@ -64,7 +64,7 @@ else
   cmd='surviving-lines'
 fi
 
-intro="This request is about who wrote or owns code in git (authors, ownership, or duplicate identities). Use the surviving-lines skill. SL = $cmd is the command: run SL instead of counting by hand."
+intro="This request is about who wrote or owns code in git (authors, ownership, or duplicate identities). Use the surviving-lines skill. SL = $cmd is the command: run SL instead of counting by hand. Answer rules: the skill section Rules for every ownership answer."
 closing_groups="These groups are guesses from names and addresses, not proof. If the user asked you to fix the duplicates, write the suggested lines to .mailmap under a comment line that marks them as proposals to confirm, re-run SL, and say in your answer that they are guesses until confirmed. SL --identities prints the lines; SL --merge-identities merges in memory only."
 closing_none="No same-person groups were suspected from names and addresses; that does not prove there are none. Run SL --identities to check."
 

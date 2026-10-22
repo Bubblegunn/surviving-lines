@@ -350,6 +350,8 @@ npx surviving-lines --reviewers lib
 
 The `suggested` line names up to three people, active ones first. It reads the same rows as the table, so a reformat commit that is left out by default is already left out of the suggestion. It is a starting point: who wrote the code that is left is not always who should review the next change to it.
 
+Rows are ordered by surviving lines. The last commit date and the `active` or `inactive` marker are printed for information; they never reorder the list or remove a top-three owner. When the active-only cut differs, it is printed as a second line next to the line-ranked one. Every view prints the same scope notes (dropped files, bots excluded, reformat commits ignored, identities merged by `.mailmap`, possible same-person suggestions, moved-in lines), and `--json` carries them as `dropped`, `bots`, `reformat`, `mailmap`, `identityHints` and `possibleSamePerson`.
+
 `--reviewers` and the bus factor count two addresses of one person separately until a `.mailmap` joins them. The `suggested` line is the one exception: it merges addresses that share a name, and nothing else.
 
 ## Who shaped a path

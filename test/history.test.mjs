@@ -217,7 +217,8 @@ test("one blank line, not two, separates the bus factor block from the set-aside
     const at = lines.findIndex((l) => l.startsWith("set aside"));
     assert.ok(at >= 2, text);
     assert.equal(lines[at - 1], "", text);
-    assert.ok(lines[at - 2].startsWith("bus factor"), text);
+    assert.ok(lines.slice(0, at).some((l) => l.startsWith("bus factor")), text);
+    assert.ok(lines.slice(0, at).some((l) => l.startsWith("reformat commit")), "the scope notes come before the set-aside block");
   });
 });
 

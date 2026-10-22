@@ -110,7 +110,8 @@ test("--csv is corrected, and the stderr note names the commit that was ignored"
     const rows = run.stdout.trim().split("\n");
     assert.ok(rows.some((row) => row.startsWith(`${PEOPLE.bob[0]},${mailOf("bob")},0,0.0000,`)), run.stdout);
     assert.ok(rows.some((row) => row.startsWith(`${PEOPLE.ada[0]},${mailOf("ada")},35,1.0000,`)), run.stdout);
-    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): [0-9a-f]{7}, --keep-reformat counts it\n$/);
+    assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines:   .*\n)*$/);
+    assert.match(run.stderr, /surviving-lines:   [0-9a-f]{7} .*--keep-reformat counts it/s);
   });
 });
 
@@ -189,7 +190,7 @@ test("the reviewers suggestion reads the corrected rows and keeps its heading", 
       [[PEOPLE.ada[0], 30]],
     );
     const text = renderReviewers(r, 5);
-    assert.ok(text.includes("suggested (with the suspected reformat commit ignored): Ada (30 lines, 100.0%)"), text);
+    assert.ok(text.includes("suggested by surviving lines (with the suspected reformat commit ignored): Ada (30 lines, 100.0%"), text);
     assert.ok(text.includes(APPLIED), text);
   });
 });

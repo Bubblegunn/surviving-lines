@@ -183,7 +183,7 @@ test("the reviewers suggestion says commits when several are suspected, and give
   try {
     const r = await analyse(parseArgs(["--cwd", dir, "--reviewers", "src"]));
     const text = renderReviewers(r, 5);
-    assert.ok(text.includes("suggested (with the suspected reformat commits ignored): Ada (50 lines, 100.0%)"), text);
+    assert.ok(text.includes("suggested by surviving lines (with the suspected reformat commits ignored): Ada (50 lines, 100.0%"), text);
     assert.ok(text.includes("reformat commits ignored (looks like whitespace and quote changes only): 2 commits"), text);
   } finally {
     removeRepo(dir);
