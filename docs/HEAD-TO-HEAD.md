@@ -561,3 +561,35 @@ Next step, round 5, which addresses T3 only:
 5. Gate as above. If it passes: held-out tasks (all arms, 3 runs; no product change after reading them) and F9 (Haiku and Opus, 1 run per task). Still open after that: the F6 audit, release 0.4.0 with the merge, and regenerating `docs/COMPARISON.md` on an idle machine.
 
 Commit trailer for this work: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, plus a "Sade dil (teknik olmayan biri için)" block in each message.
+
+## Round 5 measurement protocol (frozen 2026-10-22, owner decision)
+
+Written and committed before any round 5 run. No round 5 result had been seen. This section is not changed after results exist.
+
+**Rule.** On a task that has not changed, the rival arms (pp, ppi) and the baseline (base, plain Claude) take their scores from the last published round, round 4, unchanged. On those tasks only ours is run again, 3 runs, and graded. A changed or new task would run every arm 3 times. The final gate (held-out tasks, F9, F6) is exempt: every arm runs in full there.
+
+**Source of the reused values.** Round 4 results commit `e833a7d` (tool at `747031f`, project-pilot 1.0.0 at `bf6eabe`, model `claude-sonnet-5-5`, 3 runs per cell, outcome criteria only). Round 5 uses the same task text (`tasks.json`), fixture (`build-fixture.sh`), script checks and labels (`grade.py`, `criteria-labels.json`), model and rival version. Between `e833a7d` and this protocol the only change to the bench is the `--arms` option of `grade.py` (below); `tasks.json`, `build-fixture.sh`, `criteria-labels.json`, the criteria, every script check and the grader prompt are byte-identical.
+
+**Unchanged tasks and reused values (all 11 are unchanged):**
+
+| Task | Criteria | pp (r4) | ppi (r4) | base (r4) | ours |
+| --- | --- | --- | --- | --- | --- |
+| T1 | 4 | 2.67 | 2.00 | 2.67 | re-run x3 |
+| T2 | 4 | 2.67 | 2.33 | 3.67 | re-run x3 |
+| T3 | 5 | 3.67 | not in task | 4.33 | re-run x3 |
+| T4 | 5 | 3.67 | 4.00 | 3.00 | re-run x3 |
+| T1i | 4 | 3.67 | 2.00 | 4.00 | re-run x3 |
+| T4i | 5 | 3.00 | 4.67 | 3.00 | re-run x3 |
+| E1 | 5 | 3.00 | 3.00 | 3.33 | re-run x3 |
+| E2k | 5 | 3.67 | 4.00 | 3.33 | re-run x3 |
+| E3 | 4 | 2.33 | not in task | 3.00 | re-run x3 |
+| E4h | 5 | 4.33 | not in task | 4.33 | re-run x3 |
+| E5 | 5 | 4.00 | 3.33 | 3.67 | re-run x3 |
+
+Best rival arm total (project-pilot, best of pp and ppi per task): 39.00 of 51. Base total: 38.33 of 51. These values are used as they are, including base T3 4.33 (an early grading pass had 3.67; the published value is 4.33).
+
+**Rules.** Rule B: on every task our mean is strictly above pp, ppi and base, and where any of them is at the criteria maximum we are at the maximum. Rule A: our lost points (51 minus our total) are at most 0.8 x 12.00 = 9.60. Same as round 4. This repository has no cost rule. The result table marks reused cells "r4 reused".
+
+**Grading ours-only cells.** `grade.py` normally grades a cell with every arm's answer present, labelled in a shuffled order. The round 4 rival answers are not in the repository, so that cannot be reproduced. A new option `grade.py <out> --arms ours` grades the cells of ours alone: same criteria, same script checks (they never depended on the other answers), same grader prompt, same three votes and majority, but the model-judged criteria see one answer instead of four. This is a deviation from "the same grader condition" that the owner should know about. It is stated again with the results.
+
+**Run.** `git archive` of the product commit, `OURS_DIR` that copy, `JOBS_ONLY='^ours '` in `run-all.sh`, 3 runs, parallelism 2, model `claude-sonnet-5-5`. Cost of every `claude -p` run is logged.

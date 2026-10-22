@@ -35,6 +35,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ARMS = ["ours", "pp", "ppi", "base"]
 LABELS = ["A", "B", "C", "D"]
 KINDS = ("outcome", "process")
+# Set by --arms: grade only these arms' cells (a reused-rivals round); empty means every arm.
+ONLY_ARMS = []
 RUN_DIR = re.compile(r"^(.+)-(ours|pp|ppi|base)-(\d+)$")
 META = re.compile(r"^META cost=(\S+) ms=(\S+) turns=(\S+)$", re.M)
 # Header lines written by summarize.py. They name the arm or reveal the plugin, so the grader never sees them.
@@ -57,7 +59,8 @@ def arms_for_task(task):
     arms = ["ours", "pp"]
     if isinstance(task.get("ppInvokedPrompt"), str):
         arms.append("ppi")
-    return arms + ["base"]
+    arms = arms + ["base"]
+    return [a for a in arms if a in ONLY_ARMS] if ONLY_ARMS else arms
 
 
 def kinds_for(task):
@@ -1484,6 +1487,13 @@ def main(argv):
         return self_test()
     args = [a for a in argv[1:]]
     max_run = None
+    if "--arms" in args:
+        i = args.index("--arms")
+        if i + 1 >= len(args) or not set(args[i + 1].split(",")) <= set(ARMS):
+            print("usage: grade.py <out-dir> [--arms ours,...]", file=sys.stderr)
+            return 2
+        ONLY_ARMS[:] = args[i + 1].split(",")
+        del args[i:i + 2]
     if "--runs" in args:
         i = args.index("--runs")
         if i + 1 >= len(args) or not args[i + 1].isdigit():
