@@ -735,3 +735,23 @@ Rejected, with reasons: automatic merge of any suggestion (the research: over-me
 **Tests and review.** Each of D1 to D4 gets tests on synthetic repositories built inside the test. `npm test` and `claude plugin validate .` must pass, and a Sonnet reviewer reads the whole diff. The product then does not change after the new held-out tasks are opened.
 
 **Generalisation rule.** Every rule above is a property of any repository's output. The new held-out tasks are written by an agent that has not seen this code, the benchmark documents, or the old held-out set (see the round deep measurement protocol, written after the code).
+
+## Round deep measurement protocol (frozen 2026-10-22, owner decision)
+
+Written and committed after the product change (`461b8d2`, 312 tests pass, `claude plugin validate .` passes) and before any measurement run. No result of this round had been seen. This section is not changed after results exist.
+
+**Product.** Ours runs from a `git archive` of `461b8d2`. The product does not change after this section is committed.
+
+**New held-out set (N1 to N4).** Written by a fresh `claude -p` agent (Sonnet, `claude-sonnet-5-5`) that was given only the one-sentence user problem from the top of `README.md` and a list of the files a task consists of (prompt, fixture build script, ground-truth script and output, five outcome criteria). It had no access to the code, to this document or to the old held-out set, and was told to choose the repositories and hazards itself. Result: four tasks on public repositories (a Python, a Rust, a Go and a JavaScript project), kept on the local branch `heldout-2026-10-b` (`34f31540d48bc9a5a38ce3683e83c9385a6d0724`, never pushed). The controller did not read the tasks, the criteria or the ground-truth scripts. Setup was validated without reading them: all four fixtures build, two builds of a fixture give the same HEAD, the ground-truth script output equals the committed `truth.txt`, each task has five criteria. The task list used by the runner (`new-heldout-tasks.json`, same format as `heldout-tasks.json`, every criterion an outcome criterion judged by a model, SHA-256 `b5271d143b78dbb2874ab78e26303d08b124711aa54341f13a386523c86eee76`) is built from those files by script and is committed with the results.
+
+**Arms.** `ours`, `pp`, `ppi` (project-pilot 1.0.0 at `bf6eabe`, the invoked prompt is "Use the /project-pilot:bus-factor command for this. " plus the natural prompt), `hist` (mcp-git-historian `bb2e209`), `bf` (k41n/busfactor `d898d8d`, with the `--no-github` line), `base` (empty plugin). Same copies, same set-up and same guard as the final gate (`b916ac3`).
+
+**Departures from the owner's plan, stated before the runs.** The budget for all `claude -p` calls of this task is 12 USD, of which 4.49 USD were spent on research, implementation and writing the new tasks. Three runs of every arm on four tasks plus grading cost about 14 to 15 USD, so they do not fit. Therefore: (1) runs per cell: run 1 of every cell (24 runs) is done first; run 2 of whole tasks (all six arms, in the order N1 to N4) follows only while the budget allows, and the number of runs per cell is reported per task; (2) the public set is not re-run with `hist` and `bf` (66 runs) and ours is not re-run on it (33 runs); (3) F9 (Haiku and Opus) and F6 (10 percent audit) run only if the gate passes and the budget allows, otherwise they are reported as not done. These departures lower the evidence a "first" claim can rest on; any claim states the number of runs, tasks and models actually completed.
+
+**Grading.** As in the final gate: all arms of one task and run are graded together, answers labelled in a shuffled order, names replaced, three `claude -p` votes per cell, majority of valid votes (`gate-grade.py`). Same-condition grading for all arms.
+
+**Rules.** Rule B: on every task our mean is strictly above every rival's (`pp` and `ppi` as the better of the two per task, `hist`, `bf`, `base`), and where a rival is at the maximum we are at the maximum. Rule A: our lost points are at most 80 percent of the lost points of the rival with the highest total. With one run per cell, a task counts as lost when ours is not strictly above a rival, and ties below the maximum are losses. There is no cost rule.
+
+**Safety.** As before: competitor arms run from `git archive` copies, hash guard on `hooks` and `mcpServers` before and after each competitor run, parallelism 2, a cell that fails is run again and never graded, Vaara is never run.
+
+**Budget.** No new run or grading call starts when the logged `claude -p` total of this task would pass 11.6 USD. Results so far are then written, with what is missing named. The organisation-wide check (`spend.sh`, first number 160) is also honoured.
