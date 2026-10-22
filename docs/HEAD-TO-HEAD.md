@@ -755,3 +755,25 @@ Written and committed after the product change (`461b8d2`, 312 tests pass, `clau
 **Safety.** As before: competitor arms run from `git archive` copies, hash guard on `hooks` and `mcpServers` before and after each competitor run, parallelism 2, a cell that fails is run again and never graded, Vaara is never run.
 
 **Budget.** No new run or grading call starts when the logged `claude -p` total of this task would pass 11.6 USD. Results so far are then written, with what is missing named. The organisation-wide check (`spend.sh`, first number 160) is also honoured.
+
+### Results, deep round
+
+Run on 2026-10-22 under the "Round deep measurement protocol" above (frozen in `c18abb0` before any run). Ours ran from a `git archive` of `461b8d2`. New held-out tasks N1 to N4 (local branch `heldout-2026-10-b`, never pushed), model `claude-sonnet-5-5`, six arms, 42 task runs two at a time, hash guard passed on every competitor run. Ours loaded and ran in every run. All arms of a cell were graded together in a shuffled order, three votes per cell. Published: `bench/head-to-head/results/deep-round-claude-sonnet-5-5/` (table, per-criterion votes, label maps, task list, manifest).
+
+Outcome criteria (mean criteria passed; runs per cell in brackets: N1 to N3 two runs, N4 one run):
+
+| Task | Criteria | ours | pp | ppi | hist | bf | base |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| N1 | 5 | 3.00 (4/2) | 1.00 (1/1) | 1.00 (1/1) | 2.50 (1/4) | 3.00 (3/3) | 2.00 (3/1) |
+| N2 | 5 | 2.00 (2/2) | 2.50 (2/3) | 2.00 (2/2) | 0.00 (0/0) | 1.50 (2/1) | 2.00 (2/2) |
+| N3 | 5 | 3.00 (2/4) | 1.00 (0/2) | 2.00 (1/3) | 1.00 (0/2) | 1.50 (0/3) | 1.00 (0/2) |
+| N4 | 5 | 3.00 (3) | 3.00 (3) | 5.00 (5) | 1.00 (1) | 3.00 (3) | 3.00 (3) |
+| Total | 20 | 11.00 | 10.50 (best of pp and ppi per task) | | 4.50 | 9.00 | 8.00 |
+
+**The gate failed, by the rules frozen before the run.** Rule B: ours is strictly above every rival only on N3. N1 is a tie with `bf` (3.00); N2 is below `pp` (2.00 against 2.50); N4 is below `ppi` (3.00 against 5.00). Rule A: ours lost 9.00 points; the best rival (project-pilot, best of `pp` and `ppi` per task) lost 9.50, so the limit is 7.60. Ours has the highest total (11.00 against 10.50 for project-pilot, 9.00 for `bf`, 8.00 for plain Claude, 4.50 for `hist`) but the margin is half a point on 20, from one or two runs per cell. This is not a "first" result and no such claim is made. Compared with the final gate on the old held-out set (3.00 of 15, last of six arms), ours moved from last to first by total on a set written by an agent that did not see the code; the old set's cases are no longer counted as held-out.
+
+One grader call for N1 run 2 did not parse; that cell was graded again (the valid calls were kept) and the table above is the second pass. The criteria were not changed after the results.
+
+Not done, because of the 12 USD limit for all `claude -p` calls of this task (spent: research 2.52, implementation 1.38, writing the tasks 0.58, runs 4.43, grading 1.80; total 10.73 USD): run 2 of N4, run 3 of every cell, the public set for `hist` and `bf`, F9 (Haiku and Opus) and the F6 audit. The last two would have been skipped in any case: the Sonnet step already failed Rule B and Rule A.
+
+A diagnostic read of the grader reasons for ours on N2 (a path-scoped reviewers question) and N4, done after the results and not used to change anything: on N2 the answer gave a count but no percentage share, and said nothing about the vendored directory, the whitespace commit, the rename or the bot, because the reviewers view for a path does not print the "dropped", "reformat commit ignored" and "bots excluded" lines that the whole-repo view prints, and does not restate the share the agent was asked for. These two points are general product gaps (the path views should carry the same notes as the table, and the skill should require the share) and are the first items for a next round. N4 was not examined further. The new set is now seen: it is no longer held-out.

@@ -1,0 +1,113 @@
+{
+ "version": 1,
+ "tasks": [
+  {
+   "id": "N1",
+   "fixture": "t1",
+   "prompt": "I'm about to take over records and want to know who actually wrote the code that is still in it today. Who are the top three people, and roughly what share of the current code is theirs?",
+   "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. I'm about to take over records and want to know who actually wrote the code that is still in it today. Who are the top three people, and roughly what share of the current code is theirs?",
+   "criteria": [
+    "The answer names Kenneth Reitz as top owner with a share of 53.9% \u00b13 pp (50.9\u201356.9%). FAIL if another person is first, or the share is outside the range, or only commit counts are given.",
+    "The answer names Jan Vlcinsky (also written Vl\u010dinsk\u00fd) as the second owner with a combined share of 10.9% \u00b12 pp, and says the two spellings/addresses were merged. FAIL if the two identities are listed as separate people, if Jan is given less than 8.9% or is absent from the top three.",
+    "The third owner is Chad Whitacre at 6.7% \u00b12 pp (Greg Troszak at 6.3% is within tolerance; naming Greg as third with the same tolerance is acceptable only if Chad is also mentioned as essentially tied). FAIL if Dana Whitfield appears in the top three or is credited with more than 2% of the code.",
+    "The answer states that the string-quote formatting commit (Dana Whitfield, 2026-01-12) was not counted as authorship, e.g. by ignoring it in blame or via .git-blame-ignore-revs. FAIL if the answer does not mention it, or credits it as ownership.",
+    "The answer states that dependabot[bot] was left out (about 3 lines) and that Priya Raman's two addresses were merged (\u22483.0% \u00b11.5 pp if her share is given). FAIL if the bot appears as an owner, or Priya appears as two people."
+   ],
+   "criteriaKinds": [
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome"
+   ],
+   "checks": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "id": "N2",
+   "fixture": "t2",
+   "prompt": "I'm opening a PR that touches the walkdir src/ directory. Who are the two people I should request as reviewers, based on who wrote most of what is there now?",
+   "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. I'm opening a PR that touches the walkdir src/ directory. Who are the two people I should request as reviewers, based on who wrote most of what is there now?",
+   "criteria": [
+    "The answer names Andrew Gallant as the first reviewer with a share of src/ of 82.5% \u00b13 pp (79.5\u201385.5%). FAIL if anyone else is first, or the share is outside the range.",
+    "The answer names Sebastian Thiel (66 lines, 2.3%) as the second reviewer, or states that the second place is a small group (Sebastian Thiel 2.3%, Aron Griffis 1.5%, mcharsley 1.5%) with no one above ~3%. FAIL if the second reviewer is Tom Becker, Sam Okafor, Lena Ivanova or a bot.",
+    "The answer does not credit Tom Becker with src/ ownership (true share under 1%; he made the tab re-indent and rename only). FAIL if Tom Becker is named as owner/reviewer or given more than 3% of src/.",
+    "The answer says that vendor/ (third-party snapshot, \u2248300 lines by Sam Okafor) was excluded or that Sam Okafor owns none of src/. FAIL if vendored lines are counted for Sam or if no statement about vendor/ is made.",
+    "The answer says the whitespace/indent commit and the rename were seen through (not counted as authorship) and that renovate[bot] was left out. FAIL if any of the three is missing or if the answer counts bot lines for a person."
+   ],
+   "criteriaKinds": [
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome"
+   ],
+   "checks": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "id": "N3",
+   "fixture": "t3",
+   "prompt": "Is go-homedir basically a one-person project? What share of the code that's in the repo today was written by the main author, and who else has meaningful ownership?",
+   "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. Is go-homedir basically a one-person project? What share of the code that's in the repo today was written by the main author, and who else has meaningful ownership?",
+   "criteria": [
+    "The answer gives Mitchell Hashimoto's share as 68.1% \u00b13 pp (65.1\u201371.1%) of current lines, as one person. FAIL if the share is outside the range, or if he is split into several people with the biggest piece reported as the top share.",
+    "The answer concludes the project is majority-owned by one person but not literally one-person: a clear secondary group exists (Akinori MUSHA 6.5%, Matteo Kloiber 6.1%, Tianon Gravi 5.4%, each \u00b12 pp). FAIL if it names none of these three, or calls it a pure single-author project.",
+    "The answer says zz_generated_shells.go (generated, 150 lines, committed by Ravi Menon) was excluded or not counted as hand-written. FAIL if Ravi Menon appears with more than 5% of the repo or if the generated file is not mentioned.",
+    "The answer does not credit Ravi Menon for ExpandAll (added then reverted; zero lines survive) and does not credit the bot for the SPDX header lines. FAIL if either is counted as ownership.",
+    "The answer says the lower-case \"mitchell hashimoto\" / noreply identity and the xmitchx@gmail.com address were merged into Mitchell. FAIL if the merge is not mentioned or if \"mitchell hashimoto\" appears as a separate person."
+   ],
+   "criteriaKinds": [
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome"
+   ],
+   "checks": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  },
+  {
+   "id": "N4",
+   "fixture": "t4",
+   "prompt": "I'm taking over maintenance of p-map. Who wrote most of the code that is actually in the repo now, and who should I ask about index.js in particular?",
+   "ppInvokedPrompt": "Use the /project-pilot:bus-factor command for this. I'm taking over maintenance of p-map. Who wrote most of the code that is actually in the repo now, and who should I ask about index.js in particular?",
+   "criteria": [
+    "The answer gives Sindre Sorhus 89.4% \u00b13 pp (86.4\u201392.4%) of the repo's current code. FAIL if the share is outside the range, or if Ana Torres is given more than 2% (naive counting of the lockfile gives her about 52%).",
+    "The answer says package-lock.json (generated) was excluded or not counted. FAIL if it is not mentioned or its lines are counted.",
+    "For index.js, the answer names Sindre Sorhus first at 73.6% \u00b14 pp, and lists Richie Bendall (7.1%) and Chen Wei (6.6%) as next, each \u00b13 pp. FAIL if the first is not Sindre, or if Chen Wei is missing from the next three people.",
+    "The answer merges Wei Chen into Chen Wei, citing the repo's .mailmap (combined \u224839 lines, 6.6% of index.js \u00b13 pp). FAIL if the two are reported as separate people, or if the .mailmap is not mentioned.",
+    "The answer credits Noor Haddad (16 lines, \u22482.7% of index.js) by author rather than crediting Sindre Sorhus as committer. FAIL if Noor is not mentioned as an owner of part of index.js or those lines are attributed to Sindre."
+   ],
+   "criteriaKinds": [
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome",
+    "outcome"
+   ],
+   "checks": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ]
+  }
+ ]
+}
