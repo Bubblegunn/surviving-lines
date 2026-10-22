@@ -510,21 +510,54 @@ The owner changed rule A: our lost points must be at most 80% of the best other 
 - Rule B (per task, strictly above every other arm, or at the maximum when another arm is at the maximum): passes on every task except T3. On T3 ours (4.00) is tied with base (4.00) and below the maximum of 5. On E4h (project-pilot at 5.00) and E5 (base at 5.00) ours is at the maximum, so both pass. **Rule B fails on T3 alone.**
 - Overall: the gate does not pass yet, because of T3. Round 4 addresses T3 only.
 
+### Round 4 results
+
+Run on 2026-10-22 in a Claude Code cloud session with the model `claude-sonnet-5-5`, 3 runs per task and arm, 123 task runs, two at a time. The tool, skill and hook ran from a `git archive` of commit `747031f`. Project-pilot is 1.0.0 at commit `bf6eabe`, the source the Anthropic plugin directory lists for it. The configuration guard read the same hash before and after every competitor run. No run failed and no run hit a rate limit. Published: `bench/head-to-head/results/round4-claude-sonnet-5-5/` (the results table and the manifest; the transcripts are not committed).
+
+One departure from the plan: the round 3 transcripts were never committed, so they could not be copied in for the other tasks. Every arm therefore ran every task again, and round 4 is a complete round on its own, not round 3 with T3 swapped in.
+
+How the plugins ran: ours loaded in 33 of 33 runs and its skill ran in 33 of 33. Project-pilot loaded in 33 of 33 runs with the natural prompt, and its skills ran in 6 of them. The invoked arm ran its command in 24 of 24 runs. No plugin ran in the base arm.
+
+Outcome criteria only (mean criteria passed, 3 runs per cell):
+
+| Task | Criteria | ours | pp | ppi | base |
+| --- | --- | --- | --- | --- | --- |
+| T1 | 4 | 4.00 | 2.67 | 2.00 | 2.67 |
+| T2 | 4 | 4.00 | 2.67 | 2.33 | 3.67 |
+| T3 | 5 | 4.33 | 3.67 | not in task | 4.33 |
+| T4 | 5 | 5.00 | 3.67 | 4.00 | 3.00 |
+| T1i | 4 | 4.00 | 3.67 | 2.00 | 4.00 |
+| T4i | 5 | 5.00 | 3.00 | 4.67 | 3.00 |
+| E1 | 5 | 5.00 | 3.00 | 3.00 | 3.33 |
+| E2k | 5 | 4.33 | 3.67 | 4.00 | 3.33 |
+| E3 | 4 | 4.00 | 2.33 | not in task | 3.00 |
+| E4h | 5 | 5.00 | 4.33 | not in task | 4.33 |
+| E5 | 5 | 5.00 | 4.00 | 3.33 | 3.67 |
+| Total | 51 | 49.67 | 39.00 (best of pp and ppi per task) | | 38.33 |
+
+Gate:
+
+- Rule A: ours lost 51 minus 49.67 = 1.33 points. The best other arm (project-pilot, best of pp and ppi per task) lost 12.00. The limit is 0.8 x 12.00 = 9.60. **Rule A passes.**
+- Rule B: ours is strictly above every other arm on 10 tasks. On T1i ours and base both reach the maximum of 4, which passes. On T3 ours (4.33) ties base (4.33) below the maximum of 5. **Rule B fails on T3 alone, as in round 3.** (`grade.py` still prints the old 20% total rule; the verdict here uses the revised rules.)
+
+The round 4 change did what it was meant to: ours wrote a `.mailmap` in 3 of 3 T3 runs (none in round 3), re-ran the count, and hedged. It still lost criterion 2 in runs 1 and 2. In each, the file mapped Troy Goode correctly and added a second line, `Alejandro Caravaca Puchades <address>`, a single-address line that gives that address one name. In git this line does unify the two spellings, and the criterion text allows that unification. But the frozen script check (`one_address` in `grade.py`) accepts a line for another person only when it repeats one address at least twice (`Name <a> alias <a>`), and it treats a one-address line as a bare claim. Run 3 wrote the two-address form and passed. The check is left as frozen. Changing it after seeing the results would move the goalposts; that call belongs to the owner.
+
+Why the agent wrote that line: the prompt hint lists the Alejandro group (same address, other name) as a suspected same-person group, but `--identities` prints a `.mailmap` line only for Troy Goode. The agent writes the Alejandro line itself, and its form varies from run to run. On T3, base lost the hedge criterion in runs 2 and 3, and project-pilot lost the top-author basis or the hedge.
+
+Grader noise: some grader replies did not parse, because the model corrected itself in prose after its JSON. Those calls were asked again until every cell had three parsed votes, which took four grading passes. Base on T3 moved from 3.67 in an early pass (one vote missing on two cells) to 4.33 in the final one; it was 4.00 in round 3. Grading reliability: 48.3% of the scored (cell, criterion) pairs were decided by script; 289 of 318 model-judged pairs (90.9%) had three identical votes. No grading errors.
+
+Not done for this round: the F6 audit, the held-out tasks and the F9 runs.
+
 ### Resume
 
-State on 2026-10-22: branch `plugin-leadership`, nothing is pushed and no release exists. Round 3 (tool at `479ebc7`) is published and re-evaluated: rule A passes, rule B fails on T3 only, because the skill asked for confirmation instead of writing the `.mailmap` that T3 criterion 2 requires.
+State on 2026-10-22: branch `plugin-leadership`, no release exists, nothing is merged. Round 4 (tool at `747031f`) is published above: rule A passes (1.33 lost against a limit of 9.60), and rule B fails on T3 alone (ours 4.33, base 4.33).
 
-Round 4 change (done, committed, 293 tests pass, `claude plugin validate .` passes, reviewed): the skill, the prompt hint (`hooks/surviving-lines-hint.sh`), the README and the FAQ now tell the agent to write the suggested lines to `.mailmap` under a comment line that marks them as proposals to confirm, re-run the count, and say they are guesses until confirmed (only when the user asked to fix the duplicates). `run-all.sh` has a new optional `JOBS_ONLY` filter.
+Next step, round 5, which addresses T3 only:
 
-Round 4 runs were started and then stopped before they finished. Their output was on the old machine and is not committed, so start them again.
-
-Remaining steps, all with committed scripts (Linux works; needs git, node 22 or newer, python3, the `claude` CLI logged in, and a clone of project-pilot):
-
-1. Clone project-pilot and build the fixtures: `bash bench/head-to-head/build-fixture.sh <out>/fixtures` (needs network; it clones expressjs/cors).
-2. Make a plugin directory for the new commit with `git archive HEAD | tar -x -C <ours-dir>` and note the commit hash in `<ours-dir>/ARCHIVE_OF_COMMIT`.
-3. Run round 4: `OURS_DIR=<ours-dir> PP_DIR=<project-pilot clone> MODEL=claude-sonnet-5-5 PARALLEL=2 JOBS_ONLY='^ours | T3 ' bash bench/head-to-head/run-all.sh <out> 3`. That is T3 for all arms and all 11 tasks for ours, 3 runs each. Use `GUARD_CMD` to compare the user's Claude settings hooks and mcpServers before and after every competitor run, and stop if they change. Rate-limited cells are retried and never graded. Never set `VAARA_*`.
-4. To compare with round 3, copy the round 3 competitor cells for the other tasks from `bench/head-to-head/results/round3-claude-sonnet-5-5/runs` into `<out>/runs` (they are unaffected by the change; say so in the report), then run `python3 -I bench/head-to-head/grade.py <out>` until it reports no grading errors.
-5. Publish with `MODEL=claude-sonnet-5-5 bash bench/head-to-head/publish-results.sh <out> round4-claude-sonnet-5-5`, patch `ours commit` in its `MANIFEST.txt`, add a "Round 4 results" section here, and check the prose with `npx ai-slop-linter` (no dashes used as punctuation).
-6. Gate: rule A (lost points at most 80% of the best other arm's) and rule B (strictly above every other arm per task, or at the maximum when another arm is at the maximum). If it passes: held-out tasks (all arms, 3 runs; no product change after reading them; the owner provides them) and F9 (Haiku and Opus, 1 run per task, for ours, the best competitor arm per task and the baseline). Still open after that: the F6 audit of published transcripts, release 0.4.0 with the merge, and regenerating `docs/COMPARISON.md` on an idle machine.
+1. Make `--identities` (and the prompt hint's suggested lines) print an explicit `.mailmap` line for every same-address, other-name group, in the two-address form `Canonical Name <a> other name <a>`, so the agent copies a line instead of writing its own. This is a product change: write it with a test, run `npm test` and `claude plugin validate .`, review it, commit it, then benchmark a `git archive` of the new commit.
+2. Alternatively, or as well, the owner rules on whether T3 criterion 2's script should accept a one-address line (`Name <a>`) for a same-address unification. Record the ruling and freeze it before any run, as in round 3.
+3. Run all arms on all tasks again (round 3 and round 4 transcripts are not in the repository): `OURS_DIR=<archive> PP_DIR=<project-pilot at bf6eabe> MODEL=claude-sonnet-5-5 PARALLEL=2 GUARD_CMD=<guard> bash bench/head-to-head/run-all.sh <out> 3`. Project-pilot's source is `https://github.com/bukoo93/project-pilot.git`, the commit the Anthropic plugin directory lists (`claude plugin list --available --json`). In a cloud session `claude -p` is logged in. A wait loop that checks for running work with `pgrep -f` must not contain the string it searches for, or it matches itself.
+4. Grade with `python3 -I bench/head-to-head/grade.py <out>`, repeating until no call fails to parse. Publish with `publish-results.sh`, and commit only `grade/RESULTS.md` and `MANIFEST.txt` (patch `ours commit` and the transcripts line).
+5. Gate as above. If it passes: held-out tasks (all arms, 3 runs; no product change after reading them) and F9 (Haiku and Opus, 1 run per task). Still open after that: the F6 audit, release 0.4.0 with the merge, and regenerating `docs/COMPARISON.md` on an idle machine.
 
 Commit trailer for this work: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`, plus a "Sade dil (teknik olmayan biri için)" block in each message.

@@ -65,7 +65,7 @@ Read `docs/HEAD-TO-HEAD.md` in each repository: tasks, rulings, results per roun
 | Repository | Latest result | Next step |
 |---|---|---|
 | workproof | passes every public task (34.33 vs 23.33 of 35) | final gate: T6 re-run for ours, held-out tasks (in this branch), Haiku/Opus runs, then the 10 percent audit |
-| surviving-lines | 49.00 vs 41.33 of 51; rule A passes; rule B fails only T3 | round 4: T3 writes the `.mailmap` as proposals and hedges; re-run T3 for all arms plus ours on all tasks; then the final gate |
+| surviving-lines | round 4: 49.67 vs 39.00 of 51; rule A passes; rule B fails only T3 (ours 4.33, base 4.33) | round 5 (see Resume): `--identities` prints a two-address `.mailmap` line for same-address groups, and/or an owner ruling on the T3 one-address check; re-run all arms; then the final gate |
 | product-engineer | core 23.00 vs 21.33 (lost 7.00, needs at most 6.93); fails T2, T3, T4, H4, H5 | round 3 (see Resume): act-and-unstage rule for H5, release notes without code identifiers, verdict-only answers, replace T3, fixed H4 answer shape |
 | ai-slop-linter | 54.33 vs 56.33 of 60 (blader humanizer, invoked): behind | round 2: `--compare` flags first-person words and new claims, a prompt hook, an agent-checked catalog for tells a regex cannot catch (MIT sources, attribution kept) |
 | proactive-gate | Sonnet and Haiku write simple gates correctly without the library | round 3: tasks Z1 to Z6 (under-specified product prompts with public sources), `assistantNudge` preset, `scaffold nudge`, synchronous evaluate, explain; extra rule: our cost per run is not above the baseline's |
