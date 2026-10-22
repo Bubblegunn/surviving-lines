@@ -972,3 +972,39 @@ Source: `docs/BEST-RIVAL-r9.md` (primary rival: project-pilot invoked; second: p
 - **R9-2 not adopted** (reverses R7-4; needs a seen-truth check; R9-1 covers the loss class more safely).
 
 Development gate (BEST-RIVAL-SPEC step 6): ours x3 on held-out D (D1-D5) and on C1-C5, same grading, compared with the best rival's published scores; strictly higher or tied at the ceiling on every task. At most 3 iterations.
+
+## Round 9 development gate, iteration 1: diagnosis and rulings
+
+Frozen 2026-10-23 before any iteration 1 code change. Ours (`09e09d9`) was run x3 on the seen sets D and C and graded with the same method (results: `/Users/efe/claude-kredi-runs/2026-10-23/r9/dev-D`, `dev-C`; this section does not enter the score tables). Criteria, check scripts, tasks and the win rule are unchanged.
+
+| Task | Ours | Best rival | Result |
+| --- | --- | --- | --- |
+| D1 | 5.00 | - | ok |
+| D2 | 4.33 | 4.33 (ppi) | tie below the ceiling, fail |
+| D3 | 2.00 | 0.33 | ok |
+| D4 | 4.00 | - | ok |
+| D5 | 3.67 | - | ok |
+| C1 | 2.67 (err=5) | 3.00 (base) | fail |
+| C2 | 2.00 (round 7: 4.00) | 3.67 (bf), 3.00 (ppi) | fail, regression |
+| C3 | 3.00 | - | ok |
+| C4 | 2.67 (round 7: 3.67) | 3.00 (pp) | fail, regression |
+| C5 | 2.00 (round 7: 3.00) | 2.00 | fail, regression |
+
+Diagnosis from the failed criteria, the final answers and a re-run of the tool on the run repositories. Each class is general.
+
+1. **Blank lines are counted as surviving lines (C4, C5, C2; probably the cause of the shifts against round 7 on the same code).** The truth of every held-out set counts non-blank lines. The tool counts blank lines, which inflate the denominator and move shares toward whoever writes more blank lines: C4 lib/ José Valim 56.7% against 60.7% (accepted 57.7% to 63.7%), C5 lines 1,187 against 1,007, C2 signer.py 366 lines against 279. Graders also cited the differing line counts as a reason to fail the numeric criteria. Not a rule change of R8: the round 7 and round 8 numbers were computed with blank lines as well, so the C2 drop from 4.00 to 2.00 is mostly the next two classes plus grader variance (every reason for C2 criterion 1 and 4 is the same in all nine votes).
+2. **Automation identities that are not named `[bot]` stay in the table (C4 criterion 4, C5 criterion 5).** Weblate (`hosted@weblate.org`, 80 lines) and StyleCI Bot (`bot@styleci.io`) were ranked as owners; the answers had to say "ask a person instead". The bots line also gave only a count ("1 identity"), so answers wrote "one bot identity is excluded" without a name and the grader read it as not saying bot commits were ignored (C2 criterion 4).
+3. **Placeholder identities are ranked as people (C5 criterion 2).** `root@localhost` and "Your Name" appeared as two table rows; the criterion wants about 15% stated as unattributable and not offered as contacts.
+4. **A commit that is clearly a codemod is only named, never set aside (C1 criterion 3, D2 run 3).** The check printed `d43be5f "all: go fix ./..." ... 38 surviving lines` as a candidate that was not set aside (frozen R8-2: a candidate is never set aside). All three C1 answers wrote that they "kept" the commit; the skill asks the agent to re-run with `--ignore-rev`, and it did not.
+5. **Per-file answers where a package or directory share was asked (C2 criterion 1).** The question named two files and "the package"; every answer gave per-file tables only and failed criterion 1 in nine of nine votes (round 7 failed the same criterion). The skill gives no rule about a wider scope.
+6. **Grader noise, not fixed:** C4 criterion 3 (the answers say "the same owners in nearly the same proportions" and also name the different second owner; the wording is the agent's), C1 criterion 1 and 2 (borderline hedging on a passing share), the unparsed replies behind C1 err=5, and several D2 run 3 reasons that contradict their own verdict ("numbers pass"). No code change for these. Candidate causes checked and not supported by the failed reasons: R8-1 plain `-C` default (shares for the named people are inside tolerance in every C2, C4 and C5 vote except through blank lines), R9-4 table shape, R9-3 scope line, R9-1, hint changes, skill length.
+
+Rules for iteration 1 (R9-2 stays not adopted):
+
+- **R9-8** Blank (whitespace-only) lines are not counted: they are dropped from every blame result before counting, and the file size used in the header is the non-blank size of each blamed file.
+- **R9-9** More automation identities are bots by address: hosted translation platforms (Weblate, Crowdin, Transifex, Lokalise), `bot@styleci.io`, and the default GitHub Actions address. A person on a similar address is not matched. The `bots excluded` line names the identities (at most three).
+- **R9-10** Placeholder identities (git's template name "Your Name", an address on `localhost`, `localhost.localdomain`, `(none)` or a `.local`, `.localdomain` or `.lan` host) keep their lines in the shares but are never suggested as a reviewer, and one scope line states their lines and share as not attributable to a person. `example.org` alone is not a placeholder.
+- **R9-11** (supersedes the "never set aside" part of R8-2 for one case) A mechanical-rewrite candidate with both signs, the same small change in at least 10 files and a formatter, lint fix or codemod named in the subject, is set aside automatically like a reformat commit; the scope line says the rewrite was looked through. A candidate with one sign stays a named candidate that is not set aside.
+- **R9-12** Skill text: when the question names files and also the package, the repository or a directory, run the tool on the wider scope too; state the `placeholder identities` line; name the bots and the `rewrites looked through` commits.
+
+Run the development gate again after these changes (iteration 2) before any new held-out measurement.
