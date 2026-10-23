@@ -61,7 +61,7 @@ Measure who wrote the code that is still alive in a git ref.
                        The word right after --copies is read as this value, so never put a path named "deep" there
                        (paths go after --)
   --no-copies          blame with -w -M only: code moved or copied into a new path is credited to who moved it
-  --keep-generated     count lockfiles, generated files (marked or minified) and vendored code (default: leave them
+  --keep-generated     count lockfiles, generated files (marked or minified), vendored code and binary files (default: leave them
                        out of every number and print what was left out)
   --co-authors <mode>  none (default) or share: split each line and commit equally between the author
                        and the Co-authored-by trailer identities (.mailmap applies to them);
@@ -703,7 +703,35 @@ const GENERATED_MARKER = "@generated|DO NOT EDIT|Code generated|[Aa]uto-?[Gg]ene
 const GENERATED_MARKER_LINES = 10;
 
 /** The kinds of file that are left out, in the order the output lists them. */
-const DROP_CLASSES = ["lockfile", "generated", "vendored"];
+const DROP_CLASSES = ["lockfile", "generated", "vendored", "binary"];
+
+/**
+ * Extensions of document and image formats that are binary but that git's own probe (a NUL in the first 8000 bytes)
+ * can miss. Only a fallback for when `git grep -P` cannot look inside the files; compared in lower case.
+ */
+const BINARY_EXTENSION = /\.(?:ai|eps|psd|pdf|br)$/i;
+
+/**
+ * The paths at the ref whose content holds a NUL byte, which no text file does. `git diff --numstat` calls a file binary
+ * only when a NUL sits in its first 8000 bytes, so a file with its first NUL later is listed as text and its bytes are
+ * counted as lines. One `git grep` over the tree; empty when this git has no Perl-compatible regular expressions, in
+ * which case only the extension list applies.
+ * @param {Options} o
+ * @returns {Promise<Set<string>>}
+ */
+async function readNulFiles(o) {
+  const tree = (await git(["rev-parse", "--verify", `${o.ref}^{tree}`], o.cwd)).trim();
+  /** @type {Set<string>} */
+  const found = new Set();
+  let out;
+  try {
+    out = await git(["grep", "-l", "-a", "-z", "-P", "\\x00", tree, "--", ...o.paths], o.cwd);
+  } catch {
+    return found;
+  }
+  for (const rec of out.split("\0")) if (rec.startsWith(`${tree}:`)) found.add(rec.slice(tree.length + 1));
+  return found;
+}
 
 /**
  * The class a path falls in by its name alone, or null. `root` is what the output names: the vendor directory for
@@ -805,7 +833,7 @@ async function readGeneratedMarkers(o) {
 }
 
 /**
- * Split the files into those that count and those left out as lockfiles, generated files and vendored code. By path and
+ * Split the files into those that count and those left out as lockfiles, generated files, vendored code and binary files that git's probe took for text. By path and
  * file content only, never by author. With --keep-generated nothing is left out.
  * @param {Options} o
  * @param {{ path: string, lines: number }[]} files the files the --include and --exclude globs let through
@@ -826,6 +854,7 @@ export async function dropGenerated(o, files, everyFile) {
   if (o.keepGenerated) return { kept: files, dropped };
   const attrs = await readLinguistAttributes(o, everyFile);
   const markers = await readGeneratedMarkers(o);
+  const nulFiles = await readNulFiles(o);
   /** @type {Map<string, { path: string, class: string, files: number, lines: number }>} */
   const byRoot = new Map();
   for (const f of files) {
@@ -837,6 +866,7 @@ export async function dropGenerated(o, files, everyFile) {
     else if (attr.generated === true) hit = { kind: "generated", root: f.path };
     else if (byPath && !(byPath.kind === "vendored" ? attr.vendored === false : attr.generated === false)) hit = byPath;
     else if (markers.has(f.path) && attr.generated !== false) hit = { kind: "generated", root: f.path };
+    else if (nulFiles.has(f.path) || BINARY_EXTENSION.test(f.path)) hit = { kind: "binary", root: f.path };
     if (!hit) {
       kept.push(f);
       continue;
@@ -2318,7 +2348,7 @@ export async function analyse(o) {
   // result says how much left. The user's own --include and --exclude globs have already applied.
   const { kept: all, dropped } = await dropGenerated(o, wanted, listed);
   if (all.length === 0 && wanted.length > 0) {
-    throw new Error(`every one of the ${wanted.length} files at ref "${o.ref}" is a lockfile, a generated file or vendored code, so none is counted; pass --keep-generated to count them`);
+    throw new Error(`every one of the ${wanted.length} files at ref "${o.ref}" is a lockfile, a generated file, vendored code or a binary file, so none is counted; pass --keep-generated to count them`);
   }
   if (all.length === 0) {
     if (o.include.length) {

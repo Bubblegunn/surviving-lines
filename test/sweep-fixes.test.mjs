@@ -109,3 +109,44 @@ test("S1: --files, --group-by, --reviewers and --history run on a repository wit
     },
   );
 });
+
+/** @param {number} head text bytes before the NUL */
+const nulFile = (head) => Buffer.concat([Buffer.from("line\n".repeat(Math.ceil(head / 5))), Buffer.from([0]), Buffer.from("tail\n".repeat(50))]);
+
+test("S2: a file with a NUL byte beyond git's probe is left out and reported as binary; a plain text file counts", async () => {
+  await withRepo(
+    (dir) => {
+      commitAsIdentity(dir, ANN, DATE, "files", { "plain.txt": lines("p", 8), "late-nul.dat": nulFile(9000) });
+    },
+    async (dir) => {
+      const numstat = git(dir, ["diff", "--numstat", git(dir, ["hash-object", "-t", "tree", "--stdin"]).trim(), "HEAD"]);
+      assert.match(numstat, /late-nul\.dat/, "git itself calls the file text, so the NUL is beyond its probe");
+      assert.doesNotMatch(numstat, /^-\t-\tlate-nul\.dat/m);
+      const r = await analyse(parseArgs(["--cwd", dir]));
+      assert.equal(r.sample.filesTotal, 1);
+      assert.equal(r.sample.linesInRef, 8);
+      assert.equal(r.dropped.classes.binary.files, 1);
+      assert.ok(r.dropped.classes.binary.lines > 50);
+      assert.equal(r.dropped.paths[0].path, "late-nul.dat");
+      const line = mod.droppedLine(r);
+      assert.match(line ?? "", /binary 1 file [\d,]+ lines/);
+      assert.match(renderTable(r, null), /dropped: 1 file, .*binary 1 file/);
+      const kept = await analyse(parseArgs(["--cwd", dir, "--keep-generated"]));
+      assert.equal(kept.sample.filesTotal, 2);
+      assert.equal(kept.dropped.classes.binary.files, 0);
+    },
+  );
+});
+
+test("S2: well-known binary document extensions are left out even without a NUL in the file", async () => {
+  await withRepo(
+    (dir) => {
+      commitAsIdentity(dir, ANN, DATE, "files", { "plain.txt": lines("p", 8), "doc.PDF": "text only\n", "art.ai": "text only\n", "page.html.br": "text only\n" });
+    },
+    async (dir) => {
+      const r = await analyse(parseArgs(["--cwd", dir]));
+      assert.equal(r.sample.filesTotal, 1);
+      assert.equal(r.dropped.classes.binary.files, 3);
+    },
+  );
+});

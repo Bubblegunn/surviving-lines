@@ -28,7 +28,7 @@ test("no gate that waits for confirmation before writing", () => {
 test("deep round rules: unconfirmed same-person figure, what was left out, moved code, both bus factor numbers", () => {
   assert.match(skill, /`possible same person` suggestion, it carries a strength/);
   assert.match(skill, /Both are unconfirmed/);
-  assert.match(skill, /lockfiles, generated files and vendored code/);
+  assert.match(skill, /lockfiles, generated files, vendored code and binary files/);
   assert.match(skill, /Do not recommend the person who only moved the code/);
   assert.match(skill, /Give both bus factor numbers/);
 });

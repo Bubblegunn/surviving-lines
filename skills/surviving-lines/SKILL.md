@@ -33,7 +33,7 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 - For "who committed in the last N days and how much of their code is still here": `--since` and `--until` limit the commit column only; the lines column is always for the ref. Run `<sl> --since <date> --until <date> --merge-identities`, read commits in the window from the commit column and surviving lines from the lines column, and set aside a reformat commit the tool names.
 - A note from the surviving-lines prompt hint that lists suspected same-person groups is a set of guesses from names and addresses. Say so and show the groups. If the user asked you to fix the duplicates, write them to `.mailmap` under a comment line that marks them as proposals to confirm, re-run `<sl>`, and say in the answer that the merges are guesses until the user confirms them. Copy each `.mailmap` line exactly as the hint or `<sl> --identities` prints it, including the two-address line for one address under two names (`Full Name <a> login <a>`); do not write a line of your own.
 - When the output lists a `possible same person` suggestion, it carries a strength. For `strong`, lead with the merged figure ("counting X and Y as one person because <evidence>"), give the unmerged figures next to it, and give the `.mailmap` line that would make it permanent. For `weak`, lead with the unmerged figure and give the merged one as a possibility. Both are unconfirmed. Nothing is merged without a `.mailmap`.
-- State what the output says was left out: lockfiles, generated files and vendored code, with the one-line reason. State the reformat commits that were ignored. `--keep-generated` counts the dropped files.
+- State what the output says was left out: lockfiles, generated files, vendored code and binary files, with the one-line reason. State the reformat commits that were ignored. `--keep-generated` counts the dropped files.
 - When the output has a `moved or copied here` line, state it. Do not recommend the person who only moved the code. Recommend the authors who wrote it.
 - Give both bus factor numbers (`bus factor` and `to reach 80%`) with the scope they were computed on: the whole repository, a path, or a group.
 - Say which copy detection setting the figures use: the header shows `git blame -w -M -C` by default and `-C -C` with `--copies deep`. When the `copy detection` note names a person whose share moved by more than 2 points, give both figures, with and without copy detection.
@@ -43,7 +43,7 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 ## Rules for every ownership answer
 
 - For each person you name, give the share in percent next to the line count, as the output prints them.
-- State what the output says was left out and why: dropped files (lockfiles, generated files, vendored code), bots excluded, and the reformat commits ignored, by their short ids.
+- State what the output says was left out and why: dropped files (lockfiles, generated files, vendored code, binary files), bots excluded, and the reformat commits ignored, by their short ids.
 - State the identities merged by `.mailmap`, naming the file and the lines they add. These are already in the numbers.
 - Give both bus factor numbers with the scope each was computed on.
 - For a `possible same person` suggestion or an `identity hint`, follow its strength: `strong` leads with the merged figure, `weak` leads with the unmerged figure; the other is stated next to it. A `weak addition` is stated separately with its own lines.

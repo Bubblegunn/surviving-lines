@@ -219,7 +219,7 @@ line of the table prints.
 --until <date>       commit-share window end
 --copies [deep]      follow copies even above 2000 files (default: -w -M -C below that; deep: -C -C)
 --no-copies          blame with -w -M only
---keep-generated     count lockfiles, generated files and vendored code
+--keep-generated     count lockfiles, generated files, vendored code and binary files
 --jobs <n>           parallel blame processes (default: 4)
 --top <k>            rows to print (default: 10)
 --sort <key>         lines (default), commits, or gap (absolute share difference)
