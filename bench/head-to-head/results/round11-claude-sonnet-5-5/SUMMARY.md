@@ -1,6 +1,6 @@
-# surviving-lines round 11 confirmation (I1 passed in both sets, I2 failed)
+# surviving-lines round 11 confirmation (I1 passed in both sets; I2, F6 and F6b failed)
 
-**Result.** On 2026-10-23, with claude-sonnet-5-5 and a model grader (three votes), surviving-lines at 1670228 had the highest total of six arms (itself, project-pilot with and without its command, mcp-git-historian, k41n/busfactor, plain Claude) on 5 held-out e tasks (17.00 of 25 against 12.67 for the best other arm, project-pilot invoked; 95% bootstrap interval for the difference +2.00 to +7.00, above zero, so I1 passes for that set) and on 11 public tasks (45.67 of 51 against 40.33 for the best other arm, plain Claude; interval +3.00 to +7.67, above zero, so I1 passes for that set). Against the better of pp and ppi per task, the held-out e interval is +0.00 to +5.33 and includes zero; the public interval is +0.67 to +5.33. I2 failed in both sets: Rule A passes in both, but Rule B and Rule B' fail (held-out e: HE1, HE3, HE4; public: T1, T1i, E2k, E3, E5), so the preregistered per-task gate failed and no claim of being first on every task is made. Runs and held-out e grading were on the Agent SDK path, public grading, F6 and F9 on the Claude Code CLI path (subscription); the 156 public rival cells (pp, ppi, hist, bf, base) are reused from round 8 (SDK path, 2026-10-22), every other cell is new. F6: 74.6% of criteria equal and 19 of 26 comparable cells within one point; 7 cells differ by more than one point, which is a failed audit under the protocol, and 2 cells could not be compared. F9 (one run per task) is reported per model in the F9 section. Logged cost of every call of this round at list price: 56.01 USD, of which 12.60 USD on key_2, 0.47 USD on test_key and 42.94 USD on the subscription (list-price estimate, not billed to a key).
+**Result.** On 2026-10-23, with claude-sonnet-5-5 and a model grader (three votes), surviving-lines at 1670228 had the highest total of six arms (itself, project-pilot with and without its command, mcp-git-historian, k41n/busfactor, plain Claude) on 5 held-out e tasks (17.00 of 25 against 12.67 for the best other arm, project-pilot invoked; 95% bootstrap interval for the difference +2.00 to +7.00, above zero, so I1 passes for that set) and on 11 public tasks (45.67 of 51 against 40.33 for the best other arm, plain Claude; interval +3.00 to +7.67, above zero, so I1 passes for that set). Against the better of pp and ppi per task, the held-out e interval is +0.00 to +5.33 and includes zero; the public interval is +0.67 to +5.33. I2 failed in both sets: Rule A passes in both, but Rule B and Rule B' fail (held-out e: HE1, HE3, HE4; public: T1, T1i, E2k, E3, E5), so the preregistered per-task gate failed and no claim of being first on every task is made. Runs and held-out e grading were on the Agent SDK path, public grading, F6 and F9 on the Claude Code CLI path (subscription); the 156 public rival cells (pp, ppi, hist, bf, base) are reused from round 8 (SDK path, 2026-10-22), every other cell is new. F6 (agent re-run, graded alone) FAILED: 74.6% of criteria equal and 19 of 26 comparable cells within one point; 7 cells differ by more than one point, which is a failed audit under the protocol, and 2 cells could not be compared. F6b (registered after F6 failed, separate, does not replace F6): re-grading the original answers gave 92.4% criterion agreement (121 of 131) but one of 28 cells (HE2-base-3, 0 against 2) differs by more than one point, so F6b-1 also FAILS its fixed pass condition; 16 of 26 F6 re-runs lie within the min-max of their three original runs (descriptive). F9 (one run per task) is reported per model in the F9 section. Logged cost of every call of this round at list price: 63.62 USD, of which 12.60 USD on key_2, 0.47 USD on test_key and 50.55 USD on the subscription (list-price estimate, not billed to a key).
 
 ## HELD-OUT e (5 tasks, 5 graded)
 
@@ -108,6 +108,7 @@ Ours / base cost ratio per cell: 1.40x.
 | --- | --- | --- |
 | f6-grade [subscription] | 126 | 7.4836 |
 | f6-runs [subscription] | 28 | 2.6665 |
+| f6b-grade [subscription] | 64 | 7.6092 |
 | f9-claude-haiku-5-5-grade [subscription] | 53 | 4.9033 |
 | f9-claude-haiku-5-5-runs [subscription] | 48 | 0.3336 |
 | f9-claude-opus-5-5-grade [subscription] | 52 | 5.0812 |
@@ -117,7 +118,7 @@ Ours / base cost ratio per cell: 1.40x.
 | grade-out-P [subscription] | 105 | 11.0810 |
 | runs-out-E [key_2] | 90 | 6.9332 |
 | runs-out-P [key_2] | 33 | 2.5820 |
-| sum of rows above | | 56.01 |
+| sum of rows above | | 63.62 |
 
 ## F6 independent audit
 
@@ -157,6 +158,76 @@ Ours / base cost ratio per cell: 1.40x.
 Cells with no `err` criterion: 26 of 28. On these, criteria on which the independent verdict equals the original verdict: 91 of 122 (74.6%). Cells within one point: 19 of 26 (73.1%). Cells that differ by more than one point (a failed audit under the protocol): HE3-ppi-1, HE2-base-2, T1-pp-2, HE3-pp-1, T3-bf-3, E2k-ours-1, HE2-pp-2. Cells where a grading stayed `err` after the re-asks (the grader gave several answer blocks that did not parse; they are not compared and not counted as agreement): T1i-ppi-2, E5-hist-2.
 
 The F6 re-run is a new model run of the same cell, so a difference mixes agent variance and grader variance; it is not a pure grader audit.
+
+## F6b grader reproducibility audit (registered after F6 failed, before any F6b call)
+
+F6b-1: the same 28 sampled cells, the original answers (no agent re-run), graded again in the original grading unit (all arms of the task and run together, same shuffled order) by fresh grader sessions, three calls, majority rule, re-ask passes, subscription CLI path. A criterion that stayed `err` in either grading counts as a disagreement and as not passed in the cell score. Pass condition fixed in advance: no cell differs by more than one point and criterion agreement is at least 90%.
+
+| Cell | criteria | original score | regrade score | criteria equal | err (regrade) | within one point |
+| --- | --- | --- | --- | --- | --- | --- |
+| HE3-ours-1 | 5 | 2 | 2 | 5 | 0 | yes |
+| HE3-ppi-1 | 5 | 3 | 4 | 4 | 0 | yes |
+| HE2-base-2 | 5 | 2 | 1 | 4 | 0 | yes |
+| T4i-pp-1 | 5 | 3 | 3 | 5 | 0 | yes |
+| T1-hist-1 | 4 | 3 | 4 | 3 | 0 | yes |
+| HE3-bf-1 | 5 | 2 | 1 | 4 | 0 | yes |
+| T1-pp-2 | 4 | 4 | 4 | 4 | 0 | yes |
+| E1-ours-3 | 5 | 5 | 5 | 5 | 0 | yes |
+| T1i-ppi-2 | 4 | 2 | 2 | 4 | 0 | yes |
+| E3-bf-1 | 4 | 3 | 3 | 4 | 0 | yes |
+| T1i-pp-1 | 4 | 3 | 3 | 4 | 0 | yes |
+| HE2-base-3 | 5 | 0 | 2 | 3 | 0 | NO |
+| HE5-bf-1 | 5 | 1 | 1 | 5 | 0 | yes |
+| T1-bf-1 | 4 | 4 | 4 | 4 | 0 | yes |
+| HE4-pp-2 | 5 | 5 | 5 | 5 | 0 | yes |
+| HE3-pp-1 | 5 | 5 | 5 | 5 | 0 | yes |
+| T1-hist-2 | 4 | 3 | 2 | 3 | 0 | yes |
+| E2k-bf-2 | 5 | 4 | 4 | 5 | 0 | yes |
+| T1i-pp-3 | 4 | 3 | 4 | 3 | 0 | yes |
+| E1-ours-2 | 5 | 5 | 5 | 5 | 0 | yes |
+| E5-hist-2 | 5 | 2 | 2 | 5 | 0 | yes |
+| T3-bf-3 | 5 | 4 | 3 | 4 | 0 | yes |
+| T1i-base-1 | 4 | 4 | 4 | 4 | 0 | yes |
+| E5-ours-1 | 5 | 4 | 4 | 5 | 0 | yes |
+| HE4-ours-3 | 5 | 4 | 5 | 4 | 0 | yes |
+| E2k-ours-1 | 5 | 4 | 4 | 5 | 0 | yes |
+| HE4-hist-2 | 5 | 4 | 4 | 5 | 0 | yes |
+| HE2-pp-2 | 5 | 0 | 0 | 5 | 0 | yes |
+
+Criteria equal to the original verdict: 121 of 131 (92.4%). Cells differing by more than one point: HE2-base-3. **F6b-1 FAIL** (pass condition: no such cell and at least 90% agreement).
+
+F6b-2 (descriptive, no new calls, no pass condition): for each of the 26 comparable F6 re-runs, whether the re-run score lies within the minimum and maximum of that cell's three original runs (reused rival cells: their three round 8 runs).
+
+| Cell | re-run score | original three runs | within min-max |
+| --- | --- | --- | --- |
+| HE3-ours-1 | 2 | 2/3/1 | yes |
+| HE3-ppi-1 | 1 | 3/1/1 | yes |
+| HE2-base-2 | 0 | 0/2/0 | yes |
+| T4i-pp-1 | 3 | 3/3/3 | yes |
+| T1-hist-1 | 3 | 3/3/2 | yes |
+| HE3-bf-1 | 1 | 2/2/2 | no |
+| T1-pp-2 | 2 | 3/4/4 | no |
+| E1-ours-3 | 4 | 5/5/5 | no |
+| E3-bf-1 | 3 | 3/3/3 | yes |
+| T1i-pp-1 | 4 | 3/3/3 | no |
+| HE2-base-3 | 0 | 0/2/0 | yes |
+| HE5-bf-1 | 2 | 1/1/0 | no |
+| T1-bf-1 | 4 | 4/4/4 | yes |
+| HE4-pp-2 | 5 | 5/5/3 | yes |
+| HE3-pp-1 | 1 | 5/2/1 | yes |
+| T1-hist-2 | 3 | 3/3/2 | yes |
+| E2k-bf-2 | 4 | 4/4/4 | yes |
+| T1i-pp-3 | 4 | 3/3/3 | no |
+| E1-ours-2 | 5 | 5/5/5 | yes |
+| T3-bf-3 | 2 | 5/4/4 | no |
+| T1i-base-1 | 3 | 4/3/2 | yes |
+| E5-ours-1 | 3 | 4/4/4 | no |
+| HE4-ours-3 | 4 | 5/5/4 | yes |
+| E2k-ours-1 | 2 | 4/4/5 | no |
+| HE4-hist-2 | 4 | 5/4/4 | yes |
+| HE2-pp-2 | 2 | 1/0/1 | no |
+
+Within the range of the three original runs: 16 of 26.
 
 ## F9 other models
 
@@ -240,10 +311,11 @@ Held-out e: three votes equal on 81.8% of criteria; public: 94.6%. The public ra
 - F6 is a new model run graded alone, so its disagreement mixes agent variance and grader variance. Its sample contains 13 public rival cells from round 8, whose original verdicts come from the round 8 run (graded on the subscription path in this round, rival answers from the SDK path).
 - F9 uses the grader claude-sonnet-5-5 for every model, one run per task, no bootstrap. The dollar gates of the F9 paragraph did not apply on the subscription.
 - Not in the dollar table: the one billing check call of 0.0034 USD at the start of the round, the controller sessions, and the cost of earlier rounds (round 9 writer, round 10 implementation); they are logged in their own folders.
+- F6b was registered (commit b40c3e4) after F6 failed and before any F6b call, as a separate audit; F6 stays reported as failed and is not re-scored. F6b-1 regraded 20 grading units (the 28 sampled cells with the other arms of their task and run) on the subscription path; the regrade of each unit is in f6b/<unit>/grade. No I1 or I2 recomputation with the F6 cells was done.
 
 ## Payer
 
-Held-out e runs (90) and public ours runs (33): API organization key named key_2, Agent SDK path. Held-out e grading: key_2 (43 calls) and test_key (6 calls). Public grading (105 calls), F6 (154 calls), F9 (201 calls): the owner's Claude Code subscription; the dollar figures shown for them are the CLI's list-price estimate, not billed to a key. Keys are never written in this folder.
+Held-out e runs (90) and public ours runs (33): API organization key named key_2, Agent SDK path. Held-out e grading: key_2 (43 calls) and test_key (6 calls). Public grading (105 calls), F6 (154 calls), F6b-1, F9 (201 calls): the owner's Claude Code subscription; the dollar figures shown for them are the CLI's list-price estimate, not billed to a key. Keys are never written in this folder.
 
 ## Versions
 

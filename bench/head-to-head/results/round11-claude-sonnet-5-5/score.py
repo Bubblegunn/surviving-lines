@@ -275,6 +275,44 @@ def f6_section(out):
     out.append("The F6 re-run is a new model run of the same cell, so a difference mixes agent variance and grader variance; it is not a pure grader audit.\n")
 
 
+def f6b_section(out):
+    d = load("f6b.json")
+    f6 = load("f6.json")
+    if not d:
+        out += ["## F6b grader reproducibility audit", "", "Not run.", ""]
+        return
+    out += ["## F6b grader reproducibility audit (registered after F6 failed, before any F6b call)", "",
+            "F6b-1: the same %d sampled cells, the original answers (no agent re-run), graded again in the original grading unit (all arms of the task and run together, same shuffled order) by fresh grader sessions, three calls, majority rule, re-ask passes, subscription CLI path. A criterion that stayed `err` in either grading counts as a disagreement and as not passed in the cell score. Pass condition fixed in advance: no cell differs by more than one point and criterion agreement is at least 90%%.\n" % len(d["cells"])]
+    out.append("| Cell | criteria | original score | regrade score | criteria equal | err (regrade) | within one point |")
+    out.append("| --- | --- | --- | --- | --- | --- | --- |")
+    tot = agree = 0
+    bad = []
+    for c in d["cells"]:
+        o, n = c["original"], c["regrade"]
+        a = sum(1 for x, y in zip(o, n) if x is not None and x == y)
+        tot += len(o)
+        agree += a
+        so, sn = passed(o), passed(n)
+        ok = abs(so - sn) <= 1
+        if not ok:
+            bad.append(c["cell"])
+        out.append("| %s | %d | %d | %d | %d | %d | %s |" % (c["cell"], len(o), so, sn, a, sum(1 for x in n if x is None), "yes" if ok else "NO"))
+    rate = 100.0 * agree / tot
+    ok = not bad and rate >= 90.0
+    out += ["", "Criteria equal to the original verdict: %d of %d (%.1f%%). Cells differing by more than one point: %s. **F6b-1 %s** (pass condition: no such cell and at least 90%% agreement).\n" % (agree, tot, rate, ", ".join(bad) if bad else "none", "PASS" if ok else "FAIL")]
+    comp = [c for c in (f6 or {}).get("cells", []) if all(x is not None for x in c["original"] + c["rerun"])]
+    by3 = {c["cell"]: c["original_three_runs"] for c in d["cells"]}
+    inside = 0
+    out += ["F6b-2 (descriptive, no new calls, no pass condition): for each of the %d comparable F6 re-runs, whether the re-run score lies within the minimum and maximum of that cell's three original runs (reused rival cells: their three round 8 runs).\n" % len(comp), "| Cell | re-run score | original three runs | within min-max |", "| --- | --- | --- | --- |"]
+    for c in comp:
+        r = passed(c["rerun"])
+        t3 = by3[c["cell"]]
+        w = min(t3) <= r <= max(t3)
+        inside += 1 if w else 0
+        out.append("| %s | %d | %s | %s |" % (c["cell"], r, "/".join(str(x) for x in t3), "yes" if w else "no"))
+    out += ["", "Within the range of the three original runs: %d of %d.\n" % (inside, len(comp))]
+
+
 def f9_section(out):
     d = load("f9.json")
     if not d:
@@ -349,6 +387,7 @@ def main():
         out.append("| sum of rows above | | %.2f |" % gt)
     out.append("")
     f6_section(out)
+    f6b_section(out)
     f9_section(out)
     for k in ("grader_reliability_note", "departures", "payer", "versions"):
         if meta.get(k):
