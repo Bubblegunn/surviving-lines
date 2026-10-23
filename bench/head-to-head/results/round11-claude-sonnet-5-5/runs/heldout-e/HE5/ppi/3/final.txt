@@ -1,0 +1,43 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/rack/attack/store_proxy/"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- && git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/rack/attack/store_proxy/ | sort | uniq -c | sort -rn && echo --- && git log --no-merges --since="90 days ago" --pretty=format:"%an <%ae>" | sort | uniq -c | sort -rn && echo --- && git log -1 --format=%cd && echo --- && git log --no-merges --pretty=format:"%h %ad %an %s" --date=short -- lib/rack/attack/store_proxy/ | head -40
+ - Bash: for a in "Gonzalo Rodriguez" "fatkodima" "Santiago Bartesaghi" "Hiroshi Tanaka" "Jonas Keller"; do echo "$a: $(git log --all --author="$a" -1 --format='%ad' --date=short) total=$(git log --all --author="$a" --oneline | wc -l)"; done; echo ---; git blame -w --line-porcelain lib/rack/attack/store_proxy/*.rb | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --since="90 days ago" --no-merges --pretty='%h %ad %an %s' --date=short | head -20; git log --format='%an' | grep -i keller | head -1
+ - Bash: for f in lib/rack/attack/store_proxy/*.rb; do git blame -w --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn; echo ---; git show --stat --format='%h %an' 83d46ea | head
+FINAL ANSWER:
+## Bus factor: `lib/rack/attack/store_proxy/`
+
+Bus factor for this directory is 3 active people. The historical authors are mostly gone.
+
+**Suggested reviewers (active in the last 90 days)**
+
+1. **Hiroshi Tanaka** is the best first choice. They wrote `valkey_proxy.rb` (#310, #318) in Sep 2026. They own 88 of the 331 current lines in the directory, the most of anyone. They have only 2 commits in the repo, so ask them to review the Valkey and `wrap` design specifically.
+2. **Santiago Bartesaghi** is the second reviewer. They have committed in this repo as recently as 2026-09-30 and have 32 commits in total. Their store_proxy work is the namespaced-cache `reset!` fix (#673, Dec 2024) and the Aug 2026 rubocop autocorrect. They know the codebase well and the cache-store reset behavior in particular.
+
+**Not suggested: authors with no recent activity**
+
+- **Gonzalo Rodriguez** has 23 of the 51 commits to this directory and 61 current lines. Their last commit in the repo was 2021-01-24, so they have been gone about 5 years.
+- **fatkodima** wrote the error-rescue and `reset` logic (4 commits here, 22 lines). Their last commit was 2019-10-31.
+- **hakanensari** owns 76 current lines in the directory. They have one commit here, and I did not check their recent activity.
+- Everyone else (Jonathan del Strother, Brad Lindsay, Brian Kephart, Ryan Laughlin and others) has 1–2 commits, most from 2018–2023.
+- **Jonas Keller** was active in Aug 2026, but only touched `fail2ban.rb` and nothing in this directory. I would not suggest them for this change.
+
+**Risk**
+
+| Area | Active knowledge | Risk |
+|---|---|---|
+| `valkey_proxy.rb` | Hiroshi only | Medium. They have two commits, and Santiago is the backup. |
+| Redis, RedisCacheStore, MemCacheStore, Dalli proxies | Santiago only, and only a little | High. The original designers are inactive. |
+
+**Recommendation:** ask both Hiroshi and Santiago to review. If your change touches the Redis or MemCacheStore proxies, Santiago is the only active person with context. For changes to the proxy lookup or base design, add a note to the PR explaining the reasoning. That design dates to fatkodima's `edaa6c6` and Gonzalo's refactors, and nobody active wrote it.
+
+**Caveats**
+- Activity is based on git commits only. I can't see PR reviews, issues, or maintainer status on GitHub. Someone with no recent commits may still review PRs.
+- I merged the duplicate author identities (Hiroshi Tanaka has two emails, Santiago Bartesaghi has two). I assumed each pair is one person.
+- I did not use the skill's contributor-analyzer agent, since the directory is small enough to analyze directly with git. I also skipped the dependents-count step.
+META cost=0.0876535 ms=26281 turns=7

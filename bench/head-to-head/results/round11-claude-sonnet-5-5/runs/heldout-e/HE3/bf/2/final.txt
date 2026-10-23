@@ -1,0 +1,47 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files src | head -100 && echo --- && git shortlog -sne HEAD -- src && echo --- && ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo "== total by author"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -12; echo "== per file top 3"; for f in $(git ls-files src); do echo "# $f ($(grep -c "^$f	" /tmp/blame.tsv) lines)"; grep "^$f	" /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -3; done; echo "== last 12 months touching src"; git log --since=2025-10-23 --format='%an|%ad|%s' --date=short -- src | head -20; echo "== last commit per file"; for f in $(git ls-files src); do echo "$f: $(git log -1 --format='%an %ad %s' --date=short -- $f)"; done
+FINAL ANSWER:
+Andrew Gallant wrote most of the code in `src/`. I'd ask him first, with Sam Whitfield and the two recent contributors below as backups. There's no CODEOWNERS file, so this comes from git history.
+
+I ran `git blame -w -M -C -C` on every file under `src/`. That follows moved and renamed lines back to their original author, so the recent renames don't hide who wrote what.
+
+**Who wrote the current lines**
+
+| Author | Surviving lines |
+|---|---|
+| Andrew Gallant | 2551 |
+| Sebastian Thiel | 74 |
+| Ashley | 68 |
+| Aron Griffis | 59 |
+| mcharsley | 45 |
+| Sam Whitfield | 42 |
+
+Gallant is the main author of every file:
+- `lib.rs`: 743 of 1158 lines.
+- `dent.rs`: 291 of 371 lines.
+- `error.rs`: 169 of 267 lines, with Garrett Berg (34) and Niv Kaminer (30) behind him.
+- `testsuite/recursive.rs`: 1008 of 1097 lines. Sebastian Thiel wrote 53 of the rest.
+- `util.rs`: 42 of 56 lines. Aron Griffis wrote 9 of the rest.
+
+**Who touched it recently**
+
+Sam Whitfield made the last commit to every file. Those commits (Mar 2026) were mechanical: license headers, moving `Ancestor` into its own module, and renaming `tests` to `testsuite`. He wrote only 42 surviving lines, so he knows the layout but didn't author the logic.
+
+The last real code changes:
+- Tobias Brandt added `util::same_device` (Jan 2026). Gallant reverted it and then reapplied it.
+- Mei Tanaka added `dent::describe_file_type` (Feb 2026).
+
+**Who to ask**
+1. **Andrew Gallant**, for anything in `lib.rs`, `dent.rs`, `error.rs`, `util.rs` or `testsuite/`. His last commit here was 2026-01-14, so check he's still active.
+2. **Sam Whitfield**, if your PR touches module layout, `ancestor.rs` or the `testsuite` structure. He's the most recent committer.
+3. **Mei Tanaka or Tobias Brandt**, if you touch `describe_file_type` or `same_device`.
+
+Tell me which files your PR changes and I'll narrow this to a per-file reviewer list. I can also generate a CODEOWNERS file with the `busfactor` skill.
+META cost=0.0663536 ms=19917 turns=4

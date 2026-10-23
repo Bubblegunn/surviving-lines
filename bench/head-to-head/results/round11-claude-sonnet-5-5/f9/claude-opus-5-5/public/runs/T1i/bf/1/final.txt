@@ -1,0 +1,45 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-bf-1/repo; cat .git-blame-ignore-revs; git log --format='%h %an <%ae> %s' | head -30; git log --oneline | wc -l; git ls-files | head -50
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-bf-1/repo; ls -a | grep mailmap; git shortlog -sne HEAD | head -30
+blame(){ for f in $(git ls-files); do git blame --line-porcelain -w -M -C $@ HEAD -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn | head -15; }
+echo "== raw"; blame
+echo "== ignore-revs"; blame --ignore-revs-file .git-blame-ignore-revs
+echo "== total lines"; git ls-files | xargs cat | wc -l
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-bf-1/repo
+for f in $(git ls-files); do n=$(git blame --line-porcelain -w -M -C --ignore-revs-file .git-blame-ignore-revs HEAD -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3 | awk '{c=$1;$1="";printf "%s(%d) ",$0,c}'); echo "$f [$(wc -l <"$f" | tr -d ' ')]: $n"; done
+git log -1 --format='%ad' --author=troygoode; git log -1 --format='%ad %an' --author=doug@somethingdoug; git log --format='%ad %h %s' --author=troy@laptop
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code still in the repo. Together they wrote about 73% of the surviving lines. Neither has committed under their known email for years.
+
+I counted surviving lines with `git blame -w -M -C`, which skips whitespace changes and follows moved or copied lines. I also used `.git-blame-ignore-revs`. That file is important here: commit `62628c0` (Fiona Formatter) reformatted all the JS. Without it, Fiona gets credit for 293 lines and Doug drops from 629 to 454. Fiona wrote no logic.
+
+**Surviving lines, all tracked files (1,995 total):**
+- Troy Goode: 810 (~41%). This counts 762 lines from `<email redacted>` and 48 from `troy@laptop.example`. There is no `.mailmap`, so I merged them because the name is the same. I have not confirmed it is the same person.
+- Douglas Christopher Wilson: 629 (~32%)
+- Íñigo Marquínez Prado: 95. Almost all of this is `scorecard.yml`.
+- Jon Church: 72. All in `README.md`.
+- Sebastian Beltran: 67. Mostly `codeql.yml`.
+- Ulises Gascón: 52
+- Ignacio Mangas: 44
+- Everyone else: about 35 lines or fewer each.
+
+**By area:**
+- `lib/index.js` (the actual library, 238 lines): Troy 159, Doug 22, Alejandro Caravaca Puchades 12. Troy clearly owns it.
+- Tests: Troy owns `vary.js`, `issue-2.js`, `example-app.js` and `error-response.js`. `test/test.js` (731 lines) is split between Doug (339) and Troy (317).
+- `README.md`: Troy 116, Jon Church 72, Linus Unnebäck 26.
+- CI and config: mostly Doug, including `ci.yml`, `.eslintrc`, `package.json`, `HISTORY.md` and `LICENSE`. Newer workflow files belong to the people who added them: Sebastian (CodeQL), Íñigo (Scorecard) and Ulises (dependabot).
+
+**Commit count vs. ownership:** By commits, Doug leads with 143 against Troy's 120. By surviving code, Troy leads, especially in `lib/`. Many of Doug's commits were small maintenance changes that later work overwrote.
+
+**Risk:** The main owners are not active.
+- Troy's last commit from `<email redacted>` was in May 2019. The two `troy@laptop.example` commits are dated April 2026, but that identity is unverified.
+- Doug's last commit was in September 2021.
+- Recent activity comes from Ulises, Jon, Sebastian, Ignacio and dependabot. They mostly touch CI and docs, not `lib/`.
+
+So the core library has effectively one owner who is no longer around. I can generate a CODEOWNERS file and a full bus-factor report from this if you want.
+META cost=0.21161060000000004 ms=25768 turns=4

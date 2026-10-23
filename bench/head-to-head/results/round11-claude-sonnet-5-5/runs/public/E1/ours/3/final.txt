@@ -1,0 +1,89 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --merge-identities --group-by dir; echo ======; $SL --merge-identities --files | head -60
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl; echo ======; sl --merge-identities --group-by dir; echo ======; sl --merge-identities --files | head -60
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities --group-by dir; echo '======'; sl --merge-identities --files | head -60; echo '======'; sl --merge-identities | head -20
+FINAL ANSWER:
+**Bus factor: 2 on the whole repo. The main single-person dependency is `lib/index.js`, which is mostly Troy Goode's.**
+
+Scope: HEAD, 18 files, 1,662 non-blank lines (1,995 with blank lines). Counts come from surviving lines (`git blame -w -M -C`), not commits. The bus factor is the smallest number of authors whose surviving lines reach 50%.
+
+## Whole repo
+
+| Person | Lines | Share | Commits |
+|---|---|---|---|
+| Troy Goode (2 addresses, merged) | 649 | 39.0% | 95 |
+| Douglas Christopher Wilson | 551 | 33.2% | 143 |
+| Íñigo Marquínez Prado | 80 | 4.8% | 2 |
+| Jon Church | 59 | 3.5% | 3 |
+| Sebastian Beltran | 57 | 3.4% | 2 |
+| Ulises Gascón | 46 | 2.8% | 3 |
+| Ignacio Mangas | 38 | 2.3% | 2 |
+| Alejandro Caravaca Puchades | 30 | 1.8% | 5 |
+| Linus Unnebäck | 26 | 1.6% | 1 |
+| Ollie Buck | 14 | 0.8% | 1 |
+
+52 more authors hold 6.7% together. The largest of them is Eric di Domenico at 0.7%.
+
+- **Bus factor 2:** Troy Goode and Wilson together hold 72.2% of the non-blank lines (72.5% with blank lines). Reaching 80% takes 4 authors.
+- **Troy Goode merge is a guess:** I counted `<email redacted>` (605 lines, 93 commits) and `troy@laptop.example` (44 lines, 2 commits) as one person because the name matches. The tool rates this strong evidence, but only you can confirm it. Unmerged, Troy is at 605 lines (36.4%). Nothing was written to `.mailmap`.
+- **One address, two names:** Alejandro Caravaca Puchades also appears as `alex94puchades`, and the tool counts them as one person. Most of the 30 lines are under his full name, but in `lib/` the `alex94puchades` row shows 14 lines.
+
+## Single-contributor areas
+
+**By directory** (Troy merged, bus factor within that directory):
+
+| Directory | Bus factor | Who |
+|---|---|---|
+| `lib/` (1 file) | **1** | Troy Goode holds 144 of 214 lines (67.3%) |
+| `test/` (7 files) | **1** | Troy Goode holds 420 of 820 lines (51.2%), Wilson 42.0% |
+| `.github/` | 2 | Wilson 30.2% and Íñigo Marquínez Prado 26.2% |
+| root files | 2 | Wilson 29.4% and Troy 26.3% |
+
+**By file**, where one person holds at least 80%:
+- **Troy Goode:**
+  - `test/vary.js`: 100%
+  - `test/error-response.js`: 82.7%
+  - `test/example-app.js`: 80.0%
+  - `test/issue-2.js`: 80.0%
+- **Wilson:**
+  - `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`: 100%
+  - `LICENSE`: 94.4%
+  - `HISTORY.md`: 80.5%
+  - `.gitignore`: 80.0%
+- **Others:**
+  - `.github/workflows/codeql.yml`: Sebastian Beltran, 100%
+  - `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado, 98.4%
+  - `.github/dependabot.yml`: Ulises Gascón, 100%
+
+Three files have no owner above 50%: `README.md` (Troy 33.5%, Jon Church 27.8%), `test/test.js` and `.github/workflows/ci.yml`. `package.json` is split 50/30/10, with Wilson at exactly 50%.
+
+## Reading the risk
+
+- **Troy Goode** holds the core library, `lib/index.js` (about two-thirds of it), and most of the test suite. Their last commit is 2026-04-10, on the laptop address. The gmail address's last commit is 2019-05-27.
+- **Wilson** holds the most commits (45.4%) and shares ownership of most areas. Their last commit is 2021-09-07, so the second half of the bus factor has been inactive for years.
+- **Íñigo Marquínez Prado, Sebastian Beltran and Ulises Gascón** each hold a CI or repo-config file. All three are small files.
+
+## What was left out or adjusted
+
+- **Reformat commit set aside:** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter (2026-04-12). It changed whitespace and quotes only, and the tool left it out of the tables. Counting it would give Fiona Formatter 291 lines (17.5%), Wilson 376 (22.6%) and Troy (merged) 554 (33.3%). The bus factor would still be 2, with Troy and Wilson at 56.0%.
+- **Bots excluded:** `dependabot[bot]` (10 lines, 11 commits). Its lines are not credited to anyone.
+- **Mechanical rewrites checked:** I set aside `62628c0` and kept five that look mechanical:
+  - `739dc11` "docs: reformat license" (Wilson, 17 lines)
+  - `fcd2b56` "issue #42: (WIP) switch to ESLint; clean up" (Troy, 11 lines)
+  - `00d6eec` "build: use yaml eslint configuration" (Wilson, 9 lines)
+  - `344ce1e` (Wilson, 1 line)
+  - `9c2b59d` (Wilson, 1 line)
+
+  The five kept commits hold about 39 surviving lines in total, so they do not change the picture.
+- **Copy detection:** `-C` (the default). The tool flagged no person whose share moved by more than 2 points.
+- **Not counted:** 10 of 1,672 non-blank lines could not be attributed.
+- **Limits of line counts:** They show whose code survives. They don't show who understands it, review work, or design done outside the code. Code deleted on purpose counts for nobody.
+
+If you want, I can write the two `.mailmap` lines (Troy Goode's laptop address, and `alex94puchades`). I can also run `--suggest-codeowners`.
+META cost=0.0960017 ms=28416 turns=6

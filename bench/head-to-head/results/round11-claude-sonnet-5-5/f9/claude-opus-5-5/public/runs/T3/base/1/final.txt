@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -40; echo ---; ls -a; cat .mailmap 2>/dev/null; git remote -v
+ - Bash: git log --all --format='%aN|%aE' | sort | uniq -c | sort -k2 > /tmp/a.txt; wc -l /tmp/a.txt; echo "--dup emails"; awk -F'|' '{print tolower($2)}' /tmp/a.txt | sort | uniq -d; echo "--dup names"; awk -F'|' '{sub(/^ *[0-9]+ /,"",$1); print tolower($1)}' /tmp/a.txt | sort | uniq -d; echo "--troy/doug/etc"; grep -iE 'troy|doug|wilson|goode|dougwilson' /tmp/a.txt; echo; git log --all --format='%h %ad %aN <%aE> | %cN <%cE> | %s' --date=short --author='laptop.example' --author='formatter' --author='dogukan'
+ - Bash: grep -i alex94 /tmp/a.txt; cat /tmp/a.txt | awk -F'|' '{print $2}' | sed 's/@.*//' | tr A-Z a-z | sort | uniq -d; git log --all --format='%cN|%cE' | sort | uniq -c | sort -rn | head; git show --stat b2005d9 02afce3 | head -40
+ - Bash: sed -n '40,65p' /tmp/a.txt | sort -t'|' -k1; git shortlog -sne --all | sed -n '40,70p'
+ - Bash: cat > .mailmap <<'EOF'
+Alejandro Caravaca Puchades <<email redacted>>
+Troy Goode <<email redacted>> <troy@laptop.example>
+EOF
+git shortlog -sne --all | head -4; git status --short
+FINAL ANSWER:
+Yes, two people were counted twice. I added a `.mailmap` file so each is counted once. **The top author is still Douglas Christopher Wilson, with 143 commits.**
+
+**Duplicates found:**
+1. **Troy Goode** used two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). They are now counted as one person with 122 commits.
+2. **Alejandro Caravaca Puchades** had one commit under the name `alex94puchades` with the same email. Their total is now 5 commits instead of 4.
+
+**New top 4 (`git shortlog -sne --all`):**
+```
+143  Douglas Christopher Wilson
+122  Troy Goode
+ 11  dependabot[bot]
+  5  Alejandro Caravaca Puchades
+```
+
+- **History was not rewritten.** `.mailmap` only changes how `git shortlog`, `git log` and `blame` display names. Commit hashes stay the same. Rewriting history would need a force-push, and that seemed like too much for fixing a count.
+- **One merge rests on the name alone.** The two `troy@laptop.example` commits (`02afce3`, `b2005d9`, from April 2026) were merged into Troy because the name matches. That email looks like a default from a local machine setup, so I can't confirm it's the same person. Even without merging them, Douglas stays on top.
+- I checked the rest of the list for near-matches, such as `jordandenison` or `stevenp` under a second identity, and found none.
+- `.mailmap` is new and not committed yet. Tell me if you want it committed.
+META cost=0.19592559999999998 ms=25369 turns=6

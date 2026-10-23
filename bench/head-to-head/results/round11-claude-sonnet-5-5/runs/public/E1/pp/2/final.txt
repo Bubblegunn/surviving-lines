@@ -1,0 +1,59 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -20; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++' | head -20; echo ---; git ls-files | grep -vE '^(node_modules|\.git)/' | grep -E '\.(js|ts|mjs|cjs)$' | head -100; git rev-list --count HEAD; git shortlog -sn --no-merges | wc -l
+ - Bash: git ls-files | grep -vE '^node_modules/'; echo ---; for f in $(git ls-files | grep -vE '^node_modules/|package-lock'); do echo "== $f"; git log --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn | head -3; done; echo; git log -3 --pretty='%h %an %ad %s' --date=short; git show --stat 62628c0 | tail -5; git log --no-merges --pretty='%an|%ad' --date=short | grep -E 'Troy|Douglas' | sed -n '1p;$p'; git log --no-merges --author="Douglas" --pretty='%ad' --date=short | sed -n '1p;$p'; git log --no-merges --author="Troy Goode" --pretty='%ad' --date=short | sed -n '1p;$p'; grep -rl "require(" lib test | head; wc -l lib/index.js
+ - Bash: for f in lib/index.js test/test.js test/example-app.js test/error-response.js test/issue-2.js test/vary.js; do echo "== $f"; git blame -w -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+Bus factor is **2** for the project overall. Troy Goode and Douglas Christopher Wilson together account for most of the history. Only the core code and its tests have a single dominant author.
+
+I used `git log` and `git blame -w -C` for this. Blame skips the formatting commit `62628c0`, which would otherwise credit "Fiona Formatter" with 1,016 lines in `lib/index.js`, `test/test.js`, `test/example-app.js` and `test/error-response.js`. The repo has 354 commits.
+
+**Contributors (non-merge commits)**
+- Douglas Christopher Wilson: 143 commits, from 2017-03 to 2021-09.
+- Troy Goode: 95 commits, from 2013-01 to 2026-04-10. This is the only active top contributor.
+- Everyone else has 4 commits or fewer. dependabot has 11.
+
+**Single-owner areas**
+
+| File | Sole owner | Share | Risk |
+|---|---|---|---|
+| `lib/index.js` (the whole library, 238 lines) | Troy Goode | 159 of about 200 surviving lines (~80%), 29 of 37 commits | **High.** Every test imports it. |
+| `test/example-app.js` | Troy Goode | 67 of 81 lines (83%) | Medium |
+| `test/error-response.js` | Troy Goode | 57 of 66 lines (86%) | Medium |
+| `test/issue-2.js` | Troy Goode | 40 of 48 lines (83%) | Low |
+| `test/vary.js` | Troy Goode | 36 of 36 lines (100%) | Low. This is the only literal single-contributor file. |
+| `README.md` | Troy Goode | 29 of 38 commits (76%) | Medium |
+
+**Shared by two owners**
+- `test/test.js` is split between Douglas Christopher Wilson (339 lines) and Troy Goode (317 lines), so its bus factor is 2.
+- `package.json` is split between Wilson (68 commits) and Goode (37 commits), so its bus factor is 2. Wilson is inactive, so Goode is the only active owner.
+
+**Dominated by Wilson (inactive since 2021-09)**
+- CI and repo configuration have no active top owner. Wilson wrote 10 of 14 commits to `.github/workflows/ci.yml` and the only commits to `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js`.
+- Wilson also wrote most of `HISTORY.md`.
+- Ulises Gascón is the only recent contributor on CI (2026-01) and dependabot config.
+- Automation is the exception: dependabot owns `codeql.yml` and `scorecard.yml`, with no human owner.
+
+**Directory view**
+```
+lib/    🔴 BF 1  Troy Goode ~80%  (active)
+test/   🟡 BF 2  Troy Goode + Wilson (Wilson inactive)
+.github 🟢 BF 3+ Wilson, Gascón, Mangas, Beltran, others
+docs    🟡 BF 2  Goode (README), Wilson (HISTORY)
+```
+
+**Caveats**
+- "Active" means a commit in the last 90 days. By that measure Goode is active (last commit 2026-04-10). The dated gap to today (2026-10-22) is about 6 months, so this is borderline.
+- Commit counts are not the same as knowledge. This is a small library with a stable design.
+
+**Recommendations**
+1. Have a second person review or co-own `lib/index.js` and `test/vary.js`.
+2. Document the intent of `lib/index.js`, since Wilson's history shows most of the other maintenance knowledge left with him.
+3. Give Gascón, or a new maintainer, ownership of CI and release (`package.json`, workflows) so Wilson's gap is covered.
+META cost=0.08485540000000001 ms=27270 turns=7

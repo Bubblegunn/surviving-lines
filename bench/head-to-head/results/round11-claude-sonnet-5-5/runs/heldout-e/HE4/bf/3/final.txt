@@ -1,0 +1,28 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser 2>&1 | head; for f in $(git ls-files src/Parser); do git blame -w -M -C -e --line-porcelain HEAD -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; echo ---; git shortlog -sne HEAD -- src/Parser | head
+FINAL ANSWER:
+**Graham Campbell** (<email redacted>) wrote most of the code in `src/Parser/` today.
+
+I ran `git blame` on every file in `src/Parser/` at HEAD. It counts the author of each line that still exists, so it ignores commits whose code was later replaced:
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Graham Campbell | 782 | ~86% |
+| Priscila Duarte | 118 | ~13% |
+| Vance Lucas | 10 | ~1% |
+| JT Smith | 1 | <1% |
+| Jonas Staudenmeir | 1 | <1% |
+
+I used `-w -M -C`, so whitespace-only changes and moved or copied lines are not credited to the person who made the move. The recent "indent with tabs" commit therefore does not take over the blame.
+
+**Priscila Duarte** is the second reviewer if the change touches her ~118 lines. I didn't check which files those lines are in.
+
+Marta Kowalczyk and the StyleCI bot have commits in `src/Parser/`, but no lines of theirs remain. They would not be useful reviewers for this code.
+
+Commit counts give the same top name here (Graham has 39 of the 45 commits). The two methods only differ for the minor contributors.
+META cost=0.040508 ms=12753 turns=2

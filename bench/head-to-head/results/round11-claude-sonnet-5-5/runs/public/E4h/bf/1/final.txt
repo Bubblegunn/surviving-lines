@@ -1,0 +1,39 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git log --oneline | wc -l; git show --stat --format=%s 62628c0 | tail -3
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E4h-bf-1/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: git ls-files; for g in lib test .github root; do echo "== $g"; if [ $g = root ]; then fs=$(git ls-files | grep -v /); else fs=$(git ls-files $g); fi; for f in $fs; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -5; done; git log --format='%an|%ae' | grep -i -E 'fiona|troy' | sort | uniq -c
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- test/vary.js 2>&1 | head -3; git log --format='%h %an %s' --follow -- test/vary.js | head; git log --format='%h %an %s' | grep -i fiona
+ - Bash: for g in test .github root; do echo "== $g"; if [ $g = root ]; then git ls-files | grep -v /; else git ls-files $g; fi | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6; done
+ - Bash: for g in lib test .github root; do if [ $g = root ]; then git ls-files | grep -v /; else git ls-files $g; fi | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author '; done | grep -v '\[bot\]' | sort | uniq -c | sort -rn | awk -v g=$g '{t+=$1; if(NR==1){n=$0;c=$1}} END{printf "%s total=%d top=%s share=%.0f%%\n",g,t,n,100*c/t}'; done
+FINAL ANSWER:
+Two of the four areas have an owner under your rule. I counted surviving lines with `git blame`, skipped the formatting-only commit `62628c0` (Fiona Formatter), left out bot lines, and counted Troy Goode once across his two emails.
+
+| Area | Top author | Share of lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 67% (159 of 238) | Yes |
+| `test/` | Troy Goode | 54% (517 of 966) | Yes |
+| `.github/` | Douglas Christopher Wilson | 32% (118 of 366) | No |
+| root files | Troy Goode | 32% (134 of 415) | No |
+
+Suggested CODEOWNERS lines:
+
+```
+/lib/   @troygoode
+/test/  @troygoode
+```
+
+I guessed the GitHub handle `@troygoode` from his email. Check it before you commit the file. I left `.github/` and the root files out of the file because nobody reaches half.
+
+- **`.github/`:** Wilson (32%), Íñigo Marquínez Prado, Sebastian Beltran, Ulises Gascón and Ignacio Mangas share the lines.
+- **Root files:** Troy (32%), Wilson (28%) and Jon Church (17%) are the main authors.
+
+I did not use the `busfactor` script's output as the answer. It weights commits by age and picks owners until they cover 70%, which is a different rule from yours. It also named Fiona Formatter as a fallback owner, and she only made the formatting commit. I did not write any files.
+
+Troy's last commit is old. If he no longer reviews PRs, GitHub will still request his review on `lib/` and `test/`. I did not check whether he is still active.
+META cost=0.08202029999999999 ms=30379 turns=9

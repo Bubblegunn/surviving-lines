@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files lib); do echo "$f: $(git log --all --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | awk '{c=$1; $1=""; printf "%s(%d);", $0, c}')"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; git log -1 --format=%cd
+FINAL ANSWER:
+**Bus factor of `lib/`: 1, borderline 2.** It's a weak result, because `lib/` is a single file, `lib/index.js`.
+
+**Commit data (`git log --no-merges`, full history)**
+
+| Contributor | Commits | Share |
+|---|---|---|
+| Troy Goode | 33 | 50% |
+| Douglas Christopher Wilson | 4 | 6% |
+| Alejandro Caravaca Puchades | 4 | 6% |
+| Simon Mansfield | 3 | 5% |
+| jordandenison | 2 | 3% |
+| 20 others | 1 each | 30% |
+
+- There are 25 contributors and 66 commits in total.
+- Troy Goode alone holds exactly 50% of the commits. Losing that one person removes half of the commit history. Adding Douglas Wilson or Alejandro Caravaca Puchades brings the share past 50%. So 1 to 2 departures remove most of the commit history.
+- Beyond the top 5, 20 people made one commit each. Those are mostly small fixes, and they don't show deep knowledge of the file.
+
+**Active ownership**
+- Nobody has committed to `lib/` in the last 90 days. The latest commit in the repo is dated 2026-04-12.
+- The recent commits are `style: reformat js with 4-space indent and double quotes` and `lib: annotate handlers`. Those touch formatting and annotations, not logic.
+- The people who wrote the logic are probably not the ones who made the recent commits. I didn't check each author's last commit date, so I can't tell whether Troy Goode is still active.
+
+**Caveats**
+- Commit counts don't measure understanding. A person can write many small commits without knowing the file well, and a reviewer who never committed can know it well.
+- The directory shows 33 Troy Goode commits but `lib/index.js` shows 29. The other 4 touched files that were later removed from `lib/`, so the share for the current file is about 44% (29 of 62).
+- I didn't count how many files import `lib/index.js`. It is the package entry point, so I'd treat it as high importance.
+
+**Recommendations**
+- Pair another maintainer on the next change to `lib/index.js`, with Troy Goode's context if they are reachable.
+- Document the non-obvious logic and the decisions behind it, since the history is spread across many one-off contributors.
+META cost=0.0582009 ms=16178 turns=4

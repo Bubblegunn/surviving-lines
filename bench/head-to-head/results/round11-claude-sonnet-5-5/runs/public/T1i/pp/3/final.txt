@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs && git ls-files | grep -vE '(^|/)(node_modules|package-lock\.json)' | head -300 | wc -l && git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head
+ - Bash: git ls-files | grep -vE 'package-lock|LICENSE' | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //"; done | sort | uniq -c | sort -rn; echo ---; git ls-files | grep -vE 'package-lock|LICENSE' | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //"; done | wc -l; echo --- JS only; git ls-files '*.js' | while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep '^author '| sed "s/^author //"; done | sort | uniq -c | sort -rn; echo --- commits; 
+FINAL ANSWER:
+Surviving lines at HEAD, by `git blame`, are mostly Troy Goode's and Douglas Christopher Wilson's.
+
+**All tracked files (1,975 lines, excluding `package-lock.json` and `LICENSE`):**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 805 | 41% |
+| Douglas Christopher Wilson | 612 | 31% |
+| Íñigo Marquínez Prado | 95 | 5% |
+| Jon Church | 72 | 4% |
+| Sebastian Beltran | 67 | 3% |
+| Ulises Gascón | 52 | 3% |
+| Ignacio Mangas | 44 | 2% |
+| Alejandro Caravaca Puchades | 30 | 2% |
+| About 35 others | 1–26 each | 11% combined |
+
+**JS source only (1,202 lines):**
+- Troy Goode has 676 lines (56%).
+- Douglas Christopher Wilson has 394 lines (33%).
+- Together they own about 89% of the JS.
+- Alejandro Caravaca Puchades is third with 30 lines.
+
+Most of the non-JS lines are YAML and Markdown. That is where Íñigo, Jon, Sebastian and Ulises appear.
+
+**How I measured:**
+- I ran `git blame -w -M -C` on every tracked file. `-w` ignores whitespace changes, and `-M -C` follow lines moved or copied between files.
+- I passed `--ignore-revs-file .git-blame-ignore-revs`, so the 4-space and double-quote reformat commit (`62628c0`) does not take over ownership of the JS.
+- Authorship is by git author name, and I did not merge identities. `Alejandro Caravaca Puchades` (30) and `alex94puchades` (4) are probably the same person.
+- The 2 lines under `Fiona Formatter` and 6 under `Efe` are small leftovers outside the ignored reformat commit.
+
+**Commits do not match surviving code.** Douglas has the most commits (143 against Troy's 122), but Troy has more surviving lines. `dependabot[bot]` has 11 commits and 10 surviving lines.
+
+The 355 commits in this repo's history also count as ownership if you want a different cut. I can break the result down per file or per directory, or exclude docs and CI config.
+META cost=0.0655607 ms=19880 turns=4

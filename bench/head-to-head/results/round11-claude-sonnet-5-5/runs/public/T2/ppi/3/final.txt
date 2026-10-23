@@ -1,0 +1,56 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls lib && git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn | head -20 && echo --- && for f in $(git ls-files lib); do echo "$f: $(git log --all --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done && echo --- && git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && git log -1 --format=%cd
+ - Bash: echo total: $(git log --all --no-merges --oneline -- lib | wc -l) && echo authors: $(git log --all --no-merges --pretty=%an -- lib | sort -u | wc -l) && git log --all --no-merges --pretty="%an|%ad" --date=short -- lib | awk -F'|' '!s[$1]++' | head -8 && echo --- && git log --all --no-merges --since="1 year ago" --pretty=%an -- lib | sort | uniq -c | sort -rn && echo --- && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -6 && wc -l lib/index.js && grep -rl "lib" --include=*.js --include=*.json . --exclude-dir=node_modules --exclude-dir=.git | head
+ - Bash: git blame -w -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8
+FINAL ANSWER:
+## Bus factor `lib/`: 1
+
+Troy Goode is the only person who understands `lib/`. If they leave, nobody does.
+
+Period is all history. The analysis was generated on 2026-10-22.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files | 1 (`lib/index.js`, 238 lines) |
+| Bus factor 1 files | 1 (100%) |
+| Commits touching `lib/` (no merges) | 66 |
+| All-time authors | 25 |
+| Main owner | Troy Goode, 33 of 66 commits (50%) |
+
+### Ownership
+
+- **Line ownership:** blame with the `62628c0` reformat commit ignored gives Troy Goode 159 of 238 lines (67%). Douglas Christopher Wilson has 22 (9%) and Alejandro Caravaca Puchades has 12 (5%).
+- **Reformat commit:** plain `git blame` credits 214 lines to "Fiona Formatter". That is the `style: reformat js` commit, which is not real ownership.
+- **Commit share:** Troy Goode has about 50% of commits and about 67% of surviving lines. That is above the 50% line, so the factor is 1.
+
+### Recent activity
+
+| Window | Who changed `lib/` |
+|---|---|
+| Last 90 days | Nobody |
+| Last year | Troy Goode (1 commit), plus the reformat commit |
+
+The last real change was Troy Goode's on 2026-04-10. That is active but infrequent. The other 24 authors are historical contributors, and the most recent of them is LuisEGR from 2021-07.
+
+### Risk
+
+- **Importance:** `lib/index.js` is the whole library. Every consumer of the package depends on it, so the risk is HIGH.
+- **Dependents:** I did not count importers. The glob in my last grep failed, and there is only one file in `lib/`.
+- **Second-tier knowledge:** Douglas Christopher Wilson's last commit to `lib/` was in 2017-10, and Alejandro Caravaca Puchades has no recent commits. Neither can be counted on as a backup maintainer without checking.
+- **Git history limit:** the reformat commit hides who understands the current code. Someone who worked on the file before the reformat may not appear in blame.
+
+### Recommendations
+
+1. **Immediate:** Have a second person review every change to `lib/index.js`. Troy Goode should walk them through the file.
+2. **Short-term:** Add comments or a short design note in `lib/` that explain the non-obvious handlers. The recent `lib: annotate handlers` commit is a start.
+3. **Ongoing:** Rotate PR authorship and review so at least two active people have touched the file. Add `62628c0` to `.git-blame-ignore-revs` so blame stays useful.
+META cost=0.0755398 ms=21805 turns=7

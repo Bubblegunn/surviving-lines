@@ -1,0 +1,32 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE2-hist-1/repo", "max_files": 100000, "top": 15}
+FINAL ANSWER:
+Ownership of the live code is moderately concentrated, not one-person. Fatih Arslan holds about half. The next person holds well under a fifth.
+
+These numbers come from `git blame` at HEAD over 15 tracked text files, about 2,070 lines:
+
+| Rank | Author | Lines | Share | Last commit |
+|---|---|---|---|---|
+| 1 | Fatih Arslan | 969 | 46.8% | 2026-07-23 |
+| 2 | Raj Patel | 292 | 14.1% | 2026-08-24 |
+| 3 | Linda_pp | 124 | 6.0% | 2017-05-23 (inactive) |
+| 4 | Lena Hoffmann | 103 | 5.0% | 2026-08-10 |
+| 5 | Matthew Hall | 98 | 4.7% | 2026-03-04 (inactive) |
+
+- **Raj Patel's share is inflated.** About 128 of their lines are vendored third-party code (`vendor/`). Another 97 are `attribute.go`, which they moved out of another file in the latest refactor commit. Blame credits moved lines to the person who moved them. Without the vendored lines, Fatih Arslan holds about 50%, Raj Patel about 8%, Lena Hoffmann about 5% and Linda_pp about 6%.
+- **Lena Hoffmann's 103 lines** are all `attribute_string.go`, a generated file. That is not hand-written ownership.
+- **Core logic is more concentrated than the headline.** In `color.go` (637 lines), Fatih Arslan owns 51%, Linda_pp 12% and Raj Patel 10%. In `color_test.go`, Fatih Arslan owns 53%. In `README.md`, Fatih Arslan owns 82%.
+- **Three active people.** Fatih Arslan, Raj Patel and Lena Hoffmann all committed in the last 3 months.
+- **Two files are orphaned.** More than 50% of `color_windows.go` and `doc.go` belongs to authors with no commit since 2026-04-23. Both files are small.
+
+It is not a one-person project, but Fatih Arslan is the clear primary owner. The wider contributor history is long, but most of those people have been inactive for years. Treat Fatih Arslan as the key maintainer, and note that Raj Patel and Lena Hoffmann are the only other recent contributors.
+
+I measured line ownership only. I did not check commit counts or who has release and merge rights on the GitHub repo. Those matter more for maintainer risk. The `bus_factor` tool would give the commit-count view if you want it.
+META cost=0.0678971 ms=16501 turns=4

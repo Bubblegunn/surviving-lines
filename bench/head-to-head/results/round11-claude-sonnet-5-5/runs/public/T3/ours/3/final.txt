@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --identities; echo; ls -la .mailmap; cat .mailmap
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl; echo ======; sl --identities; echo; ls -la .mailmap; cat .mailmap
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl --identities; echo; ls -la .mailmap; cat .mailmap; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -80
+ - Bash: cat > .mailmap <<'EOF'
+# proposed by surviving-lines, confirm before relying on them
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js
+FINAL ANSWER:
+Yes, two people appeared under more than one identity. I merged both in a new `.mailmap` file. The new top author is **Troy Goode**, with 649 surviving lines (39.0%).
+
+**Duplicates found**
+- **Troy Goode** used two addresses: `<email redacted>` (93 commits, 605 lines) and `troy@laptop.example` (2 commits, 44 lines). The tool rates this strong evidence, because the name is the same and it matches the name on the main address.
+- **Alejandro Caravaca Puchades** committed under two names from one address, `<email redacted>`. The second name is `alex94puchades`, with 1 commit and 3 lines.
+
+**The fix**
+I created `.mailmap` at the repo root with a comment line saying these are proposals to confirm, followed by:
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+```
+Git, blame and the tool all read this file, so every count now uses it. The merges are guesses from names and addresses until you confirm them. I haven't committed the file.
+
+**New top authors, by surviving lines** (first three rows of 62; the next-largest author has 4.8%)
+
+| Author | Lines | Share | Commits (share) |
+|---|---|---|---|
+| Troy Goode | 649 | 39.0% | 95 (30.2%) |
+| Douglas Christopher Wilson | 551 | 33.2% | 143 (45.4%) |
+| Íñigo Marquínez Prado | 80 | 4.8% | 2 (0.6%) |
+
+- **Before the merge:** Troy Goode's main address had 605 lines (36.4%), and the second address had 44 lines (2.6%).
+- **By commit count:** Douglas Christopher Wilson leads, with 143 commits against Troy's 95.
+- **Bus factor 2:** Troy Goode and Douglas Christopher Wilson together hold 72.2% of the 1,662 non-blank lines (1,995 with blank lines). Reaching 80% takes 4 authors. The bus factor is the smallest number of authors whose lines add up to 50%.
+
+**What the numbers leave out or check**
+- **Reformat commit:** `62628c0` (the 4-space indent and double-quote reformat, by Fiona Formatter) is left out. It is a whitespace and quote rewrite touching 291 lines. If it were counted, Fiona Formatter would have 291 lines (17.5%) and Troy would have 554 (33.3%).
+- **Bot:** `dependabot[bot]` is excluded, with 10 lines and 11 commits, and gets no credit.
+- **Other mechanical-looking commits:** I checked for mechanical rewrites and found 5 more that look mechanical, such as the license reformat and the ESLint config changes. I did not set them aside, and together they hold 39 surviving lines.
+- **Copy detection:** figures use `git blame -w -M -C` (the default setting).
+
+These counts show whose lines survive. They say nothing about code quality, review work, or code that was deliberately deleted.
+META cost=0.088624 ms=24051 turns=7

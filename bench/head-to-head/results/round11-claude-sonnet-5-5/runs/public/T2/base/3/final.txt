@@ -1,0 +1,29 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git log --format='%an' -- lib | sort | uniq -c | sort -rn && echo --- && git log --since='1 year ago' --format='%an' -- lib | sort | uniq -c | sort -rn && echo --- && for f in lib/*; do echo "$f"; git log --follow --format='%an' -- "$f" | sort | uniq -c | sort -rn | head -3; done
+ - Bash: wc -l lib/index.js && git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -w -M -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js 2>&1 | grep '^author ' | sort | uniq -c | sort -rn; git log -1 --format=%ad Troy; git log --format='%an %ad' --date=short -- lib | sed -n '1,4p;$p'
+FINAL ANSWER:
+**Bus factor: 1.** `lib/` has one file, `lib/index.js` (238 lines).
+
+**Ownership, ignoring the formatting commit** (`git blame --ignore-rev 62628c0`):
+- Troy Goode: 159 of 238 lines (about 67%). 34 of 62 commits touching `lib/` (the rest are from 24 others).
+- Douglas Christopher Wilson: 22 lines (9%).
+- Alejandro Caravaca Puchades: 12 lines (5%).
+- 15 other people: 1–7 lines each.
+
+**Reasoning:**
+- If Troy leaves, two thirds of the code has no author left. Douglas and Alejandro together have 34 lines, so they are weak backups.
+- If Troy and Douglas both leave, about 76% is orphaned.
+- The two most recent commits (April 2026) are by Troy and by the "Fiona Formatter" bot. Only Troy is a real recent author.
+- The long tail of one-line contributors is not real knowledge. Those lines are small patches, not design ownership.
+
+**Caveats:**
+- Git author is a proxy for understanding. The file is small (238 lines), so someone new can read it quickly.
+- `git log` shows only 2 commits in the last year. Activity is low. The code looks stable, not actively understood by many people.
+- I did not check whether Troy is still active or whether Troy and "Fiona Formatter" are the same person.
+META cost=0.051866800000000005 ms=11514 turns=4

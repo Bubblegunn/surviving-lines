@@ -1,0 +1,23 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do case "$f" in *.*) ext="${f##*.}";; *) ext="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //;s/^/$ext\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; ext=$2; $1="";$2=""; sub(/^ +/,""); if(!(ext in seen)){seen[ext]=1; top[ext]=$0; n[ext]=c} tot[ext]+=c} END{for(e in tot) printf "%s\t%s\t%d/%d\n", e, top[e], n[e], tot[e]}' | sort
+FINAL ANSWER:
+Top owner per extension, by `git blame -w` on tracked files (surviving lines / total lines):
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 / 1202 |
+| `.md` | Troy Goode | 116 / 341 |
+| `.yml` | Douglas Christopher Wilson | 117 / 383 |
+| `.json` | Douglas Christopher Wilson | 20 / 42 |
+| `.gitignore` | Douglas Christopher Wilson | 4 / 5 |
+| no extension (LICENSE etc.) | Douglas Christopher Wilson | 17 / 22 |
+
+- Blame groups by author name only. The same person under different names or emails would be counted separately.
+- `-w` ignores whitespace-only changes, so the 4-space reindent in the latest commit doesn't take over ownership. Changes to quote style may still be credited to the commit that made them.
+META cost=0.0496972 ms=10467 turns=3

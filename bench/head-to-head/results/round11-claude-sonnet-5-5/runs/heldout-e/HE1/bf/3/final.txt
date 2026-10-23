@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | head -50; git log --format='%h %an <%ae> %ad %s' --date=short | head -40; git log --oneline | wc -l; node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -40
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain -- $f | awk -v f=$f '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{c[a" "m]++} END{for(k in c) print f"\t"c[k]"\t"k}'; done | sort -k1,1 -k2,2nr; echo ---; git blame -w -M -C --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{c[a" "m]++; t++} END{for(k in c) printf "%s %d %.0f%%\n",k,c[k],100*c[k]/t}' | sort -k3nr -t' '; git shortlog -sne HEAD | head -15
+ - Bash: git blame -w -M -C --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^summary /{s=substr($0,9)} /^\t/{c[a" | "s]++} END{for(k in c) print c[k]"\t"k}' | grep -E 'Priya|Dana|dana|Tom.s|Marcus|Gardi' ; echo ---; git log -1 --format='%ad' --date=short --author='Kenneth Reitz'; git log --since=2025-06-08 --format='%an <%ae>' | sort | uniq -c; git log --format='%an' --author='Dana\|dana' -i --format='%h %an <%ae> %s' | head
+FINAL ANSWER:
+**Short answer:** Kenneth Reitz wrote most of the Python still in the repo, but he hasn't committed since 2024-07-09. For `records.py`, ask **Dana Okafor**. I checked with `git blame`, ignoring whitespace and following moved lines. The busfactor script's dry run only emitted a fallback `*` rule. It listed Priya, Joseph Gardi and Dana as owners, and it ranks by decayed commit counts, which is the measure you didn't want.
+
+**Surviving lines in `records.py` (~620 lines)**
+- **Kenneth Reitz: 311 lines, 50%.** 298 under `<email redacted>` and 13 under a laptop address. His last activity was 2024-07-09, so he is the historical author but no longer maintains it. Likely the core `Database`, `Record` and `RecordCollection` code.
+- **Old contributors, each 1–9%:** Greg Troszak (57), Chad Whitacre (39), Jan Vlcinsky (30), mcdallas (26), and about 20 others. None have committed recently. Jan Vlcinsky also wrote most of `tests/conftest.py` and `tests/test_transactions.py`.
+- **Recent contributors:**
+  - **Dana Okafor: 35 lines.** 25 are key normalisation and chunking helpers, and 10 are `_describe`. She is the largest recent author of real logic.
+  - **Tomás Ibarra: 11 lines.** All are `_coerce_row`.
+  - **Priya Raman: 15 lines.** All come from the `black` reformat, so they are not authored logic.
+  - **Marcus Lindqvist: 5 lines.** They define `LEGACY_SKIP`.
+
+**Commit counts mislead here**
+- **Marcus Lindqvist** has 25 commits, the second most. Almost all are "tweak legacy exporter (1..24)" in the example file, which was later deleted. Only 5 of his lines survive.
+- **Priya Raman** and the `pre-commit-ci` bot are in the recent log for formatting and CI config, not logic.
+- **Joseph Gardi** has 6 commits, but they are merges, a revert and a transaction fix. He owns no lines in `records.py`.
+
+**Who to ask**
+1. **Dana Okafor** for current `records.py` behaviour.
+2. **Tomás Ibarra** for `_coerce_row` and typed columns.
+3. Nobody active knows the Kenneth-era core. That is half the file, so read it carefully before changing it. The tests in `tests/test_records.py` (Chad Whitacre, Harold Cooper, Joakim Uddholm) are the best record of its intended behaviour.
+
+**Caveats**
+- Dana appears under two emails, `<email redacted>` and `dokafor@fastmail.example`. The names match case-insensitively, so I treated them as one person. I have not verified that.
+- I judged "active" by commits since mid-2025. A reviewer who doesn't commit would not show up.
+- I wrote no files. The script ran with `--dry-run --no-github`. I can generate a real CODEOWNERS and the risk report if you want them.
+META cost=0.1000636 ms=32544 turns=7

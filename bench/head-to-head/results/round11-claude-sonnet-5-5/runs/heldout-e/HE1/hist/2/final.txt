@@ -1,0 +1,49 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-2/repo"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-2/repo"}
+ - Bash: git ls-files && cat .mailmap 2>/dev/null; git log --format='%h %an <%ae> %ad %s' --date=short | head -50
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-2/repo", "file": "records.py"}
+ - Bash: for ign in "" "--ignore-revs-file /tmp/ign"; do :; done; printf '%s\n' $(git rev-parse abe2ea7 0e8fe2e) > /tmp/ign; echo "== records.py plain"; git blame -w -M -C --line-porcelain records.py | grep '^author ' | sort | uniq -c | sort -rn; echo "== records.py ignoring black/pre-commit-ci commits"; git blame -w -M -C --ignore-revs-file /tmp/ign --line-porcelain records.py | grep '^author ' | sort | uniq -c | sort -rn; echo "== all .py ignoring format commits"; for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ign --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo "== emails"; git log --format='%an <%ae>' | grep -i -E 'okafor|raman|ibarra|l
+ - Bash: git blame -w -M -C --ignore-revs-file /tmp/ign -e records.py | grep -E 'lindqvist|okafor|ibarra' | cut -c1-140; grep -n LEGACY_SKIP -r . --include=*.py
+ - Bash: grep -rn 'LEGACY_SKIP\|_normalize_keys\|_chunked\|_coerce_row\|_describe' . --include='*.py' | grep -v '^./.git/'
+FINAL ANSWER:
+Most of the live Python is Kenneth Reitz's. For `records.py`, ask Kenneth about the core and Dana Okafor about the 2026 helper functions.
+
+I used `git blame -w -M -C` on every `.py` file at HEAD. I excluded the two formatting commits (`abe2ea7` black and `0e8fe2e` pre-commit.ci). Without that exclusion, the formatters would show up as owners of lines they only reflowed. Line counts below are from that run.
+
+**`records.py` (622 lines)**
+| Author | Surviving lines | Last commit |
+|---|---|---|
+| Kenneth Reitz | 318 (51%) | 2024-07-09 |
+| Greg Troszak | 58 | 2017-12 |
+| Chad Whitacre | 39 | 2016-11 |
+| Jan Vlcinsky | 30 | 2018-04 |
+| Dana Okafor | 40 (28 + 12, see caveat) | 2026-05-11 |
+| mcdallas | 26 | 2018-04 |
+| Tomás Ibarra | 12 | 2026-04-20 |
+| Marcus Lindqvist | 8 | 2026-03-27 |
+
+The rest is a long tail of one-off contributors.
+
+**Who to ask**
+- **Kenneth Reitz** wrote about half the file, including the original design from 2014. His last commit is 2024-07-09. Nobody who is still active owns the core.
+- **Dana Okafor** wrote the newest code: `_normalize_keys`, `_chunked` and `_describe`. They were still committing in May 2026.
+- **Tomás Ibarra** wrote `_coerce_row`.
+- Greg Troszak is the second-largest owner, but he has been gone since 2017.
+
+**Where commit counts mislead**
+- **Marcus Lindqvist** has 25 commits, second by count. 24 of them tweaked a legacy exporter example that `54b029d` later deleted. 8 lines survive (`LEGACY_SKIP`, `records.py:14-19`), and nothing references them. They look like dead code.
+- **Priya Raman** is the only author the tool flags as active, but she owns no code. Her blame lines come from the black reformat, plus a pre-commit config. She is the most recent human committer, so she may know the repo's current state, but not `records.py` logic.
+- **pre-commit-ci[bot]** shows up as a line owner for the same reason.
+- The 2026 helpers `_coerce_row` and `_describe` have no callers or tests. `_normalize_keys` and `_chunked` are only called from tests. They are unfinished or unused, so ask Dana what they were for.
+
+**Caveat on Dana**
+"Dana Okafor" (`<email redacted>`) and "dana okafor" (`dokafor@fastmail.example`) appear as two authors. The repo has no `.mailmap` entry linking them. I assumed they are the same person because the name matches apart from case. Confirm that before contacting either address. Adding a `.mailmap` entry would fix this in future tooling.
+META cost=0.14154550000000002 ms=40706 turns=10

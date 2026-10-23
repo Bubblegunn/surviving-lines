@@ -1,0 +1,61 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$' | grep -vE '(node_modules|vendor|dist|build)/' | wc -l; git rev-list --count HEAD; git shortlog -sne HEAD | head -15
+ - Bash: git ls-files | grep -E '\.(js|ts|jsx|tsx|mjs|cjs)$' > /tmp/files.txt; cat /tmp/files.txt; echo ---; 
+for f in $(cat /tmp/files.txt); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv
+echo "TOTAL"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn
+echo "PER FILE"; awk -F'\t' '{c[$1" | "$2]++; t[$1]++} END{for(k in c){split(k,a," \\| "); printf "%s\t%s\t%d\t%d\n",a[1],a[2],c[k],t[a[1]]}}' /tmp/blame.tsv | sort -k1,1 -k3,3nr
+echo "LAST COMMIT"; git log -1 --format='%an %ad' --date=short; git log --since=90.days --format=%an | sort | uniq -c | sort -rn; git log --format='%an %ad' --date
+FINAL ANSWER:
+**Project bus factor: 1.** Troy Goode owns 56% of the surviving lines, which is more than half the codebase by himself.
+
+I did not use the skill's commit-count method. I counted who authored each line still present at HEAD, using `git blame -w -M -C` over all 7 JS files (1,202 lines). I skipped the style-reformat commit `62628c0` through `.git-blame-ignore-revs`, so Fiona Formatter gets no credit for the re-indent. I merged authors by name, so Troy Goode's two emails count as one person.
+
+**Surviving lines by author**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 676 | 56.2% |
+| Douglas Christopher Wilson | 394 | 32.8% |
+| Alejandro Caravaca Puchades (plus `alex94puchades`, probably the same person) | 34 | 2.8% |
+| Eric di Domenico | 16 | 1.3% |
+| Alberto Leal | 15 | 1.2% |
+| 16 others | 67 | 5.6% |
+
+**Per file**
+
+| File | Lines | Top owner | Second |
+|---|---|---|---|
+| `lib/index.js` (the only source file) | 238 | Troy 67% | Wilson 9% |
+| `test/test.js` | 731 | Wilson 46% | Troy 43% |
+| `test/example-app.js` | 81 | Troy 83% | Wilson 17% |
+| `test/error-response.js` | 66 | Troy 86% | Wilson 14% |
+| `test/issue-2.js` | 48 | Troy 83% | Wilson 17% |
+| `test/vary.js` | 36 | Troy 100% | none |
+| `test/support/env.js` | 2 | Wilson 100% | none |
+
+- **Critical:** `lib/index.js` is the whole library, and Troy owns 67% of it. The rest is spread across 18 people, each with 12 lines or fewer, except Wilson at 22 lines. No one else has real knowledge of this file.
+- **Single-owner file:** `test/vary.js` is 100% Troy. It has low impact, since it is a small test.
+- **Two owners:** `test/test.js` is split between Wilson and Troy (46% and 43%). It is the only file with real shared ownership.
+
+**Activity**
+- No one has committed in the last 90 days, apart from the Fiona Formatter reformat.
+- Troy's last commit was 2026-04-10, about 6 months ago.
+- Wilson's last commit was 2021-09-07, over 5 years ago.
+- Both main owners are therefore inactive. Wilson's 33% is in effect orphaned code.
+
+**Caveats**
+- Only 7 JS files exist, so the percentages are coarse.
+- Line counts measure authorship, not understanding. Troy's share of `lib/index.js` could include moved or renamed code that `-M -C` did not trace.
+
+**Recommendations**
+1. **Immediate:** Get someone other than Troy to review and annotate `lib/index.js`.
+2. **Short-term:** Have another person take over `test/vary.js` and the test files Troy owns.
+3. **Ongoing:** Name a current maintainer, because neither top owner has committed recently.
+META cost=0.0832151 ms=25809 turns=6

@@ -1,0 +1,33 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -100; git ls-files | wc -l
+ - Bash: cd . && for f in $(git ls-files | grep -v LICENSE); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn; echo ---; git ls-files | grep -v LICENSE | xargs cat | wc -l; echo --- per-file; for f in lib/index.js test/test.js README.md; do echo $f; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" | grep -a '^author ' | sort | uniq -c | sort -rn | head -5; done; git log --oneline | wc -l
+FINAL ANSWER:
+Surviving lines by `git blame` author: 1,973 lines across 18 tracked files, with `LICENSE` excluded. I used `-w -M -C` and the repo's `.git-blame-ignore-revs`, so the 4-space/double-quote reformat commit (`62628c0`) doesn't count as authorship.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 805 | 40.8% |
+| Douglas Christopher Wilson | 612 | 31.0% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Alejandro Caravaca Puchades | 30 | 1.5% |
+| Linus Unnebäck | 26 | 1.3% |
+| about 35 others | 170 combined | about 8.6% |
+
+- **Troy Goode** wrote the original code. He has 159 of the lines in `lib/index.js`, the only library file. He also has 317 lines in `test/test.js` and 116 in `README.md`.
+- **Douglas Christopher Wilson** has the most lines in `test/test.js` (339). He has only 22 lines in `lib/index.js`, so his share is mostly tests and maintenance.
+- **Alejandro Caravaca Puchades** probably also appears as `alex94puchades` (4 lines), which would make 34 lines in total.
+- **`lib/index.js`** is mostly Troy's, with small contributions from Douglas, Alejandro, Raymond Feng and max.laverse.
+- **Trailing entries:** dependabot[bot] has 10 lines. You (Efe) have 6.
+
+Most of the code is still Troy's and Douglas's, about 72% between them. These counts include tests, docs and config. If you want production code only, I can rerun it for `lib/` alone.
+META cost=0.0588673 ms=16649 turns=4

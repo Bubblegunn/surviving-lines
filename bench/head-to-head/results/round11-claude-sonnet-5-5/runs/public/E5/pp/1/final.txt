@@ -1,0 +1,60 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -80; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---BLAME; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show --stat --format='%h %an <%ae> %s' 62628c0 b2005d9 | head -20; git log --diff-filter=A --follow --format='%h %an %ad' --date=short -- lib/index.js | tail -1
+FINAL ANSWER:
+`lib/index.js` is the core of the `cors` Express middleware. It was created on 2013-01-30 and has 238 lines now.
+
+**Who shaped it**
+- **Troy Goode** wrote it and maintained it. He made the first commit (`bcd03d9`) and 29 of the 56 commits that touch the file (about half). Over 2013–2016 he added:
+  - the `origin` option and its `false` setting
+  - case-insensitive header lookup
+  - pause/resume for async middleware
+  - `Access-Control-Expose-Headers`
+  - Express 4 support
+  - the `vary` module
+  - the ESLint switch
+- **Douglas Christopher Wilson** (4 commits, 2017) did the later hardening:
+  - the `Vary: Access-Control-Request-Headers` header
+  - a fix for missing `methods` in an options delegate
+  - lint and eslint updates
+- **Alejandro Caravaca Puchades** (4 commits, 2015, plus `alex94puchades`, who looks like the same person) added `RegExp` and array support for `options.origin`.
+- **Simon Mansfield** (3 commits, 2013) added the early `Origin` check and moved the credentials header.
+- Many others made one commit each. Examples:
+  - Mathias Buus: made it work without Express (Connect support).
+  - Typicode: added `PATCH` to the default methods.
+  - Igor Soarez: added `Vary: Origin` for specific origins.
+  - Raymond Feng: removed the closure in `applyHeaders`.
+  - Benjamin Eidelman: worked around a Safari bug in the default preflight response.
+  - Tom Arad: fixed `maxAge` set to 0.
+  - LuisEGR: removed unused function parameters.
+
+**Whose code is still in it today**
+
+I ran `git blame -w -M -C` with the reformat commit `62628c0` ignored. Line counts for the 238 lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 (+4 as `alex94puchades`) |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Benjamin Eidelman | 3 |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Two caveats:
+- **Reformat commit.** Plain blame gives Fiona Formatter 32 lines. That commit (`62628c0`, 2026-04-12) only changed indentation to 4 spaces and quotes to double. It touched about 428 lines in this file but wrote none of the logic. I excluded it from the table.
+- **Annotation commit.** `b2005d9` ("lib: annotate handlers", Troy Goode, 2026-04-10) changed 12 lines. I did not check whether it only adds annotations, so those lines may be credited to Troy even though that commit was the last to touch them.
+
+Because the reformat touched nearly every line, blame cannot show who wrote the oldest lines by looking at the file alone. The attribution above comes from tracing each line back past that commit.
+META cost=0.0695218 ms=15424 turns=4

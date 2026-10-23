@@ -1,0 +1,25 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser/ | head -50; git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sed 's/^author-mail //' | sort | uniq -c | sort -rn | while read n m; do echo "$n $(git check-mailmap "<x> $m" 2>/dev/null || echo $m)"; done; echo ---; cat .mailmap
+ - Bash: git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sed 's/^author-mail //' | sort | uniq -c | sort -rn | while read n m; do echo "$n $(git check-mailmap "$m")"; done
+FINAL ANSWER:
+Graham Campbell should review it. `git blame` attributes the lines currently in `src/Parser/` as follows (912 lines, with `.mailmap` applied and whitespace changes ignored):
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell (`<email redacted>`) | 782 | 86% |
+| Priscila Duarte (`<email redacted>`) | 118 | 13% |
+| `<email redacted>` | 10 | 1% |
+| `<email redacted>` | 1 | <1% |
+| `<email redacted>` | 1 | <1% |
+
+If you want a second reviewer, pick Priscila Duarte.
+
+I ran blame with `-w -M -C`, so whitespace-only edits, such as the recent tab re-indent, and moved or copied lines are credited to the original author. Without those flags the re-indent commit would show up as the author of many lines.
+
+The three small authors have no name in `.mailmap`, so I only have their emails.
+META cost=0.0455593 ms=17018 turns=3

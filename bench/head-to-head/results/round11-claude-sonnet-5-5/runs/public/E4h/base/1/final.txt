@@ -1,0 +1,43 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git log --format='%h %an <%ae> %s' | head -15; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30; cat .mailmap 2>/dev/null
+ - Bash: cd "$(git rev-parse --show-toplevel)"; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done > /tmp/blame.tsv
+python3 -I - <<'E'
+import collections
+norm={'troy@laptop.example':'Troy Goode','<email redacted>':'Troy Goode','<troy@laptop.example>':'Troy Goode','<<email redacted>>':'Troy Goode','<<email redacted>>':'Alejandro'}
+groups=collections.defaultdict(collections.Counter)
+for l in open('/tmp/blame.tsv'):
+    f,a,m=l.rstrip('\n').split('\t')
+    if 'bot' in a.lower() or '[bot]' in m: a='BOT'
+    a=norm.get(m,a)
+    p=f.split('/')[0] if '/' 
+ - Bash: git show b2005d9 02afce3 --stat --format='%h %s'; git show -w --ignore-blank-lines b2005d9 | head -40; git show -w 02afce3 | head -30
+FINAL ANSWER:
+Troy Goode holds at least half of the surviving lines in `lib/` and `test/`. Nobody reaches half in `.github/` or the root files.
+
+I used `git blame -w -M -C` on every tracked file. It skipped the formatting-only commit `62628c0` (Fiona Formatter's reindent and quote change), and I counted bot lines (dependabot) in the totals but never as owners. I counted `troy@laptop.example` and `<email redacted>` as one person, Troy Goode. I did not skip `b2005d9` (Troy's `// checked` comments in `lib/index.js`), because it adds new comment text and isn't a formatting change.
+
+| Path | Lines | Top holders | Owner? |
+|---|---|---|---|
+| `lib/` | 238 | Troy Goode 67%, Douglas Wilson 9%, Alejandro Caravaca Puchades 7% | Troy Goode |
+| `test/` | 966 | Troy Goode 54%, Douglas Wilson 39% | Troy Goode |
+| `.github/` | 374 | Douglas Wilson 32%, Íñigo Marquínez Prado 25%, Sebastian Beltran 17%, Ulises Gascón 12% | None |
+| root files | 417 | Troy Goode 32%, Douglas Wilson 28%, Jon Church 17% | None |
+
+Within the root files, a few single files do have a majority holder, but these are small files and a per-file owner would be noise:
+- `.eslintrc.yml`, `.gitignore`, `HISTORY.md` and `LICENSE` are mostly Douglas Wilson.
+- `README.md` is 42% Troy Goode, so no owner.
+- `package.json` is 48% Douglas Wilson, just under half.
+
+Suggested CODEOWNERS. I don't know the GitHub handles, so `@troygoode` is a guess you should check.
+```
+/lib/   @troygoode
+/test/  @troygoode
+```
+Leave `.github/` and the root files without a line, so GitHub assigns no owner. If you want review coverage there anyway, name a team. Blame says nobody individually owns those paths.
+META cost=0.078509 ms=24697 turns=5

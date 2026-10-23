@@ -1,0 +1,40 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: git log -1 --format=%ci && node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --since 2026-03-29 --until 2026-04-12T23:59:59 --merge-identities; echo ---; git log --since=2026-03-29 --until=2026-04-13 --format='%h %ci %an <%ae> %s'
+ - Bash: git log -1 --format='%ci %an' ee714bd; git show --stat --format='%h %s' 62628c0 | tail -3; git show --stat --format='%h %s' 5317ebe | tail -2; node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --since 2026-03-29 --until 2026-04-12T23:59:59 --merge-identities --json | python3 -c "
+import json,sys;d=json.load(sys.stdin)
+rows=d.get('authors') or d.get('rows') or []
+for r in rows:
+  n=json.dumps(r)
+  if 'Vansh' in n or 'Fiona' in n: print(n)
+print(list(d.keys()))"
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12. Four commits fall in it. After I set aside the formatting commit, two people remain.
+
+| Person | Commits in window | Lines of theirs still in the code |
+|---|---|---|
+| **Troy Goode** | 2: `b2005d9` "lib: annotate handlers" and `02afce3` "test: vary header coverage" (both 2026-04-10) | **649 (39.0%)**, or 810 (40.8%) counting blank lines |
+| **Vansh Sharma** | 1: `5317ebe` "docs: app.del() with app.delete() in README example (#411)" (2026-04-06) | **1 (0.06%)**, or 1 (0.05%) counting blank lines |
+
+**Troy Goode counted once:** Troy appears under two addresses with the same name. I merged them, but that is a guess from the name alone, not confirmed:
+- `troy@laptop.example`: both window commits, 44 lines.
+- `<email redacted>`: 0 commits in the window, 605 lines from older work.
+
+So of Troy's 649 lines, only the 44 under the laptop address come from that address. If the two addresses are different people, the person who committed in the window holds 44 lines. To make the merge permanent, add a `.mailmap` line. I did not write one, because you only asked a question.
+
+**Set aside:**
+- **Formatting commit:** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter (2026-04-12). It changed 4 files, 1,016 lines in and 1,016 out, and only whitespace and quotes. The line counts above give those lines back to their earlier authors. Without that correction, Fiona would show 291 lines (17.5%) and Troy 554 (33.3%).
+- **Bots:** dependabot's latest commit (`ee714bd`, 2026-03-02) is outside the window anyway, and its 10 lines are not credited to anyone.
+
+**How the lines were counted:**
+- Each line is credited to the last person who changed it, ignoring whitespace changes, moved lines and copied lines (`git blame -w -M -C`). The tool covered 1,662 of 1,672 non-blank lines in 18 files (1,995 counting blank lines).
+- The tool checked for other mechanical rewrites and kept 5 small ones in the counts: 739dc11, 00d6eec, 344ce1e and 9c2b59d by Douglas Christopher Wilson, and fcd2b56 by Troy Goode, worth 11 lines.
+- Whole repository: 2 authors hold half the non-blank lines (Troy Goode and Douglas Christopher Wilson together hold 72.2%), and 4 authors hold 80%.
+
+These figures only say whose lines are still in the code. They do not measure review work, line quality, or code that was deleted on purpose.
+META cost=0.2131318 ms=22755 turns=5

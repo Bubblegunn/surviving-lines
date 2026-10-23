@@ -1,0 +1,40 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls -a && git shortlog -sne HEAD | head -20 && cat .mailmap 2>/dev/null
+ - Bash: git log --format='%h %an %s' | grep -iE 'style|format|indent|lint|prettier|whitespace|quote|semi' | head -30; git log --oneline | wc -l
+ - Bash: for g in lib test .github ROOT; do echo "== $g"; if [ $g = ROOT ]; then files=$(git ls-files | grep -v '/'); else files=$(git ls-files $g); fi; for f in $files; do git blame -w --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -6; done; echo; for f in $(git ls-files | grep -v /); do echo "$f: $(git blame -w --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -2 | tr '\n' ' ')"; done
+ - Bash: git ls-files | head -30; git ls-files lib test .github | wc -l; git log --format='%h %an %s' -- lib | grep -iE 'Fiona|Formatter' ; git blame --line-porcelain -- lib/*.js | grep '^author ' | sort | uniq -c | sort -rn | head -3
+ - Bash: for d in test .github; do echo "== $d"; for f in $(git ls-files $d); do echo "-- $f"; git blame -w --ignore-rev 62628c0 --line-porcelain -- $f 2>&1 | grep -E '^(author |fatal)' | sort | uniq -c | sort -rn | head -4; done; done
+ - Bash: for d in lib test .github ROOT; do echo "== $d"; if [ $d = ROOT ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files $d); fi; for f in $files; do git blame -w --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author '; done | grep -v 'bot\]' | sort | uniq -c | sort -rn > /tmp/own_$d.txt; awk '{t+=$1} END{print "total",t}' /tmp/own_$d.txt; head -3 /tmp/own_$d.txt; done
+ - Bash: for d in lib test .github ROOT; do echo "== $d"; if [ $d = ROOT ]; then git ls-files | grep -v /; else git ls-files $d; fi | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author '; done | grep -v 'bot\]' | sort | uniq -c | sort -rn > /tmp/own_$d.txt; awk '{t+=$1} END{print "total",t}' /tmp/own_$d.txt; head -4 /tmp/own_$d.txt; done
+FINAL ANSWER:
+Only `lib` has an owner. Troy Goode holds 159 of 238 surviving lines there (66.8%).
+
+I used `git blame -w --ignore-rev 62628c0`, so the 4-space/double-quote reformat commit by "Fiona Formatter" doesn't count. Bots (dependabot) are excluded, and Troy Goode's two emails count as one person. The other eslint/lint bump commits changed real content, so I kept them in.
+
+| Path | Top holder | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 66.8% | Yes |
+| `test/` | Troy Goode | 453/966 = 46.9% | No |
+| `.github/` | Douglas Christopher Wilson | 108/366 = 29.5% | No |
+| root files | Troy Goode | 134/415 = 32.3% | No |
+
+- **`test/`:** Troy Goode is just under half. Douglas Christopher Wilson holds 400 lines (41.4%), so it's split between them.
+- **`.github/`:** Ownership is spread out. After Wilson, Íñigo Marquínez Prado holds 95, Sebastian Beltran 63 and Ignacio Mangas 54.
+- **Root files:** Goode has 134 lines and Wilson 115. Jon Church (72) and Linus Unnebäck (26) hold much of the rest, mostly in `README.md`.
+
+Suggested `CODEOWNERS`. I only have commit names, not GitHub handles, so `@troygoode` is a guess to replace.
+```
+# Only lib/ has an owner holding >=50% of surviving lines
+/lib/    @troygoode
+
+# No owner reaches 50%: /test/ /.github/ and root files
+```
+By count, Troy Goode has written the most surviving lines in the repo. Adding `lib/` alone leaves the other paths with no required reviewer, which is what the 50% rule gives.
+META cost=0.10278809999999998 ms=38982 turns=10

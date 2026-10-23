@@ -1,0 +1,36 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: mkdir -p /tmp/own && cat > /tmp/own/own.py <<'EOF'
+import subprocess, sys, os, collections
+repo = sys.argv[1]
+files = subprocess.run(["git","-C",repo,"ls-files","-z"],capture_output=True,text=True).stdout.split("\0")
+res = collections.defaultdict(collections.Counter)
+for f in filter(None, files):
+    ext = os.path.splitext(f)[1] or os.path.basename(f)
+    p = subprocess.run(["git","-C",repo,"blame","-w","--line-porcelain","-e","HEAD","--",f],capture_output=True,text=True,errors="replace")
+    if p.returncode: continue
+    for l in p.stdout.splitlines():
+        if l.startswith("author-mail "):
+            res[ext][l[12:]] += 1
+for ext, c in sorted(res.items(), key=lambda x:-sum(x[1].values()
+FINAL ANSWER:
+Top owner per extension, counted as surviving lines at HEAD with `git blame -w`:
+
+| Ext | Lines | Top owner | Next |
+|---|---|---|---|
+| `.js` | 1202 | <email redacted>, 469 (39%) | fiona@formatter.example 291 (24%); <email redacted> 245 (20%) |
+| `.yml` | 383 | <email redacted>, 117 (30%) | inigomarquinez 95 (24%); bjohansebas 63 (16%) |
+| `.md` | 341 | <email redacted>, 116 (34%) | <email redacted> 72 (21%); doug 67 (19%) |
+| `.json` | 42 | <email redacted>, 20 (47%) | troygoode 12 (28%) |
+| `LICENSE` | 22 | <email redacted>, 17 (77%) | troygoode 5 (22%) |
+| `.gitignore` | 5 | <email redacted>, 4 (80%) | troygoode 1 |
+
+- **`.js`:** The latest commit, `style: reformat js with 4-space indent and double quotes`, is by fiona@formatter.example. It gives that author 24% of `.js`. `-w` skips pure indentation changes, but that commit also changed quotes, so those lines count as theirs. Without it, troygoode's share would be higher.
+- **Extensions:** Files with no extension are grouped under their file name, which is why `LICENSE` has its own row.
+- **Authors:** Authors are matched by email, so one person with two emails counts as two authors.
+META cost=0.0733736 ms=14678 turns=3

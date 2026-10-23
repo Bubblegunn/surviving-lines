@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser/ && for f in $(git ls-files src/Parser/); do git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' ; done | sort | uniq -c | sort -rn; cat .mailmap
+ - Bash: for f in $(git ls-files src/Parser/); do echo "== $f"; git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+**Graham Campbell** should review it. A blame of the current lines in `src/Parser/` (whitespace changes ignored, moves and copies followed) gives:
+
+| Author | Lines surviving |
+|---|---|
+| Graham Campbell | 782 |
+| Priscila Duarte | 118 |
+| Vance Lucas | 10 |
+| Jonas Staudenmeir | 1 |
+| JT Smith | 1 |
+
+Graham Campbell wrote most of the code in 7 of the 9 files: `EntryParser.php` (all 363 lines), `Value.php`, `Lines.php`, `Entry.php`, `Lexer.php`, `Parser.php` and `ParserInterface.php`.
+
+**Priscila Duarte** wrote all of `Comments.php` and `Interpolator.php`, which are the two newest files. Add them as a reviewer if the change touches either file.
+
+I ran blame with `-w` so the "indent with tabs" and StyleCI commits don't take ownership of the lines they reformatted. The repo's `.mailmap` already merges the duplicate identities for both main authors.
+META cost=0.042716800000000006 ms=12550 turns=3

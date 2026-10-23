@@ -1,0 +1,28 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad %cd' --date=iso; echo; git log --since='2026-03-29 00:00' --until='2026-04-12 23:59:59' --format='%h|%an|%ae|%ad|%s' --date=short --no-merges
+ - Bash: git log -15 --format='%h|%an|%ae|%cn|%ad|%s' --date=iso; echo; git shortlog -sne HEAD; ls .mailmap 2>&1; echo; git show --stat --format='%h %s' 62628c0 | tail -15
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | grep -Ei 'troy|vansh|formatter'
+echo ---; git log --since=2026-03-29 --until=2026-04-12 --no-merges --numstat --format='%h %an' | grep -v formatter | head -30
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12, 14 days. Two people qualify.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage; `b2005d9` lib: annotate handlers | 810 total |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) | 1 |
+
+- **Troy Goode:** I counted two author identities as one person. Their `troy@laptop.example` identity made both window commits, and `<email redacted>` is their older identity.
+  - 48 of the 810 lines come from the window commits: 36 in `test/vary.js` and 12 in `lib/index.js`. All 48 survive.
+  - The other 762 lines come from their older work under `<email redacted>`.
+  - If you meant only lines from window commits, Troy has 48 and Vansh has 1.
+- **Vansh Sharma:** their one changed line is in `README.md`, and it survives.
+- **Excluded:** Fiona Formatter's `62628c0` only reformats code (4-space indent, double quotes). It rewrote 1016 lines across 4 files.
+  - Dependabot's latest commits are from March 2, outside the window.
+- **Blame method:** I ran `git blame` with `--ignore-rev 62628c0`, so reformatted lines still count for their original authors.
+META cost=0.0718141 ms=22458 turns=5

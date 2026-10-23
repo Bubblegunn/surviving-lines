@@ -1,0 +1,24 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; git log --since='2026-03-29' --format='%h|%an|%ae|%ad|%s' --date=short --no-merges | cat
+ - Bash: git log --since='2026-03-29' --format='%h|%an|%ae|%cn|%ad|%P' --date=iso | cat; echo; git log -8 --format='%h|%an|%ad|%s' --date=short | cat; echo; git show --stat --format='%h %an' 62628c0 b2005d9 02afce3 5317ebe | cat
+ - Bash: for c in b2005d9 02afce3 5317ebe; do echo "== $c"; done
+git ls-files | grep -v '^\.git' | while read f; do git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^[0-9a-f]{40} /{h=substr($1,1,7)} /^author /{print h"|"substr($0,8)}'; done | grep -E '^(b2005d9|02afce3|5317ebe)' | sort | uniq -c
+echo; git blame --ignore-rev 62628c0 -w -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c
+FINAL ANSWER:
+Three people committed in the window 2026-03-29 to 2026-04-12. I left out the style commit and `dependabot[bot]`, which has no commits in the window anyway.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (2026-04-10)<br>`b2005d9` lib: annotate handlers (2026-04-10) | **47** (36 from `02afce3`, 11 from `b2005d9`) |
+| **Vansh Sharma** | `5317ebe` docs: app.del() → app.delete() in README (#411) (2026-04-07) | **1** |
+
+- **Excluded:** Fiona Formatter's `62628c0` (2026-04-12) only reindents the JS files and switches them to double quotes. It touches 1016 lines in `lib/index.js` and `test/*`, and I left that commit out entirely.
+- **How I counted:** I ran `git blame --ignore-rev 62628c0` so that reformatted lines count for the original author. Without that, Troy's surviving lines in `lib/index.js` would show as Fiona's.
+- **Troy's `b2005d9`:** it changed 12 lines and 11 survive. I did not look into the one that is gone.
+- **Scope:** the counts cover only lines from each person's window commits. Troy has many more lines elsewhere in the repo from earlier commits. For example, blame shows 159 in `lib/index.js` alone.
+META cost=0.052654900000000004 ms=14595 turns=4

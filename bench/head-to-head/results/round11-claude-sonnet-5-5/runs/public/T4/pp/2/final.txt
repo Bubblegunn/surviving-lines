@@ -1,0 +1,19 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls .github CODEOWNERS docs/CODEOWNERS 2>&1 | head -20; echo ---; git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log -n 10 --format='%h %an %ad %s' --date=short -- lib/index.js
+FINAL ANSWER:
+Repo has no CODEOWNERS file. I used git history instead.
+
+- **Troy Goode** is the best reviewer. They have 30 commits on `lib/index.js` and made the latest functional change (`b2005d9`, 2026-04-10).
+- **Douglas Christopher Wilson** is a good second reviewer. They have 4 commits, mostly in 2017, and wrote the fixes for the `Vary` header and for a missing `methods` option. Those fixes affect CORS behavior. Their last commit is old, so check whether they are still active.
+- **Alejandro Caravaca Puchades** has 4 commits and is a possible alternative.
+
+Ignore "Fiona Formatter" (`62628c0`). That commit only reformatted the file.
+
+If your change touches `maxAge`, `Vary` headers, or the pre-flight response, read the history of those parts first. Tom Arad, Douglas Wilson, and Benjamin Eidelman each fixed bugs there.
+META cost=0.0477998 ms=9726 turns=3

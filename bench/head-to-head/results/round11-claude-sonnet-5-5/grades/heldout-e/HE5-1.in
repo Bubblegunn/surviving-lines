@@ -1,0 +1,262 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I want to change how the store proxies work (lib/rack/attack/store_proxy/). Who knows that code and should review my PR? Please only suggest people who are still around, not just the historical authors.
+
+CRITERIA:
+1. Hiroshi Tanaka, as one person, is credited with about 26% of lib/rack/attack/store_proxy/ (accept 22–30%) and named as someone to ask. FAIL if he is split into two people, absent, or if "GitHub" is shown as the author of his code.
+2. Historic owners are shown as inactive and not recommended: hakanensari (about 22.7% of store_proxy, accept 19–27%, last commit 2014) and Aaron Suggs (155 commits, about 8.2% of all Ruby code, last commit 2017) are flagged as no longer active (dates or years given), and neither is recommended as a reviewer. FAIL if either is recommended, or if the answer presents the code owners without saying anything about who is no longer active.
+3. Gonzalo Rodriguez is one person: about 18.4% of store_proxy (accept 15–22%) or about 44.6% of all Ruby code (accept 41–48%), whichever the answer reports; and he is described as still active (last commit Nov 2025). FAIL if he is split into several people, if his share is under 10% of store_proxy or under 35% of all code, or if he is called inactive.
+4. Generated and formatting commits are not credited: Santiago Bartesaghi is at most 10.5% of all Ruby code (truth 8.4%; about 12% if the generated RBI were counted) or reported only with per-directory figures (1.8% of store_proxy), and Jonas Keller (whitespace commit) is at 0% or not listed. The answer says the generated file and the autocorrect/whitespace commits were left out or looked through. FAIL if Jonas Keller is presented as an owner, if Santiago's whole-repo share is above 11%, or if no exclusion is mentioned.
+5. The recommendation lists only active people: it names at least one of Hiroshi Tanaka, Gonzalo Rodriguez, Santiago Bartesaghi as reviewer, with Hiroshi Tanaka or Gonzalo Rodriguez ahead of any other candidate by code ownership, and does not name anyone whose last commit is before 2024 (for example Aaron Suggs, hakanensari, fatkodima, Brad Lindsay, Jonathan del Strother) as a reviewer. FAIL if any such person is recommended, or if no active person is named.
+
+GROUND TRUTH (computed by a script with git blame):
+== e5 ground truth ==
+fixture HEAD: 24ce876159df8ce75c69ef963f8ad4cf2f1f6f3d 2026-09-30 (as-of date = HEAD commit date)
+scope: tracked *.rb and *.rbi at HEAD, excluding generated files
+excluded files (non-blank lines): {'generated (DO NOT EDIT)': 112}
+ignored commits (1): 045616c9 Autocorrect Style/StringLiterals
+
+-- ALL: attributable human lines = 2819
+    1. Gonzalo Rodriguez         1258 lines  44.63%  | commits(all history)=259 last_commit=2025-11-09
+    2. fatkodima                  248 lines   8.80%  | commits(all history)=18 last_commit=2019-10-31
+    3. Santiago Bartesaghi        236 lines   8.37%  | commits(all history)=32 last_commit=2026-09-30
+    4. Aaron Suggs                231 lines   8.19%  | commits(all history)=155 last_commit=2017-02-09
+    5. madlep                     127 lines   4.51%  | commits(all history)=10 last_commit=2016-08-04
+    6. Jordan Moncharmont         112 lines   3.97%  | commits(all history)=3 last_commit=2013-09-30
+    7. hakanensari                109 lines   3.87%  | commits(all history)=10 last_commit=2014-04-17
+    8. Hiroshi Tanaka              72 lines   2.55%  | commits(all history)=2 last_commit=2026-09-16
+    9. Jonathan del Strother       55 lines   1.95%  | commits(all history)=4 last_commit=2023-11-21
+   10. Jean Boussier               45 lines   1.60%  | commits(all history)=2 last_commit=2026-03-24
+
+-- lib/: attributable human lines = 865
+    1. Gonzalo Rodriguez          199 lines  23.01%  | commits(all history)=259 last_commit=2025-11-09
+    2. fatkodima                  145 lines  16.76%  | commits(all history)=18 last_commit=2019-10-31
+    3. Aaron Suggs                101 lines  11.68%  | commits(all history)=155 last_commit=2017-02-09
+    4. Hiroshi Tanaka              72 lines   8.32%  | commits(all history)=2 last_commit=2026-09-16
+    5. hakanensari                 66 lines   7.63%  | commits(all history)=10 last_commit=2014-04-17
+    6. madlep                      40 lines   4.62%  | commits(all history)=10 last_commit=2016-08-04
+    7. Jordan Moncharmont          27 lines   3.12%  | commits(all history)=3 last_commit=2013-09-30
+    8. Steve Hodgkiss              21 lines   2.43%  | commits(all history)=3 last_commit=2014-04-02
+    9. Brad Lindsay                19 lines   2.20%  | commits(all history)=1 last_commit=2018-02-06
+   10. dsantosmerino               18 lines   2.08%  | commits(all history)=1 last_commit=2019-10-06
+
+-- lib/rack/attack/store_proxy/: attributable human lines = 277
+    1. Hiroshi Tanaka              72 lines  25.99%  | commits(all history)=2 last_commit=2026-09-16
+    2. hakanensari                 63 lines  22.74%  | commits(all history)=10 last_commit=2014-04-17
+    3. Gonzalo Rodriguez           51 lines  18.41%  | commits(all history)=259 last_commit=2025-11-09
+    4. fatkodima                   22 lines   7.94%  | commits(all history)=18 last_commit=2019-10-31
+    5. Brad Lindsay                19 lines   6.86%  | commits(all history)=1 last_commit=2018-02-06
+    6. Jonathan del Strother       16 lines   5.78%  | commits(all history)=4 last_commit=2023-11-21
+    7. Brian Kephart               13 lines   4.69%  | commits(all history)=2 last_commit=2018-05-13
+    8. Santiago Bartesaghi          5 lines   1.81%  | commits(all history)=32 last_commit=2026-09-30
+    9. Ryan Laughlin                4 lines   1.44%  | commits(all history)=4 last_commit=2020-05-20
+   10. Alexey Zapparov              3 lines   1.08%  | commits(all history)=1 last_commit=2022-02-04
+
+-- spec/: attributable human lines = 1927
+    1. Gonzalo Rodriguez         1053 lines  54.64%  | commits(all history)=259 last_commit=2025-11-09
+    2. Santiago Bartesaghi        223 lines  11.57%  | commits(all history)=32 last_commit=2026-09-30
+    3. Aaron Suggs                116 lines   6.02%  | commits(all history)=155 last_commit=2017-02-09
+    4. fatkodima                  103 lines   5.35%  | commits(all history)=18 last_commit=2019-10-31
+    5. madlep                      87 lines   4.51%  | commits(all history)=10 last_commit=2016-08-04
+    6. Jordan Moncharmont          85 lines   4.41%  | commits(all history)=3 last_commit=2013-09-30
+    7. hakanensari                 43 lines   2.23%  | commits(all history)=10 last_commit=2014-04-17
+    8. Jonathan del Strother       39 lines   2.02%  | commits(all history)=4 last_commit=2023-11-21
+    9. Jean Boussier               34 lines   1.76%  | commits(all history)=2 last_commit=2026-03-24
+   10. Alex Martens                25 lines   1.30%  | commits(all history)=1 last_commit=2024-06-24
+
+WATCH Hiroshi Tanaka: ALL: 72 lines (2.55%); lib/: 72 lines (8.32%); lib/rack/attack/store_proxy/: 72 lines (25.99%); spec/: 0 lines (0.00%)
+
+WATCH Jonas Keller: ALL: 0 lines (0.00%); lib/: 0 lines (0.00%); lib/rack/attack/store_proxy/: 0 lines (0.00%); spec/: 0 lines (0.00%)
+
+WATCH Santiago Bartesaghi: ALL: 236 lines (8.37%); lib/: 13 lines (1.50%); lib/rack/attack/store_proxy/: 5 lines (1.81%); spec/: 223 lines (11.57%)
+
+-- identity groups with more than one name/email (merged):
+   Aaron Suggs: Aaron Suggs <<email redacted>>; Aaron Suggs <<email redacted>>
+   Gonzalo Rodriguez: Gonzalo <<email redacted>>; Gonzalo <<email redacted>>; Gonzalo R <<email redacted>>; Gonzalo Rodriguez <<email redacted>>; Gonzalo Rodriguez <<email redacted>>
+   Han: Han <<email redacted>>; Han Chang <<email redacted>>
+   Hiroshi Tanaka: Hiroshi Tanaka <hiroshi@tanaka.example>; Hiroshi Tanaka <<email redacted>>
+   James Mead: James Mead <<email redacted>>; James Mead <<email redacted>>
+   Jonathan del Strother: Jonathan del Strother <<email redacted>>; Jonathan del Strother <<email redacted>>
+   Olle Jonsson: Olle Jonsson <<email redacted>>; Olle Jonsson <<email redacted>>
+   Santiago Bartesaghi: Santiago Bartesaghi <<email redacted>>; Santiago Bartesaghi <<email redacted>>
+   madlep: Julian Doherty (madlep) <<email redacted>>; madlep <<email redacted>>
+
+-- commit-count ranking (no-merges, all history; what a commit count would say):
+   1. Gonzalo Rodriguez         259 commits
+   2. Aaron Suggs               155 commits
+   3. Santiago Bartesaghi        32 commits
+   4. fatkodima                  18 commits
+   5. Zach Millman               10 commits
+   6. hakanensari                10 commits
+   7. madlep                     10 commits
+   8. Olle Jonsson                8 commits
+
+activity as of 2026-09-30 (active = commit within last 24 months):
+   Gonzalo Rodriguez        last commit 2025-11-09  ACTIVE
+   Aaron Suggs              last commit 2017-02-09  inactive (9.6 years)
+   Santiago Bartesaghi      last commit 2026-09-30  ACTIVE
+   fatkodima                last commit 2019-10-31  inactive (6.9 years)
+   madlep                   last commit 2016-08-04  inactive (10.2 years)
+   Zach Millman             last commit 2015-07-08  inactive (11.2 years)
+   hakanensari              last commit 2014-04-17  inactive (12.5 years)
+   Olle Jonsson             last commit 2020-05-24  inactive (6.4 years)
+   Vincent Boisard          last commit 2016-01-12  inactive (10.7 years)
+.git-blame-ignore-revs: # rubocop -a Style/StringLiterals | 045616c9d8780273e9dc8b19728abc762f741a88 |
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && git log --since="12 months ago" --format='%an <%ae>|%ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | sort | head -50; echo ---; git shortlog -sne HEAD -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---; git shortlog -sne --since="6 months ago" HEAD; echo; git log -1 --format=%ad --date=short
+ - Bash: git log --since="12 months ago" --format='%h %ad %an | %s' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---; git log --since="6 months ago" --format='%h %ad %an | %s' --date=short | head -20; ls .github CODEOWNERS 2>&1 | head; grep -il "maintainer" README.md *.gemspec 2>/dev/null
+FINAL ANSWER:
+**Hiroshi Tanaka** is the best reviewer. They wrote the two most recent substantive changes to the store proxies:
+- `0e16a98` (2026-09-02): added the Valkey store proxy (#310).
+- `21afafc` (2026-09-16): added `wrap` and a version check to `ValkeyProxy` (#318).
+
+They are still active in the repo. Git lists them under two emails (`hiroshi@tanaka.example` and `<email redacted>`), which looks like one person.
+
+**Santiago Bartesaghi** is a weaker second choice. They are active, with commits as recent as 2026-09-30. But their only change under `store_proxy/` was a style autocorrect (`045616c`, `Style/StringLiterals`). That suggests they maintain the repo, not that they know the proxy design. I'd treat them as a general reviewer.
+
+I left out the historical authors. Gonzalo Rodriguez has the most commits on this code (about 30), and hakanensari, Vincent Boisard and fatkodima also have several. None of them has committed in the last 12 months, so I can't say they're still around.
+
+Limits of this check:
+- There is no CODEOWNERS file.
+- The README and gemspec don't name maintainers.
+- I judged "still around" only by recent commit dates. Someone could be active in issues or reviews without committing, and I can't see that from git.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- path authors && git log --format='%aN <%aE>|%ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | awk -F'|' '{n[$1]++; if(!($1 in last)) last[$1]=$2; first[$1]=$2} END{for(k in n) print n[k], k, "first="first[k], "last="last[k]}' | sort -rn && echo --- repo-wide recent && git log --since=2025-10-23 --format='%aN <%aE>' | sort | uniq -c | sort -rn && echo --- latest commit && git log -1 --format='%ad' --date=short
+ - Bash: git log --since=2025-10-23 --format='%h %ad %aN <%aE> | committer: %cN | %s' --date=short && echo --- path recent && git log --since=2023-01-01 --format='%h %ad %aN | %s' --date=short -- lib/rack/attack/store_proxy/ && echo --- owners && ls .github 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null; grep -n -i -A3 'maintain' README.md | head -20; grep -n 'authors\|email' *.gemspec
+FINAL ANSWER:
+Suggested reviewers:
+
+1. **Santiago Bartesaghi** is the main pick. They are active now (latest commit 2026-09-30) and committed to the repo several times in 2026. On the store proxies, they fixed `reset!` for namespaced cache stores (#673, 2024-12) and did the 2026-08 style autocorrect. They also handled recent CI and dependency maintenance.
+2. **Gonzalo Rodriguez** (`grzuy`) is the second pick. They wrote most of the store proxy code, about 30 commits from 2018 to 2019 under two identities. They are still active: in 2025-11 they committed as "Gonzalo R" on CI and Appraisals updates, and they committed Bart de Water's change in 2025-10. Their last commit in `store_proxy/` was in 2019, but their history there is the deepest.
+3. **Hiroshi Tanaka** is optional. They wrote the newest code, the Valkey proxy (#310, #318, Sept 2026), so they know `valkey_proxy.rb` best. I can't tell whether they review PRs. GitHub made the commits, so I can't see who merged them. The two commits use different emails (`example.net` and `tanaka.example`), which may be one person with two identities.
+
+I left out **Jean Boussier**. They are active (March 2026), but their commits touched store validity checks, not `store_proxy/`. They are a reasonable extra reviewer if your change affects store validation.
+
+I left out these historical authors:
+- Aaron Suggs, the gem author, has no repo commits since 2025-10.
+- hakanensari, Vincent Boisard and fatkodima have no recent commits.
+- Mitchell Henke and Jonathan del Strother made one-off changes in 2023.
+
+The repo has no `CODEOWNERS` file. I judged "still around" from commits since 2025-10-23, so check GitHub for who has merge rights.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib/rack/attack/store_proxy/"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-ppi-1/repo; ls lib/rack/attack/store_proxy/; echo ---; git log --all --no-merges --format='%an|%ae|%ad' --date=short -- lib/rack/attack/store_proxy/ | awk -F'|' '{c[$1]++; if(!($1 in last)) last[$1]=$3; first[$1]=$3} END{for(a in c) print c[a], a, "first="first[a], "last="last[a]}' | sort -rn; echo ---; git log --all --no-merges --format='%an|%ad' --date=short --since='2026-07-25' | awk -F'|' '{c[$1]++; if(!($1 in l)) l[$1]=$2} END{for(a in c) print c[a], a, l[a]}' | sort -rn; echo ---; git log -1 --format=%ad --date=short
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-ppi-1/repo; grep -rl "StoreProxy\|store_proxy" lib spec 2>/dev/null | wc -l; git blame -w --line-porcelain lib/rack/attack/store_proxy/*.rb | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-ppi-1/repo; for f in lib/rack/attack/store_proxy/*.rb; do git blame -w --line-porcelain "$f" | grep '^author '; done | sort | uniq -c | sort -rn; echo ---; git log --no-merges --format='%h %an %ad %s' --date=short --since=2024-01-01 -- lib/rack/attack/store_proxy/; echo ---; git log --all --no-merges --format='%an <%ae>' --since=2026-04-01 | sort | uniq -c | sort -rn
+FINAL ANSWER:
+## Bus factor: `lib/rack/attack/store_proxy/`
+
+I treated "still around" as having a commit in the last 90 days. The repo's latest commit is 2026-09-30.
+
+### Who to ask for review
+
+| Reviewer | Why | Last commit | Active? |
+|---|---|---|---|
+| **Hiroshi Tanaka** | Owns 88 of ~330 current lines, the most of anyone. Wrote `valkey_proxy.rb` and its follow-up (#310, #318). Both commits are recent. | 2026-09-16 | ✅ |
+| **Santiago Bartesaghi** | Fixed `reset!` for namespaced cache stores (#673, 2024). Did a style autocorrect pass over the directory in 2026-08. Currently the most active committer repo-wide, with 3 commits since April. | 2026-09-30 | ✅ |
+
+Ask Hiroshi first. Hiroshi knows the newest code and the current proxy and `wrap` conventions. Santiago knows the older `reset!` and namespaced-store behavior in the cache store proxies (`mem_cache_store_proxy.rb`, `redis_cache_store_proxy.rb`). I didn't check which of those files #673 touched.
+
+### Historical authors who are not candidates
+These people wrote most of the code, but they have no commits here or elsewhere in the last 90 days:
+- **Gonzalo Rodriguez**: 23 commits, 61 current lines. Last commit 2019-08.
+- **hakanensari**: 76 current lines. Last commit 2014-04, so the old `redis_proxy` or `dalli_proxy` lines may still be theirs.
+- **fatkodima**: 22 current lines. Last commit 2019-10.
+- **Jonathan del Strother, Brian Kephart, Brad Lindsay**: no recent activity.
+- **Jonas Keller**: active repo-wide (2026-08-18) but has never touched this directory. I'd only suggest them as a general reviewer, not a code expert.
+
+### Risk summary
+- **Bus factor for the directory is 2.** Only Hiroshi and Santiago are active and have worked here.
+- **Ownership is concentrated by file.** The Valkey proxy is effectively single-owner, and Hiroshi wrote all of it recently. The older Redis, Dalli, and MemCache proxies are mostly written by inactive people. Santiago is the only active person with context on them.
+- **Importance:** 8 files in `lib` and `spec` reference `StoreProxy` or `store_proxy`. Changes to the proxy interface will touch most of the cache backends.
+
+### Recommendation
+Request both Hiroshi and Santiago on your PR. If you change the shared proxy interface rather than one backend, Santiago's review matters most, because no one else active knows the legacy proxies. A second active reviewer would also reduce the bus factor for this code.
+
+**Caveats:**
+- Ownership is based on git author names only.
+- Hiroshi appears under two emails. I merged them as one person because the names match.
+- I didn't check whether anyone is a current maintainer outside git history, for example in CODEOWNERS or the GitHub team.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__file_history", "max_results": 5}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-hist-1/repo", "path": "lib/rack/attack/store_proxy", "inactive_after": "12 months ago"}
+ - Bash: git log --since="12 months ago" --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn | head; echo ---; git log -n 400 --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++'
+ - Bash: git log --author='Gonzalo' --format='%h %an <%ae> %ad %s' --date=short | head -8; echo ---; git log --author='Santiago' --format='%h %ad %s' --date=short -- lib/rack/attack/store_proxy | head -3; git log --author='Hiroshi' --format='%h %ad %s' --date=short -- lib/rack/attack/store_proxy
+FINAL ANSWER:
+Ask these two to review:
+
+1. **Hiroshi Tanaka** is the best reviewer. They wrote all of `valkey_proxy.rb` (88 lines, 100% of it). They also made the two most recent proxy changes: the Valkey proxy (#310, 2026-09-02) and the wrap and version check (#318, 2026-09-16). They know how the current proxy and wrapping design works.
+2. **Santiago Bartesaghi** is the second reviewer. They have 10 lines in `redis_cache_store_proxy.rb`. They last touched this directory on 2026-08-04, and they committed elsewhere on 2026-09-30, the most recent commit in the repo. Their commits there are small: a style autocorrect, and "Fix reset! when using namespaced cache store (#673)" from 2024-12. They know the cache-store proxies less well than Hiroshi knows Valkey.
+
+**Gonzalo Rodriguez** also owns a lot of the older code (18.7% of the lines, mostly in `dalli_proxy.rb` and `redis_proxy.rb`). The log shows the same email under the names "Gonzalo" and "Gonzalo R", so I believe it's one person. They are probably the maintainer and are still active, with commits from 2025-10 and 2025-11 (a version bump to 6.8.0 and CI updates). If you change the public proxy behavior, add them as a maintainer reviewer. I haven't checked whether they are still reviewing PRs.
+
+**Skip these authors:** the original authors of the Dalli, Redis, and MemCache proxies, hakanensari (last commit 2014), Brad Lindsay (2018), and Brian Kephart (2018). Jonathan del Strother (2023-11), fatkodima (2019), and the other authors listed above are also inactive. Together they own most of the older proxy code. Five of the six files are mostly owned by authors who haven't committed in over a year.
+
+**Review risk for the older proxies:** Hiroshi and Santiago don't have deep history in the Dalli, MemCache, and Redis proxies. If your change touches those, test it carefully and say what you changed in the PR description.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>'; $SL --reviewers lib/rack/attack/store_proxy/ --merge-identities; echo ------; $SL --history lib/rack/attack/store_proxy/ --merge-identities; echo -----; $SL --identities
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool> "$@"; }; sl --reviewers lib/rack/attack/store_proxy/ --merge-identities; echo ------; sl --history lib/rack/attack/store_proxy/ --merge-identities; echo -----; sl --identities
+FINAL ANSWER:
+**Review suggestion: Hiroshi Tanaka.** They are the only top owner who has committed in the last year. Also add Santiago Bartesaghi if you want a second active reviewer.
+
+Ranked by surviving lines in `lib/rack/attack/store_proxy/` (277 non-blank lines, 331 with blank lines, 6 files, as of 2026-09-30):
+
+| Person | Lines (share) | Commits | Last commit | Status |
+|---|---|---|---|---|
+| Hiroshi Tanaka (2 addresses) | 72 (26.0%) | 2 | 2026-09-16 | active |
+| hakanensari | 63 (22.7%) | 1 | 2014-04-15 | inactive |
+| Gonzalo Rodriguez | 51 (18.4%) | 23 | 2019-08-02 | inactive |
+| fatkodima | 22 (7.9%) | 4 | 2019-10-24 | inactive |
+| Brad Lindsay | 19 (6.9%) | 1 | 2018-02-06 | inactive |
+
+- **Other authors:** 15 more authors hold about 18% together (my subtraction; the tool doesn't print their share). Santiago Bartesaghi is one of them, with 5 lines (1.8%), last commit 2026-08-04, active.
+- **Active only:** "Active" means a commit in the 365 days before 2026-09-30. Only Hiroshi Tanaka and Santiago Bartesaghi qualify. The top three by lines are Hiroshi Tanaka, hakanensari and Gonzalo Rodriguez, but the last two have not committed in years.
+- **Hiroshi Tanaka's count is a guess.** It merges `hiroshi@tanaka.example` (59 lines, 1 commit) and `<email redacted>` (13 lines, 1 commit) because the name is the same. Unmerged, hakanensari (63 lines) would rank first and Hiroshi Tanaka would have 59 lines (21.3%). Hiroshi Tanaka is active either way.
+- **Bus factor:** 3, meaning the smallest number of authors whose surviving lines reach 50%, computed for this directory only. They hold 67.1% of the lines. Reaching 80% takes 5 authors.
+
+What was left out or checked:
+- **Dropped:** the generated `sorbet/rbi/gems/<email redacted>` (149 lines) and the dependabot bot's lines are excluded from the repo-wide numbers. Neither affects this directory's table.
+- **Reformat commits:** none were set aside. The tool honored the `.git-blame-ignore-revs` file, which had one commit.
+- **Mechanical rewrites:** the tool checked and set aside none. It flagged `20d6682` ("style: fix Lint/HandleExceptions rubocop", Gonzalo Rodriguez, 2 surviving lines) as possibly mechanical but did not set it aside.
+- **Copy detection:** figures use `git blame -w -M -C`. hakanensari has 63 lines with copy detection and 66 (23.8%) without. Three lines credited to madlep and one to Rob Watson appear only with it.
+- **Duplicate names:** Gonzalo Rodriguez also appears under the name "Gonzalo" on the same address, and madlep also appears as Julian Doherty (madlep). Both are counted as one person each.
+- **Identity merges:** I wrote no `.mailmap`, so nothing is saved. The merges above are in memory only.
+
+These numbers say whose code is still there. They say nothing about who understands it now or how good it is.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- && git log --format='%an <%ae>|%ad' --date=short -- lib/rack/attack/store_proxy/ | awk -F'|' '{c[$1]++; if(!($1 in last)) last[$1]=$2; first[$1]=$2} END{for(a in c) print c[a], a, "first="first[a], "last="last[a]}' | sort -rn; echo --- repo-wide recent; git log --since=2025-10-23 --format='%an <%ae>' | sort | uniq -c | sort -rn; echo; git log -1 --format=%ad --date=short
+ - Bash: git log --since=2025-10-23 --format='%ad %an | %cn | %s' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---; git log --since=2025-10-23 --author='Gonzalo' --format='%ad %s' --date=short; echo ---; git log --since=2025-10-23 --author='Jean Boussier' --format='%ad %s' --date=short; git log --since=2025-10-23 --author='Jonas Keller' --format='%ad %s' --date=short
+FINAL ANSWER:
+**Suggested reviewers**
+
+1. **Hiroshi Tanaka** is the best match. They wrote the two newest store proxy changes: the Valkey proxy (#310, 2026-09-02) and the Valkey `wrap` and version check (#318, 2026-09-16). Those changes were made through GitHub PRs. The `Hiroshi Tanaka` entries use two different email addresses, and both are `example` domains. Check that it is one person.
+2. **Santiago Bartesaghi** is a good second reviewer. They have been active in the repo through 2026-09, with 6 commits in the last year. Their only commits in `store_proxy/` are a 2024-12 change and a 2026-08 style autocorrect, so they know the area less well than Hiroshi.
+3. **Gonzalo Rodriguez** (grzuy) is optional. They wrote most of the store proxy code, with about 27 commits in `store_proxy/` between 2018 and 2019. Their last repo activity was 2025-11, which was CI and Appraisals updates. They know the design history well, but they may be less available than the two above.
+
+**Other recent contributors**
+- Jean Boussier made commits as recently as 2026-03 (store validity check #714, Ruby 4.0 CI). They have not touched `store_proxy/`, but they work on how the store is validated, so they are a reasonable choice if your change affects that.
+- Jonas Keller made a style fix on 2026-08-18. They have no history in `store_proxy/`.
+
+**Skip as reviewers**
+- Fatkodima, Ryan Laughlin, Stan Hu, Vincent Boisard, Brian Kephart and the other older contributors. Their `store_proxy/` commits are from 2015 to 2023. They have no repo activity in the last year.
+
+I judged "still around" by commits in the last 12 months, since 2025-10-23. Git history can't show who is currently a maintainer or available. Check the GitHub maintainers list or `CODEOWNERS` before you request reviews. I can run the `busfactor` skill to draft a `CODEOWNERS` file if you want one.

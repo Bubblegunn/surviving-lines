@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -v '^vendor/' | head -100; git shortlog -sne HEAD | head -20; ls
+ - Bash: blame(){ for f in "$@"; do git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; }; echo GO; blame $(git ls-files '*.go' | grep -v '^vendor/'); echo ALL; blame $(git ls-files | grep -v '^vendor/' | grep -v go.sum); echo; for f in $(git ls-files '*.go'); do echo "$f $(wc -l <$f)"; done; git ls-files vendor | head -3; git log --format='%an %ad' --date=short -1 --author='Fatih'; git log --format='%ad' --date=short | head -1
+ - Bash: for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame -w -C -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -6; git blame -w --line-porcelain HEAD -- attribute_string.go | grep '^author ' | sort | uniq -c
+FINAL ANSWER:
+Fatih Arslan holds about half to 54% of the live code, so ownership is concentrated but it is not a one-person project.
+
+I ran `git blame` at HEAD on the 6 Go files the project owns: 1,657 lines in total. I excluded `vendor/`, which is third-party code, and the whitespace and `interface{}`→`any` commits in `.git-blame-ignore-revs`. I merged contributors by email address.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 | 53.9% |
+| 2 | rhysd | 136 | 8.2% |
+| 3 | Lena Hoffmann | 103 | 6.2% |
+| 4 | Matt Hall | 98 | 5.9% |
+| 5 | Greg Poirson | 64 | 3.9% |
+
+- **Method:** The 53.9% follows copied lines across files (`-C`). That matters because the latest commit moved `Attribute` into `attribute.go`. Plain blame gives Fatih 823 lines (49.7%) and rhysd 144 (8.7%).
+- **Generated code:** All 103 lines of Lena Hoffmann's share are in `attribute_string.go`, a generated file. Without generated code, Fatih holds about 57%.
+- **Long tail:** About 25 other people each own a few lines.
+- **Fatih's activity:** Fatih's last commit was 2026-07-23. The newest commit in the repo is 2026-08-24, so someone else is still committing.
+
+Lines in the file are not the same as maintainership. The share of lines does not show who can merge or release. Check the GitHub org or repo permissions for that.
+META cost=0.07572609999999999 ms=29794 turns=5

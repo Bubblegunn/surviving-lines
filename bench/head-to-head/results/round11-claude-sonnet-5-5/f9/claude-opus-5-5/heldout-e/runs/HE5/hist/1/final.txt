@@ -1,0 +1,37 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history,mcp__git-historian__blame_summary", "max_results": 4}
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; ls <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-hist-1/repo/lib/rack/attack/store_proxy/
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-hist-1/repo", "path": "lib/rack/attack/store_proxy"}
+ - Bash: git log --no-merges --format='%ad %aN <%aE> | %s' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb spec/acceptance/stores 2>/dev/null | head -60; echo ---; git log --no-merges --since='12 months ago' --format='%aN' | sort | uniq -c | sort -rn | head -20; echo ---; git log -1 --format=%ad --date=short; ls .github 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null; cat .mailmap 2>/dev/null | head
+ - Bash: git log --no-merges --since='12 months ago' --format='%ad %aN <%aE> | %s' --date=short; echo ---; git log --format='%aN <%aE>' | grep -iE 'gonzalo|grzuy|tanaka' | sort | uniq -c; echo ---; git log --format='%ad %aN <%aE> %s' --date=short --grep='Valkey'; git log --merges --format='%ad %aN <%aE> | %s' --date=short | head -15
+ - Bash: for c in $(git log --since='12 months ago' --no-merges --format=%h --author='Jean\|Bartesaghi\|Gonzalo\|Tanaka'); do echo "== $(git log -1 --format='%aN %ad %s' --date=short $c)"; git show --stat --format= $c | grep -v '^ *[0-9]* files\? changed' | head -8; done
+FINAL ANSWER:
+Pick these three reviewers. Activity cutoff: commit in last ~12 months; last repo commit was 2026-09-30.
+
+**1. Santiago Bartesaghi (`<email redacted>` / `<email redacted>`). Primary reviewer.**
+- Most active committer in last 12 months: 6 commits, latest 2026-09-30.
+- Did real proxy work: "Fix reset! when using namespaced cache store" (#673), "Drop Dalli 2 support" (#679), and store acceptance specs (#708, 2026-01).
+- His 2026-08-04 StringLiterals commit also touches `redis_proxy.rb` and `redis_cache_store_proxy.rb`. That commit is style-only, so do not count it as knowledge.
+
+**2. Hiroshi Tanaka. Reviewer for anything near `valkey_proxy.rb`.**
+- Owns 100% of `valkey_proxy.rb` (#310 on 2026-09-02, #318 on 2026-09-16). Newest code in the directory.
+- Caveat: the two commits use different emails (`hiroshi@tanaka.example`, `<email redacted>`). There is no `.mailmap`, so I cannot confirm both are the same person. Check before you tag.
+
+**3. Jean Boussier (`<email redacted>`). Optional.**
+- "Eagerly check for store validity" (#714, 2026-03) changed `lib/rack/attack/cache.rb`. That is the code that picks and wraps the store proxy.
+- Ask him if your change affects how a proxy is selected or validated.
+
+**Borderline: Gonzalo Rodriguez (`grzuy`).**
+- Original designer of most of the proxy layer (2018–2019 refactors). Also merged most older PRs.
+- The tool marks him "inactive since 2021", but that is wrong. He has no `.mailmap` entry, and he committed in 2025-11 under the names "Gonzalo" and "Gonzalo R".
+- His recent work is CI/Appraisals only, and his last commit is ~11 months old. Good for design context; slow response possible.
+
+**Skip (gone):** hakanensari (2014), Brad Lindsay, Brian Kephart, fatkodima, Jonathan del Strother (2023). Together they still own most lines in 5 of 6 proxy files: `dalli_proxy.rb`, `redis_store_proxy.rb`, `mem_cache_store_proxy.rb`, `redis_proxy.rb`, `redis_cache_store_proxy.rb`. So most of this code has no active owner. Write a clear PR description and add good acceptance specs under `spec/acceptance/stores/`.
+
+No CODEOWNERS file exists in the repo.
+META cost=0.290857 ms=28089 turns=7

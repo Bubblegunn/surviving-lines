@@ -1,0 +1,56 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/"}
+ - Bash: find src -type f -name '*.rs' | sort && echo --- && git log --all --no-merges --pretty='%an <%ae>' | sort | uniq -c | sort -rn && echo --- && git log -1 --format=%cd && git rev-list --count HEAD
+ - Bash: for f in $(find src -name '*.rs' | sort); do echo "== $f ($(wc -l < $f) lines)"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -6; done; echo "=== TOTAL src/"; for f in $(find src -name '*.rs'); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -12
+ - Bash: echo "last commit per author touching src/:"; git log --no-merges --format='%an|%ad' --date=short -- src/ | sort -t'|' -k1,1 -u | sort -t'|' -k2 -r | head -15; echo; echo "recent src/ commits:"; git log --no-merges -12 --format='%h %ad %an %s' --date=short -- src/; echo; echo "dependents (mod/use):"; for m in ancestor dent error util testsuite; do echo "$m: $(grep -rlE "(mod|use) (crate::|self::|super::)?$m\b|\b$m::" src | wc -l)"; done
+FINAL ANSWER:
+## Bus factor for `src/`
+
+**Project-level bus factor is 1.** Andrew Gallant wrote about 2,551 of the 3,262 lines in `src/` (78%), counting by `git blame -w -M -C -C` so that moves and renames don't hide the original author. I ran the blame directly instead of launching the contributor-analyzer agent.
+
+### Who wrote the code that exists now
+
+| File | Lines | Main author | Others still in the file |
+|---|---|---|---|
+| `src/lib.rs` | 1158 | Gallant 64% | mcharsley, Aron Griffis, Ashley, Martin Sehnoutka, Marvin Löbel (29–45 lines each) |
+| `src/testsuite/recursive.rs` | 1097 | Gallant 92% | Sebastian Thiel 53, Lukas Kalbertodt 20, Marvin Löbel 11 |
+| `src/dent.rs` | 371 | Gallant 78% | Yufeng Wang 21, Ashley 15, Mei Tanaka 14 |
+| `src/error.rs` | 267 | Gallant 63% | Garrett Berg 34, Niv Kaminer 30, Ashley 14 |
+| `src/testsuite/util.rs` | 257 | Gallant 98% | none |
+| `src/util.rs` | 56 | Gallant 75% | Aron Griffis 9 |
+| `src/ancestor.rs` | 47 | Gallant 89% | none of substance |
+| `src/testsuite/mod.rs` | 9 | Sam Whitfield 56% | none |
+
+Sam Whitfield's blame lines are only license headers (about 5 per file). The `Move Ancestor` and `Rename src/tests` commits are also theirs, and blame credits the code back to Gallant. Sam is the most recent committer to `src/` (2026-03-23), but only for mechanical changes, so they probably can't judge the logic.
+
+### Who to ask
+
+1. **Andrew Gallant** is the only person with real knowledge of most of the files. That includes `lib.rs`, `recursive.rs`, `testsuite/util.rs` and `ancestor.rs`, which has no other substantial author. His last commit to `src/` was 2026-01-14, which is more than 90 days before today (2026-10-23). I can't tell from git whether he is still reviewing, so check that first.
+2. **Mei Tanaka** is the best second reviewer for `dent.rs`. They have 14 lines there and committed `describe_file_type` on 2026-02-03.
+3. **Tobias Brandt** wrote the `same_device` commit (2026-01-12) in `util.rs`. Gallant reverted it, then reapplied it, so blame credits the lines to Gallant. Brandt is a second person who knows that code, and Mei Tanaka and Sam Whitfield are the other recent contributors to `src/`.
+
+For `error.rs`, the other authors (Garrett Berg, Niv Kaminer, Aron Griffis) last touched `src/` in 2018 or earlier. For `lib.rs`, Sebastian Thiel (2023) and Marvin Löbel (2021) are the most recent of the others. Because those commits are old, I wouldn't count on them as reviewers.
+
+### Risk by area
+
+- 🔴 **`src/lib.rs`, `src/error.rs`, `src/util.rs`**: bus factor 1, and other modules depend on them. `error.rs` is referenced from 4 files and `util.rs` from 3. Gallant is not recently active.
+- 🔴 **`src/testsuite/`**: Gallant wrote 98% of `util.rs` and 92% of `recursive.rs`.
+- 🟡 **`src/dent.rs`**: bus factor 2 in practice, because Mei Tanaka and Yufeng Wang have recent or substantive lines.
+- 🟡 **`src/ancestor.rs`**: bus factor 1, but it's only 47 lines and has a single dependent.
+
+### Limits
+
+- This repo has 199 commits, and the author names come from git identity only. Duplicate identities (for example "Alisha" and "Alisha Aneja", or "Niv Kaminer" and "nivkner") are not merged.
+- Blame shows who wrote the lines. It doesn't show who currently has review rights.
+
+### Suggested action
+
+Request review from Gallant, and add Mei Tanaka if your PR touches `dent.rs`. If Gallant doesn't respond, ask a current maintainer of the repo who should review `lib.rs` changes, because git history can't answer that.
+
+If you tell me which files your PR touches, I can narrow this to those files.
+META cost=0.11256350000000001 ms=32003 turns=6

@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && git log --since="12 months ago" --format='%an <%ae>|%ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | sort | head -50; echo ---; git shortlog -sne HEAD -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---; git shortlog -sne --since="6 months ago" HEAD; echo; git log -1 --format=%ad --date=short
+ - Bash: git log --since="12 months ago" --format='%h %ad %an | %s' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---; git log --since="6 months ago" --format='%h %ad %an | %s' --date=short | head -20; ls .github CODEOWNERS 2>&1 | head; grep -il "maintainer" README.md *.gemspec 2>/dev/null
+FINAL ANSWER:
+**Hiroshi Tanaka** is the best reviewer. They wrote the two most recent substantive changes to the store proxies:
+- `0e16a98` (2026-09-02): added the Valkey store proxy (#310).
+- `21afafc` (2026-09-16): added `wrap` and a version check to `ValkeyProxy` (#318).
+
+They are still active in the repo. Git lists them under two emails (`hiroshi@tanaka.example` and `<email redacted>`), which looks like one person.
+
+**Santiago Bartesaghi** is a weaker second choice. They are active, with commits as recent as 2026-09-30. But their only change under `store_proxy/` was a style autocorrect (`045616c`, `Style/StringLiterals`). That suggests they maintain the repo, not that they know the proxy design. I'd treat them as a general reviewer.
+
+I left out the historical authors. Gonzalo Rodriguez has the most commits on this code (about 30), and hakanensari, Vincent Boisard and fatkodima also have several. None of them has committed in the last 12 months, so I can't say they're still around.
+
+Limits of this check:
+- There is no CODEOWNERS file.
+- The README and gemspec don't name maintainers.
+- I judged "still around" only by recent commit dates. Someone could be active in issues or reviews without committing, and I can't see that from git.
+META cost=0.0455792 ms=11218 turns=3

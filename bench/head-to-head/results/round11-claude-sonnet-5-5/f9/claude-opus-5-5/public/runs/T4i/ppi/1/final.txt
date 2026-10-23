@@ -1,0 +1,55 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4i-ppi-1/repo; cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '^(node_modules|dist)/' | head -50; echo ---; git log --no-merges --pretty='%h %ad %an <%ae> %s' --date=short --numstat -- lib/index.js | head -80
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4i-ppi-1/repo; git log --no-merges --pretty='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo --- blame raw; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo --- blame ignore-revs; git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo --- last 90d any file; git log --since=2026-07-25 --pretty='%ad %an %s' --date=short | head; echo --- latest per author; git log --pretty='%ad %an' --date=short | awk '!seen[substr($0,12)]++' | head -15; echo; git show b2005d9 --stat --format='%an <%ae>%n%b' | h
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4i-ppi-1/repo; git log --since=2025-01-01 --no-merges --pretty='%ad %an %s' --date=short --name-only | grep -v '^$' | head -60; echo; git log --pretty='%ae' --author='Troy Goode' | sort | uniq -c; grep -n '"\|author\|maintain\|contributors' package.json | head
+FINAL ANSWER:
+Recommended reviewers for `lib/index.js`: **Troy Goode** as the primary reviewer, with **Ulises Gascón** or **Jon Church** as a second reviewer. Raw git stats would give misleading answers here, so the reasons are below.
+
+## Bus factor: `lib/index.js`
+Period: all history | Generated: 2026-10-23
+
+### File bus factor: 1 (in practice)
+
+`lib/index.js` is the only source file. All the middleware logic is in it, and every test file (`test/test.js`, `test/vary.js` and the others) requires it. If this file breaks, the whole package breaks.
+
+### Raw stats give the wrong answer
+
+| Method | Top "owner" | Why it's wrong |
+|---|---|---|
+| Plain `git blame` | Fiona Formatter, 214 of 238 lines | `62628c0` only reformats the code (4-space indent, double quotes). |
+| Blame with `.git-blame-ignore-revs` | Troy 109, **Fiona 57**, Douglas 36 | Git can't trace lines where the quote style changed back to their earlier authors, so 57 lines still show Fiona. |
+| Commit count | Troy 29, then a long tail of 1–4 | Closest to the real picture. |
+
+Fiona is not a logic owner. Exclude her from this decision.
+
+### Who knows the logic
+
+| Person | Contribution to `lib/index.js` | Last real logic change | Active? |
+|---|---|---|---|
+| **Troy Goode** (<email redacted>) | Original author; 29 commits; ~109 lines | 2016-08 (`5dae6d8`) | ⚠️ Unclear (see below) |
+| **Douglas Christopher Wilson** | Vary headers, `allowedHeaders`, options delegate; ~36 lines | 2017-10 | ❌ No activity in this repo since |
+| Alejandro Caravaca Puchades | Array and RegExp support for `origin` | 2015-05 | ❌ |
+| Raymond Feng, Tom Arad, LuisEGR | Small fixes | 2015–2021 | ❌ |
+
+**Identity concern:** the two Troy commits from 2026-04-10 (`b2005d9`, `02afce3`) come from a different email, `troy@laptop.example`. Troy's other 120 commits use `<email redacted>`, and these two have no PR number. `b2005d9` only adds `// checked` comments to function lines. Confirm this is really Troy before you count him as active.
+
+### Active maintainers (last 12 months)
+No one has changed the logic in `lib/index.js` in this period. Recent work by maintainers:
+- **Ulises Gascón**: release 2.8.6 (2026-01), CI.
+- **Jon Church**: README and docs for per-request config (2025–2026). He knows the documented behaviour of the options.
+- Phillip Barta, Ignacio Mangas: packaging and CI only.
+
+### Recommendation
+1. **Primary reviewer: Troy Goode**, contacted through the `<email redacted>` / GitHub identity, not the laptop email. He has the most knowledge of the code.
+2. **Second reviewer: Ulises Gascón or Jon Church.** They are active, and Jon knows the documented option semantics. This also reduces knowledge concentration on a file where no current maintainer has changed the logic.
+3. **For Vary or preflight changes**, also look at Douglas Wilson's commits `075c4b5`, `d603fdc` and `6d2ff29`. They explain why the code is written the way it is.
+4. **Separate issue:** if the `troy@laptop.example` commits can't be verified, look at them as a possible problem in the commit history, not just as an ownership question.
+
+Commands used: per-author commit counts, blame with and without `.git-blame-ignore-revs`, and per-author last activity. I did not launch the contributor-analyzer agent because the repo has a single source file.
+META cost=0.2442618 ms=34304 turns=6

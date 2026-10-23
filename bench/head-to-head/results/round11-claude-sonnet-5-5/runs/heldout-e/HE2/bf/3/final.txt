@@ -1,0 +1,36 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | grep -v '^vendor/' | grep -E '\.go$' | wc -l; git ls-files | grep -v '^vendor/' | grep -E '\.go$' | while read f; do git blame --line-porcelain -w -M -C -- "$f" 2>/dev/null | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | head -15; git log --oneline | wc -l; git log --format='%ae' | sort | uniq -c | sort -rn | head -5
+ - Bash: git ls-files | grep -v '^vendor/' ; git ls-files | grep -v '^vendor/' | grep -E '\.go$' | while read f; do git blame --line-porcelain -w -M -C -- "$f" | grep -a '^author-mail '; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$1; n[NR]=$3} END{for(i=1;i<=NR;i++) printf "%s %d %.1f%%\n", n[i], c[i], 100*c[i]/t; print "total", t}'
+FINAL ANSWER:
+Not a one-person project, but one person holds most of it. The top author holds about 52% of the live code. The next author holds about 7%.
+
+I counted live lines with `git blame` (`-w -M -C`, so whitespace changes and moved code don't take credit). I covered the 6 non-vendored `.go` files, which total 1,657 lines. I excluded `vendor/`, `go.sum` and the docs.
+
+| Rank | Author (git email) | Lines | Share |
+|---|---|---|---|
+| 1 | <email redacted> | 868 | 52.4% |
+| 2 | <email redacted> | 120 | 7.2% |
+| 3 | <email redacted> | 103 | 6.2% |
+| 4 | <email redacted> | 98 | 5.9% |
+| 5 | <email redacted> | 67 | 4.0% |
+| 6 | <email redacted> | 64 | 3.9% |
+
+27 people have lines in the live code. The top 5 together hold about 76%.
+
+- **Gap between first and second:** the top author holds more than 7 times as much as anyone else. If they left, about half the code would have no author who still maintains it, and no other single person covers a large part of the rest.
+- **Commit history:** the same email has 201 of the 300 commits. 38 more are dependabot, so human contributions outside that one person are few.
+- **Small codebase:** 1,657 lines is little code. A new maintainer could read all of it, so the code is easy to take over even though the ownership is concentrated.
+
+Limits of this count:
+- Blame counts lines, not knowledge. A person who reviewed code without committing it is not counted. The same goes for someone who works on the code under a different email.
+- I didn't check whether these authors are still active. The `<email redacted>` and `<email redacted>` addresses look like placeholders. So I can't tell you how many of the 27 are still around.
+- I didn't run the busfactor script. It weights commits by age, and you asked about the code that is live today. Line blame answers that more directly, and nothing was written to your repo.
+
+I can run the script's full report if you want to see which of these authors are still active. I can also check whether the top author has committed recently.
+META cost=0.0629632 ms=20271 turns=5

@@ -1,0 +1,35 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100; echo ---; git shortlog -sne HEAD -- src | head; echo ---; git log --oneline | wc -l
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{t[$2]++; p[$1" "$2]++} END{for(k in t) print t[k], k}' | sort -rn | head -12; echo ---; for f in $(git ls-files src); do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo ---; git log --since='12 months ago' --format='%an' -- src | sort | uniq -c | sort -rn | head; echo ---; git log -5 --format='%h %an %ad %s' --date=short -- src; ls .github CODEOWNERS .github/CODEOWNERS 2>&1 | head
+ - Bash: for a in "Mei Tanaka" "Tobias Brandt" "Sam Whitfield" "Andrew Gallant"; do echo "== $a"; git log --author="$a" --format='%h %ad %s' --date=short -3 -- src; done; echo; git blame -w -M -C -C --line-porcelain HEAD -- src/dent.rs src/util.rs src/lib.rs | grep -E '^author (Mei|Tobias)' | sort | uniq -c
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep -E '^author (Mei Tanaka|Tobias Brandt)' | sed "s|^|$f |"; done | sort | uniq -c
+FINAL ANSWER:
+Andrew Gallant wrote most of the code in `src/` as it stands now. Ask Andrew first. If they aren't available, ask Sam Whitfield or Mei Tanaka.
+
+`git blame` (with `-w -M -C -C`, so whitespace changes and moved or copied lines don't hide the original author) gives 2551 surviving lines in `src/` for Andrew Gallant. The next highest is Sebastian Thiel with 74, then Ashley with 68.
+
+| File | Main author by surviving lines |
+|---|---|
+| `lib.rs` | Andrew, 743 lines, then mcharsley and Aron Griffis with 45 each |
+| `testsuite/recursive.rs` | Andrew, 1008 lines |
+| `testsuite/util.rs` | Andrew, 252 lines |
+| `dent.rs` | Andrew, 291 lines, then Yufeng Wang with 21 and Ashley with 15 |
+| `error.rs` | Andrew, 169 lines, then Garrett Berg with 34 and Niv Kaminer with 30 |
+| `ancestor.rs` and `util.rs` | Andrew, 42 lines each |
+
+The history is more recent than the blame suggests:
+
+- **Last 12 months:** Sam Whitfield made 3 commits and Andrew 2. Mei Tanaka and Tobias Brandt each made 1.
+- **Andrew's recent work:** their last commit under `src/` is the `same_device` reapply on 2026-01-14.
+- **Sam's commits:** these are the license headers, the move of `Ancestor` into its own module, and the rename to `src/testsuite`. Sam knows the current layout but wrote little of the logic. They hold 42 surviving lines.
+- **Mei's commit:** `dent: add describe_file_type` is her only commit, and 14 of its lines are still in `dent.rs`. That is relevant if your PR touches `dent.rs`.
+- **Tobias:** none of his `same_device` lines survive. Andrew reverted and reapplied the change, so Andrew now owns that code.
+
+There is no `CODEOWNERS` file, so nothing in the repo assigns reviewers. These names come only from git history. If your PR is mostly in `dent.rs`, ask Mei as well, since her function is the most recent addition there.
+META cost=0.07605730000000001 ms=21854 turns=6

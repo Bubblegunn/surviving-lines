@@ -1,0 +1,55 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL --merge-identities -- src; echo ======; $SL --reviewers src --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node "$S" --merge-identities -- src; echo ======; node "$S" --reviewers src --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node "$S" --reviewers src --merge-identities; git show --stat c584a1d | tail -15; node "$S" --ignore-rev c584a1d --merge-identities -- src | sed -n 1,8p
+FINAL ANSWER:
+**Short answer:** Andrew Gallant wrote most of `src/` as it stands now, and they are the person to ask first. Sam Whitfield is the next best choice, because Sam is the only other active owner with a meaningful share.
+
+**Whose code is there (`git blame -w -M -C` on HEAD, all 8 files under `src/`)**
+
+The count is 2,889 non-blank lines, or 3,262 with blank lines.
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Andrew Gallant | 2,217 | 76.7% | 2026-01-14 |
+| Sebastian Thiel | 66 | 2.3% | 2023-09-05 |
+| Ashley | 65 | 2.2% | 2017-07-18 |
+| Aron Griffis | 56 | 1.9% | 2018-08-22 |
+| Niv Kaminer | 43 | 1.5% | 2017-10-01 |
+| mcharsley | 43 | 1.5% | 2017-05-09 |
+| Marvin Löbel | 39 | 1.3% | 2021-03-02 |
+| Martin Sehnoutka | 38 | 1.3% | 2017-06-16 |
+| Yufeng Wang | 36 | 1.2% | 2017-06-28 |
+| Sam Whitfield | 34 | 1.2% | 2026-03-23 |
+| Garrett Berg | 33 | 1.1% | 2018-01-30 |
+| Jonathan Soo | 32 | 1.1% | 2017-06-29 |
+
+25 more authors hold 6.5% together. The largest of them is Thayne McCombs at 0.7%.
+
+**Who to ask**
+- **Andrew Gallant** is the main owner (2,217 lines, 76.7%) and active. Their last commit was 2026-01-14.
+- **Sam Whitfield** holds 34 lines (1.2%), is active, and committed on 2026-03-23.
+- **Mei Tanaka** holds 13 lines (0.4%), is active, and committed on 2026-02-03.
+- By line count the next owners are Sebastian Thiel (66 lines, 2.3%) and Ashley (65 lines, 2.2%). Both are inactive, with last commits in 2023 and 2017. I would not ask them. The tool says only that they are inactive. It does not say they can't review.
+
+**Bus factor (line-based)**
+The bus factor is the smallest number of authors whose surviving lines reach 50% of the lines counted. It is 1 for all of `src/`, because Andrew Gallant alone holds 76.7%. It takes 3 authors to reach 80%. Counting blank lines, the figure is 1 and 2 authors for 80%.
+
+**What was checked and left out**
+- **Rustfmt commit:** `c584a1d` ("style: switch to rustfmt", Andrew Gallant) was flagged as possibly mechanical. I inspected it with `git show --stat`. It touched 9 files, including 7 under `src/` (243 insertions, 260 deletions), and 122 of its lines survive. The tool did not set it aside. Re-running with `--ignore-rev c584a1d` moves Andrew Gallant from 2,217 to 2,210 lines (76.5%), so it changes little.
+- **Mechanical rewrites:** the tool examined 78 commits holding surviving lines and set aside none.
+- **Moved code:** 1,579 of the 2,889 lines (54.7%) were written elsewhere and moved or copied into `src/`. The largest sources are `src/tests/recursive.rs`, `src/lib.rs` and `src/tests/util.rs`. The credit goes to the people who wrote the lines, not to whoever moved them. This fits the recent `src/tests` → `src/testsuite` rename and the `Ancestor` module move.
+- **Copy detection:** the figures use `-w -M -C`. Without `-C`, Andrew Gallant would hold 80.5% (2,326 lines), Sam Whitfield 2.5% (72 lines) and Garrett Berg 0.0% (0 lines).
+- **Duplicate identities:** I wrote no `.mailmap` entries.
+  - One address appears under two names for Niv Kaminer (also `nivkner`, 43 lines) and Alisha Aneja (also `Alisha`, 9 lines). The tool counts each pair as one person.
+  - There is a weak guess that Ashley (65 lines) and Ashley Mannix (4 lines) are one person. I have kept them separate. Combined they would be 69 lines (2.4%). Only you can confirm that.
+- **Bots:** the output named no bots or placeholder identities.
+
+These numbers show whose lines survive. They say nothing about code quality, review work or design discussion.
+META cost=0.0815297 ms=28409 turns=6

@@ -1,0 +1,26 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/ | head -30; echo ---; git log --since="18 months ago" --format='%an <%ae>' -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---ALL; git log --format='%an <%ae>' -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---RECENT; git log -8 --format='%h %ad %an %s' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb; echo ---ALLREPO; git log --since="12 months ago" --format='%an <%ae>' | sort | uniq -c | sort -rn; ls .github CODEOWNERS 2>/dev/null; cat .github/CODEOWNERS 2>/dev/null
+ - Bash: for p in "grzuy|Gonzalo" "hakanensari" "Santiago" "Hiroshi" "fatkodima" "Jean Boussier"; do echo "== $p"; git log -3 -i -E --author="$p" --format='%ad %an %s' --date=short; done; echo; git log --since="12 months ago" --format='%ad %an %s' --date=short | head -30; echo; git log -5 --format='%h %ad %an | committer: %cn' --date=short -- lib/rack/attack/store_proxy
+FINAL ANSWER:
+Based on git history, these are the people I'd ask. Commit activity is the only evidence I have that someone is still around.
+
+**Suggested reviewers**
+1. **Santiago Bartesaghi** is the best first pick. They have been active through 2026 (latest commit 2026-09-30) and look like the current maintainer, with the most recent commits and merges in the repo. They also made a real change to the proxies: the namespaced-cache `reset!` fix (#673, 2024-12). Their 2026-08 commit to that directory was only a RuboCop autocorrect.
+2. **Hiroshi Tanaka** wrote the newest proxy code, `ValkeyProxy` (#310 and #318, Sept 2026). They know the current proxy shape and the `wrap`/version-check pattern, so they are the best person to review a design change.
+3. **Gonzalo Rodriguez (grzuy)** is optional. They are the largest historical author of this code, with about 30 commits. They were last active in Nov 2025, on CI and Appraisals work, not proxy code.
+
+**Also in the repo**
+- Jean Boussier was active as recently as Mar 2026 (#714, "Eagerly check for store validity"). That change may touch how stores get wrapped. I didn't check which files it changed, so it's worth a look if your change affects store validation.
+
+**Authors to skip:** hakanensari (last commit 2014), fatkodima (2019), Jonathan del Strother (2023), Mitchell Henke (2023) and the other older contributors.
+
+**Caveats**
+- There is no `CODEOWNERS` file, so none of this is an official ownership list.
+- Hiroshi Tanaka's commits use two different `example.*` email addresses (`<email redacted>` and `hiroshi@tanaka.example`). Check that this is a real, reachable person, for example on GitHub, before tagging them.
+- Commit recency doesn't prove someone is available to review. Confirm with the team.
+META cost=0.0555122 ms=16914 turns=3

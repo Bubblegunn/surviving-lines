@@ -1,0 +1,53 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser/"}
+ - Bash: ls src/Parser/ && cat .mailmap && echo --- && git log --no-merges --format='%h %an <%ae> %ad %s' --date=short -- src/Parser/ | head -40 && echo --- && git log --no-merges --format='%aN' -- src/Parser/ | sort | uniq -c | sort -rn
+ - Bash: git show --stat --format='%h %s' 45259fd 73c5c0f | cat; git show -w --stat --format='%h (ignoring whitespace)' 45259fd | cat; git show 73c5c0f -- src/Parser | head -60
+blame(){ for f in src/Parser/*.php; do git blame "$@" --line-porcelain "$f" | sed -n 's/^author-mail //p'; done | git check-mailmap --stdin 2>/dev/null | sed 's/ <.*//' | sort | uniq -c | sort -rn; }
+echo "== raw blame"; blame
+echo "== blame -w, ignoring reindent+StyleCI"; blame -w --ignore-rev 45259fd --ignore-rev 73c5c0f
+ - Bash: for f in src/Parser/*.php; do echo "== $f ($(wc -l <$f) lines; dependents: $(grep -rlw "$(basename $f .php)" src tests 2>/dev/null | grep -v "^$f$" | wc -l | tr -d ' '))"; git blame -w --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain "$f" | sed -n 's/^author-mail //p' | git check-mailmap --stdin | sort | uniq -c | sort -rn; done; echo; git log --format='%aN %ad' --date=short | git check-mailmap --stdin 2>/dev/null | head -0; git log --use-mailmap --format='%aN|%ad' --date=short | sort -t'|' -k1,1 -k2r | awk -F'|' '!s[$1]++'
+FINAL ANSWER:
+**Reviewers for `src/Parser/`: Graham Campbell as primary, Priscila Duarte for the two files she added.** I based this on `git blame` of the lines in the files today, not on commit counts.
+
+## Who wrote the current code
+
+| File | Lines | Current author (blame) | Used by |
+|---|---|---|---|
+| `Parser.php` | 58 | Graham 100% | 18 files |
+| `Entry.php` | 59 | Graham 98% (Jonas Staudenmeir wrote 1 line) | 7 |
+| `Value.php` | 101 | Graham 100% | 7 |
+| `ParserInterface.php` | 19 | Graham 100% | 3 |
+| `EntryParser.php` | 363 | Graham 100% | 2 |
+| `Lexer.php` | 58 | Graham 100% | 2 |
+| `Lines.php` | 136 | Graham 99% (JT Smith wrote 1 line, a typo fix) | 2 |
+| `Interpolator.php` | 62 | Priscila 100% | 0 |
+| `Comments.php` | 56 | Priscila 100% | 0 |
+| **Total** | 912 | **Graham 792 (87%) · Priscila 118 (13%)** | |
+
+## What I corrected for
+
+- **Plain `git blame` points to the wrong person.** It credits Marta Kowalczyk with 791 of 912 lines, because commit `45259fd` re-indented all of `src/` with tabs. That commit changed only whitespace, so Marta wrote none of the logic. I ran blame with `-w` and told it to skip `45259fd` and the StyleCI commit `73c5c0f`, which only changed cast spacing.
+- **Duplicate identities.** `.mailmap` maps Graham's three email addresses to one person, and Priscila's GitHub noreply address to her main address.
+
+## Active?
+
+Both are active. Graham last committed on 2026-09-10 and Priscila on 2026-09-08.
+
+## Risk
+
+- **Bus factor for `src/Parser/` is 1 (Graham).** He wrote every line of the core parser. That includes `Parser.php`, which is used by 18 files, and `EntryParser.php` (363 lines). No one else has written any meaningful part of that code.
+- `Interpolator.php` and `Comments.php` are new, written only by Priscila, and nothing references them yet. Your change could be their first real use, so involve her if it touches them.
+
+## Recommendation
+
+1. **Any parser change:** request Graham as the required reviewer.
+2. **Changes to interpolation or comments:** Graham plus Priscila.
+3. **To spread knowledge:** add Priscila as a second reviewer on core parser PRs too. She is the only other person who has written parser code recently.
+
+Marta does not need to review anything here because her commit only changed indentation.
+META cost=0.2361694 ms=31098 turns=6

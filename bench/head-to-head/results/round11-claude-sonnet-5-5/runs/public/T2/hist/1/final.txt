@@ -1,0 +1,22 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-hist-1/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-hist-1/repo", "path": "lib"}
+FINAL ANSWER:
+**Bus factor of `lib/` is 2 by commit count.** Troy Goode alone made 50% of the 66 commits, and the second author brings it past the threshold. The statistic is thin, though, because the numbers behind it are skewed.
+
+- **Spread:** 25 authors have touched `lib/`. After Troy Goode, the next authors have 4, 4, 3 and 2 commits. No silo is flagged, because no one passes 80%.
+- **Contributors:** Most of the 25 are one-off contributors, so the real set of people who know the code is probably small.
+- **Line ownership:** `lib/` has one file, `lib/index.js` (238 lines). `git blame` credits 89.9% of it to "Fiona Formatter", with 8.4% to Troy Goode. That figure is misleading. "Fiona Formatter" is almost certainly the identity on the latest commit, `62628c0 style: reformat js with 4-space indent and double quotes`. Blame credits those lines to the reformatter instead of the people who wrote the logic. I haven't checked this, for example with `git blame --ignore-rev 62628c0`.
+- **Orphaned file:** The tool marks `lib/index.js` as orphaned. Every author with a meaningful share of its lines has no commit since 2026-04-22. Troy Goode's last commit was 2026-04-10, which makes the 50% commit owner inactive too. This result is skewed by the same reformat commit.
+
+If Troy Goode and one more person leave, nobody who wrote most of the commits is left. Whether anyone still understands the code is a different question. It is a single 238-line file, so it is cheap to relearn. The open risk is the history behind its design decisions.
+
+I can rerun blame with the reformat commit ignored, to see who owns the logic.
+META cost=0.0573356 ms=14141 turns=5

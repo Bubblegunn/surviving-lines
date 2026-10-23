@@ -1,0 +1,218 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Who should review a change to src/Parser/? I want whoever actually wrote the code that is there now, not whoever has the most commits.
+
+CRITERIA:
+1. Graham Campbell, as one person, holds about 85.5% of src/Parser/ (accept 82–89%). FAIL if his share is split into several rows or people, if the number is outside 80–91%, or if someone else is the top owner.
+2. Priscila Duarte is credited as one person, by author rather than committer, with about 13.2% of src/Parser/ (accept 10–16.5%), and "GitHub" or "pduarte" does not appear as a separate owner. FAIL if Priscila is absent, listed below 7% or as two people, or if "GitHub" is presented as an author or owner.
+3. Formatting commits are looked through: Marta Kowalczyk (tabs) and StyleCI Bot are each at 0% or not listed, and the answer says whitespace/format-only commits were not counted as authorship. FAIL if either appears as an owner or a suggested reviewer, or if the answer does not say such commits were excluded or looked through.
+4. Commit count is not used as ownership: Vance Lucas (19 commits, second in commit count) is shown with at most 2% of src/Parser/ (truth: 1.0%) or not shown as owner; he is not recommended as a primary reviewer. FAIL if he is recommended first or second, or given more than 5%.
+5. The recommendation is correct and specific: Graham Campbell first, Priscila Duarte second (for her Interpolator.php and Comments.php, where she is the author of all lines of Interpolator.php, accept ≥95%, if file-level figures are given); if the whole of src/ is mentioned, Graham holds about 92% (accept 89–95%). FAIL if the first recommendation is anyone but Graham Campbell, if Priscila is not named at all, or if a whole-src Graham figure is given outside 86–97%.
+
+GROUND TRUTH (computed by a script with git blame):
+== e4 ground truth ==
+fixture HEAD: 73c5c0f6f67862ba759327f4b3ab870faf8dfbc1 2026-09-22 (as-of date = HEAD commit date)
+scope: tracked src/**/*.php at HEAD
+excluded files (non-blank lines): none
+ignored commits (12): 61f8fdbb Apply fixes from StyleCI, cacfbe31 Apply fixes from StyleCI (#2), bf58b9c6 Apply fixes from StyleCI (#317), 8c62ccf2 Apply fixes from StyleCI (#388), 7738fec1 Apply fixes from StyleCI (#396), 5c2a7fed Apply fixes from StyleCI (#413), e9a7fac9 Apply fixes from StyleCI (#422), c9c1a808 Apply fixes from StyleCI (#428), 4ee9bf81 Apply fixes from StyleCI (#431), b27970d7 Apply fixes from StyleCI (#440), 7e6837db Apply fixes from StyleCI (#451), 73c5c0f6 Apply fixes from StyleCI (#610)
+
+-- ALL: attributable human lines = 3095
+    1. Graham Campbell           2848 lines  92.02%  | commits(all history)=320 last_commit=2026-09-10
+    2. Priscila Duarte            104 lines   3.36%  | commits(all history)=2 last_commit=2026-09-08
+    3. Vance Lucas                 74 lines   2.39%  | commits(all history)=19 last_commit=2015-10-28
+    4. Jonas Staudenmeir           17 lines   0.55%  | commits(all history)=1 last_commit=2024-07-20
+    5. Hossein Hosni               11 lines   0.36%  | commits(all history)=1 last_commit=2021-11-10
+    6. Bruce Dev                    8 lines   0.26%  | commits(all history)=1 last_commit=2015-12-29
+    7. sephedo                      8 lines   0.26%  | commits(all history)=1 last_commit=2016-10-01
+    8. Edoardo T                    7 lines   0.23%  | commits(all history)=1 last_commit=2017-08-08
+    9. Kelvin Jones                 7 lines   0.23%  | commits(all history)=4 last_commit=2014-10-15
+   10. Carlos Alberto Bertholdo Carucce     4 lines   0.13%  | commits(all history)=1 last_commit=2016-06-14
+
+-- src/Parser/: attributable human lines = 787
+    1. Graham Campbell            673 lines  85.51%  | commits(all history)=320 last_commit=2026-09-10
+    2. Priscila Duarte            104 lines  13.21%  | commits(all history)=2 last_commit=2026-09-08
+    3. Vance Lucas                  8 lines   1.02%  | commits(all history)=19 last_commit=2015-10-28
+    4. JT Smith                     1 lines   0.13%  | commits(all history)=1 last_commit=2022-10-15
+    5. Jonas Staudenmeir            1 lines   0.13%  | commits(all history)=1 last_commit=2024-07-20
+
+-- src/Repository/: attributable human lines = 1167
+    1. Graham Campbell           1164 lines  99.74%  | commits(all history)=320 last_commit=2026-09-10
+    2. Jonas Staudenmeir            2 lines   0.17%  | commits(all history)=1 last_commit=2024-07-20
+    3. JT Smith                     1 lines   0.09%  | commits(all history)=1 last_commit=2022-10-15
+
+-- src/Store/: attributable human lines = 345
+    1. Graham Campbell            337 lines  97.68%  | commits(all history)=320 last_commit=2026-09-10
+    2. Jonas Staudenmeir            5 lines   1.45%  | commits(all history)=1 last_commit=2024-07-20
+    3. Kelvin Jones                 3 lines   0.87%  | commits(all history)=4 last_commit=2014-10-15
+
+-- src/Util/: attributable human lines = 204
+    1. Graham Campbell            189 lines  92.65%  | commits(all history)=320 last_commit=2026-09-10
+    2. Hossein Hosni               11 lines   5.39%  | commits(all history)=1 last_commit=2021-11-10
+    3. Jonas Staudenmeir            3 lines   1.47%  | commits(all history)=1 last_commit=2024-07-20
+    4. JT Smith                     1 lines   0.49%  | commits(all history)=1 last_commit=2022-10-15
+
+-- src/Parser/Interpolator.php: attributable human lines = 55
+    1. Priscila Duarte             55 lines 100.00%  | commits(all history)=2 last_commit=2026-09-08
+
+WATCH Priscila Duarte: ALL: 104 lines (3.36%); src/Parser/: 104 lines (13.21%); src/Repository/: 0 lines (0.00%); src/Store/: 0 lines (0.00%); src/Util/: 0 lines (0.00%); src/Parser/Interpolator.php: 55 lines (100.00%)
+
+WATCH Marta Kowalczyk: ALL: 0 lines (0.00%); src/Parser/: 0 lines (0.00%); src/Repository/: 0 lines (0.00%); src/Store/: 0 lines (0.00%); src/Util/: 0 lines (0.00%); src/Parser/Interpolator.php: 0 lines (0.00%)
+
+-- identity groups with more than one name/email (merged):
+   Baptiste Leduc: Baptiste Leduc <<email redacted>>; Baptiste Leduc <<email redacted>>
+   Graham Campbell: Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>; Graham Campbell <<email redacted>>
+   Jonathan Champ: Jonathan Champ <<email redacted>>; jrchamp <<email redacted>>
+   Kelvin Jones: Kelvin Jones <<email redacted>>; Kelvin Jones <<email redacted>>
+
+-- commit-count ranking (no-merges, all history; what a commit count would say):
+   1. Graham Campbell           320 commits
+   2. Vance Lucas                19 commits
+   3. Jeff Puckett                8 commits
+   4. David Meister               6 commits
+   5. Lucas Michot                6 commits
+   6. Chris Cornutt               4 commits
+   7. Gabe Medrash                4 commits
+   8. Kelvin Jones                4 commits
+
+.mailmap: Graham Campbell <<email redacted>> <<email redacted>> | Graham Campbell <<email redacted>> <<email redacted>> | Priscila Duarte <<email redacted>> <<email redacted>> | 
+commits by StyleCI Bot: 1
+tabs commit author: Marta Kowalczyk | chore: indent with tabs per .editorconfig
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/Parser/"}
+ - Bash: ls src/Parser/ && cat .mailmap && echo --- && git log --no-merges --format='%h %an <%ae> %ad %s' --date=short -- src/Parser/ | head -40 && echo --- && git log --no-merges --format='%aN' -- src/Parser/ | sort | uniq -c | sort -rn
+ - Bash: git show --stat --format='%h %s' 45259fd 73c5c0f | cat; git show -w --stat --format='%h (ignoring whitespace)' 45259fd | cat; git show 73c5c0f -- src/Parser | head -60
+blame(){ for f in src/Parser/*.php; do git blame "$@" --line-porcelain "$f" | sed -n 's/^author-mail //p'; done | git check-mailmap --stdin 2>/dev/null | sed 's/ <.*//' | sort | uniq -c | sort -rn; }
+echo "== raw blame"; blame
+echo "== blame -w, ignoring reindent+StyleCI"; blame -w --ignore-rev 45259fd --ignore-rev 73c5c0f
+ - Bash: for f in src/Parser/*.php; do echo "== $f ($(wc -l <$f) lines; dependents: $(grep -rlw "$(basename $f .php)" src tests 2>/dev/null | grep -v "^$f$" | wc -l | tr -d ' '))"; git blame -w --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain "$f" | sed -n 's/^author-mail //p' | git check-mailmap --stdin | sort | uniq -c | sort -rn; done; echo; git log --format='%aN %ad' --date=short | git check-mailmap --stdin 2>/dev/null | head -0; git log --use-mailmap --format='%aN|%ad' --date=short | sort -t'|' -k1,1 -k2r | awk -F'|' '!s[$1]++'
+FINAL ANSWER:
+**Reviewers for `src/Parser/`: Graham Campbell as primary, Priscila Duarte for the two files she added.** I based this on `git blame` of the lines in the files today, not on commit counts.
+
+## Who wrote the current code
+
+| File | Lines | Current author (blame) | Used by |
+|---|---|---|---|
+| `Parser.php` | 58 | Graham 100% | 18 files |
+| `Entry.php` | 59 | Graham 98% (Jonas Staudenmeir wrote 1 line) | 7 |
+| `Value.php` | 101 | Graham 100% | 7 |
+| `ParserInterface.php` | 19 | Graham 100% | 3 |
+| `EntryParser.php` | 363 | Graham 100% | 2 |
+| `Lexer.php` | 58 | Graham 100% | 2 |
+| `Lines.php` | 136 | Graham 99% (JT Smith wrote 1 line, a typo fix) | 2 |
+| `Interpolator.php` | 62 | Priscila 100% | 0 |
+| `Comments.php` | 56 | Priscila 100% | 0 |
+| **Total** | 912 | **Graham 792 (87%) · Priscila 118 (13%)** | |
+
+## What I corrected for
+
+- **Plain `git blame` points to the wrong person.** It credits Marta Kowalczyk with 791 of 912 lines, because commit `45259fd` re-indented all of `src/` with tabs. That commit changed only whitespace, so Marta wrote none of the logic. I ran blame with `-w` and told it to skip `45259fd` and the StyleCI commit `73c5c0f`, which only changed cast spacing.
+- **Duplicate identities.** `.mailmap` maps Graham's three email addresses to one person, and Priscila's GitHub noreply address to her main address.
+
+## Active?
+
+Both are active. Graham last committed on 2026-09-10 and Priscila on 2026-09-08.
+
+## Risk
+
+- **Bus factor for `src/Parser/` is 1 (Graham).** He wrote every line of the core parser. That includes `Parser.php`, which is used by 18 files, and `EntryParser.php` (363 lines). No one else has written any meaningful part of that code.
+- `Interpolator.php` and `Comments.php` are new, written only by Priscila, and nothing references them yet. Your change could be their first real use, so involve her if it touches them.
+
+## Recommendation
+
+1. **Any parser change:** request Graham as the required reviewer.
+2. **Changes to interpolation or comments:** Graham plus Priscila.
+3. **To spread knowledge:** add Priscila as a second reviewer on core parser PRs too. She is the only other person who has written parser code recently.
+
+Marta does not need to review anything here because her commit only changed indentation.
+
+FILE .mailmap written by this run
+Graham Campbell <<email redacted>> <<email redacted>>
+Graham Campbell <<email redacted>> <<email redacted>>
+Priscila Duarte <<email redacted>> <<email redacted>>
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>"; $SL --reviewers src/Parser/; echo ===; $SL --reviewers src/Parser/ --merge-identities
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $SL --reviewers src/Parser/; echo '-----'; node $SL --reviewers src/Parser/ --merge-identities
+FINAL ANSWER:
+Ask **Graham Campbell** first, then **Priscila Duarte**. Between them they wrote 98.7% of the code now in `src/Parser/`.
+
+I counted with `surviving-lines --reviewers src/Parser/`. It uses `git blame -w -M -C` at HEAD and covers 9 of 9 files: 787 non-blank lines, or 912 counting blank lines.
+
+| # | Reviewer | Surviving lines | Share | Commits | Last commit | Active? |
+|---|---|---|---|---|---|---|
+| 1 | Graham Campbell | 673 | 85.5% | 32 | 2026-08-24 | yes |
+| 2 | Priscila Duarte | 104 | 13.2% | 2 | 2026-09-08 | yes |
+| 3 | Vance Lucas | 8 | 1.0% | 0 | — | no |
+| – | Jonas Staudenmeir | 1 | 0.1% | 1 | 2024-07-20 | no |
+| – | JT Smith | 1 | 0.1% | 1 | 2022-10-15 | no |
+| – | 1 more author | ≤0.1% | | | | |
+
+The list is ordered by surviving lines. The active marker means a commit in the 365 days before 2026-09-22. It is shown for information and does not change the order. Vance Lucas is third by lines but inactive, and holds only 8 lines. If you only want active people, the list is still Graham Campbell and Priscila Duarte.
+
+**Why commit counts would mislead here:**
+- **Marta Kowalczyk** has a commit touching 795 lines in 9 files: `45259fd`, "chore: indent with tabs per .editorconfig". It changed only whitespace, so blame gives it no lines, and she holds none of the current code. `src/Parser/EntryParser.php`, the largest file it touched, is 100% Graham Campbell (363 of 363 lines).
+- **Graham Campbell's** `20d6a1b` "Updates" also changed only whitespace (37 lines). It does not count, and he still holds 85.5%.
+- **Moved code:** 318 of the 787 lines (40.4%) were written elsewhere (`src/Parser.php`, `src/Value.php`, `src/Lines.php`) and moved into this directory. They are credited to the people who wrote them, not to whoever moved them.
+
+**Bus factor for `src/Parser/`: 1.** Graham Campbell alone holds more than 50% of the lines (85.5% non-blank, 85.7% with blank lines). Reaching 80% also takes 1 author.
+
+**What else affected the counts:**
+- **`.mailmap` merges, already in the numbers:**
+  - Graham Campbell's GitHub noreply address is merged into <email redacted> (+339 lines).
+  - `pduarte` is merged into <email redacted> (+49 lines).
+- **Possible duplicates:** a pre-check matched names and addresses and suggested that Graham Campbell may also commit as <email redacted> and <email redacted>, and Kelvin Jones under two addresses. These are guesses, not confirmed. Merging them made no difference in this directory, and I did not change `.mailmap`.
+- **Copy detection:** with it on, 8 lines go to Vance Lucas (1.0%). Without it he has 0 lines and Graham Campbell has 681 lines (86.5%).
+- **Bots:** StyleCI Bot is left out (1 commit, 0 lines).
+- **Formatting commits:** the tool checked 44 commits for formatting or other mechanical changes and set none aside.
+
+These numbers show whose code is still in the directory. They do not show code review, design work, or who understands the code best.
+
+FILE .mailmap written by this run
+Graham Campbell <<email redacted>> <<email redacted>>
+Graham Campbell <<email redacted>> <<email redacted>>
+Priscila Duarte <<email redacted>> <<email redacted>>
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE4-base-1/repo; ls src/Parser; cat .mailmap; ls -a; cat .git-blame-ignore-revs 2>/dev/null; git log --format='%h %an <%ae> | %aN <%aE> | %s' --stat -- src/Parser | head -80
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE4-base-1/repo; git show 73c5c0f -- src/Parser | head -40; echo ===RAW; for f in src/Parser/*.php; do git blame --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo ===IGNORED; for f in src/Parser/*.php; do git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo ===PERFILE; for f in src/Parser/*.php; do echo "$f"; git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE4-base-1/repo; echo RAW; for f in src/Parser/*.php; do git blame --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo IGNORED; for f in src/Parser/*.php; do git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo PERFILE; for f in src/Parser/*.php; do echo "$f"; git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; git shortlog -sne -- src/Parser
+FINAL ANSWER:
+**Reviewer: Graham Campbell** (<email redacted>). He wrote about 86% of the current lines in `src/Parser/`. **Priscila Duarte** (<email redacted>) should review changes to `Comments.php` or `Interpolator.php`, because she wrote all of both files.
+
+A plain `git blame` gives the wrong answer here. It credits 791 of 912 lines to Marta Kowalczyk, but her only change was commit `45259fd`, which converted indentation to tabs in all 9 files. StyleCI commit `73c5c0f` also gets 4 lines, all `(string) $x` → `(string)$x` spacing. I re-ran the blame ignoring whitespace (`-w`), following moved and copied lines (`-M -C`), and skipping those two commits with `--ignore-rev`. Author names are combined using `.mailmap`.
+
+Current lines by original author:
+
+| Author | Lines |
+|---|---|
+| Graham Campbell | 782 |
+| Priscila Duarte | 118 |
+| Vance Lucas | 10 (all in `Lines.php`) |
+| Jonas Staudenmeir | 1 |
+| JT Smith | 1 |
+
+By file:
+- **Graham:** `EntryParser.php` (363 lines), `Lines.php` (125 of 136), `Value.php`, `Entry.php`, `Lexer.php`, `Parser.php`, `ParserInterface.php`.
+- **Priscila:** `Comments.php` (56 lines), `Interpolator.php` (62 lines).
+
+So the right reviewer depends on which file the change touches. To recheck one file:
+```
+git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f src/Parser/<file>.php
+```
+
+One suggestion: add both commit hashes to a `.git-blame-ignore-revs` file and run `git config blame.ignoreRevsFile .git-blame-ignore-revs`. After that, a normal blame (and GitHub's blame view) will skip the formatting commits automatically.
+
+FILE .mailmap written by this run
+Graham Campbell <<email redacted>> <<email redacted>>
+Graham Campbell <<email redacted>> <<email redacted>>
+Priscila Duarte <<email redacted>> <<email redacted>>

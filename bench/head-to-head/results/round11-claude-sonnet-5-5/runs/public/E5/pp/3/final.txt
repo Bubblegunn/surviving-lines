@@ -1,0 +1,60 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -60; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -20; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+FINAL ANSWER:
+`lib/index.js` has 238 lines and 50 commits under `git log --follow`. Troy Goode wrote the original and still owns most of it.
+
+**Who shaped it**
+- **Troy Goode** is the author and maintainer. He made 29 of the 50 commits, starting with the first one on 2013-01-30 (`7471c23`). He set up the structure: the `origin`, `methods` and `credentials` options, pause/resume of the request for async middleware, and Connect support without Express. He also did the Express 4 support (2014), the move to the `vary` module (2014), the ESLint switch (2015) and the 2.8.0 release (2016).
+- **Alejandro Caravaca Puchades** (4 commits, plus 1 as `alex94puchades`) added the regexp and array forms of `options.origin` in 2015.
+- **Douglas Christopher Wilson** (4 commits, 2017) added `Vary: Access-Control-Request-Headers`. He also fixed the missing `methods` option error and made lint and build changes.
+- **Simon Mansfield** (3 commits, 2013) added the early `Origin` header check and moved the credentials header.
+- **Single-commit contributors** include:
+  - Damien Klinnert: `Access-Control-Allow-Methods` only on OPTIONS
+  - Mathias Buus: non-Express request/response methods
+  - Eric di Domenico: callback `origin`
+  - Typicode: PATCH in the default methods
+  - Igor Soarez: `Vary: Origin` for specific origins
+  - Raymond Feng: removed the closure in `applyHeaders`
+  - Eran Tiktin: `Vary` fix for `*`
+  - max.laverse: preflight passthrough to `next()`
+  - Benjamin Eidelman: Safari preflight workaround
+  - Tom Arad: `maxAge` set to 0
+  - LuisEGR: removed unused function parameters
+- **Recent commits** are the 2026-04-10 "annotate handlers" commit by Troy Goode and the 2026-04-12 reformat (`62628c0`, 4-space indent and double quotes) by Fiona Formatter.
+
+**Whose code is still in it**
+
+I ran `git blame -w -M -C` (ignoring whitespace and following moved lines) to count lines by their current author:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 138 |
+| Fiona Formatter | 32 |
+| Douglas Christopher Wilson | 18 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| LuisEGR | 6 |
+| max.laverse | 5 |
+| alex94puchades | 3 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Mathias Buus | 2 |
+| Eric di Domenico | 2 |
+| Benjamin Eidelman | 2 |
+| Alberto Leal | 2 |
+| Saad Tazi | 1 |
+| Hannah Wolfe | 1 |
+| Chima Alaebo | 1 |
+
+- Troy Goode wrote about 58% of the current lines.
+- Fiona Formatter's 32 lines are quote-style changes, not new logic. Blame ignores the indent changes, so real authorship of those lines is still the earlier contributors'.
+- Seventeen people have surviving lines. Three contributors with commits in the log, Tomek Kopczuk, Shane Tomlinson and Typicode, have none, so later edits replaced their lines.
+
+The log shows commit authors only. A contributor's change may have been rewritten by someone else, so blame is the more reliable measure of surviving code.
+META cost=0.0629233 ms=16167 turns=3

@@ -1,0 +1,217 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Which people committed in the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12)? For each person give their commits in that window and how many lines of theirs are still in the code today. Set aside formatting-only commits and bots, and count each person once.
+
+CRITERIA:
+1. Reports 2 commits in the window for Troy Goode.
+2. Reports between 780 and 840 lines of Troy Goode that are still in the code today (both of his addresses counted as one person).
+3. Reports Vansh Sharma with 1 commit in the window and 1 line still in the code today.
+4. Does not list Fiona Formatter as a contributor of real work, and names her commit as a formatting-only commit that was set aside, with the reason (whitespace, indentation and quote changes only).
+5. Lists no other person or bot as having committed in the window, and states the date window it used.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an <%ae>' --date=short && echo --- && git log --since='2026-03-29' --until='2026-04-13' --format='%h %ad %an <%ae> %s' --date=short --no-merges && echo --- && git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -50
+ - Bash: git ls-files -z | xargs -0 -I{} sh -c 'git blame --line-porcelain -- "{}" 2>/dev/null' | awk '
+/^[0-9a-f]{40} /{sha=$1}
+/^author-mail /{mail=$2}
+/^\t/{ n[mail]++; if (sha ~ /^(b2005d9|02afce3|5317ebe)/) w[mail]++ }
+END{ for (m in n) printf "%6d total  %4d from-window-commits  %s\n", n[m], w[m]+0, m }' | sort -rn | head -40
+ - Bash: git ls-files -z | xargs -0 -I{} sh -c 'git blame --ignore-rev 62628c0 --line-porcelain -- "{}" 2>/dev/null' | awk '
+/^author-mail /{mail=$2}
+/^\t/{ n[mail]++ }
+END{ for (m in n) printf "%6d  %s\n", n[m], m }' | grep -E 'troy|vansh|fiona'; echo ---; git show --stat --format='%h %s' 62628c0 | tail -1; git show --stat --format= b2005d9 02afce3 5317ebe
+ - Bash: git ls-files -z | xargs -0 -I{} sh -c 'git blame --ignore-rev 62628c0 --line-porcelain -- "{}" 2>/dev/null' | awk '
+/^[0-9a-f]{40} /{sha=substr($1,1,7)}
+/^author-mail /{mail=$2}
+/^\t/{ if (sha=="b2005d9"||sha=="02afce3"||sha=="5317ebe") w[mail" "sha]++ }
+END{ for (k in w) print w[k], k }'
+FINAL ANSWER:
+**Two people committed in the window** (2026-03-29 to 2026-04-12, the 14 days up to the latest commit, 62628c0 on 2026-04-12). Fiona Formatter's 62628c0 is excluded as formatting-only. No bot commits fell in the window.
+
+**1. Troy Goode**: 2 commits, both on 2026-04-10
+- `b2005d9` lib: annotate handlers
+- `02afce3` test: vary header coverage
+- Lines still in the code today: **642** in total (across all history). 47 of those are from the `troy@laptop.example` identity and 595 from `<email redacted>`; I counted both as one person. From the two in-window commits: **47** lines (36 from `02afce3`, 11 from `b2005d9`).
+
+**2. Vansh Sharma**: 1 commit, 2026-04-07
+- `5317ebe` docs: app.del() with app.delete() in README example (#411)
+- Lines still in the code today: **1** (that README line).
+
+**How I counted:** `git blame` across all tracked files at HEAD, attributing each surviving line to its last author. I ran it with `--ignore-rev 62628c0`, because the formatting commit rewrote 1,016 lines and reassigned them to Fiona. Without that flag, Troy's total would be undercounted at 261 and Fiona would show 1,016.
+
+The line counts are the lines each person wrote that survive today, across their whole history, and they are not limited to the window. If you meant only lines from the in-window commits, the answers are 47 for Troy and 1 for Vansh.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: git log -1 --format='%H %ad %an' --date=short && node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>" --since 2026-03-30 --until 2026-04-12 --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>" --since 2026-03-29 --until 2026-04-12 --merge-identities | head -12; echo ---; git log --no-merges --since=2026-03-29 --until=2026-04-12 --format='%h %ad %an <%ae> | %s' --date=short; echo ---; git show --stat 62628c0 | tail -3
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>" --since 2026-03-29 --until 2026-04-12 --merge-identities --top 60 | grep -Ei 'vansh|fiona|troy|douglas'; echo ---; git show --stat 5317ebe | tail -4; git log -1 --format='%h %an' 5317ebe
+FINAL ANSWER:
+**Window:** 2026-03-29 to 2026-04-12 (14 days up to the latest commit, 62628c0 on 2026-04-12). Lines are for the current ref (HEAD); commits are counted only in the window.
+
+| Person | Commits in window | Surviving lines (share of 1,662 non-blank) |
+|---|---|---|
+| Troy Goode (2 addresses) | 2 (`b2005d9`, `02afce3`, both 2026-04-10) | 649 (39.0%); 810 (40.8%) with blank lines |
+| Vansh Sharma | 1 (`5317ebe`, 2026-04-07, docs) | 1 (0.1%) |
+| Fiona Formatter | 1 (`62628c0`, 2026-04-12, reformat) | 0 in the table. The commit is set aside (below). |
+
+People who committed in the window: Troy Goode, Vansh Sharma, and Fiona Formatter. Fiona's commit is not counted in the commit column.
+
+**Troy Goode:** The 649 lines combine two addresses. The tool's guess is `<email redacted>` (605 lines, 0 commits) and `troy@laptop.example` (44 lines, 2 commits). The name match is a guess from names and addresses, and the output does not give a strength label. Unmerged, the figures are 605 and 44. I could not confirm the identity from the output alone.
+
+**Set-aside commit:** `62628c0` ("style: reformat js with 4-space indent and double quotes") by Fiona Formatter rewrote 291 lines. The tool treats it as a formatting-only commit and leaves it out of the table. Without that correction, the figures would be Troy 554 (33.3%), Douglas Christopher Wilson 376 (22.6%), and Fiona 291 (17.5%). I did not confirm the commit with `git show --stat` beyond its line count.
+
+**Other notes from the output:**
+- Douglas Christopher Wilson holds 551 lines (33.2%) but made no commit in the window. His last commit was in 2021.
+- Bus factor (whole repository, `-C` copy detection): 2 (Troy Goode and Douglas Christopher Wilson together hold 72.2%). It takes 4 authors to reach 80%. Without the reformat correction, the bus factor is still 2.
+- Bots excluded: dependabot[bot], 10 lines.
+- Five mechanical-looking commits were not set aside: `739dc11`, `fcd2b56`, `00d6eec`, `344ce1e`, and `9c2b59d`. None is in the window.
+- One address with two names: Alejandro Caravaca Puchades and `alex94puchades` share `<email redacted>` (30 lines). They are not in the window.
+- Copy detection: default `-C` figures. The output does not name anyone as moved by more than 2 points.
+- Left out: lockfiles and generated files were not reported as dropped in this output.
+- Prompt caveat: the tool's header reports 1,995 lines with blank lines, but its bus factor line reports 1,985. I used the header figure for the blank-line share.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad' --date=iso && git log --all --since='2026-03-25' --until='2026-04-13' --no-merges --format='%h|%an|%ae|%ad|%s' --date=short && echo --- && git shortlog -sne --all | head -50
+ - Bash: git log --all --since='2026-03-20' --until='2026-04-20' --format='%h|%an|%ae|%ad|%s' --date=short && echo --- && git log --all --format='%h|%an|%ae|%ad|%s' --date=short -n 3 && echo --- && cat .mailmap 2>/dev/null | head -20; echo; git show --stat --format='%h %an' b2005d9 02afce3 5317ebe 62628c0 | head -60
+ - Bash: echo "$(git rev-parse 62628c0)" > /tmp/ignore-rev.txt && for mode in plain ignore; do echo "== $mode"; files=$(git ls-files | grep -E '\.(js|md|json|ts|yml|yaml|txt)$|^[^.]*$' ); if [ $mode = plain ]; then opt=""; else opt="--ignore-rev $(cat /tmp/ignore-rev.txt)"; fi; for f in $files; do [ -f "$f" ] && git blame --line-porcelain $opt HEAD -- "$f" 2>/dev/null | grep -E '^author ' ; done | sort | uniq -c | sort -rn | head -15; done; echo; git blame --line-porcelain HEAD -- lib/index.js | grep '^author-mail' | sort | uniq -c
+ - Bash: IGN=$(git rev-parse 62628c0); for opt in "" "--ignore-rev $IGN"; do echo "== ${opt:-plain}"; git ls-files -z | while IFS= read -r -d '' f; do git blame --line-porcelain $opt HEAD -- "$f" 2>/dev/null | grep -E '^author-mail '; done | sort | uniq -c | sort -rn | head -12; done; echo; git ls-files | wc -l
+ - Bash: git blame --ignore-rev 62628c0 HEAD -- lib/index.js | head -3; echo "rc=$?"; git ls-files -z | while IFS= read -r -d '' f; do git blame --line-porcelain HEAD -- "$f" 2>/dev/null | grep -E '^author-mail '; done | sort | uniq -c | sort -rn | grep -iE 'vansh|s.vansh|troy|fiona'; echo ---; git ls-files -z | while IFS= read -r -d '' f; do git blame --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" 2>/dev/null | grep -E '^author-mail '; done | sort | uniq -c | sort -rn | head -12
+ - Bash: git show -w --stat --format='%h' b2005d9 | tail -2; git show -w b2005d9 | head -30
+FINAL ANSWER:
+**Window:** 2026-03-29 to 2026-04-12 (14 days ending at the latest commit, 62628c0). Only four non-merge commits fall in it. Three people remain after excluding the formatting commit.
+
+**1. Vansh Sharma** (<email redacted>)
+- Commits in window:
+  - `5317ebe` docs: app.del() with app.delete() in README example (#411), 2026-04-07
+- Lines still in code today: **1** (the README line)
+
+**2. Troy Goode** (<email redacted> and troy@laptop.example, counted as one person)
+- Commits in window:
+  - `02afce3` test: vary header coverage, 2026-04-10 (+36 lines)
+  - `b2005d9` lib: annotate handlers, 2026-04-10 (12 lines changed; the `// checked` annotations are real edits, not whitespace, so this commit counts)
+- Lines still in code today: **642** with formatting commit `62628c0` ignored, which attributes lines back to their real authors. Without that adjustment, `git blame` shows **261**, because Fiona's reformat claimed 1,016 lines.
+
+**Excluded**
+- `62628c0` style: reformat js, by Fiona Formatter (fiona@formatter.example). Formatting-only, so set aside as requested. This also means Fiona's raw line count (1,016) is not reported.
+- Bots: none in the window (dependabot's commits are all older).
+
+**Method:** `git log` for the window, then `git blame` across all 18 tracked files at HEAD, once plain and once with `--ignore-rev 62628c0`. The 642 figure is an approximation. Lines whose text changed in the reformat can't be traced back, so some of Troy's lines may still be credited elsewhere.

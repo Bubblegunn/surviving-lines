@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100; echo ---; git shortlog -sne HEAD -- src | head; echo ---; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{c[$1" | "$2]++; t[$2]++} END{for(k in c) print c[k], k; print "--- total"; for(a in t) print t[a], a}' | sort -k1,1nr | head -40
+echo ---; git log --since='12 months ago' --format='%an' -- src | sort | uniq -c | sort -nr | head; echo ---; git log -5 --format='%h %ad %an %s' --date=short -- src
+FINAL ANSWER:
+Andrew Gallant wrote most of the code that's in `src/` now. For review, ask Andrew first.
+
+**Who wrote it** (surviving lines per `git blame -w -M -C -C`, which follows moves and renames):
+- **Andrew Gallant:** about 2,550 lines, the large majority. By file:
+  - `src/testsuite/recursive.rs`: 1,008
+  - `src/lib.rs`: 743
+  - `src/dent.rs`: 291
+  - `src/testsuite/util.rs`: 252
+  - `src/error.rs`: 169
+  - `src/util.rs`: 42
+  - `src/ancestor.rs`: 42
+- **Everyone else:** 74 lines or fewer each. Sebastian Thiel has 74, Ashley 68, Aron Griffis 59, mcharsley 45, Sam Whitfield 42.
+
+**Who to ask:**
+1. **Andrew Gallant:** the main author, still active (last commit to `src/` on 2026-01-14), and the only person with real ownership across every file.
+2. **Mei Tanaka:** wrote the latest functional change, `dent: add describe_file_type` (2026-02-03), so they know `dent.rs` as it is now.
+3. **Sam Whitfield:** made the three most recent commits to `src/`, but they were mechanical: license headers, moving `Ancestor` into its own module, and renaming `tests` to `testsuite`. They know the current layout, but they aren't a good choice for logic review.
+
+If your PR touches one file, run `git blame -w -M -C -C <file>` on the exact lines you change. That shows who last wrote that code, which is more precise than these totals. The repo has no CODEOWNERS file, so nothing assigns reviewers automatically.
+META cost=0.0566262 ms=16410 turns=4

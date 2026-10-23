@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && echo "--- surviving lines by author (blame, ignoring whitespace, following moves/copies)" && git ls-files src | grep '\.rs$' | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn && echo "--- commits touching src by author" && git shortlog -sne HEAD -- src && echo "--- last 90 days" && git shortlog -sne --since='90 days ago' HEAD -- src
+ - Bash: for f in $(git ls-files src); do echo "== $f ($(wc -l <$f) lines)"; case $f in *.rs) git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3;; esac; done; echo "--- last commit per key author"; for a in "Andrew Gallant" "Sebastian Thiel" "Ashley" "Aron Griffis" "mcharsley" "Sam Whitfield"; do echo "$a: $(git log -1 --format='%ad' --date=short --author="$a" -- src)"; done; echo "--- latest src commits"; git log -8 --format='%ad %an %s' --date=short -- src; echo "--- CODEOWNERS?"; ls CODEOWNERS .github/CODEOWNERS 2>&1 | head
+FINAL ANSWER:
+**Who wrote it:** Andrew Gallant wrote most of `src/`. Surviving lines by author, from `git blame -w -M -C`, which looks through whitespace changes, moves and renames, are:
+
+| File | Top authors (surviving lines) |
+|---|---|
+| `src/lib.rs` | Gallant 743 of 1158, mcharsley 45, Aron Griffis 45 |
+| `src/dent.rs` | Gallant 291 of 371, Yufeng Wang 21, Ashley 15 |
+| `src/error.rs` | Gallant 169 of 267, Garrett Berg 34, Niv Kaminer 30 |
+| `src/util.rs`, `src/ancestor.rs` | Gallant 42 each, Sam Whitfield 5 and 4 |
+| `src/testsuite/recursive.rs` | Gallant 1008 of 1097, Sebastian Thiel 53, Lukas Kalbertodt 20 |
+| `src/testsuite/util.rs` | Gallant 252 of 257 |
+
+Across all of `src/`, Gallant has 2551 surviving lines. The next author has 74.
+
+**Who to ask:**
+- **Sam Whitfield** is the most recent active committer. They made the three latest commits, from 2026-03-09 to 2026-03-23, but those only add license headers, move `Ancestor` into its own module and rename `src/tests`. They own little of the logic.
+- **Mei Tanaka** (2026-02-03) added `dent: add describe_file_type`, so they are the one to ask if your PR touches `dent.rs`.
+- **Andrew Gallant** is the real owner of the design. Their last commit to `src/` was 2026-01-14, and they made 57 of the commits there. They are the right reviewer for anything in `lib.rs`, `error.rs` or the test suite.
+- **Tobias Brandt** wrote the original `same_device` helper, which Gallant reverted and then reapplied. Ask them if you touch `util.rs`.
+
+No one has committed to `src/` in the last 90 days that I could detect with `--since='90 days ago'`. That check returned nothing. The most recent commit I found is from 2026-03-23, so I can't say who is actively maintaining the repo now.
+
+The repo has no `CODEOWNERS` file. I don't know which files your PR touches. If you tell me, I can narrow this to those files. If `git status` shows your changes, I can run the same blame on only those files.
+META cost=0.0679993 ms=18956 turns=4

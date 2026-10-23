@@ -1,0 +1,62 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %ad %an <%ae> | %s' --date=short -- lib/index.js | head -80; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo; wc -l lib/index.js; ls .git-blame-ignore-revs 2>/dev/null
+ - Bash: git show --stat --format='%H%nAuthor: %an <%ae> %ad%nCommitter: %cn <%ce> %cd%n%B' 62628c0 b2005d9; git show b2005d9 -- lib/index.js | head -80; git diff -w --stat 62628c0^ 62628c0
+ - Bash: n(){ tr "'" '"' | tr -d ' \t\n'; }; diff <(git show 62628c0^:lib/index.js | n) <(git show 62628c0:lib/index.js | n) && echo FORMAT_ONLY; diff <(git show b2005d9^:lib/index.js | sed 's| // checked||' ) <(git show b2005d9:lib/index.js | sed 's| // checked||') && echo ANNOTATE_ONLY
+echo; git blame -w --line-porcelain f038e77 -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+echo; git blame --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w --line-porcelain f038e77 -- lib/index.js | awk '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author-mail/{print c, $2}' | sort | uniq -c | sort -rn | head -25; echo; git blame --line-porcelain HEAD -- lib/index.js | awk '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author-mail/{print c, $2}' | sort | uniq -c | sort -rn; git log --all --format='%ae' --author='Troy' | sort | uniq -c
+FINAL ANSWER:
+## Summary
+
+**Troy Goode wrote most of `lib/index.js` and still owns most of it.** A plain `git blame` gives the wrong answer here: it credits 214 of the 238 lines to "Fiona Formatter". I checked the last two commits and neither one changes behavior, so the counts below come from blaming the last commit before them (`f038e77`).
+
+## Two recent cosmetic commits
+
+| Commit | Author | What it does |
+|---|---|---|
+| `62628c0` (2026-04-12) | Fiona Formatter `<fiona@formatter.example>` | Changes indentation to 4 spaces and quotes to double quotes. Verified: when I strip whitespace and treat `'` and `"` as the same, the file before and after is identical. |
+| `b2005d9` (2026-04-10) | "Troy Goode" `<troy@laptop.example>` | Adds `// checked` to the end of 12 function lines. Verified: removing those comments gives the old file exactly. |
+
+`b2005d9` is not proof that the original Troy Goode is involved. All 120 of his other commits use `<email redacted>`. This one uses a `.example` address and has round timestamps (10:00:00), the same as the formatter commit. Git author names are not verified, so this commit could come from someone else using his name.
+
+## History
+
+- **2013: Troy Goode creates the file.** The first commit is `bcd03d9` (2013-01-30). Over the next months he added case-insensitive headers, `origin: false`, pause/resume, and the v2 restructuring (`4f13c63`). Early contributors: Simon Mansfield (origin checks, credentials), Damien Klinnert (methods only on preflight), Eric di Domenico (origin as a callback), Mathias Buus (support for non-Express apps).
+- **2014: growth phase.** Troy added Expose-Headers, Express 4 support and the `vary` module. Others: Typicode (PATCH as a default method), Alberto Leal, Shane Tomlinson (uppercase method names), Igor Soarez (Vary: Origin).
+- **2015: more contributors.** Raymond Feng (removed a closure in applyHeaders), max.laverse (`preflightContinue`), DracoBlue, Eran Tiktin. Alejandro Caravaca Puchades added regexp and array values for `origin`. Troy moved the project to ESLint (`fcd2b56`, `8ec22a9`).
+- **2016–2017: maintenance by Douglas Christopher Wilson** (Express maintainer). He added dynamic Vary for allowedHeaders and fixed a crash when a delegate leaves out `methods`. Also: Benjamin Eidelman (Safari preflight workaround), Saad Tazi (frozen options), Tomek Kopczuk, Hannah Wolfe.
+- **2018–2021: small fixes.** Tom Arad (`maxAge: 0`), LuisEGR (removed unused parameters).
+
+The file has 64 commits from 24 distinct author names. Troy Goode has 29 of them.
+
+## Who wrote the lines in the file today
+
+Blame at `f038e77` with whitespace ignored. The content matches HEAD except for formatting and the `// checked` comments.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 157 | ~66% |
+| Douglas Christopher Wilson | 22 | ~9% |
+| Alejandro Caravaca Puchades (two name spellings: 12 + 4) | 16 | ~7% |
+| Raymond Feng | 9 | 4% |
+| max.laverse, LuisEGR | 6 each | |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each | |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each | |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each | |
+
+Troy's lines come mostly from the v2 restructuring `4f13c63` (58 lines), the ESLint cleanup `8ec22a9` (34) and Expose-Headers `0a80d70` (19). 14 lines are still from the first commit in 2013.
+
+## Fix for blame in this repo
+
+Make plain `git blame` skip the formatter commit:
+```
+echo 62628c0a1b16306a0285b3e26645acfa1c21687 >> .git-blame-ignore-revs
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+I did not create that file. I can add and commit it if you want.
+META cost=0.2328504 ms=34003 turns=5

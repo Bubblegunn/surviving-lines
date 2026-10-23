@@ -1,0 +1,61 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "records.py: who wrote surviving Python code (blame-based, not commit counts)"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | while read f; do echo "== $f ($(wc -l <"$f") lines)"; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git log --no-merges --format='%an <%ae> %ad' --date=short | sort | uniq -c | sort -rn | head -20; echo; git log --format='%an|%ae|%ad|%s' --date=short -- records.py
+ - Bash: R="abe2ea7 0e8fe2e"; echo "--- blame ignoring format commits (records.py)"; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain -- records.py | grep '^author ' | sort | uniq -c | sort -rn | head -12; echo "--- all py, ignoring format commits, by author (normalized case)"; for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain -- "$f" | grep '^author ' ; done | tr 'A-Z' 'a-z' | sort | uniq -c | sort -rn | head -12; echo "--- recent records.py commits' stats"; git show --stat --format='%h %an %s' abe2ea7 | head; git log --since=2026-01-01 --format='%h %an %ad %s' --date=short --stat -- records.py | head -40; e
+FINAL ANSWER:
+**Short answer:** Kenneth Reitz wrote most of the surviving code, but the last commit was 2024-07-09, so ask Dana Okafor about `records.py`. Everything below comes from `git blame` (`-w -M -C`) with the formatting commits excluded. It counts surviving lines, not commits.
+
+I excluded `abe2ea7` (black) and `0e8fe2e` (pre-commit bot). They reformatted about 19 lines in `records.py` and would otherwise credit Priya Raman and the bot with code they only reformatted. With them excluded, Priya has no surviving logic in `records.py`.
+
+**Surviving Python lines, all 8 files (about 1,100 lines)**
+
+| Author | Lines | Last commit |
+|---|---|---|
+| Kenneth Reitz | 435 | 2024-07 |
+| Jan Vlcinsky | 119 | 2018 |
+| Greg Troszak | 89 | 2017 |
+| Chad Whitacre | 85 | 2016 |
+| Harold Cooper | 51 | 2016 |
+| Dana Okafor | 50 | 2026-05 |
+| Joakim Uddholm | 45 | 2018 |
+
+- **Merged identities:** `Dana Okafor` and `dana okafor` use two different emails but look like the same person. I merged them. Please confirm, because git treats them as two authors.
+- **Still around:** Dana Okafor, Tomás Ibarra, Marcus Lindqvist and Joseph Gardi committed in 2026. Together they own roughly 100 lines. Everyone else with real code left 2018 or earlier.
+- **Kenneth Reitz:** he committed in July 2024, which was the last time anyone but those four touched the repo.
+
+**`records.py` (622 lines)**
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Kenneth Reitz | 318 | 51% | 2024 |
+| Greg Troszak | 58 | 9% | 2017 (connection pooling and transactions) |
+| Chad Whitacre | 39 | 6% | 2016 (`.first`, Python 3 port) |
+| Jan Vlcinsky | 30 | 5% | 2018 (CLI) |
+| Dana Okafor | 40 | 6% | 2026 |
+| mcdallas | 26 | 4% | 2016–2018 (context manager, `one()`) |
+| Tomás Ibarra | 12 | 2% | 2026 (`_coerce_row`) |
+| Marcus Lindqvist | 8 | 1% | 2026 (`LEGACY_SKIP`) |
+
+**Who to ask about `records.py`**
+1. **Dana Okafor:** she is the most active owner of recent code. She wrote the key normalisation and chunking helpers, and `_describe`. She is the most likely person to know how the file works today.
+2. **Tomás Ibarra:** ask about `_coerce_row` and typed columns.
+3. **Marcus Lindqvist:** ask about `LEGACY_SKIP`.
+4. **Kenneth Reitz:** he is the only person who knows the original design, such as the `Record`, `RecordCollection` and `Database` structure and the CLI. He is the best source for design questions if he replies.
+5. **Greg Troszak:** he is the only author of the pooling and transaction code, but he has been inactive since 2017, so don't count on him.
+
+**Bus factor**
+- **Original design:** the project-level bus factor is effectively 1. More than 50% of `records.py` traces to Reitz, and the other long-standing authors are gone. The 2026 contributors added small helpers around that core. They did not take over the core.
+- **Connection pooling and transactions:** this is the riskiest area. Greg Troszak wrote it and has been inactive since 2017. Brian Hammond wrote the original transactions code and is inactive too. Nobody currently active clearly owns it.
+- **Tests:** `tests/conftest.py` is 82% Jan Vlcinsky, who has been inactive since 2018.
+
+**Not checked**
+- I didn't count which files import `records.py`. The importance cross-check from the command is missing, so I can't rank the risk by number of dependents.
+- I didn't run the `contributor-analyzer` agent.
+- Blame names authors by git name only. People with several emails or names, like Dana, may be undercounted elsewhere.
+META cost=0.10010279999999999 ms=30129 turns=6

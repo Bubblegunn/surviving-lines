@@ -1,0 +1,90 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | xargs wc -l && git log --format='%h %an <%ae> %ad %s' --date=short
+ - Bash: git shortlog -sne --all | cat; echo ---; ls -a | head -30; cat .git-blame-ignore-revs .mailmap 2>/dev/null; echo ---; git log --format='%h %an' | awk '{ $1=""; print}' | sort | uniq -c
+ - Bash: printf 'abe2ea7\n0e8fe2e\n3844430\n' > /tmp/ignore-revs.txt && for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain "$f" | awk -v f="$f" '/^author /{sub(/^author /,""); print f"\t"$0}'; done | python3 -I -c '
+import sys,collections,unicodedata
+c=collections.defaultdict(collections.Counter)
+def norm(n):
+    n=unicodedata.normalize("NFKD",n).encode("ascii","ignore").decode().lower()
+    return n
+for l in sys.stdin:
+    f,a=l.rstrip("\n").split("\t",1); c[f][norm(a)]+=1; c["ALL"][norm(a)]+=1
+for f,k in c.items():
+    t=sum(k.values()); print(f,t)
+    for a,n in k.most_common(8): print("   %-22s %4d %5.1f%%"%(a,n,100*n/t))
+'
+echo ---reco
+ - Bash: git rev-parse abe2ea7 0e8fe2e 3844430 > /tmp/ignore-revs.txt && git show --stat --format='%h %s' abe2ea7 0e8fe2e 3844430 | cat && for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain "$f" | awk -v f="$f" '/^author /{sub(/^author /,""); print f"\t"$0}'; done | python3 -I -c '
+import sys,collections,unicodedata
+c=collections.defaultdict(collections.Counter)
+def norm(n):
+    return unicodedata.normalize("NFKD",n).encode("ascii","ignore").decode().lower()
+for l in sys.stdin:
+    f,a=l.rstrip("\n").split("\t",1); c[f][norm(a)]+=1; c["ALL"][norm(a)]+=1
+for f,k in c.items():
+    t=sum(k.values()); print(f,t)
+    for a,n in k.most_common(8):
+ - Bash: git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\tdef |^\tclass |^def |^class |^    def /{print}' >/dev/null; python3 -I - <<'E'
+import subprocess,re,unicodedata
+out=subprocess.run(["git","blame","-w","-M","-C","--ignore-revs-file","/tmp/ignore-revs.txt","--line-porcelain","records.py"],capture_output=True,text=True).stdout.split("\n")
+rows=[];cur={}
+for l in out:
+    if l.startswith("author "):cur["a"]=l[7:]
+    elif l.startswith("author-mail "):cur["m"]=l[12:]
+    elif l.startswith("author-time "):
+        import datetime;cur["d"]=datetime.date.fromtimestamp(int(l[12:])).isoformat()
+    elif l.
+ - Bash: git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt -L 509,519 records.py | cat; git log --author=Marcus --format='%h %s' -- records.py | cat; git log --all --format='%h %an %s' -S_reduce_datetimes -- records.py | cat
+ - Bash: git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt records.py | grep -n 'Marcus' | cat; git show 7557b2c --stat --format='%h %an %ad %s' | cat; grep -n LEGACY_SKIP records.py
+ - Bash: grep -rnE '_normalize_keys|_chunked|_coerce_row|_describe|_reduce_datetimes|LEGACY_SKIP' --include=*.py . | grep -v 'def '
+ - Bash: grep -rnE --include='*.py' '_normalize_keys|_chunked|_coerce_row|_describe|_reduce_datetimes|LEGACY_SKIP' . | grep -v 'def '
+FINAL ANSWER:
+Blame is done, so I'm writing up the results now. I ran `git blame` with `-w -M -C` and ignored the black and pre-commit reformat commits (`abe2ea7`, `0e8fe2e`, `3844430`). I merged identities that differ only by case or accent.
+
+**Whose code survives (1062 lines of Python)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Kenneth Reitz | 435 | 41% |
+| Jan Vlčinský | 119 | 11% |
+| Greg Troszak | 89 | 8% |
+| Chad Whitacre | 85 | 8% |
+| Harold Cooper | 51 | 5% |
+| Dana Okafor | 50 | 5% |
+| Joakim Uddholm | 45 | 4% |
+| mcdallas | 26 | 2% |
+
+Reitz wrote the original core. Vlčinský owns most of `tests/conftest.py` and `tests/test_transactions.py`.
+
+**`records.py` (622 lines)**
+- **Reitz, 51%:** `Record`, `RecordCollection` and most of `Database` and `Connection`. He also wrote most of `cli` (70 of 92 lines) and `_reduce_datetimes`. His last touch was March 2024.
+- **Troszak, 9%:** `transaction`, `Connection`, `get_connection`. He also wrote part of `bulk_query_file` and part of `query`.
+- **Okafor, 6%:** `_normalize_keys`, `_chunked` and `_describe`.
+- **Whitacre, 6%:** `first`, `one` and `isexception`.
+- **Smaller contributors:**
+  - Vlčinský: `print_bytes` and part of `cli`.
+  - mcdallas: context managers.
+  - Doroschenko: `query_file` and `bulk_query_file`.
+
+**Who to ask about `records.py`**
+- **Recent code (`_normalize_keys`, `_chunked`, `_describe`):** Dana Okafor. They wrote the two newest helpers' siblings and are the only recent author with several commits in this file.
+- **`_coerce_row`:** Tomás Ibarra. It is 12 lines and only one commit.
+- **Core design (`Record`, `RecordCollection`, query paths):** Reitz. The last change was in 2024, and the history looks like inherited upstream code.
+- **Transactions:** Troszak.
+
+**Things to know**
+- **Marcus Lindqvist has 25 commits and almost nothing left.** 24 of those commits edited `examples/export_legacy.py`, which has since been deleted. His one `records.py` commit left `LEGACY_SKIP` (lines 14–21), which nothing references. It is dead code. Don't treat him as an owner.
+- **Dana Okafor appears under two identities.** `Dana Okafor <<email redacted>>` and `dana okafor <dokafor@fastmail.example>`. I counted them as one person because the name matches and the commits are weeks apart. I have not confirmed this. Check with Dana before relying on it. A `.mailmap` entry would fix the attribution once you confirm.
+- **Three newest helpers are barely used.** `_coerce_row` and `_describe` have no callers, not even in tests. `_normalize_keys` and `_chunked` are only called from tests. The newest authors' code is the least exercised, so it's the place to ask what they intended.
+- **Smaller issues:**
+  - Jan Vlčinský and Paul Voelker also appear under two identities each.
+  - The ignore list is only in `/tmp`. Add the reformat commits to a `.git-blame-ignore-revs` file in the repo so your blame matches this one.
+
+I haven't changed anything in the repo.
+META cost=0.1480916 ms=54710 turns=11

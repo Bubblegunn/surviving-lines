@@ -1,0 +1,25 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -a | head -30; find . -name CODEOWNERS -not -path "./node_modules/*"; echo ---; git shortlog -sne --no-merges -- lib/index.js | head; echo ---; git log --since="1 year ago" --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head
+ - Bash: ls lib .github; git log --format='%h %an %ad %s' --date=short -- lib/index.js | head -20; echo ---; git log --format='%an' | sort | uniq -c | sort -rn | head; grep -n -A5 -i '"contributors"\|"author"' package.json
+FINAL ANSWER:
+No CODEOWNERS file exists, so I used the git history and `package.json`.
+
+**Troy Goode** is the best choice for reviewer.
+- They are the `author` in `package.json`.
+- They made the most recent real change to `lib/index.js` (`b2005d9`, "annotate handlers", 2026-04-10).
+- They have 122 commits in the repo overall, and many of them touch this file.
+
+**Douglas Christopher Wilson** is a good second reviewer.
+- He has the most commits in the repo (143).
+- He wrote several of the behavioral fixes in this file, such as the `Vary` headers, the missing `methods` option and frozen options.
+- His last commit to this file was in 2017, so check whether he is still active before you ask.
+
+Ignore **Fiona Formatter** (`62628c0`). That commit only reformatted the file, so it doesn't indicate ownership. The same is true of `LuisEGR` (2021, lint cleanup).
+
+The repo has no CODEOWNERS file. If you want automatic review requests for this file, add `.github/CODEOWNERS` with a line like `/lib/index.js @troygoode`. I haven't made that change.
+META cost=0.0413405 ms=11001 turns=3

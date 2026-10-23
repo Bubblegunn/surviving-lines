@@ -1,0 +1,45 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | wc -l && git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head -8; git show --stat --format='%h %an %ad' 62628c0 | tail -3; ls .mailmap 2>&1 | head -1
+ - Bash: for mode in plain ignore; do echo "== $mode"; for f in $(git ls-files); do if [ $mode = ignore ]; then git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f"; else git blame --line-porcelain -- "$f"; fi | grep '^author ' ; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR;i++){split(a[i],p," "); printf "%s  %.1f%%\n", a[i], p[1]*100/t}; print t" lines"}'; done
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that is still here. Plain `git blame` gives a misleading answer because of the latest commit.
+
+The count covers 1,995 surviving lines in 18 tracked files.
+
+**Plain `git blame`: misleading**
+- Fiona Formatter shows 50.9% of lines. All of that comes from commit `62628c0` (`style: reformat js with 4-space indent and double quotes`).
+- That commit rewrote 1,016 lines in 4 files, but it only changed whitespace and quote style.
+
+**With the reformat ignored: real ownership**
+I ran `git blame -w -M -C --ignore-rev 62628c0`.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Alejandro Caravaca Puchades | 30 | 1.5% |
+| Linus Unnebäck | 26 | 1.3% |
+| Ollie Buck | 17 | 0.9% |
+
+About 35 more people each own 16 lines or fewer, and `dependabot[bot]` owns 10 lines. Efe owns 6 lines (0.3%).
+
+**Caveats**
+- Troy Goode and Douglas Christopher Wilson together own about 72% of the surviving code. The share is concentrated in the original authors.
+- The repo has no `.mailmap`, so some people are probably counted twice. `alex94puchades` (4 lines) looks like the same person as Alejandro Caravaca Puchades, which would make that person's total about 34 lines.
+- `-w` also ignores whitespace-only changes made by other commits. Those lines go to whoever last changed their content.
+- I used `--ignore-rev` for the reformat only. Other mechanical changes, such as `b2005d9 lib: annotate handlers`, still count as authorship. That commit is small, so the effect should be minor.
+
+I haven't checked which person owns which file. I can break ownership down per file if you want.
+META cost=0.0696126 ms=20340 turns=5

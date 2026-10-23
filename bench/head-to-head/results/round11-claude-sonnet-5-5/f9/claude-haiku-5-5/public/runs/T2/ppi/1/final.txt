@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib directory"}
+ - Bash: ls lib && echo --- && git ls-files lib | wc -l && echo --- && for f in $(git ls-files lib); do echo "$f | $(git log --all --no-merges --pretty=format:'%an' -- "$f" | sort | uniq -c | sort -rn | awk '{c[NR]=$0} END{for(i=1;i<=NR&&i<=3;i++) printf "%s; ", c[i]}')"; done
+ - Bash: wc -l lib/index.js && echo --- && git log --all --no-merges --format='%h %ad %an' --date=short -- lib/index.js | head -50 && echo --- && git log --all --no-merges --format='%an' -- lib/index.js | sort | uniq -c | sort -rn && echo --- && git log -1 --format='%ad %an' --date=short -- lib/index.js && echo --- && git log --all --no-merges --since="6 months ago" --format='%an' -- lib/index.js | sort | uniq -c && echo --- && git log --all --no-merges --since="90 days ago" --format='%an %ad' --date=short -- lib/index.js && echo --- && git log --all --format='%an %ad' --date=short -n 1 && echo --- && git shortlog -sn --all --no-merges | head -20 && echo --- && grep -rn "require(.*lib\|from .*lib/\|/
+ - Bash: echo "--- blame (current lines) ---" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo "--- total commits ---" && git rev-list --all --no-merges -- lib/index.js | wc -l && echo "--- reformat commit ---" && git show --stat --format='%h %an %ad %s' 62628c0 -- lib/index.js | head -5 && echo "--- refs to lib in repo ---" && grep -rn --exclude-dir=node_modules --exclude-dir=.git -E "lib/|require\(.\.\/lib" . | grep -v "^./CHANGELOG\|^./History" | head -15; echo "--- test deps ---"; grep -rln "require('../\|require(\"../" test 2>/dev/null | head -5; ls test 2>/dev/null | wc -l
+FINAL ANSWER:
+## Bus factor of `lib/`: 1 (effectively 0 active maintainers)
+
+**Answer:** `lib/` is one file, `lib/index.js` (238 lines). It is the package entry point (`package.json` `"main"`). One person, Troy Goode, has written about half its history, and nobody has touched it in the last 6 months. If Troy left today, nobody active would understand the file. Strictly by commit history, you would need to lose about 4 people before no past author remains (Troy, Douglas Christopher Wilson, Alejandro Caravaca Puchades, Simon Mansfield), but those authors have been dormant since 2013–2017.
+
+| Metric | Value |
+|---|---|
+| Files in `lib/` | 1 |
+| Non-merge commits (all time) | 62 |
+| Unique authors (all time) | 24 |
+| Troy Goode commits | 29 of 62 (47%) |
+| Commits in last 6 months | 0 |
+| Last substantive commit | Troy Goode, 2026-04-10 |
+| Last commit (any) | Fiona Formatter, 2026-04-12 |
+
+**Caveat on the ownership numbers:** commit `62628c0` (Fiona Formatter, 2026-04-12, "reformat js with 4-space indent and double quotes") rewrote 214 of the 238 lines. A plain `git blame` now credits Fiona for 214 lines and Troy for 20. That reflects formatting, not knowledge, so I used commit history (excluding the reformat) for the 47% figure. Read the blame numbers with that in mind.
+
+**Importance:** the file is the public entry point, so it is high-impact. Within this repo, the only reference is `package.json` `main`. Test files exist alongside it, but I did not confirm which of them load `lib/index.js`. Dependents outside the repo are unknown from here.
+
+**Risk:** critical. High-impact code, one historical owner who has been gone for 6+ months, and no recent maintainer.
+
+**Recommendations:**
+1. Immediate: get a current maintainer to review and own `lib/index.js` (pairing with Troy if reachable).
+2. Short term: write down the non-obvious behavior of the entry point, since the last substantive logic changes date back years.
+3. Ongoing: keep the format-only commits separate from logic commits so future `git blame` still shows who knows the code.
+
+I did not run the 6-month or 1-year periods separately: the 6-month window is empty, and the full history is what matters for this one-file directory.
+META cost=0.00721681 ms=33540 turns=6

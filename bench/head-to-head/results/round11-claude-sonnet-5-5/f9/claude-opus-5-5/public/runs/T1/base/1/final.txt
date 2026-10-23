@@ -1,0 +1,34 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short -8 && git ls-files | head -50 && git ls-files | wc -l && git show --stat 62628c0 b2005d9 02afce3 | head -60
+ - Bash: git show b2005d9 | head -60; git show 62628c0 -w --stat | tail -3; ls -a; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20
+ - Bash: blame(){ for f in $(git ls-files); do git blame --line-porcelain "$@" -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -8; echo ---; }; echo NAIVE; blame; echo IGNORE_FMT_AND_ANNOT; blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9; echo "CODE ONLY (lib+test), same ignores"; for f in $(git ls-files lib test | grep '\.js$'); do git blame --line-porcelain -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -8; echo; echo "lib/index.js only"; git blame --line-porcelain -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 -- lib/index.js | sed -n 's/^author //p' | sort | uniq -c | sort -rn
+ - Bash: git ls-files | xargs cat | wc -l; git ls-files lib test | grep '\.js$' | xargs cat | wc -l; for f in README.md HISTORY.md; do echo $f; git blame --line-porcelain -w -M -C -- $f | sed -n 's/^author //p' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+Troy Goode owns most of the code still in the repo. Douglas Christopher Wilson is a clear second. A plain `git blame` gives a misleading answer, because two recent commits rewrote lines without changing what they do.
+
+**Why plain blame is wrong here**
+- `62628c0` by Fiona Formatter (2026-04-12) only reformatted the files: 4-space indent and double quotes. It touched 1016 lines, so plain blame credits her with 1016 of 1993 lines. She wrote none of that logic. `-w` doesn't fix this, because changing quotes is more than a whitespace change.
+- `b2005d9` by Troy (`troy@laptop.example`) only added `// checked` comments to 12 lines in `lib/index.js`.
+- I re-ran blame with `--ignore-rev` for both commits, plus `-w -M -C` so lines that were moved or copied keep their original author. Troy's two emails count as one person, and so do `alex94puchades` and Alejandro Caravaca Puchades.
+
+**Who wrote the surviving lines**
+
+| Scope | Troy Goode | Douglas C. Wilson | Next |
+|---|---|---|---|
+| Whole repo (1993 lines) | 808 (~41%) | 629 (~32%) | Íñigo Marquínez Prado 95, Jon Church 72 |
+| JS code in `lib/` + `test/` (1202) | 674 (~56%) | 394 (~33%) | Alejandro Caravaca Puchades 30 |
+| `lib/index.js`, the actual library (238) | 157 (~66%) | 22 (~9%) | Alejandro 16, Raymond Feng 9 |
+
+- **Troy** wrote most of the library logic and most of `README.md` (116 lines).
+- **Douglas** has the most commits (143 against Troy's 120). His surviving lines are mostly tests and `HISTORY.md`, and he has little left in `lib/index.js`.
+- The other contributors each have small, scattered pieces. Much of what Íñigo, Jon Church, Sebastian Beltran and Ulises Gascón still have is CI/workflow config and README text, not library code.
+
+The ownership I'm describing is authorship of surviving lines, not who knows the code best today.
+
+To see these numbers in normal `git blame` output, put `62628c0` and `b2005d9` in a `.git-blame-ignore-revs` file and run `git config blame.ignoreRevsFile .git-blame-ignore-revs`. GitHub's blame view also reads that file.
+META cost=0.188863 ms=29754 turns=5

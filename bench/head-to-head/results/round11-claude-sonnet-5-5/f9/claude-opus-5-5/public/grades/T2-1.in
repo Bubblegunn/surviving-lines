@@ -1,0 +1,226 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4).
+
+TASK PROMPT:
+What is the bus factor of the lib directory? If people leave, how many does it take before nobody understands it?
+
+CRITERIA:
+1. States a bus factor of 1 for lib/ (or says one person, Troy Goode, holds the majority).
+2. Troy Goode share of lib/ between 60% and 72% (or lines 150 to 170 of about 238).
+3. The reformatter is not named as the dominant owner of lib/.
+4. States how the figure was computed (definition, unit: lines or commits).
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib"}
+ - Bash: cd "$PWD"; find lib -type f | head -50; echo ---; for f in $(find lib -type f -name "*.js"); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; echo; done; echo ---; git log -5 --stat --pretty=format:"%h %an %ad %s" --date=short | head -60
+ - Bash: echo "== blame raw"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "== blame ignoring reformat"; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "== last commit per author on lib"; git log --no-merges --pretty=format:"%ad|%an|%ae" --date=short -- lib/index.js | sort -t'|' -k2,2 -u | sort -r | head -30; echo; echo "== total lines"; wc -l lib/index.js; echo "== 1y"; git log --no-merges --since=2025-10-23 --pretty=format:"%ad %an %s" --date=short -- lib/index.js
+ - Bash: grep -E '"(name|main)"' package.json; grep -rl "lib\|require('\.\./\|require(\"\.\./" test --include=*.js | xargs grep -l "\.\./" ; git log --no-merges --pretty=format:"%an" -- lib/index.js | wc -l; git log --no-merges --since=2025-10-23 --pretty=format:"%an" | sort | uniq -c
+FINAL ANSWER:
+## 🚌 lib/ bus factor: **1**
+
+Period: all history. Generated 2026-10-23. Scope is `lib/`, which holds one file: `lib/index.js` (238 lines). That file is the package entry point (`"main": "./lib/index.js"`), so the whole `cors` package depends on it.
+
+**Answer:** one person has to leave before nobody understands it. That person is **Troy Goode**.
+
+---
+
+### Raw blame is misleading
+
+Run plain `git blame` and **Fiona Formatter** owns 214 of 238 lines (90%). That comes from one commit, `62628c0 style: reformat js with 4-space indent and double quotes` (2026-04-12). It changed indentation and quotes and nothing else. I re-ran blame without that commit and with whitespace ignored (`git blame -w --ignore-rev 62628c0`):
+
+| Author | Lines (real) | % | Commits | Last commit to lib |
+|---|---|---|---|---|
+| Troy Goode | 159 | **67%** | 29 / 61 | 2026-04-10 |
+| Douglas Christopher Wilson | 22 | 9% | 4 | 2017-10 |
+| Alejandro Caravaca Puchades (and alias `alex94puchades`) | 16 | 7% | 5 | 2015-05 |
+| Raymond Feng | 7 | 3% | 1 | 2015-01 |
+| 15 others | 34 | 14% | 1–3 each | 2013–2021 |
+| Fiona Formatter | 0 | 0% | 1 (formatting only) | 2026-04-12 |
+
+### Why the answer is 1
+
+- If Troy leaves, the people left own 33% of the logic. That is below the 50% threshold.
+- Everyone else in the table last touched `lib/` between 2013 and 2021, so their knowledge of it is 5–13 years old.
+- Only two people have committed to `lib/` in the past year: Troy (real change) and Fiona (formatting only).
+- No one has committed to `lib/` in the last 90 days. The last commit was 2026-04-12, about 6 months ago. Troy is "active" only in the sense that he committed this year.
+
+| Metric | Value |
+|---|---|
+| Files analyzed | 1 |
+| Bus factor | 1 |
+| Primary owner | Troy Goode (67% of lines, 47% of commits) |
+| Dependents | The whole package (it is the entry point) |
+| Risk | 🔴 **CRITICAL** |
+
+```
+lib/
+└── index.js  [██████████] 🔴 Bus Factor: 1 (Troy Goode 67%; no other active owner)
+```
+
+### Mitigating factor
+
+The rest of the repo had other active contributors in the past year: Jon Church, Ignacio Mangas, Ulises Gascón, Phillip Barta and Vansh Sharma. None of them changed `lib/`, but they could take it over. The file is also small (238 lines) and has tests (`test/`), so someone new could learn it quickly.
+
+### Recommendations
+
+1. **Immediate:** have one of the active maintainers (Jon Church or Ulises Gascón) review Troy's next changes to `lib/index.js`, or pair with Troy on them.
+2. **Short-term:** add a `.git-blame-ignore-revs` file that lists `62628c0`. Without it, blame and ownership tools (and GitHub's blame view) will keep showing Fiona Formatter as the owner.
+3. **Ongoing:** document the option-handling and preflight logic in `lib/index.js`, and require a second reviewer for changes to `lib/`.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T2-base-1/repo; ls lib; git log --format='%h %an <%ae> %ad %s' --date=short -8 -- lib; echo; git shortlog -sne -- lib | head -20
+ - Read: {"file_path": "/private/tmp/claude-501/-Users-efe-claude-kredi-runs-2026-10-23-r11-f9-claude-opus-5-5-P-runs-T2-base-1-repo/d13d74c8-a245-477b-8dd2-26fb7da9b643/tasks/biin9veks.output"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T2-base-1/repo; git shortlog -sne HEAD -- lib </dev/null; echo; wc -l lib/index.js; echo "--- raw blame"; git blame --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "--- blame -w -M -C ignoring 62628c0 b2005d9"; git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show --stat b2005d9 | head; git show b2005d9 -- lib | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T2-base-1/repo; for a in "Troy Goode" "Douglas Christopher Wilson" "Alejandro" "alex94puchades"; do echo "$a: $(git log --author="$a" --format='%ad' --date=short HEAD -- lib | sed -n '1p;$p' | tr '\n' ' ')"; done; git log --format='%ad %an %s' --date=short -3 HEAD --author='Troy Goode' -- lib
+FINAL ANSWER:
+The first background command was stopped after it hit its time limit. Its `git shortlog` had no revision, so it waited for input on stdin. The other parts of that command had already printed their output, and I ran the shortlog again with `HEAD`, so no data is missing. The answer does not change: the bus factor of `lib/` is 1.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "bus factor of lib"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>"; $SL -- lib; echo ======; $SL --merge-identities -- lib; echo =====; $SL --files -- lib
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $S -- lib; echo ======; node $S --merge-identities -- lib; echo ======; node $S --files -- lib
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $S --merge-identities -- lib 2>&1 | head -30; node $S --files -- lib 2>&1 | head -20; git show --stat fcd2b56 | head -15; git show --stat 62628c0 | head -10
+FINAL ANSWER:
+**The bus factor of `lib/` is 1.** Troy Goode holds about two thirds of the code still in it.
+
+I counted surviving lines with git blame (`git blame -w -M -C`) at HEAD. `lib/` has one file, `lib/index.js`: 214 non-blank lines, or 238 counting blank lines. Bus factor here means the smallest number of authors whose surviving lines together reach 50% of the lines.
+
+| | Bus factor (50%) | Authors needed to reach 80% |
+|---|---|---|
+| Troy's two addresses counted as one person (likely) | **1** | 3 |
+| Each address counted on its own | 1 | 4 |
+
+**Who holds the lines (both addresses merged as one person):**
+- Troy Goode: 144 lines, 67.3% (66.8% counting blank lines), 33 commits. Last commit 2026-04-10.
+- Douglas Christopher Wilson: 20 lines, 9.3%. Last commit 2021-09-07.
+- Alejandro Caravaca Puchades: 14 lines, 6.5%. Last commit 2015.
+- LuisEGR and Raymond Feng: 6 lines each, 2.8%.
+- max.laverse: 5 lines, 2.3%.
+- Benjamin Eidelman and Igor Soarez: 3 lines each, 1.4%.
+- Alberto Leal and Mathias Buus: 2 lines each, 0.9%.
+- 14 more authors: 4.2% together.
+
+**Notes on the numbers:**
+- **Duplicate identity, not confirmed:** Troy Goode appears under two addresses: `<email redacted>` (132 lines, 61.7%) and `troy@laptop.example` (12 lines, 5.6%). Same name, so this is probably one person, but it is a guess from names and addresses. Either way the bus factor is 1, because the gmail address alone holds 61.7%. I did not write a `.mailmap`.
+- Alejandro Caravaca Puchades also appears as `alex94puchades`. Same email address, so the tool already counts them as one.
+- **Formatter commit left out:** `62628c0` by Fiona Formatter only changed indentation and quotes. Without this correction it would take 32 lines (15%) of `lib/`, and Troy would drop to 57.5%. The bus factor would still be 1.
+- `fcd2b56` (Troy's ESLint cleanup, 5 lines) also looks mechanical. I kept it in, because it is Troy's own commit.
+- These figures use the default copy detection (`-C`).
+
+**About "nobody understands it":** this measures whose code is still there, not who understands it. Review, pairing and design work leave no lines in git blame. In practice the risk is high. If Troy left, the next largest holder has 9.3%, and that person's last commit was in 2021. Most other contributors made one commit years ago. So one departure would leave nobody with a large stake in `lib/index.js`.

@@ -1,0 +1,47 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-ours-1/repo && $SL --reviewers src --merge-identities; echo ======; $SL -- src; echo =====; $SL --group-by dir --merge-identities -- src | head -80
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --reviewers src --merge-identities; echo ======; node $S -- src; echo =====; node $S --group-by dir --merge-identities -- src | head -80
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; git show --stat c584a1d | head -30; echo "-----"; node $S --reviewers src --ignore-rev c584a1d | head -20; echo "-----"; node $S -- src | head -40; echo "-----"; node $S --group-by dir --merge-identities -- src | head -40
+FINAL ANSWER:
+**Short answer:** Andrew Gallant wrote most of the code in `src/` that is still there, and they are the one to ask first. Sam Whitfield and Mei Tanaka are the best active second reviewers.
+
+**Scope.** I counted surviving lines with `git blame -w -M -C` at HEAD. That covers 8 files and 2,889 non-blank lines (3,262 with blank lines). Nothing was dropped as generated, vendored or a lockfile, and the output listed no bots.
+
+**Who wrote the code in `src/`**
+
+| Author | Lines | Share | Commits | Last commit | Status |
+|---|---|---|---|---|---|
+| Andrew Gallant | 2,217 | 76.7% | 56 | 2026-01-14 | active |
+| Sebastian Thiel | 66 | 2.3% | 1 | 2023-09-05 | inactive |
+| Ashley | 65 | 2.2% | 1 | 2017-07-18 | inactive |
+| Aron Griffis | 56 | 1.9% | 1 | 2018-08-22 | inactive |
+| mcharsley | 43 | 1.5% | 1 | 2017-05-09 | inactive |
+| Niv Kaminer | 43 | 1.5% | 2 | 2017-10-01 | inactive |
+
+- Another 32 authors hold the rest. The largest is Thayne McCombs at 0.7%.
+- Sam Whitfield holds 34 lines (1.2%), with a last commit on 2026-03-23.
+- Mei Tanaka holds 13 lines (0.4%), with a last commit on 2026-02-03.
+
+**Who to ask**
+- **Andrew Gallant:** 76.7% of the lines, and the only large owner who is still active.
+- **Sam Whitfield or Mei Tanaka:** both are active, but they hold few lines. Treat them as a second pair of eyes, not as owners.
+- **Sebastian Thiel and Ashley:** they hold the next most lines, but neither has committed in over a year. By line count they are the next owners after Andrew Gallant.
+
+**Bus factor (line-based).** The bus factor is the smallest number of authors whose surviving lines together reach 50% of the lines counted. It is **1** for all of `src/`, because Andrew Gallant alone holds 76.7%. Reaching 80% takes 3 authors. Counting blank lines, the bus factor is still 1, and reaching 80% takes 2 authors.
+
+**Caveats**
+- **Moved code:** 1,579 of the 2,889 lines (54.7%) were written in other paths and moved or copied into `src/`. The largest sources are `src/tests/recursive.rs`, `src/lib.rs` and `src/tests/util.rs`. Credit goes to whoever wrote the lines, not to whoever moved them. That includes the recent rename from `src/tests` to `src/testsuite`.
+- **Copy detection:** the figures use `-w -M -C`. Without copy detection, Andrew Gallant would hold 80.5% (2,326 lines), Sam Whitfield 2.5% (72 lines) and Garrett Berg 0.0% (0 lines). With it they hold 76.7%, 1.2% (34 lines) and 1.1% (33 lines).
+- **Mechanical rewrites:** I checked for them. The tool set aside none. It flagged one commit as possibly mechanical: `c584a1d` "style: switch to rustfmt" by Andrew Gallant, which has 122 surviving lines. `git show --stat` confirms it reformatted several files across the repo, including `src/`. The tool kept it in the counts. Excluding it with `--ignore-rev` gives Andrew Gallant 2,210 lines (76.5%), so the conclusion does not change.
+- **Duplicate identities:**
+  - `nivkner` and Niv Kaminer share one address (`<email redacted>`). They are already counted as one person, Niv Kaminer, with 43 lines.
+  - `Alisha` and Alisha Aneja share `<email redacted>`. They are also counted as one, and the 9 lines are not in the top rows.
+  - Ashley (`<email redacted>`) and Ashley Mannix (`<email redacted>`) might be the same person. That is only a weak guess from the names, and I did not merge them. Unmerged, Ashley has 65 lines and Ashley Mannix has 4. Merged, they would hold 69 lines (2.4%). Only you can confirm it. I did not write a `.mailmap` file.
+- **What these numbers can't show:** code quality, review work, design done outside the code, or code that was deleted on purpose.
+META cost=0.0891516 ms=27966 turns=6

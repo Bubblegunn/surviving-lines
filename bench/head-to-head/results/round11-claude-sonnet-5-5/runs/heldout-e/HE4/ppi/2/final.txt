@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser/ \u2014 who should review changes; weight by surviving lines (git blame), not commit count"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls src/Parser 2>&1 | head -50; git ls-files src/Parser | wc -l
+ - Bash: cat .mailmap; echo ---; for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^|$f |"; done > /tmp/blame.txt; echo "per author (surviving lines):"; awk '{ $1=""; print }' /tmp/blame.txt | sort | uniq -c | sort -rn; echo; echo "per file:"; sort /tmp/blame.txt | uniq -c | sort -k2,2 -k1,1rn; echo; echo "commit-count for contrast:"; git log --no-merges --pretty='%aN' -- src/Parser | sort | uniq -c | sort -rn; echo; echo "last commit per author:"; git log --pretty='%aN|%ad' --date=short -- src/Parser | awk -F'|' '!s[$1]++'
+FINAL ANSWER:
+Reviewers for `src/Parser/`: **Graham Campbell** and **Priscila Duarte**.
+
+Surviving lines come from `git blame -w -M -C` on HEAD. The `-w` flag ignores whitespace, so the tab-reindent commit (`45259fd`) doesn't count as authorship. `.mailmap` merges Graham's and Priscila's alternate emails.
+
+| Author | Lines now | Share | Last commit in `src/Parser/` |
+|---|---|---|---|
+| Graham Campbell | 782 | 86% | 2026-08-24 |
+| Priscila Duarte | 118 | 13% | 2026-09-08 |
+| Vance Lucas | 10 | about 1% | not in the commit log; 2022 or earlier |
+| Jonas Staudenmeir | 1 | under 1% | 2024-07-20 |
+| JT Smith | 1 | under 1% | 2022-10-15 |
+
+**Graham Campbell** wrote most of the current code. He owns every line of `EntryParser.php` (363), `Value.php`, `Lexer.php`, `Parser.php`, `ParserInterface.php` and most of `Entry.php`. He owns 125 of the 136 lines in `Lines.php`.
+
+**Priscila Duarte** wrote all of `Comments.php` (56 lines) and `Interpolator.php` (62 lines). She has only 2 commits there, but they are the code that exists now. For a change to comment or `${VAR:-default}` handling, she should be the primary reviewer.
+
+**Marta Kowalczyk** and **StyleCI Bot** each have one commit in this directory but no surviving lines.
+
+Who to ask depends on the file:
+- **`Comments.php` or `Interpolator.php`:** Priscila is primary and Graham is second.
+- **Any other file:** Graham is primary. Priscila is the second reviewer, though she has little code there.
+
+Bus factor is low. One person wrote 86% of the directory, and everything outside Comments and Interpolator is effectively Graham's alone. Having Priscila review changes to `EntryParser.php` and `Lines.php` would spread that knowledge.
+
+I ran the git commands myself instead of the skill's workflow. The skill ranks owners by commit count, which is the measure you asked me not to use.
+META cost=0.0678924 ms=18589 turns=6

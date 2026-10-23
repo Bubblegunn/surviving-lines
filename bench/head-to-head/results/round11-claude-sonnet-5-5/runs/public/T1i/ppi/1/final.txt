@@ -1,0 +1,68 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git rev-list --count HEAD; git shortlog -sne HEAD | head -15; git ls-files | grep -E '\.(js|ts|json)$' | grep -v node_modules | wc -l; git ls-files | head -50
+ - Bash: git log --format='%h %an %ad %s' --date=short -3 -- . | head; echo; for f in lib/index.js test/*.js test/support/env.js package.json README.md HISTORY.md .eslintrc.yml .github/workflows/*.yml; do echo "== $f"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -6; done; echo; echo ALL-NO-IGNORE; git blame -w --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -4; echo; git log -1 --format='%an %ad' --date=short 62628c0
+ - Bash: agg(){ for f in $(git ls-files "$@"); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn; }; echo JS; agg 'lib/*.js' 'test/*.js' | awk '{t+=$1;print} END{print t" total"}' | head -8; echo ALL; agg | awk '{t+=$1;a[NR]=$0} END{for(i=1;i<=8;i++)print a[i]; print t" total"}'; echo; for n in "Troy Goode" "Douglas Christopher Wilson" "Jon Church" "Alejandro Caravaca Puchades" "Ulises Gascón" "Sebastian Beltran" "Efe"; do echo "$n $(git log --author="$n" -1 --format=%ad --date=short)"; done; echo; git log --since=2025-10-22 --format=%an | sort | uniq -c | sort -rn | head -5; git log --s
+ - Bash: for f in lib/index.js test/*.js test/support/env.js; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -c '^author '; done | paste -sd+ | bc; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- lib/index.js | grep -c '^author '
+ - Bash: t=0; for f in lib/index.js test/*.js test/support/env.js; do n=$(git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -c '^author '); t=$((t+n)); done; echo $t
+FINAL ANSWER:
+## Bus factor: 2
+
+Ownership here means surviving lines, from `git blame -w -M -C` with the repo's `.git-blame-ignore-revs`. That file excludes the 2026-04-12 reformat (`62628c0`), so Fiona Formatter doesn't own lines she only re-indented. I didn't use the skill's commit-count method, since you asked who owns the code that's still here.
+
+Troy Goode and Douglas Christopher Wilson together own 72% of all lines. That is more than 50%, so losing those two people leaves most of the code with no knowledgeable maintainer.
+
+### Surviving lines
+
+| Scope | Troy Goode | Douglas C. Wilson | Everyone else |
+|---|---|---|---|
+| All tracked files (1997 lines) | 810 (40.6%) | 629 (31.5%) | 558 (27.9%) |
+| JS source and tests (1202 lines) | 676 (56.2%) | 394 (32.8%) | 132 (11.0%) |
+| `lib/index.js` (238 lines, the only source file) | 159 (66.8%) | 22 (9.2%) | 57 (24.0%) |
+
+Troy and Wilson together own 89% of the JS.
+
+### Owner activity
+
+| Owner | Share of lines | Last commit | Status |
+|---|---|---|---|
+| Troy Goode | 40.6% | 2026-04-10 | Active within the last 6 months, but nothing since. |
+| Douglas C. Wilson | 31.5% | 2021-09-07 | Inactive for about 5 years. |
+
+Wilson's lines are still in the code, but nobody who recently touched them is around to explain them.
+
+### Per-file ownership
+
+| File | Main owner | Share | Risk |
+|---|---|---|---|
+| `lib/index.js` | Troy Goode | 67% | **High.** It is the only source file, and no one besides Troy owns more than 10%. |
+| `test/vary.js` | Troy Goode | 100% (36 lines) | Low. It is a small test file. |
+| `test/test.js` | Wilson 339 / Troy 317 | 49% / 45% | Medium. The two owners are the only substantial ones. |
+| `test/error-response.js`, `test/example-app.js`, `test/issue-2.js` | Troy Goode | about 80–85% | Low to medium. Wilson owns the rest. |
+| `test/support/env.js`, `.eslintrc.yml` | Wilson | 100% | Low. They are tiny. |
+| `.github/workflows/ci.yml` | Wilson | 118 of 220 lines (54%) | Medium. Ignacio Mangas (44), Ulises Gascón (30) and Íñigo Marquínez Prado (26) own the rest. |
+| `.github/workflows/codeql.yml` | Sebastian Beltran | 95% | Low. He was last active 2025-07-23. |
+| `.github/workflows/scorecard.yml` | Íñigo Marquínez Prado | 95% | Low. |
+| `README.md` | Troy 116 of 254 lines (46%) | | Spread across Jon Church, Linus Unnebäck, Ollie Buck and others. |
+| `HISTORY.md` | Wilson | 50 of 64 lines (78%) | Low. It is the changelog. |
+| `package.json` | Wilson 20 / Troy 12 | | Low. |
+
+### Recommendations
+
+1. **Immediate:** have someone other than Troy review the logic in `lib/index.js` and write down the handler behaviour. Wilson left in 2021, so Troy is the only active person who knows that file.
+2. **Short-term:** keep `test/test.js` under shared ownership, since Wilson wrote about half of it. Jon Church (last active 2026-01-16) and Ulises Gascón (2026-01-22) are the most recent other contributors, and either could take more review work.
+3. **Ongoing:** keep `.git-blame-ignore-revs` updated when new bulk reformats land. Without it, Fiona Formatter would show as the owner of 32 lines in `lib/index.js`.
+
+### Caveats
+
+- I matched authors by name. Troy Goode appears under two emails and is counted as one person.
+- `-w` ignores whitespace changes, and `-M -C` follows lines moved or copied between files.
+- I didn't run the dependents check from the skill. The repo has one source file, so import counts wouldn't change the result.
+- Blame shows who wrote a line, not who understands it today. Wilson's 31.5% is likely overstated for that reason, because he has been inactive for years.
+META cost=0.10751270000000002 ms=37064 turns=9

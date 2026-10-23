@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //; s/^/$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; e=$2; $1="";$2=""; sub(/^ +/,""); if(!(e in seen)){seen[e]=1; print e"\t"c"\t"$0}}'
+FINAL ANSWER:
+Top owner per extension, by surviving lines from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension | Douglas Christopher Wilson | 17 |
+
+- The line counts are the top owner's lines only, not the total lines per extension.
+- `-w` ignores whitespace-only changes, so the 4-space reformat in `62628c0` doesn't take over ownership. I didn't check whether the quote changes in that commit did.
+- Authors are matched by name, so one person committing under several names counts as several authors.
+META cost=0.044997999999999996 ms=11986 turns=3

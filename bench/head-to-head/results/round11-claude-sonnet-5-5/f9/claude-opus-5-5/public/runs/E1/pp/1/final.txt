@@ -1,0 +1,61 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-pp-1/repo; git log --format='%h %an <%ae> %ad %s' --date=short | head -15; git rev-list --count HEAD; git ls-files | grep -v '^\.' | head -50
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-pp-1/repo; git show --stat HEAD HEAD~1 HEAD~2 | head -60; git show HEAD~1 HEAD~2 | head -80; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -25
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-pp-1/repo
+for mode in raw ignore; do echo "=== $mode"; for f in lib/index.js test/test.js test/error-response.js test/example-app.js test/issue-2.js test/vary.js test/support/env.js README.md package.json HISTORY.md .github/workflows/*.yml; do
+  if [ $mode = raw ]; then args=""; else args="-w --ignore-rev 62628c0 --ignore-rev b2005d9"; fi
+  echo "-- $f ($(wc -l <$f) lines)"; git blame --line-porcelain $args -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -4
+done; done 2>&1
+echo "=== commits touching file (non-bot, excl. reformat/annotate)"
+for f in lib/index.js test/test.js test/vary.js test/issue-2.js t
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-pp-1/repo
+for f in lib/index.js test/test.js test/error-response.js test/example-app.js test/issue-2.js test/vary.js; do
+  echo "-- $f"; git blame --line-porcelain -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 -- "$f" | grep -E '^author(-mail)? ' | paste - - | sed 's/author //;s/\tauthor-mail / /' | sort | uniq -c | sort -rn | head -5
+done
+echo "=== commits per file (excl bots, reformat, annotate)"
+for f in lib/index.js test/test.js test/vary.js test/issue-2.js; do echo "-- $f"; git log --format='%h %an' -- $f | grep -v -e dependabot -e 62628c0 -e b2005d9 | awk '{$1="";print}' | sort | uniq -c | sort -rn | head 
+FINAL ANSWER:
+## Bus factor analysis: `cors` (354 commits)
+
+**Short answer:** The core library depends on one person, **Troy Goode** (`<email redacted>`). He wrote about 66% of `lib/index.js` and made 29 of the commits that touch that file. His last commit with that email is from **2019-05-27**. The second-largest contributor, **Douglas Christopher Wilson**, last committed in **2021-09-07**. Neither of the two people who know the core code well is active now.
+
+### Two things in the history would distort a plain `git blame`
+1. **`62628c0` by "Fiona Formatter"** (2026-04-12) reformats the indentation and quotes in 1,016 lines. Plain blame credits Fiona with 214 of 238 lines in `lib/index.js` and 686 of 731 lines in `test/test.js`. That credit is wrong.
+2. **`b2005d9` by "Troy Goode <troy@laptop.example>"** only appends `// checked` to 12 function lines. It changes no logic.
+
+I ran blame with `-w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9`, which skips both commits. All the numbers below come from that run.
+
+### Ownership by area
+
+| Area | Top owner (share of lines) | Second | Risk |
+|---|---|---|---|
+| `lib/index.js` (the whole library) | Troy Goode 157/238 (66%) | D. C. Wilson 22 (9%) | **High**: single owner, inactive since 2019 |
+| `test/error-response.js` | Troy Goode 57/66 (86%) | Wilson 9 | High |
+| `test/example-app.js` | Troy Goode 67/81 (83%) | Wilson 14 | High |
+| `test/issue-2.js` | Troy Goode 40/48 (83%) | Wilson 8 | High |
+| `test/vary.js` | Troy Goode alias, 36/36 (100%) | none | High (see the identity note) |
+| `test/test.js` | Wilson 339/731 (46%) | Troy Goode 317 (43%) | Medium: two owners, both inactive |
+| `.github/workflows/ci.yml` | Wilson 108/220 (49%) | Ignacio Mangas 54, Ulises Gascón 30 | Low-medium |
+| `.github/workflows/codeql.yml` | Sebastian Beltran 63/65 (97%) | none | Medium (small file) |
+| `.github/workflows/scorecard.yml` | Íñigo Marquínez Prado 68/72 (94%) | none | Medium (small file) |
+| `README.md` | Troy Goode 104/277 (38%) | Jon Church 72 | Low: spread across people |
+| `HISTORY.md`, `package.json` | Wilson | Troy Goode | Low |
+
+### Overall picture
+- Troy Goode (120 commits) and Wilson (143 commits) together made 263 of 354 commits, about 74%.
+- In the last 2 years, contributors were Ulises Gascón, Jon Church, Sebastian Beltran, Ignacio Mangas, Phillip Barta and others. Their work is in docs, CI, releases and packaging. None of them owns any real part of `lib/`.
+- **Effective bus factor for `lib/` is 1 historically and 0 among active contributors.** The project depends on a maintainer team that has not written the core logic.
+
+### Identity note
+`troy@laptop.example` is not the same email as `<email redacted>`. It is a reserved `.example` domain, and both of its commits have the same timestamp. I grouped it under Troy Goode by name only. I could not confirm it is the same person, and those commits are 2 of his 122 total. Treat his "2026 activity" as unverified. If you exclude it, his last confirmed activity is still 2019.
+
+### Recommendations
+1. Assign one current maintainer (Ulises Gascón or Jon Church are the most active) to read and document `lib/index.js`. The file has 238 lines, so this is a small job.
+2. Add `.git-blame-ignore-revs` containing `62628c0` so that GitHub blame stops crediting the reformat.
+3. Check where the `troy@laptop.example` commits came from before you trust them.
+META cost=0.2695382 ms=39951 turns=5

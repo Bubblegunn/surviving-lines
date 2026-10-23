@@ -1,0 +1,34 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -v '^vendor/' | wc -l && git ls-files | grep -c '^vendor/'; cat .git-blame-ignore-revs; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git rev-list --count HEAD; git log --reverse --format='%ad' --date=short | head -1; git log -1 --format=%ad --date=short
+ - Bash: git ls-files; git ls-files vendor | head
+ - Bash: for f in attribute.go color.go color_test.go color_windows.go doc.go; do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --ignore-rev dee565e --line-porcelain HEAD -- $f; done | awk '/^author /{a=substr($0,8)} /^author-mail /{m=substr($0,13)} /^\t/{c[a" "m]++; t++} END{for(k in c) printf "%d\t%.1f%%\t%s\n", c[k], 100*c[k]/t, k; print t" total"}' | sort -rn
+echo ---plain
+for f in attribute.go color.go color_test.go color_windows.go doc.go; do git blame -w --line-porcelain HEAD -- $f; done | awk '/^author /{a=substr($0,8)} /^\t/{c[a]++; t++} END{for(k in c) printf "%d\t%.1f%%\t%s\n", c[k], 100*c[k]/t, k; print t" total"}' | sort -rn
+FINAL ANSWER:
+Fatih Arslan holds 57.5% of the live lines (893 of 1,554). Linda_pp is next at 8.8%.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 | 57.5% |
+| 2 | Linda_pp | 136 | 8.8% |
+| 3 | Matthew Hall | 98 | 6.3% |
+| 4 | Greg Poirson (two git names merged) | 64 | 4.1% |
+| 5 | Cameron Moore | 50 | 3.2% |
+
+Below that is a long tail of about 23 more people, each holding 3.1% or less. So it is not strictly a one-person project, but the code is dominated by one person. The second-largest contributor has about 6.5 times fewer lines than the top.
+
+How I counted:
+- **Method:** I ran `git blame` on the current lines of `attribute.go`, `color.go`, `color_test.go`, `color_windows.go` and `doc.go`.
+- **Excluded:** `vendor/`, the generated `attribute_string.go`, docs and config files.
+- **Move and rewrite commits:** I ignored the `interface{}` to `any` rewrite (listed in `.git-blame-ignore-revs`) and the `attribute.go` move (`dee565e`). Without that, Raj Patel shows 10.4% as second place. Raj only moved code and did not write it.
+- **Identity merges:** I merged Greg Poirson with `greg`, which gives 4.1%. I did not merge Albert with `bogem`, though both use the same email. Together they hold 3.3%, which would put them just under Cameron Moore.
+
+I did not check who is still active. The top author has 201 of 300 commits, but I did not check when they or the others last committed. If you want to know whether the current maintainers are active, I can check recent commit dates per person.
+META cost=0.07967220000000001 ms=25520 turns=7

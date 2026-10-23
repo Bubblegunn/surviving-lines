@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short | head -40 && echo --- && git ls-files src | head -50 && ls -a && cat .git-blame-ignore-revs CODEOWNERS .github/CODEOWNERS 2>/dev/null
+ - Bash: for c in 1bd192e 6ecd630 1bc543a 3442e3b 97090d6 b6f2e37; do echo "== $c"; git show --stat --format='%an %s%n%b' $c | head -20; done; echo; ls .github; cat .github/CODEOWNERS 2>/dev/null
+ - Bash: echo NAIVE; for f in $(git ls-files src); do git blame --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo SMART; for f in $(git ls-files src); do git blame -w -M -C -C --ignore-rev 1bc543a --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo; git diff b6f2e37^ b6f2e37 > /tmp/a.diff; git diff 7d18e40 97090d6 > /tmp/b.diff; diff <(grep '^[+-][^+-]' /tmp/a.diff) <(grep '^[+-][^+-]' /tmp/b.diff) && echo REAPPLY_IDENTICAL
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --ignore-rev 1bc543a $f | grep -E 'Sam Whitfield' | sed "s|^|$f: |"; done | head -30; echo; git blame -w -M -C -C --ignore-rev 1bc543a src/util.rs | grep 97090d6 | head -3; git log --format='%an' -- src | sort | uniq -c | sort -rn | head; git log --since=2025-01-01 --format='%h %an %s' -- src
+FINAL ANSWER:
+Plain `git blame` gives a misleading answer here. The last three commits on `src/` were mechanical, and they credit Sam Whitfield with 85 lines they didn't really write. I re-ran blame with whitespace ignored, moved and copied code traced back to where it came from, and the license-header commit skipped. Here is what's left.
+
+**Who wrote the code in `src/` now**
+
+| Author | Lines (corrected blame) | Notes |
+|---|---|---|
+| Andrew Gallant | ~2,560 of ~3,300 | Original author, maintainer, 57 of the commits to `src/` |
+| Sebastian Thiel, Ashley, Aron Griffis, mcharsley, Marvin Löbel, Martin Sehnoutka, Yufeng Wang, Garrett Berg, Jonathan Soo, Niv Kaminer | 30–75 each | Older feature work |
+| Tobias Brandt | `same_device` in `src/util.rs` (26 lines) | Blame shows Andrew. Tobias wrote it in b6f2e37, then Andrew reverted it (7d18e40) and reapplied it (97090d6). I checked that the reapplied diff is identical to Tobias's. |
+| Mei Tanaka | `describe_file_type` in `src/dent.rs` (14 lines, 3442e3b) | The only new logic added recently |
+| Sam Whitfield | ~24 lines, all mechanical | License headers (1bc543a), the `Ancestor` move into `src/ancestor.rs` (6ecd630), and the rename `tests` → `testsuite` (1bd192e). The rest of `ancestor.rs` is Andrew's code. |
+
+Some names look like duplicates: "nivkner"/"Niv Kaminer", "Ashley"/"Ashley Mannix" and "Alisha"/"Alisha Aneja". The repo has no `.mailmap`, so the counts for those people are split.
+
+**Who should review**
+
+The repo has no CODEOWNERS file. Pick based on what your diff touches:
+- **Andrew Gallant**: by default, for anything in `src/`. They wrote most of the code, they maintain the project, and they reverted and reapplied `same_device`, so they've looked closely at `util.rs`.
+- **Tobias Brandt**: if you change `same_device` in `src/util.rs`.
+- **Mei Tanaka**: if you change `describe_file_type` or nearby code in `src/dent.rs`.
+- **Sam Whitfield**: only if your PR touches the `ancestor.rs` / `testsuite` layout or the license headers. They don't own the logic there.
+
+One more thing: adding a `.git-blame-ignore-revs` file with 1bc543a, 6ecd630 and 1bd192e would make blame (and GitHub's blame view) show the real authors. I haven't made that change.
+META cost=0.2010844 ms=24734 turns=5

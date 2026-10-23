@@ -1,0 +1,51 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' && echo --- && git shortlog -sne --all --no-merges && echo --- && for f in $(git ls-files '*.py'); do echo "## $f"; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn; done && echo --- && git log --format='%an|%ad|%s' --date=short -- records.py $(git ls-files '*records.py')
+ - Bash: echo "## last commit per author"; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[tolower($1)]++' | head -12; echo "## records.py lines total"; wc -l records.py; echo "## blame ignoring black+precommit"; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain records.py | grep '^author ' | sort | uniq -c | sort -rn | head -12; echo "## recent-era code in records.py (since 2026)"; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^author-time /{if($2>1767225600)c[a]++} END{for(k in c)print c[k],k}' | sort -rn; echo "## Kenneth last commit"; git log -1 --format='%ad %s' --d
+ - Bash: grep -rn "LEGACY_SKIP" . --include='*.py' --include='*.md' --include='*.rst' --include='*.txt' | grep -v '^./.git/'; echo ---; git blame -w -M -C --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{if(a ~ /Marcus|Dana|dana|Tom.s/) print a}' | sort | uniq -c; echo ---; git ls-files | grep -v '\.py$' | head -30; git show --stat --format='%h %an %s' 54b029d | head
+FINAL ANSWER:
+Ask **Dana Okafor** about `records.py`. Most of the surviving code was written by people who haven't committed in years.
+
+I used `git blame -w -M -C` for line ownership, not commit counts. Commit counts are misleading here. Marcus Lindqvist has 25 commits, but 24 are "tweak legacy exporter (N)" in a file that has since been deleted. Only 5 of his lines remain in `records.py`.
+
+**Python code still alive (about 1,060 lines in 9 files)**
+
+| Author | Surviving lines | Last commit | Status |
+|---|---|---|---|
+| Kenneth Reitz | about 428 (40%) | 2024-07 | inactive |
+| Jan Vlcinsky | about 107 | 2018 | gone |
+| Chad Whitacre | about 83 | 2016 | gone |
+| Greg Troszak | about 77 | 2017 | gone |
+| Priya Raman | about 65 | 2026-06 | active |
+| Harold Cooper | about 50 | 2016 | gone |
+| Dana Okafor | about 42 | 2026-05 | active |
+| Joakim Uddholm | about 42 | 2018 | gone |
+
+- **Active authors:** only Priya, Dana, Tomás Ibarra, Marcus and Joseph Gardi have committed since 2026-02. Together they own about 13% of the surviving code.
+- **Everyone else:** the other 87% was written by people with no commit since 2024 or earlier.
+- **Project bus factor:** 2 by raw ownership. Reitz plus Vlcinsky already own more than 50% of the code, and neither is active. Counting only active people, nobody who wrote most of the code is still around.
+
+**`records.py` (622 lines)**
+- **Original author:** Reitz owns 311 lines (50%). His last commit was 2024-07, so he is not a practical contact.
+- **Old contributors:** Troszak (connection pooling and transactions, 57 lines), Whitacre (`.one()`/`.first()`, 39) and Vlcinsky (CLI, 30) have been silent since 2016–2018.
+- **Dana Okafor, about 35 lines:** the newest helpers (key normalisation, chunking, `_describe`) are hers. She is active (last commit 2026-05), so she is the best first contact.
+- **Tomás Ibarra, 11 lines:** wrote `_coerce_row` (typed columns), active as of 2026-04.
+- **Priya Raman:** the 15 lines `blame` credits to Priya come from the black reformat. Ignoring that commit, she has almost no authored code in `records.py`. She did add CI and formatting, and she owns `tests/test_transactions.py` (25 lines), so ask her about CI and transaction tests.
+- **Marcus Lindqvist:** he defined `LEGACY_SKIP` (`records.py:15`). Nothing uses it, so it looks like dead code.
+
+**Caveats**
+- I treated "Dana Okafor" and "dana okafor" (two different emails) as one person. Confirm that.
+- Git can't tell me whether any of these people still work on this project. Check that before you ask.
+- I did not run the importance or dependents step on every file. `records.py` is the only module, so everything depends on it.
+
+**Next steps**
+1. Ask Dana to walk you through the newer `records.py` helpers.
+2. Ask Tomás about `_coerce_row`.
+3. Read the old core (transactions, pooling, `RecordCollection`) yourself, with `git log -p`. Nobody active wrote it.
+META cost=0.1179142 ms=39726 turns=7

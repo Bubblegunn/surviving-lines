@@ -1,0 +1,22 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- && git log --format='%an <%ae>' -- lib/rack/attack/store_proxy* lib/rack/attack/store_proxy/ | sort | uniq -c | sort -rn && echo --- && git log --since=12.months --format='%an|%ad' --date=short | awk -F'|' '{c[$1]++; if(!($1 in l))l[$1]=$2} END{for(a in c)print c[a], a, "last:", l[a]}' | sort -rn && echo --- && git log -8 --format='%h %ad %an %s' --date=short -- lib/rack/attack/store_proxy*; ls CODEOWNERS .github/CODEOWNERS 2>/dev/null
+ - Bash: git log --since=18.months --format='%h %ad %an | %s' --date=short | head -40; echo ---; git log -3 --format='%ad %an' --date=short --author=Gonzalo
+FINAL ANSWER:
+**Suggested reviewers**
+
+1. **Hiroshi Tanaka** is the best fit. They wrote `valkey_proxy.rb`, which is the newest proxy, in #310 on 2026-09-02. They extended it in #318 on 2026-09-16. They know the current proxy design and the wrap and version-check pattern. Their commits use two different emails (`<email redacted>` and `hiroshi@tanaka.example`), so they may be one person under two identities. Check that both map to the same GitHub account before you request a review.
+2. **Santiago Bartesaghi** is the second reviewer. They are the most active maintainer: 6 commits in the last 12 months, the latest on 2026-09-30. In the proxy directory they fixed `reset!` for namespaced cache stores (#673) and made the 2026-08-04 style autocorrect. They also handle the CI and release work, so they probably have merge rights.
+
+**Authors I'd leave out**
+
+- **Gonzalo Rodriguez** has 27 commits (25 under one name, 2 under another), the most of anyone in `store_proxy/`. Their last commit anywhere in the repo is 2025-11-09, about 11 months ago, and they have not touched the proxies recently. You could still tag them for historical context, but I wouldn't depend on a review from them.
+- **Jean Boussier** committed in March 2026 (#714, "Eagerly check for store validity"). That change is about validating the store. It is not in the `store_proxy/` directory, so they are not a proxy owner. They are still active, so they could be an optional third reviewer if your change touches store validation.
+- **fatkodima, Stan Hu, Vincent Boisard, Ryan Laughlin** and the other authors in the list have not committed in the last 12 months. The same goes for Jonathan del Strother and Mitchell Henke, whose proxy changes date from 2023.
+
+"Still around" here means recent commits in this repo. I didn't check GitHub review or comment activity, and there's no CODEOWNERS file.
+META cost=0.051882 ms=17823 turns=3

@@ -1,0 +1,33 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-hist-3/repo/src", "top": 20}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-hist-3/repo/src"}
+FINAL ANSWER:
+**Who wrote it.** Andrew Gallant wrote most of `src/`. He owns 75.8% of the surviving lines (2,471 of about 3,260) and is the main owner of 6 of the 8 files:
+
+| File | Main owner | Share of lines |
+|---|---|---|
+| `src/testsuite/recursive.rs` | Andrew Gallant | 87.3% |
+| `src/lib.rs` | Andrew Gallant | 52.2% (nivkner 12.7%, Aron Griffis 4%) |
+| `src/dent.rs` | Andrew Gallant | 93% |
+| `src/error.rs` | Andrew Gallant | 96.3% |
+| `src/util.rs` | Andrew Gallant | 91.1% |
+| `src/testsuite/util.rs` | Andrew Gallant | 98.1% |
+| `src/ancestor.rs` | Sam Whitfield | 100% |
+| `src/testsuite/mod.rs` | Sam Whitfield | 55.6% (Gallant 44.4%) |
+
+**Who to ask.** I can't name one clearly good reviewer, because every top owner is inactive by the tool's 6-month rule (no commit since 2026-04-23).
+- **Andrew Gallant:** he is the domain expert, but his last commit was 2026-01-14. He is probably not reachable through this repo.
+- **Sam Whitfield:** the most recent contributor, last commit 2026-03-23. They authored `ancestor.rs`, the Rust license headers and the `src/tests` → `src/testsuite` rename. They are the best candidate for structure and module layout, and for the files they touched.
+- **Mei Tanaka:** last commit 2026-02-03, with 14 lines in `dent.rs`. Pick them only if your PR touches `dent.rs`.
+
+All 8 files are flagged as orphaned, and the bus factor for `src/` is 1: Gallant made 52% of the 107 commits. So the people who last touched this code may no longer be active on it. Check who is currently active on the project (CODEOWNERS, recent PR reviewers) before you pick a reviewer.
+
+Which files does your PR change? With that I can narrow the suggestion to the people who own those files.
+META cost=0.0663087 ms=13695 turns=5

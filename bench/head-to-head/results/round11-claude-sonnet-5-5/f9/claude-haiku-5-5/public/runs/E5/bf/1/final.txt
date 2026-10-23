@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %ad %an <%ae> %s' --date=short -- lib/index.js; echo "---BLAME---"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "---LINES---"; wc -l lib/index.js; git ls-files lib/index.js
+ - Bash: git blame --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "---REFORMAT STAT---"; git show --stat --format='%h %s' 62628c0 | tail -3; echo "---ANNOTATE STAT---"; git show --stat --format='%h %s' b2005d9 | tail -3; echo "---ORIGINAL (pre-reformat) LINE COUNT---"; git show 62628c0^:lib/index.js | wc -l; echo "---CURRENT FILE---"; sed -n '1,60p' lib/index.js
+ - Bash: git diff -w --stat 62628c0^ 62628c0 -- lib/index.js; git diff -w 62628c0^ 62628c0 -- lib/index.js | head -40; echo "---FIONA RESIDUAL SAMPLE---"; git blame --ignore-rev 62628c0 lib/index.js | grep 'Fiona\|62628c0' | head -5; cat package.json 2>/dev/null | grep -E '"(name|version)"'
+FINAL ANSWER:
+**Short answer:** Troy Goode wrote most of the file's original logic and still owns most of what's left. Douglas Christopher Wilson and Raymond Feng have smaller surviving sections. The raw blame makes Fiona Formatter look like the main author, but that's only because of one whitespace reformat.
+
+**Timeline (file is `lib/index.js` of the `cors` npm package, v2.8.6, 238 lines)**
+
+- **2013 (Troy Goode):** Created the file ("first commit", `bcd03d9`). Early work covered JSLint, Connect support without Express, pausing and resuming requests for async middleware, and the `Vary` header.
+- **2013–2014 (outside contributors):** Simon Mansfield (early origin check), Eric di Domenico (origin as callback), Damien Klinnert (methods only on OPTIONS), Mathias Buus (non-Express request/response), Alberto Leal (don't override origin callback), Shane Tomlinson (uppercase method names).
+- **2014 (Troy Goode):** Express 4 support, `vary` module adoption, Express fix in 2.4.0.
+- **2015 (Raymond Feng, Alejandro Caravaca Puchades, others):** Regex origins, origin arrays, removing a closure in `applyHeaders` (Raymond Feng), and ESLint migration (Troy Goode).
+- **2016–2018:** Troy Goode released 2.8.0; Benjamin Eidelman added a Safari preflight workaround; Douglas Christopher Wilson made lint and eslint fixes; Tom Arad fixed `maxAge: 0`.
+- **2021 (LuisEGR):** Removed unused function parameters.
+- **2026-04-10 (Troy Goode):** "lib: annotate handlers" (12 lines changed).
+- **2026-04-12 (Fiona Formatter):** "style: reformat js with 4-space indent and double quotes" (`62628c0`). It rewrote the whole file's indentation and quotes.
+
+**Who's in the file today** (`git blame --ignore-rev 62628c0`, which attributes reformatted lines to their earlier authors):
+
+| Author | Lines still attributed |
+|---|---|
+| Troy Goode | 109 |
+| Douglas Christopher Wilson | 36 |
+| Fiona Formatter | 57 (whitespace-only residue, not real authorship) |
+| Raymond Feng | 8 |
+| LuisEGR | 6 |
+| Tom Arad | 5 |
+| Alejandro Caravaca Puchades | 5 |
+| max.laverse | 3 |
+| Tomek Kopczuk, Hannah Wolfe, Alberto Leal, Saad Tazi, Eric di Domenico, Benjamin Eidelman | 1–2 each |
+
+**Caveats**
+- The plain blame shows Fiona Formatter on 214 of 238 lines. That comes from the reformat, not from authorship.
+- The ignore-rev result is approximate. Blank and brace-only lines whose whitespace changed still show as Fiona's, which is why 57 lines remain attributed to Fiona.
+- Blame shows who last touched a line, not who designed the behavior. Troy Goode's share is largely the original design, but the exact authorship of each idea isn't recoverable from blame alone.
+META cost=0.00652647 ms=22552 turns=4

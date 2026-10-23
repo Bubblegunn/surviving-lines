@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE3-pp-1/repo; git log --format='%h %an <%ae> %ad %s' --date=short --stat | head -150; ls -a; cat CODEOWNERS .github/CODEOWNERS .git-blame-ignore-revs 2>/dev/null; git ls-files src
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE3-pp-1/repo; ls .github; cat .mailmap 2>/dev/null
+echo "== naive"; for f in $(git ls-files src); do git blame --line-porcelain $f | grep '^author ' ; done | sort | uniq -c | sort -rn
+echo "== -M -C -C -w ignore license"; for f in $(git ls-files src); do git blame -w -M -C -C --ignore-rev 1bc543a --line-porcelain $f | grep '^author ' ; done | sort | uniq -c | sort -rn
+echo "== per file"; for f in $(git ls-files src); do echo "-- $f"; git blame -w -M -C -C --ignore-rev 1bc543a --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE3-pp-1/repo; git show -s --format='%an|%ae|%cn|%B' 97090d6 b6f2e37; git diff b6f2e37^ b6f2e37 -- src/util.rs | head -5; git diff 7d18e40 97090d6 --stat; git diff b6f2e37^ b6f2e37 | git patch-id; git show 97090d6 | git patch-id
+git log --format='%an|%ae' | sort -u | grep -iE 'niv|ashley|alisha'
+git log --since=2024-01-01 --format='%ad %an' --date=short -- src | sort -u
+FINAL ANSWER:
+Plain `git blame` gives the wrong answer here. Sam Whitfield's three most recent commits are mechanical: license headers (`1bc543a`), moving `Ancestor` into its own file (`6ecd630`) and renaming `src/tests` to `src/testsuite` (`1bd192e`). Plain blame credits Sam with 85 lines. Once moves, whitespace and the header commit are ignored, Sam keeps 24 lines, mostly headers and `mod` lines.
+
+**Who wrote the current code in `src/`** (`git blame -w -M -C -C --ignore-rev 1bc543a`):
+- **Andrew Gallant** <<email redacted>> wrote about 2567 of about 2900 lines and is the main author of every file. His last commit was 2026-01-14.
+- Sebastian Thiel (75 lines): the `follow_root_links` option and its tests.
+- Ashley / Ashley Mannix (72 lines, two email addresses), Aron Griffis (59), mcharsley (45), Niv Kaminer / nivkner (45, same email), Marvin Löbel (42, the sort helpers). Everyone else has fewer than 40 lines.
+
+**Two places where blame is misleading:**
+- `same_device` in `src/util.rs`: blame says Andrew Gallant wrote it. **Tobias Brandt** actually wrote it (`b6f2e37`). Andrew reverted it and then reapplied it unchanged; the two commits have the same patch-id. The reapplied commit records Andrew as author and does not credit Tobias.
+- `describe_file_type` in `src/dent.rs`: **Mei Tanaka** wrote it (`3442e3b`, 2026-02-03). Blame shows this correctly.
+
+**Who should review:**
+- The repo has no CODEOWNERS file, so nobody is assigned automatically.
+- **Andrew Gallant** is the main reviewer for anything in `src/`. He wrote most of the code and is still active.
+- Also ask:
+  - **Tobias Brandt** if you touch `same_device` / `util.rs`.
+  - **Mei Tanaka** if you touch `describe_file_type` / `dent.rs`.
+  - **Sebastian Thiel** if you touch `follow_root_links` / `lib.rs` / `testsuite/recursive.rs`.
+- Don't pick Sam Whitfield just because blame shows them on the most recent lines. Their commits only changed headers and file layout. They are a good choice only if your change affects `ancestor.rs` or the `testsuite` layout.
+
+If you tell me which files or functions the PR changes, I can narrow this to one or two people.
+META cost=0.23122920000000002 ms=39344 turns=4

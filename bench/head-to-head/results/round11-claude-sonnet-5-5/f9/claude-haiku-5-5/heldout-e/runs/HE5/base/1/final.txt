@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && echo "--- log authors (all time) ---" && git log --format='%an <%ae>' -- lib/rack/attack/store_proxy/ | sort | uniq -c | sort -rn && echo "--- last commits ---" && git log --format='%h %ad %an <%ae> %s' --date=short -- lib/rack/attack/store_proxy/ | head -30 && echo "--- blame counts (current lines) ---" && git blame --line-porcelain -- lib/rack/attack/store_proxy/ 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: echo "--- repo-wide authors since 2026-01-01 ---" && git log --since=2026-01-01 --format='%an' | sort | uniq -c | sort -rn && echo "--- repo-wide authors since 2025-10-01 ---" && git log --since=2025-10-01 --format='%an' | sort | uniq -c | sort -rn && echo "--- last commit per store_proxy author in repo ---" && for n in "Hiroshi Tanaka" "Santiago Bartesaghi" "Gonzalo Rodriguez" "fatkodima" "Brian Kephart" "Stan Hu" "Vincent Boisard"; do echo "$n: $(git log -1 --format='%ad %s' --date=short --author="$n")"; done && echo "--- CODEOWNERS ---" && cat .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS 2>/dev/null; echo "--- Hiroshi's PR #318 / #310 reviewers ---"; gh pr list --state all --search "stor
+ - Bash: gh pr view 318 --json number,title,author,reviews,mergedBy 2>&1 | head -c 1500; echo; gh pr view 310 --json number,title,author,reviews,mergedBy 2>&1 | head -c 1500; echo; git log -3 --format='%h %an: %s%n%b' -- lib/rack/attack/store_proxy/valkey_proxy.rb | head -40
+ - Bash: git log --since=2025-10-01 --format='%h %ad %an <%ae> %s' --date=short | grep -iE 'Gonzalo|Jean|Jonas|Bart de|r-plus|Santiago|Hiroshi'
+FINAL ANSWER:
+Recommended reviewers for `lib/rack/attack/store_proxy/`:
+
+1. **Hiroshi Tanaka** (`<email redacted>`). Wrote the newest proxy, `valkey_proxy.rb` (#310, Sep 2026), and changed it again in #318 (Sep 16, 2026). Best fit if your change touches the proxy interface or Valkey behavior.
+2. **Santiago Bartesaghi** (`<email redacted>`). Most active maintainer in 2026. Last touched the repo on Sep 30, 2026, and fixed a namespaced cache store bug in this area (#673, Dec 2024). Good general reviewer for the shared proxy design.
+3. **Gonzalo Rodriguez** (`<email redacted>`, also appears as `grzuy`/"Gonzalo"). Wrote most of this directory (25 of the commits to it), but his last commits to the repo are CI/Rails-version updates in Nov 2025, and his last change to store_proxy code was in Jan 2021. He is still around, so he's a fit for questions about why the design is the way it is, but not for the current code.
+
+Jean Boussier is active in 2026 (#714 "Eagerly check for store validity" may be relevant if your change touches store validation), but he has no commits to this directory, so I wouldn't pick him for it.
+
+Caveats:
+- The repo has no CODEOWNERS file.
+- `gh` isn't authenticated here, so I couldn't check who reviewed the recent PRs (#310, #318). Checking those PRs would show who is actually reviewing this code today.
+- "Still around" is judged from commits in this repo only, so it's a proxy for activity, not confirmation of availability.
+META cost=0.0060863 ms=19939 turns=5

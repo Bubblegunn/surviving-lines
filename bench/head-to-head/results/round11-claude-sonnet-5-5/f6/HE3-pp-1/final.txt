@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git branch --show-current && git log --oneline | wc -l && echo "--- surviving lines by author (blame, src/ rust files) ---" && git ls-files 'src/*' | xargs -I{} git blame -w -M -C --line-porcelain -- {} 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn && echo "--- commits touching src by author ---" && git shortlog -sne HEAD -- src/ && echo "--- last 6 months ---" && git shortlog -sne --since="6 months ago" HEAD -- src/ && echo "--- recent commits ---" && git log -15 --format='%h %ad %an %s' --date=short -- src/
+ - Bash: ls; ls .github 2>/dev/null; cat CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>/dev/null; git status -sb | head -5; git diff --stat main...HEAD 2>/dev/null | tail -5
+FINAL ANSWER:
+**Who wrote the code now in `src/`** (surviving lines by `git blame -w -M -C`, 199 commits):
+
+| Author | Lines | Share |
+|---|---|---|
+| Andrew Gallant | 2551 | about 80% |
+| Sebastian Thiel | 74 | |
+| Ashley | 68 | |
+| Aron Griffis | 59 | |
+| mcharsley | 45 | |
+| Sam Whitfield | 42 | |
+| Marvin Löbel | 41 | |
+
+About 30 other people each have fewer than 40 lines.
+
+**Who should review**
+- **Andrew Gallant** is the original author and owns most of the code. He is the default reviewer for anything in `src/`.
+- **Sam Whitfield** made the three newest commits, all in March 2026:
+  - the license headers
+  - the `Ancestor` module move
+  - the `src/tests` → `src/testsuite` rename
+
+  Ask them if your PR touches those areas or the test layout.
+- **Mei Tanaka** added `dent: add describe_file_type` in February 2026. Ask them if you touch that.
+
+**Caveats**
+- There is no `CODEOWNERS` file, so nothing assigns reviewers automatically.
+- Nobody has touched `src/` in the last 6 months. The newest commit is 2026-03-23, so the recent contributors may be inactive.
+- Tobias Brandt wrote `util: add same_device helper`. It was reverted and then reapplied by Andrew, so blame credits Andrew for those lines.
+- Sam Whitfield, Mei Tanaka and Tobias Brandt use `example.com`/`example.org` emails. I can't tell from git whether they are real, current maintainers. Check before you request their review.
+- These numbers cover all of `src/`. Ownership differs by file. Tell me which files your PR changes, or run `git diff --name-only main`, and I'll give you blame and recent-commit owners for each file.
+META cost=0.0778746 ms=15869 turns=3

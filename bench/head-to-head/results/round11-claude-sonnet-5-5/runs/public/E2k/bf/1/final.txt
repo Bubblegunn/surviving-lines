@@ -1,0 +1,22 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; echo; git log --since='2026-03-29' --format='%h|%an|%ae|%ad|%s' --date=short --no-merges
+ - Bash: git log --since='2026-03-28' --format='%h|%an|%ae|%cn|%ad|%P|%s' --date=iso | cut -c1-200; echo; git log --format='%an|%ae' | sort | uniq -c | sort -rn | head -20
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E2k-bf-1/repo; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^(author-mail) '; done | sort | uniq -c | sort -rn | head; echo ---; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E '5317ebe|02afce3|b2005d9'
+FINAL ANSWER:
+Two people made non-formatting, non-bot commits in the window. The window is 2026-03-29 to 2026-04-12, 14 days up to the latest commit.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (04-10)<br>`b2005d9` lib: annotate handlers (04-10) | 48 (36 + 12) |
+| Vansh Sharma | `5317ebe` docs: app.del() → app.delete() in README (#411) (04-07) | 1 |
+
+- **Troy Goode:** Troy has two author identities, `troy@laptop.example` (the two window commits) and `<email redacted>`. I counted them once as the same person. I merged them by name, so tell me if you want them kept apart. Across the whole repo, both identities together own about 746 surviving lines (698 + 48). The 48 above are only from the two window commits.
+- **Excluded:** `62628c0` by Fiona Formatter, a style-only reindent and quote change. It is the latest commit.
+- **Bots:** There are no bot commits in the window. `dependabot[bot]` has commits in the repo, but none from these 14 days.
+- **Line counts:** I used `git blame -w` and ignored the formatting commit. Without that, the reformat would be credited with nearly every line Troy and Vansh wrote. The counts are lines whose last real change came from those commits.
+META cost=0.052724499999999994 ms=20985 turns=4

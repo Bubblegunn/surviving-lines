@@ -1,0 +1,42 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -vE 'package-lock|\.png$|\.jpg$|\.ico$' > /tmp/files.txt; wc -l < /tmp/files.txt
+own(){ while read f; do git blame -w -M -C --line-porcelain $1 HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done < /tmp/files.txt | sort | uniq -c | sort -rn | head -12; }
+echo RAW; own ""
+echo IGNORE-REFORMAT; own "--ignore-rev 62628c0"
+git show --stat --oneline 62628c0 | tail -3
+ - Bash: R=$(git rev-parse 62628c0) && while read f; do git blame -w -M -C --ignore-rev $R --line-porcelain HEAD -- "$f" 2>&1 | grep -a '^author '; done < /tmp/files.txt | sort | uniq -c | sort -rn | head -12
+ - Bash: R=$(git rev-parse 62628c0) && while read f; do git blame -w -M -C --ignore-rev $R --line-porcelain HEAD -- "$f" 2>&1 | grep -a '^author '; done < /tmp/files.txt | sort | uniq -c | sort -rn | awk '{t+=$1; n[NR]=$0; c[NR]=$1} END{print "total",t, "authors",NR; for(i=1;i<=5;i++) printf "%s  %.1f%%\n", n[i], c[i]*100/t}'; git log --format='%an' | sort | uniq -c | sort -rn | head -3; cat /tmp/files.txt | tr '\n' ' '
+FINAL ANSWER:
+Troy Goode owns the most code that is still here. Douglas Christopher Wilson is second.
+
+I ran `git blame` on every line at HEAD across the 18 tracked files, excluding lockfiles and images. I used `-w -M -C`, which ignores whitespace and follows moved and copied lines.
+
+The latest commit, `62628c0` ("reformat js with 4-space indent and double quotes"), touched about 1,000 lines and credits them to "Fiona Formatter". I excluded it with `--ignore-rev` so those lines go back to whoever wrote the logic. The raw numbers are in the last paragraph.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Other 39 authors | 226 | 11.3% |
+
+The total is 1,995 lines from 46 authors.
+
+- **Two people own about 72% of the surviving lines.** The next author is under 5%.
+- **Commit counts rank the top two the other way round.** Douglas has 143 commits and Troy has 122. Troy's code lasted longer. A rewrite could change that, since most of Troy's lines are probably in `test/test.js` and similar test files.
+- **The 46 authors overlap with 12 listed in the top table.** The rest each own only a handful of lines.
+- **With the reformat commit counted, "Fiona Formatter" is third.** It gets 291 lines (about 14.6%), and Troy and Douglas drop to 715 and 454 lines. That figure reflects the style change, not who wrote the code.
+
+I did not split ownership by file. `lib/index.js` is the core code and may have a different top owner than the repo overall. I can run that next if you want it.
+META cost=0.10187220000000001 ms=27107 turns=6

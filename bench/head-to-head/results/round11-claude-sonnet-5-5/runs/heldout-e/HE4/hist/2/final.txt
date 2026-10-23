@@ -1,0 +1,30 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE4-hist-2/repo", "path": "src/Parser", "top": 30}
+ - Bash: ls src/Parser && git ls-files src/Parser | head -50
+ - Bash: cat .mailmap; git log --format='%h %an <%ae> %ad %s' --date=short --stat=80 -3 45259fd -- src/Parser | head -40; echo ---; git log --format='%h %an %ad %s' --date=short -- src/Parser | head -40
+ - Bash: for f in src/Parser/*.php; do git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f -e --line-porcelain "$f" | grep '^author-mail' ; done | sort | uniq -c | sort -rn; echo ---; for f in src/Parser/*.php; do echo $f; git -c mailmap.file=.mailmap blame -w -M -C -e --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain "$f" | grep '^author-mail' | sort | uniq -c | sort -rn; done; git show 73c5c0f --stat | tail -5
+FINAL ANSWER:
+**Graham Campbell** should review it. **Priscila Duarte** is the right second reviewer for `Comments.php` and `Interpolator.php`.
+
+The default ownership numbers point to the wrong person. The `knowledge_risk` tool reports Marta Kowalczyk as owning about 87% of `src/Parser/`. That comes from commit `45259fd` (2026-09-15, "chore: indent with tabs per .editorconfig"), which rewrote about 795 lines across all 9 files. Blame credits those lines to Marta even though she only changed the whitespace. She isn't the author of the logic.
+
+I re-ran blame with `-w -M -C` and skipped the whitespace commit and the StyleCI commit (`73c5c0f`). Lines still standing:
+
+| Author | Lines | Files |
+|---|---|---|
+| Graham Campbell | ~782 | `EntryParser`, `Lexer`, `Lines` (mostly), `Parser`, `ParserInterface`, `Value`, `Entry` |
+| Priscila Duarte | 118 | `Comments.php` (all 56 lines), `Interpolator.php` (all 62 lines) |
+| Vance Lucas, Jonas Staudenmeir, one other contributor | 12 | a few lines in `Lines.php` and `Entry.php` |
+
+- Graham wrote the core parser. His recent commits there cover the quadratic value parsing, the invalid-UTF-8 crash fix, the multiline-comment fix and the performance work. He is active, with his last commit on 2026-08-24.
+- Priscila added `Interpolator` (#601) and `Comments` (#604) in early September.
+- Marta is a reasonable third reviewer, since she touched every file recently. I wouldn't pick her as the code expert.
+
+I didn't check whether Graham is available to review. His last commit anywhere in the repo is also recent, so he is not flagged as inactive.
+META cost=0.07536129999999999 ms=22115 turns=6

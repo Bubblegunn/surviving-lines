@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: echo "== files ==" && git ls-files src | head -200 && echo "== blame authors (lines) ==" && git blame --line-porcelain -- src 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn && echo "== recent src commits ==" && git log --format='%h %an <%ae> %ad %s' --date=short -- src | head -30
+ - Bash: for f in $(git ls-files src); do git blame --line-porcelain "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files src); do echo "== $f"; git blame --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo "== owners files =="; ls -a | grep -iE 'codeowners|owners' ; ls -a .github 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS 2>/dev/null; echo "== remote =="; git remote -v
+FINAL ANSWER:
+**Short answer:** Ask **Sam Whitfield** for review. They made every recent change under `src/`. Andrew Gallant wrote most of the code that's still there, but I can't tell from here whether he still maintains the project.
+
+**Who wrote the current code (surviving lines, `git blame`):**
+
+| File | Main author(s) of current lines |
+|---|---|
+| `src/ancestor.rs` | Sam Whitfield (all of it, moved there in 2026-03) |
+| `src/dent.rs` | Andrew Gallant (345), Mei Tanaka (14) |
+| `src/error.rs` | Andrew Gallant (257) |
+| `src/lib.rs` | Andrew Gallant (604), nivkner (147), Aron Griffis (46) |
+| `src/util.rs` | Andrew Gallant (51), Sam Whitfield (5) |
+| `src/testsuite/recursive.rs` | Andrew Gallant (958), Sebastian Thiel (70), Marvin Löbel (44) |
+| `src/testsuite/util.rs` | Andrew Gallant (252) |
+| `src/testsuite/mod.rs` | Sam Whitfield (5), Andrew Gallant (4) |
+
+Across all of `src/`, Andrew Gallant owns about 2,470 of the surviving lines. Sam Whitfield wrote the most recent commits in `src/` (license headers, moving `Ancestor`, renaming `tests` to `testsuite`, March 2026). Mei Tanaka added `dent: add describe_file_type` in February 2026.
+
+**Who to ask:**
+- **Sam Whitfield** is the best first reviewer. They are the most recent active committer on `src/`.
+- **Andrew Gallant** is the deepest historical owner of `lib.rs`, `error.rs`, `dent.rs`, and `testsuite/recursive.rs`. Ask them if your PR changes core iteration or error semantics, and check whether they're still active.
+- For `dent.rs`, add Mei Tanaka. For `testsuite/recursive.rs`, add Sebastian Thiel.
+
+**Caveats:**
+- There is no CODEOWNERS file in the repo and no git remote, so I couldn't check who is currently active or who has GitHub review rights.
+- I can't see which files your PR touches. If you tell me, I can narrow this to those files.
+META cost=0.00479421 ms=14027 turns=4

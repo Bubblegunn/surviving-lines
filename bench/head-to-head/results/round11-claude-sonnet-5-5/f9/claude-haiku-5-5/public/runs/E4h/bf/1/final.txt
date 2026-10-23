@@ -1,0 +1,59 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "Suggest CODEOWNERS lines for top-level directories lib, test, .github and root files. Assign an owner only if one person holds at least half of surviving lines (ignore bots and formatting-only commits; count each person once). Otherwise state no majority owner."}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c && echo --- && ls -la .github 2>/dev/null; echo ---; ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/ 2>/dev/null; ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/scripts 2>/dev/null; echo ---; git log --format='%ae' | sort | uniq -c | sort -rn | head -20; echo ---; git log --format='%H %ad %s' --date=short | tail -1; git rev-list --count HEAD
+ - Bash: git ls-files | grep -v '^\.github' | head -50; echo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30; echo; git show --stat 62628c0 | head -5
+ - Bash: 
+person() { case "$1" in *troygoode*|*troy@laptop*) echo "Troy Goode";; *alex94puchades*) echo "Alejandro Caravaca Puchades";; *dependabot*) echo BOT;; *) echo "$2";; esac; }
+for f in $(git ls-files | grep -E '^(lib/|test/|\.github/)|^[^/]+$'); do
+  git blame --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" 2>/dev/null | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print m"|"a}' | while IFS='|' read -r m a; do echo "$f|$(person "$m" "$a")"; done
+done > /tmp/blame.txt
+echo "total lines per group:"; awk -F'|' '{print $1}' /tmp/blame.txt | sed -E 's#/.*#/#' | sort | uniq -c
+echo; awk -F'|' '{d=$1; sub(/\/.*/,"/",d); if(index($1,"/")==0) d="(root)"; print d"|"$2}' /tmp/blame.txt
+ - Bash: git show --stat --format='%h %s' 62628c0 | tail -3; git rev-parse 62628c0^ >/dev/null && cat > /tmp/reattr.py <<'EOF'
+import subprocess, re, sys, difflib
+REF = "62628c0"
+PARENT = REF + "^"
+def sh(*a): return subprocess.run(a, capture_output=True, text=True).stdout
+def norm(s): return re.sub(r"\s+", "", s).replace("'", '"')
+def blame(rev, path):
+    out = sh("git","blame","--line-porcelain",rev,"--",path)
+    res, cur = [], {}
+    lines = out.split("\n")
+    i = 0
+    while i < len(lines):
+        l = lines[i]
+        if l.startswith("author-mail "): cur["m"] = l.split(" ",1)[1]
+        elif l.startswith("author "): cur["a"] = l[7:]
+        elif l.startswith("\t"):
+            cur["c"] = l[1:
+ - Bash: cd /tmp && awk -F'|' '
+{ f=$1; p=$2; if (p=="BOT") next;
+  g = (index(f,"/")==0) ? "root" : (f ~ /^lib\//? "lib" : (f ~ /^test\//? "test" : (f ~ /^\.github\//? ".github" : "other")));
+  tot[g]++; c[g"|"p]++ }
+END { for (k in c) { split(k,a,"|"); g=a[1]; printf "%s\t%d/%d\t%.1f%%\t%s\n", g, c[k], tot[g], 100*c[k]/tot[g], a[2] } }' blame2.txt | sort -t$'\t' -k1,1 -k2,2 -t$'\t' | awk -F'\t' '{split($2,x,"/"); print}' | sort -t$'\t' -k1,1 -k2,2nr | awk -F'\t' '{ if (seen[$1]++ < 3) print }'
+ - Bash: for n in "Troy Goode" "Douglas Christopher Wilson" "Jon Church"; do echo "$n: $(git log --author="$n" --format=%ad --date=short -1) (commits: $(git log --author="$n" --oneline | wc -l))"; done; echo "last commit: $(git log -1 --format=%ad --date=short)"; git log --author="Troy Goode" --format='%ae' | sort -u
+FINAL ANSWER:
+Suggested CODEOWNERS lines (blame on HEAD, bots excluded, formatting commit `62628c0` re-attributed to pre-reformat authors):
+
+```
+/lib/   @troygoode   # 150 of 238 lines (63%)
+/test/  @troygoode   # 486 of 966 lines (50.3%)
+```
+
+- **`lib/`**: Troy Goode holds 63%. Owner.
+- **`test/`**: Troy Goode holds 50.3%, which meets the "at least half" bar but by only 3 lines. Treat it as borderline; a few more lines from someone else would drop Troy below half.
+- **`.github/`**: no majority owner. Top is Douglas Christopher Wilson at 29.5% (108 of 366), then Íñigo Marquínez Prado at 25.7%. No line.
+- **Root files** (README.md, HISTORY.md, package.json, LICENSE, .gitignore, .eslintrc.yml, as one group): no majority owner. Top is Troy Goode at 29.4%, then Douglas at 27.7%. No line.
+
+Caveats:
+- **Douglas Christopher Wilson is excluded** even though he is the #2 test owner (41.5%) and the top `.github/` owner. His last commit is 2021-09-07, while the repo's newest commit is 2026-04-12, so naming him would route reviews to someone inactive.
+- **`@troygoode` is my inference** from the git email `<email redacted>`. Confirm the GitHub login before committing the file.
+- **Re-attribution is a heuristic.** The reformat commit changed quotes as well as whitespace, so `git blame --ignore-rev` alone left 237 lib/test lines on it. I matched those lines to their parent-commit versions by normalized content. Every such line found a match, but the 3-line margin on `test/` is only as good as that match.
+- **I did not run the skill's `scripts/ownership.mjs`.** It uses a 0.70 coverage threshold and a 0.25 orphan threshold, which don't match your half-of-surviving-lines rule. Nothing was written to the repo.
+- **Not produced:** the per-zone risk report and the orphaned/bus-factor-1 split. Only the ownership shares were asked for.
+META cost=0.01151547 ms=82930 turns=9

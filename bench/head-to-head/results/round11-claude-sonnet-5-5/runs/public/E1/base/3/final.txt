@@ -1,0 +1,52 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -20; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c; echo ---; git log --format='%an' | wc -l
+ - Bash: git ls-files | while read f; do echo "== $f ($(git log --follow --format=%H -- "$f" | wc -l) commits)"; git log --follow --format='%aN' -- "$f" | sort | uniq -c | sort -rn | head -3; done 2>/dev/null; echo; echo LINES; for f in $(git ls-files lib test '*.js' '*.md'); do [ -f $f ] && echo "$f $(git blame -w --line-porcelain -- $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done; git log --since='2 years ago' --format='%aN' | sort | uniq -c | sort -rn | head -5
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson" "Fiona Formatter"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done; git log -3 --format='%h %aN %ad %s' --date=short -- lib/index.js
+FINAL ANSWER:
+**Bus factor: 1 for the core code. The person is Troy Goode.**
+
+Method: `git shortlog`, per-file `git log --follow` counts, and `git blame -w` line ownership. There are 354 commits.
+
+**Contributors**
+- Douglas Christopher Wilson: 143 commits, 2017-03 to 2021-09. Inactive for over 5 years.
+- Troy Goode: 120 commits, 2013-01 to 2026-04. Still active.
+- Everyone else: 11 or fewer commits each. Most are dependabot or one-off fixes.
+
+**Files that depend on Troy Goode**
+
+| File | Troy's share | Notes |
+|---|---|---|
+| `lib/index.js` (the whole library) | 138 of about 170 current lines, and 29 of 62 commits | Dominant author. Most of the rest is a formatter bot. |
+| `test/vary.js` | 100% | Only author. |
+| `test/issue-2.js` | 40 of 48 lines | Doug wrote the other 8. |
+| `test/error-response.js` | 40 of 62 lines | |
+| `test/example-app.js` | 43 of 76 lines | |
+| `test/test.js` | 220 of about 430 lines | Shared with Doug at 208 lines. Doug is inactive, so only Troy remains. |
+| `README.md` | 116 of about 190 lines | Jon Church wrote 72 lines. |
+
+**Files that depend on Douglas Christopher Wilson (inactive, so this is knowledge already lost)**
+- `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`: sole author.
+- `HISTORY.md`: 50 of about 56 lines.
+- `.github/workflows/ci.yml`: 10 of 16 commits.
+- `package.json`: 68 of 113 commits. This is the release and publish configuration. Troy has 37 commits there, so the knowledge is partly covered.
+
+**Not single-contributor**
+- `.github/workflows/codeql.yml` and `scorecard.yml` are mostly dependabot commits.
+- `.github/dependabot.yml` was written by Ulises Gascón.
+
+**Caveats**
+- "Fiona Formatter" authored the 2026-04-12 reformat commit (`62628c0`). That is a style change, not knowledge ownership. `git blame -w` only partly filters it out.
+- Troy appears under two author identities, so the real count may be slightly higher.
+- Git history shows who wrote the code. It does not show who reviews it or holds npm publish rights.
+
+**Recommendations**
+1. Have a second person review and co-own `lib/index.js` and `test/test.js`.
+2. Confirm who has npm publish and GitHub admin access. Doug's `package.json` and CI knowledge may no longer be held by anyone.
+3. Give Ulises Gascón, Jon Church, or Sebastian Beltran ownership of the CI and release files. They have recent commits.
+META cost=0.06403120000000001 ms=17829 turns=5

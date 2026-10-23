@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --all --no-merges --pretty=format:"%an|%ad|%s" --date=short -- lib/index.js | head -15; echo ---; git log -1 --pretty=format:"%ad" --date=short; echo; echo --- importers; grep -rlE "require\(['\"][./]*(lib)?/?(index)?['\"]\)|lib/index" --include="*.js" . --exclude-dir=node_modules | head; echo ---; git log --pretty=format:"%an" --since="90 days ago" | sort | uniq -c
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+Scope: I only analyzed this file. I did not run the full project-wide scan, so I have no project-level bus factor.
+
+**Result: bus factor is moderate. No single owner (top author has 47%), but nobody is currently active.**
+
+| Author | Commits | Share | Last touch |
+|---|---|---|---|
+| Troy Goode | 29 | 47% | 2026-04-10 |
+| Douglas Christopher Wilson | 4 | 6% | 2017-10 |
+| Alejandro Caravaca Puchades (+ `alex94puchades`, likely the same person) | 5 | 8% | not checked |
+| Simon Mansfield | 3 | 5% | not checked |
+| 20 others | 1 each, plus jordandenison with 2 | about 34% | — |
+
+- **Total:** 62 non-merge commits across about 25 authors.
+- **Activity:** There are no commits by anyone in the repo in the last 90 days. The latest commit is 2026-04-12, so by that definition every owner is inactive.
+- **Formatting commit:** Fiona Formatter's 2026-04-12 commit is only a reformat, so don't count it as knowledge.
+- **Importance:** The file is the library's main entry point. Five test files reference it (`test/test.js`, `vary.js`, `error-response.js`, `issue-2.js`, `example-app.js`), so test coverage is decent.
+
+## Who should review
+
+1. **Troy Goode** is the primary reviewer. They wrote the most (29 commits), including the most recent substantive change (`lib: annotate handlers`, 2026-04-10). They are the only person with deep, recent context.
+2. **Douglas Christopher Wilson** is the secondary reviewer, mainly for CORS and HTTP semantics. They made the `Vary` header fixes (`Vary: Origin`, `Vary: Access-Control-Request-Headers`) and the options-delegate fix. These are the subtle parts of the file.
+3. **Alejandro Caravaca Puchades** is optional. They are the third most frequent author.
+
+Check the last three: Wilson's last touch on this file was 2017 and Puchades' activity wasn't checked. Confirm they are still around before you ask them.
+
+## Recommendations
+
+- **Immediate:** Ask Troy Goode to review. If your change touches header, `Vary`, or preflight logic, add Wilson.
+- **Short-term:** If your change alters CORS behavior, extend the `test/vary.js` and `test/error-response.js` coverage. That substitutes for the missing active reviewers.
+- **Ongoing:** The knowledge is spread over many one-time contributors and no one has touched the file recently. A short header comment documenting the `Vary` and preflight decisions would help.
+
+I can run the full project-wide scan (per-module ownership and project bus factor) if you want it.
+META cost=0.0594042 ms=18712 turns=4

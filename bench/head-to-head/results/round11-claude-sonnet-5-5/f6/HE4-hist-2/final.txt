@@ -1,0 +1,29 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src/Parser/ | head -50
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f6/HE4-hist-2/runs/HE4-hist-2/repo", "path": "src/Parser"}
+ - Bash: git show --stat --format='%h %an %ad %s' 45259fd | head -30; echo ---; git log --format='%an' -- src/Parser | sort | uniq -c | sort -rn; echo ---; git blame -w -C -M --line-porcelain src/Parser/*.php | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: for f in src/Parser/*.php; do echo "== $f"; git blame -w -C -M --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git blame -w -C -M --line-porcelain -- src/Parser/*.php 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Graham Campbell** wrote most of the code in `src/Parser/` as it stands. For changes to `Comments.php` or `Interpolator.php`, review with **Priscila Duarte**.
+
+The git-historian tool reports Marta Kowalczyk as owning about 87% of the lines. That number is wrong. Her commit `45259fd` ("indent with tabs") rewrote the indentation on every line in the directory, so a plain `git blame` credits her with all of them. I re-ran blame ignoring whitespace (`-w -C -M`) to see who wrote the lines before the reformat.
+
+Surviving lines in `src/Parser/` (912 total):
+
+| Author | Lines | Share | Files |
+|---|---|---|---|
+| Graham Campbell | 782 | 85.7% | `EntryParser`, `Lines`, `Value`, `Entry`, `Lexer`, `Parser`, `ParserInterface` |
+| Priscila Duarte | 118 | 12.9% | `Comments`, `Interpolator` |
+| Vance Lucas | 10 | 1.1% | a few lines in `Lines.php` |
+| Jonas Staudenmeir, JT Smith | 1 each | 0.2% | one line each in `Entry.php` and `Lines.php` |
+
+- **Active authors:** Graham's last commit is 2026-09-10 and Priscila's is 2026-09-08, so both are still active.
+- **Marta Kowalczyk:** She wrote none of the surviving logic, so she is not the right reviewer for this directory.
+META cost=0.108981 ms=43040 turns=7

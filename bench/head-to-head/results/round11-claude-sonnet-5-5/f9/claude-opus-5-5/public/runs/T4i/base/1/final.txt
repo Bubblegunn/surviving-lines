@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4i-base-1/repo; ls -a; cat .git-blame-ignore-revs; find . -name CODEOWNERS -not -path './node_modules/*'; cat MAINTAINERS* OWNERS* 2>/dev/null; git log --format='%h %an <%ae> %ad %s' --date=short -- lib/index.js | head -30
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4i-base-1/repo; ls -R .github; cat .github/CODEOWNERS 2>/dev/null; git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show --stat b2005d9 | head -20; grep -n author -A3 package.json
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4i-base-1/repo; git show b2005d9 | head -40; git blame --ignore-revs-file .git-blame-ignore-revs lib/index.js | grep Fiona | head -15
+FINAL ANSWER:
+**Recommendation: Troy Goode first, Douglas Christopher Wilson second.** There is no CODEOWNERS or MAINTAINERS file, so this comes from git history.
+
+The raw `git blame` gives a misleading answer:
+- **Fiona Formatter shows up on 214 of 238 lines.** That is only because of commit `62628c0`, a pure style reformat. The repo lists that commit in `.git-blame-ignore-revs`, so it should be left out of blame.
+- **With that commit ignored** (`git blame --ignore-revs-file .git-blame-ignore-revs lib/index.js`), the counts are:
+  - Troy Goode: 109
+  - Fiona: 57. These are blank lines, `}`, `} else {` and quote changes that blame still can't map back to an earlier commit, so they don't count as real ownership.
+  - Douglas Christopher Wilson: 36
+  - Raymond Feng: 8
+  - Others: 6 or fewer each
+
+**Why these two:**
+1. **Troy Goode** (`<email redacted>`) is the `package.json` author and wrote the original middleware and most of its logic. About 12 of their blamed lines come from `b2005d9`, which only added `// checked` comments. That commit uses a different email, `troy@laptop.example`, so check which address reaches them.
+2. **Douglas Christopher Wilson** made the important behavior fixes in 2017: `Vary` header handling, the options delegate, and the eslint setup.
+
+Neither has committed to this file since 2021, apart from the trivial April 2026 commits. If your change is in a specific function, tell me which one and I'll run blame on just those lines (`git blame -L`). The best reviewer may be different for that part of the file.
+META cost=0.16082680000000002 ms=18073 turns=4

@@ -1,0 +1,37 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git rev-list --count HEAD && git log --format='%h %an %s' -5 && git ls-files | grep -vE 'package-lock|\.png$|\.ico$' | wc -l && git show --stat --format='%h' 62628c0 | tail -3
+ - Bash: run() { git ls-files | grep -vE 'package-lock|\.(png|ico|jpg|gif)$' | while read -r f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn; }; run | head -15; echo ---; run | awk '{s+=$1} END{print s" lines total"}'; echo --- by dir; for d in lib test examples .; do :; done; git ls-files | cut -d/ -f1 | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files | grep -vE 'package-lock|\.(png|ico|jpg|gif)$'); do echo "== $f $(git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep -ac '^author ') lines"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep -a '^author ' | sort | uniq -c | sort -rn | head -3; done 2>/dev/null | head -80; git log --format='%an|%ad' --date=short | awk -F'|' '{l[$1]=(l[$1]==""?$2:l[$1]); f[$1]=$2} END{for(a in l) if(a=="Troy Goode"||a=="Douglas Christopher Wilson") print a, "last", l[a], "first", f[a]}'
+FINAL ANSWER:
+Troy Goode owns the most surviving code. Douglas Christopher Wilson is second. I measured this with `git blame`, which credits each line to the commit that last changed it. Commit counts don't enter into it.
+
+I ignored whitespace changes and tracked moved or copied lines. I also excluded the `62628c0` reformat commit. That commit re-indented every JS file. Without the exclusion, Fiona Formatter would own most of the JS. I skipped the lockfile and binary files. That leaves 1,995 lines across 18 files.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 41% |
+| Douglas Christopher Wilson | 629 | 32% |
+| Íñigo Marquínez Prado | 95 | 5% |
+| Jon Church | 72 | 4% |
+| Sebastian Beltran | 67 | 3% |
+| Ulises Gascón | 52 | 3% |
+| Ignacio Mangas | 44 | 2% |
+| Everyone else | 226 | 11% |
+
+- **Troy Goode** owns the core of the project. They hold `lib/index.js` (159 of 238 lines) and most of the test files, including `vary.js`, `error-response.js` and `example-app.js`. They also hold about 42% of `README.md`.
+- **Douglas Christopher Wilson** owns the project scaffolding. That covers the lint config, `package.json`, `HISTORY.md`, the license and about half of `ci.yml`. They also hold 339 lines of `test/test.js`, which is close to Troy's 317.
+- **Everyone else** mostly owns a single area. Sebastian Beltran has `codeql.yml`, Íñigo Marquínez Prado has `scorecard.yml` and Ulises Gascón has `dependabot.yml`. Jon Church has about a quarter of the README.
+
+**Who is still active:** Troy's last commit was 2026-04-10, and Douglas's was 2021-09-07. I haven't checked whether Douglas is still around. If they've left, about a third of the code, mostly config and CI, has no active owner.
+
+**Limits:** Surviving lines show who last touched code, not who understands it. Troy's most recent commits are `lib: annotate handlers` and `test: vary header coverage`. Some of that line count may come from rewrites of earlier code.
+
+I didn't use the `busfactor` skill. It weights commits by age, so it measures recent activity rather than surviving code. I can run it if you also want a CODEOWNERS file and an orphaned-zone report.
+META cost=0.1089291 ms=27474 turns=7

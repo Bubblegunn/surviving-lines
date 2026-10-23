@@ -1,0 +1,22 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---; git log --since='12 months ago' --format='%an <%ae> %ad' --date=short | awk '{print $0}' | sort -k1 | head -50; echo ---; ls lib/rack/attack/store_proxy/; ls CODEOWNERS .github/CODEOWNERS 2>&1
+ - Bash: git log --since=2023-01-01 --format='%h %an <%ae> %ad %s' --date=short -- lib/rack/attack/store_proxy/; echo ---; git log --since=2025-10-01 --format='%h %an %ad %s' --date=short --stat=80 | grep -v '^$' | head -80; echo; git log -3 --format='%h %an %ad %s' --date=short -- lib/rack/attack/store_proxy/valkey_proxy.rb
+FINAL ANSWER:
+Three people are a good fit. I judged "still around" by commits to this repo in the last few months, since git can't show who is actually available.
+
+**Suggested reviewers**
+1. **Hiroshi Tanaka** wrote `valkey_proxy.rb` (#310 on 2026-09-02, #318 on 2026-09-16). They have the freshest knowledge of how a proxy is meant to be structured, including `wrap` and the version check. They appear under two different emails, `hiroshi@tanaka.example` and `<email redacted>`. Both look like placeholder domains, so check that these are one real person before you tag them.
+2. **Santiago Bartesaghi** is an active maintainer, with commits through 2026-09-30. They made the `reset!` fix for namespaced cache stores in the proxies (#673, 2024-12). Their 2026 touches to `store_proxy/` were only a style autocorrect.
+3. **Jean Boussier** is an active maintainer, with commits in 2026-03. They wrote "Eagerly check for store validity" (#714) in `lib/rack/attack/cache.rb`. That is the code that picks and wraps the proxy, so they know how the proxies are called.
+
+**Historical authors to skip**
+- **Gonzalo Rodriguez** wrote most of the proxy code in 2018–19. They still commit to the repo (2025-11), but their last change to `store_proxy/` was 2019. Add them only if you want the original design intent.
+- **Others:** hakanensari, Vincent Boisard, fatkodima, Jonathan del Strother, Mitchell Henke and the rest have no recent activity here.
+
+There is no CODEOWNERS file, so this comes only from git history. I'd request Hiroshi Tanaka and Jean Boussier, and add Santiago Bartesaghi if your change touches `reset!` or namespaced stores.
+META cost=0.06524920000000001 ms=16880 turns=3

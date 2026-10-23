@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.py' | wc -l && git ls-files '*.py' && echo --- && git ls-files '*records.py'
+ - Bash: for f in $(git ls-files '*.py'); do git blame --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn
+ - Bash: echo "== records.py blame (author <email>) ==" && git blame --line-porcelain HEAD -- records.py | grep -E '^author ' | sort | uniq -c | sort -rn && echo "== total lines records.py: $(wc -l < records.py)" && echo "== per-author with email, all py ==" && for f in $(git ls-files '*.py'); do git blame --line-porcelain HEAD -- "$f" | grep -E '^author-mail '; done | sort | uniq -c | sort -rn | head -40 && echo "== records.py recent commits ==" && git log --format='%h %ad %an <%ae> %s' --date=short -- records.py | head -30 && echo "== total commits on records.py: $(git log --oneline -- records.py | wc -l)"
+ - Bash: echo "== last commit date per author (py files) ==" && git log --format='%ad %an' --date=short -- '*.py' | awk '{d=$1; $1=""; a[$0]=(a[$0]==""||d>a[$0])?d:a[$0]} END{for(k in a) print a[k], k}' | sort -r && echo "== last 12 months commits touching py ==" && git log --since=2025-10-23 --format='%ad %an %s' --date=short -- '*.py' | head -30
+ - Bash: echo "== records.py surviving lines by commit year ==" && git blame --line-porcelain HEAD -- records.py | grep -E '^author-time ' | awk '{print strftime("%Y", $2)}' | sort | uniq -c && echo "== files Marcus touched ==" && git log --author='Marcus Lindqvist' --name-only --format= | sort | uniq -c && echo "== files Joseph Gardi touched ==" && git log --author='Joseph Gardi' --name-only --format='%h %s' | head -20 && echo "== Dana Okafor (both spellings) files ==" && git log -i --author='dana okafor' --name-only --format='%h %ad %s' --date=short | head -30 && echo "== Priya Raman, Tomas Ibarra, Harold Cooper last commits ==" && git log --author='Harold Cooper' -1 --format='%ad %s' --date=short 
+ - Bash: git blame --line-porcelain HEAD -- records.py | grep -E '^author-time ' | awk '{print $2}' | while read t; do date -r "$t" +%Y; done | sort | uniq -c
+ - Bash: git blame --line-porcelain HEAD -- records.py | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2; if (t>=1767225600) print a}' | sort | uniq -c | sort -rn && echo "== 2024 lines ==" && git blame --line-porcelain HEAD -- records.py | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2; if (t>=1704067200 && t<1767225600) print a}' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** For `records.py`, ask **Dana Okafor** about the recent helpers and **Tomás Ibarra** about typed-column coercion. **Kenneth Reitz** wrote most of the surviving code but has been inactive since 2024.
+
+**Method:** I ran `git blame HEAD` and counted lines that survive in the current tree, not commits. I did not use `-w`, so formatting-only rewrites still count.
+
+**Whole repo (9 `.py` files):** Kenneth Reitz owns the most surviving lines (415), mostly from 2016 code. Most of the other top names (Jan Vlcinsky, Greg Troszak, Joakim Uddholm, Chad Whitacre, Harold Cooper) have not committed in years. Most of the code is old and dormant.
+
+**`records.py` (622 lines):**
+- 296 lines are from 2016 and 54 from 2024, nearly all Kenneth Reitz. The original design is his, but he has not committed since 2024-03-29.
+- 70 lines were written or rewritten in 2026. These are the only recent logic:
+
+| Author | Surviving 2026 lines | What they did |
+|---|---|---|
+| Dana Okafor | 35 (25 + 10) | Key normalisation and chunking helpers (2026-04-06); `_describe` (2026-05-11) |
+| Priya Raman | 15 | Black reformat (2026-06-03). Formatting only, so not design knowledge |
+| Tomás Ibarra | 11 | `_coerce_row` for typed columns (2026-04-20) |
+| Marcus Lindqvist | 5 | `LEGACY_SKIP` columns (2026-03-02). Most of his other commits are in `examples/export_legacy.py` |
+| pre-commit-ci bot | 4 | Auto-fixes |
+
+Joseph Gardi's 2026-02 fix to re-raise exceptions in the transaction context manager touched `records.py`, but none of those lines survive.
+
+**Assumptions to check:**
+- I treated "Dana Okafor" and "dana okafor" as one person. They use different emails, so confirm that.
+- Git emails may be stale. Confirm that Dana and Tomás are still reachable before you rely on them.
+META cost=0.008612930000000001 ms=29548 turns=8

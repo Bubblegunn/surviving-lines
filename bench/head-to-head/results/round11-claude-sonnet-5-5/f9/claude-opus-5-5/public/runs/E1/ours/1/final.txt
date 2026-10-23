@@ -1,0 +1,74 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --merge-identities; echo =====; $SL --group-by dir --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S; echo ======; node $S --merge-identities; echo ======; node $S --group-by dir --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --merge-identities 2>&1 | head -30; echo "-----"; node $S --group-by dir --merge-identities 2>&1; echo "-----"; node $S --files --merge-identities 2>&1 | head -60; git show --stat 62628c0 | head -30
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short --author=laptop.example --stat | head -20; git show --stat 739dc11 fcd2b56 | grep -E '^ |^commit' | head -20
+FINAL ANSWER:
+The library code (`lib/index.js`) depends on one person: **Troy Goode**. They hold 67.3% of its surviving lines. The test suite also depends on them at the folder level (51.2%), and Douglas Christopher Wilson holds most of the rest. The whole project has a bus factor of **2**.
+
+I used the `surviving-lines` tool. It runs `git blame -w -M -C` at HEAD and counts the lines each author still has in the code, which is a better ownership signal than commit counts. It covered all 18 files: 1,662 non-blank lines (1,995 with blank lines), 315 commits, merges excluded.
+
+## Whole repository
+
+**Bus factor = 2.** I define bus factor as the smallest number of authors whose surviving lines together reach 50% of the code. Counting the two Troy Goode addresses as one person, Troy Goode and Douglas Christopher Wilson hold 72.2% of non-blank lines (72.5% with blank lines). It takes 4 authors to reach 80%.
+
+| Author | Lines | Share | With blank | Share | Commits | Last commit |
+|---|---|---|---|---|---|---|
+| Troy Goode (2 addresses) | 649 | 39.0% | 810 | 40.8% | 95 (30.2%) | 2026-04-10 |
+| Douglas Christopher Wilson | 551 | 33.2% | 629 | 31.7% | 143 (45.4%) | 2021-09-07 |
+| Íñigo Marquínez Prado | 80 | 4.8% | 95 | 4.8% | 2 | 2024-05-14 |
+| Jon Church | 59 | 3.5% | 72 | 3.6% | 3 | 2026-01-16 |
+| Sebastian Beltran | 57 | 3.4% | 67 | 3.4% | 2 | 2025-07-23 |
+| Ulises Gascón | 46 | 2.8% | 52 | 2.6% | 3 | 2026-01-22 |
+| Ignacio Mangas | 38 | 2.3% | 44 | 2.2% | 2 | 2025-12-01 |
+| Alejandro Caravaca Puchades | 30 | 1.8% | 34 | 1.7% | 5 | 2015-05-28 |
+| Linus Unnebäck | 26 | 1.6% | 26 | 1.3% | 1 | 2016-11-07 |
+| Ollie Buck | 14 | 0.8% | 17 | 0.9% | 1 | 2019-06-05 |
+
+52 more authors hold 6.7% together; the largest is Eric di Domenico with 0.7%.
+
+**Troy Goode appears under two addresses.** I counted `<email redacted>` and `troy@laptop.example` as one person because the name is identical and the tool rates the match as strong. That is still a guess from names and addresses. Counted separately, the two addresses hold 605 lines (36.4%) and 44 lines (2.6%); the bus factor is still 2 (69.6%), and it takes 5 authors to reach 80%. The `.mailmap` line that would make the merge permanent comes from `--identities`. I did not run that or write anything.
+
+## Parts that depend on one person
+
+| Scope | Bus factor (50%) | Main holder |
+|---|---|---|
+| `lib/` (only `lib/index.js`, 214 lines) | **1** | Troy Goode 67.3%; next is Douglas Christopher Wilson at 9.3% |
+| `test/` (820 lines) | **1** | Troy Goode 51.2%; Douglas Christopher Wilson 42.0% |
+| root files (323 lines) | 2 | Douglas Christopher Wilson 29.4%, Troy Goode 26.3% |
+| `.github/` (305 lines) | 2 | Douglas Christopher Wilson 30.2%, Íñigo Marquínez Prado 26.2% |
+
+Single files where one person holds more than 80%:
+- **Troy Goode:**
+  - `test/vary.js`: 100%
+  - `test/error-response.js`: 82.7%
+  - `test/example-app.js`: 80.0%
+  - `test/issue-2.js`: 80.0%
+- **Douglas Christopher Wilson:**
+  - `LICENSE`: 94.4%
+  - `HISTORY.md`: 80.5%
+  - `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`: 100%
+- **Íñigo Marquínez Prado:** `.github/workflows/scorecard.yml`, 98.4%
+- **Sebastian Beltran:** `.github/workflows/codeql.yml`, 100%
+- **Ulises Gascón:** `.github/dependabot.yml`, 100%
+
+Overall, 10 of the 18 files have one owner above 80%. Three files have no owner above 50%, so they depend on several people: `test/test.js` (Douglas Christopher Wilson 49.8%, Troy Goode 41.3%), `README.md`, and `package.json`. `package.json` is borderline: Douglas Christopher Wilson holds exactly 50.0%.
+
+**Practical risk:** Douglas Christopher Wilson's last commit was in 2021. That makes Troy Goode the main person who knows the core library, and most of the test suite is also theirs.
+
+## What I excluded or checked
+
+- **Reformat commit left out:** `62628c0` by Fiona Formatter (2026-04-12) only changed indentation and quotes, in 4 files (1,016 lines changed). Counting it would give Fiona Formatter 291 lines (17.5%). It would also cut Troy Goode to 554 (33.3%) and Douglas Christopher Wilson to 376 (22.6%), and the top two together would drop to 56.0%.
+- **Other mechanical-looking commits:** the tool checked 136 commits and set aside only `62628c0`. It kept 5 others that look mechanical: `739dc11`, `fcd2b56`, `00d6eec`, `344ce1e` and `9c2b59d`. Each holds 17 lines or fewer, so they do not change these results.
+- **Bot:** dependabot[bot] (10 lines, 11 commits) is not credited.
+- **Same address, two names:** "Alejandro Caravaca Puchades" and "alex94puchades" use the same address and are counted as one person (30 lines).
+- **Lines not attributed:** 10 of the 1,672 non-blank lines were not credited to anyone (1,662 attributed).
+
+These numbers measure whose code is still in the project. They do not show code quality, review work, or who actually understands the code.
+META cost=0.2934806 ms=34411 turns=7

@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head; git log --format='%h %an <%ae> %s' | head -30; git shortlog -sne HEAD | head
+ - Bash: cat .mailmap 2>/dev/null; head -5 attribute_string.go; git show --stat dee565e | tail -5
+b(){ for f in "$@"; do git blame -w -M -C -C --line-porcelain --ignore-revs-file .git-blame-ignore-revs -- "$f"; done | grep '^author-mail' | sort | uniq -c | sort -rn; }
+echo "== naive (all non-vendor, no flags)"; for f in $(git ls-files | grep -v '^vendor/'); do git blame --line-porcelain -- $f; done | grep '^author-mail' | sort | uniq -c | sort -rn
+echo "== hand-written .go, moves+ignore-revs"; b $(git ls-files '*.go' | grep -v '^vendor/' | grep -v attribute_string.go)
+echo "== all non-vendor non-go.sum, moves+ignore"; b $(git ls-files | grep -v '^vendor/' | grep -v go.sum)
+ - Bash: git log --format='%an <%ae>' | grep -E 'rhysd|matt.hall' | sort -u; git ls-files vendor | head; for f in $(git ls-files | grep -v '^vendor/'); do git blame --line-porcelain -- $f; done | grep -c '^author-mail'; git log -1 --format=%ad 4c2cd34; git log --since=2024-01-01 --no-merges --format='%an' -- '*.go' ':!vendor' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** Fatih Arslan owns about **57%** of the hand-written Go code that is live today. Next is **Linda_pp (rhysd) at about 9%**, then **Matthew Hall at about 6%**. Everyone else is at 4% or less, across roughly 20 more contributors.
+
+**How I counted:** I ran `git blame` on the current HEAD. It ignores whitespace, follows code that was moved or copied (`-M -C -C`), and skips the gofmt commit listed in `.git-blame-ignore-revs`. I left out `vendor/`, `go.sum` and the generated `attribute_string.go`.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 / 1554 | 57.5% |
+| 2 | Linda_pp (rhysd) | 136 | 8.8% |
+| 3 | Matthew Hall | 98 | 6.3% |
+| 4 | Greg Poirson | 64 | 4.1% |
+| 5 | bogem | 52 | 3.3% |
+
+**Why a quick count gives a different picture:** if you blame all non-vendor files without those options, Fatih drops to about 50% and **Raj Patel looks like #2 at about 8%**. That is misleading. Raj's lines come mostly from mechanical commits:
+- `4831a13`: the `interface{}` → `any` gofmt rewrite.
+- `dee565e`: moving `Attribute` into `attribute.go`.
+
+Once you follow moved code and skip the gofmt commit, Raj has only 2 lines. Lena Hoffmann's 103 lines are all the generated `stringer` file, so they don't show real authorship either.
+
+**What this means for your risk:**
+- It is mostly one person's code. One maintainer wrote more than half of it, and no one else has more than about 9%.
+- Recent activity shows the same pattern. Since 2024 there have been few non-merge Go commits, spread across about 10 people, each with 1–4 commits. Fatih merges all PRs. Most recent commits are dependabot dependency updates.
+- This is a small, stable library (about 1.5k lines), so it doesn't need many maintainers. Your real exposure is that one person controls merging and releases, not that the code is complex.
+META cost=0.194114 ms=27784 turns=4

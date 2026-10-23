@@ -1,0 +1,53 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --merge-identities --group-by dir
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S; echo ======; node $S --merge-identities --group-by dir
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --merge-identities --group-by dir; git show --stat 62628c0 | head -30
+FINAL ANSWER:
+**Short answer:** the single-contributor risk is **Troy Goode**, mainly in `lib/` (the core library) and `test/`. Overall the repository has a bus factor of 2.
+
+Figures are surviving lines at HEAD, from `git blame -w -M -C`. Repo-wide: 1,662 non-blank lines (1,995 with blank lines), 18 files, 315 non-merge commits.
+
+**Whole repository**
+- Bus factor is **2**. This is the smallest number of authors whose surviving lines reach 50% of the lines counted.
+- It is 5 authors to reach 80%.
+- Top rows, unmerged: Troy Goode `<<email redacted>>` 605 lines (36.4%), Douglas Christopher Wilson 551 (33.2%), Íñigo Marquínez Prado 80 (4.8%), Jon Church 59 (3.5%).
+- 53 more authors hold 7.6% together. The largest of them is Ollie Buck at 0.8%.
+
+**Per directory (bus factor on that directory)**
+
+| Directory | Bus factor | Who holds it |
+|---|---|---|
+| `lib/` (1 file, 214 lines) | **1** | Troy Goode, 144 lines (67.3%), both addresses merged. Douglas Christopher Wilson holds 20 (9.3%). |
+| `test/` (7 files, 820 lines) | **1** | Troy Goode, 420 lines (51.2%), both addresses merged. Douglas Christopher Wilson holds 344 (42.0%). |
+| root files (6 files, 323 lines) | 2 | Wilson 95 (29.4%) and Troy Goode 85 (26.3%). Nobody holds half. |
+| `.github/` (4 files, 305 lines) | 2 | Wilson 92 (30.2%) and Íñigo Marquínez Prado 80 (26.2%). Nobody holds half. |
+
+- **`lib/`:** Troy Goode is the only person above half. The next contributor, Wilson, holds about 9%.
+- **`test/`:** Troy Goode holds 51.2%, just over half. Wilson is a close second at 42%, so this is a weaker single-person dependency than `lib/`.
+- **Wilson:** he is the second major holder. He is not a sole owner of any directory.
+- **Troy Goode's activity:** the last commit under `<email redacted>` is 2019-05-27. His other address, `troy@laptop.example`, has a commit dated 2026-04-10.
+
+**Identity guesses (not confirmed)**
+- Troy Goode appears under `<email redacted>` (605 lines, 93 commits) and `troy@laptop.example` (44 lines, 2 commits). The tool rates this as strong evidence. Merged, he holds 649 lines (39.0%). The directory figures above use this merge, and it is an in-memory guess from names and addresses.
+- `alex94puchades <<email redacted>>` and Alejandro Caravaca Puchades share one address. Together they hold 30 lines, about 1.8%.
+- I did not write a `.mailmap`, because you asked only for analysis. Run `surviving-lines --identities` if you want the lines.
+
+**What was left out or adjusted**
+- Commit `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter, 2026-04-12) is ignored. I confirmed with `git show --stat` that it rewrote 1,016 lines across `lib/index.js` and three test files.
+- Without that correction, Fiona Formatter would hold 291 lines (17.5%). Wilson would drop to 376 (22.6%), and Troy Goode would drop to 554 (33.3%, both addresses merged). The bus factor stays at 2.
+- `dependabot[bot]` is excluded, with 10 lines and 11 commits. Its lines are not credited.
+- Mechanical-rewrite check: it covered 136 commits and set aside only `62628c0`. Five others look mechanical but were kept: `739dc11` (Wilson, 17 lines), `fcd2b56` (Troy Goode, 11), `00d6eec` (Wilson, 9), `344ce1e` (Wilson, 1) and `9c2b59d` (Wilson, 1). They are small, and I did not inspect them.
+- Copy detection is `-M -C`. The tool printed no note that copy detection moved anyone's share.
+
+**Limits**
+- The numbers show who wrote the code that remains. They don't show who understands it, who reviews it, or the quality of the code.
+- Deleted code counts for nobody.
+
+**Suggested action:** have someone besides Troy Goode review and take ownership of `lib/index.js`. Wilson is the obvious candidate, since he is already the second-largest holder in both `lib/` and `test/`.
+META cost=0.08265520000000001 ms=21574 turns=6

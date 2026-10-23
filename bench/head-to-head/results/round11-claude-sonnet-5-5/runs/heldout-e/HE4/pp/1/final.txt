@@ -1,0 +1,29 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files src/Parser | head -50; for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author-mail '; done | sort | uniq -c | sort -rn
+ - Bash: cat .mailmap; for f in $(git ls-files src/Parser); do echo "$f: $(git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' | sort | uniq -c | sort -rn | head -3 | tr -s ' ' | tr '\n' ';')"; done
+FINAL ANSWER:
+**Graham Campbell** is the main reviewer. **Priscila Duarte** is the second.
+
+I ran `git blame -w -M -C` on every file in `src/Parser/`. It counts only the lines that still exist today. `-w` ignores whitespace-only changes, so the "indent with tabs" commit doesn't take over the lines. `-M -C` follows lines moved or copied between files.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Graham Campbell | 782 | ~85% |
+| Priscila Duarte | 118 | ~13% |
+| Vance Lucas | 10 | ~1% |
+| Others (2 people) | 2 | <1% |
+
+Ownership by file:
+- **Graham Campbell** wrote nearly all of `EntryParser.php` (363 lines), `Lines.php` (125 of 136), `Value.php`, `Lexer.php`, `Parser.php`, `Entry.php` and `ParserInterface.php`.
+- **Priscila Duarte** wrote all of `Interpolator.php` (62 lines) and `Comments.php` (56 lines). These are the two newest files: the `${VAR:-default}` expansion and the Comments helper.
+- **Vance Lucas** has 10 lines left in `Lines.php`. That is too little for a primary reviewer.
+
+Pick the reviewer by which file you change. For `Interpolator.php` or `Comments.php`, ask Priscila Duarte. For anything else in `src/Parser/`, ask Graham Campbell.
+
+I did not use the `.mailmap` when counting. It only merges the same person's alternate emails, and the author names in the per-file output already match.
+META cost=0.0497779 ms=16320 turns=3

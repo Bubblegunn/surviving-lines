@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | head -100; echo ---; git log --format='%h %an <%ae> %ad %s' --date=short | head -60; echo ---; git shortlog -sne HEAD
+ - Bash: printf 'abe2ea7\n0e8fe2e\n' > /tmp/ignore-revs; ls .mailmap 2>&1; for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a" "m}'; done > /tmp/blame.tsv; echo "== total by author"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo "== records.py"; grep '^records.py' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn; echo "== per file"; cut -f1,2 /tmp/blame.tsv | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: git rev-parse abe2ea7 0e8fe2e > /tmp/ignore-revs; cat /tmp/ignore-revs; for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a" "m}'; done > /tmp/blame.tsv; echo "== total by author"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo "== records.py"; grep '^records.py' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn; echo "== per file"; cut -f1,2 /tmp/blame.tsv | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: grep -n 'LEGACY_SKIP' -r . --include=*.py; echo ---; git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --date=short -e records.py | grep -E 'lindqvist|tibarra|okafor|dokafor' | cut -c1-140; echo ---; git log --format='%h %ad %an' --date=short --since=2025-01-01 -- records.py; echo; git show --stat --format='%h %an %s' 54b029d | head
+ - Bash: grep -rn 'LEGACY_SKIP' . --include='*.py'; echo ---; git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --date=short -e records.py | grep -E 'lindqvist|tibarra|okafor|dokafor' | cut -c1-150; echo ---; git log --format='%h %ad %an' --date=short --since=2025-01-01 -- records.py; echo; git show --stat --format='%h %an %s' 54b029d | head
+FINAL ANSWER:
+Git blame on the surviving lines answers this. I skipped the two formatting commits (`abe2ea7` black, `0e8fe2e` pre-commit.ci), which would otherwise credit Priya Raman and the bot with most of the repo. I also ran blame with `-w -M -C`, so whitespace changes and moved or copied lines keep their original author.
+
+**Whose Python is alive (all .py files, about 1,100 lines)**
+- **Kenneth Reitz:** about 435 lines (422 under one email, 13 under a laptop-hostname email). This is the original code. He's still the largest author even after 261 commits are set aside.
+- **Jan Vlcinsky:** 119 lines. Nearly all are in `tests/conftest.py`, `test_transactions.py`, `test_105.py` and `test_69.py`, so he is the main author of the test infrastructure.
+- **Greg Troszak:** 89 lines, in `records.py` and `test_transactions.py`.
+- **Chad Whitacre:** 85 lines, in `records.py` and `test_records.py`.
+- **Harold Cooper, Joakim Uddholm, mcdallas, Brobin and others:** 15 to 51 lines each.
+- **Dana Okafor:** 50 lines (38 + 12). I counted the two spellings and emails (`<email redacted>` and `dokafor@fastmail.example`) as one person. That is my inference, because no `.mailmap` exists.
+- **Marcus Lindqvist:** 8 lines, despite 25 commits (second in `shortlog`). Almost all of his commits were "tweak legacy exporter" edits to `examples/export_legacy.py`, which commit `54b029d` deleted. His 8 surviving lines are `LEGACY_SKIP` at `records.py:15`. It is defined there and referenced nowhere else, so it looks like dead code.
+
+**Who to ask about `records.py`** (about 650 lines, 305 + 13 from Kenneth)
+1. **Dana Okafor:** the most recent human author. Her `_normalize_keys`, `_chunked` and `_describe` helpers are at the end of the file. She is the best contact for the current state of the file.
+2. **Tomás Ibarra:** wrote `_coerce_row` (12 lines, 2026-04-20). Ask him only about that function.
+3. **Kenneth Reitz:** ask about the core design, including `Record`, `RecordCollection` and `Database`. His last non-merge commit was in March 2024, so he may not be reachable.
+4. **Greg Troszak and Chad Whitacre:** the next two largest surviving contributors to `records.py`, with 58 and 39 lines.
+5. **Marcus Lindqvist:** ask him only whether `LEGACY_SKIP` can be deleted.
+
+**Not checked**
+- Whether the four 2026 helpers (`_normalize_keys`, `_chunked`, `_coerce_row`, `_describe`) are called anywhere. If they aren't, they're dead like `LEGACY_SKIP`.
+- Whether anyone is still active. Git only shows past commits.
+
+I can grep for callers of those helpers and `LEGACY_SKIP` if you want.
+META cost=0.1158024 ms=38910 turns=7

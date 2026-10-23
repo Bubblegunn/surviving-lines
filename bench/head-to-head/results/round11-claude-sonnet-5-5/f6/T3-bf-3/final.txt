@@ -1,0 +1,27 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; git shortlog -sn --all | wc -l
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[tolower($2)]++} END{for(k in n) if(n[k]>1) print "name",k; for(k in e) if(e[k]>1) print "email",k}'; echo ---; git log --all --format='%cN <%cE>' | sort | uniq -c | sort -rn | head -5; git log --all --format='%(trailers:key=Co-authored-by,valueonly)' | grep -i -c troy
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sn --all | wc -l; git status --short
+FINAL ANSWER:
+Two people appeared under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** committed as "Alejandro Caravaca Puchades" (4 commits) and as "alex94puchades" (1 commit), both with `<email redacted>`.
+
+I added a `.mailmap` at the repo root that merges each pair. It doesn't rewrite history, so no hashes change. I haven't committed it, so it shows as untracked.
+
+After the merge, `git shortlog -sne --all` counts Troy at 122 and Alejandro at 5. The author count dropped from 64 to 63.
+
+**The top author is still Douglas Christopher Wilson `<<email redacted>>` with 143 commits.** Troy Goode is second at 122, so the merge didn't change first place.
+
+I didn't merge "Alejandro García Fernández" into either Alejandro. The name, email and spelling all differ, so they look like a different person.
+META cost=0.0708129 ms=18254 turns=4

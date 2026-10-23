@@ -1,0 +1,63 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib && echo --- && git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && for f in $(git ls-files lib); do echo "$f: $(git log --all --no-merges --pretty=format:%an -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done && echo --- && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | sort -t'|' -k1,1 -u | head -30; echo; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c
+ - Bash: git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | awk -F'|' '!s[$1]++' | head -8; echo ---; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | wc -l; wc -l lib/index.js; grep -rln "lib\|require(" --include=*.js --exclude-dir=node_modules . | head; grep -n '"main"' package.json; git log --all --no-merges --pretty=format:"%h %an %ad %s" --date=short -- lib | head -5
+FINAL ANSWER:
+## 🚌 Bus Factor: `lib/`
+
+Period: all history | Generated: 2026-10-22
+
+### Project-level bus factor: **1**
+
+If Troy Goode left, `lib/` would have no knowledgeable maintainer. They wrote 33 of 65 non-merge commits (51%), which is the only figure that crosses the 50% threshold.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 1 (`lib/index.js`, 238 lines) |
+| Files with bus factor 1 | 0 by contributor count (25 authors have touched it) |
+| Files with a dominant owner (>50%) | 1 (Troy Goode, 29 of the commits touching the file's history) |
+| Entry point of the package | Yes (`"main": "./lib/index.js"` in `package.json`) |
+
+`lib/` is a single file. The file is the whole public surface of the package, so every dependent depends on it.
+
+### Ownership
+
+| Contributor | Commits | Last commit |
+|---|---|---|
+| Troy Goode | 33 (51%) | 2026-04-10 |
+| Douglas Christopher Wilson | 4 | 2017-10-04 |
+| Alejandro Caravaca Puchades | 4 (5 with the alex94puchades alias) | 2015-05-28 |
+| Simon Mansfield | 3 | 2013-05-22 |
+| jordandenison | 2 | 2015-06-22 |
+| 20 others | 1 each | 2013 – 2021 |
+
+### Activity
+
+- **Last 90 days:** no commits. The most recent commit is 2026-04-12, about 6 months ago.
+- **Last year:** 2 commits. One is Troy Goode's `lib: annotate handlers`. The other is `Fiona Formatter`'s style reformat, which is probably an automated or bot account, so it is not a person who understands the code.
+- **Other authors:** the last substantive commit by any of them was LuisEGR's lint cleanup in 2021-07. Everyone else stopped contributing between 2013 and 2018.
+
+### Answer
+
+**It takes one departure.** The contributor list looks wide (25 names), but it is historical. Troy Goode is the only person with a large share of the commits and the only one with recent knowledge of the code. Everyone else has been inactive for 5 or more years. Troy Goode is also not active in the last 90 days, so the knowledge may already be at risk.
+
+### Caveats
+
+- Commit counts are a proxy for knowledge, not a direct measure. Some of Troy Goode's share could be small edits.
+- A bot reformat commit (`Fiona Formatter`) inflates recent activity but adds no understanding.
+- Author aliases (`Alejandro Caravaca Puchades` / `alex94puchades`) were not merged in the per-author counts.
+- I did not run the contributor-analyzer agent. With one file, `git log` was enough.
+
+### Recommendations
+
+1. **Immediate:** have a second person review `lib/index.js` and sign off on it, so more than one person has recent context.
+2. **Short-term:** add comments or a short design note on the non-obvious parts, such as the handler annotations from `b2005d9`.
+3. **Ongoing:** route future changes to `lib/` through at least two reviewers.
+META cost=0.06495400000000001 ms=21722 turns=5

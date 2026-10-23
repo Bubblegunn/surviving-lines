@@ -1,0 +1,42 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E4h-base-2/repo; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git log --format='%h %an <%ae> %s' | head -40; git log --oneline | wc -l; ls -a; ls .git-blame-ignore-revs 2>&1 | head -1
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E4h-base-2/repo; git ls-files | grep -v '^$' > /tmp/files.txt; cat /tmp/files.txt; git shortlog -sne HEAD | head -60; for f in $(cat /tmp/files.txt); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done > /tmp/b.tsv; awk -F'\t''{split($1,p,"/"); d=(length(p)>1?p[1]:"(root)"); c[d"\t"$2"\t"$3]++; t[d]++} END{for(k in c){split(k,q,"\t"); print q[1],c[k],t[q[1]],q[2],q[3]}}' /tmp/b.tsv | sort
+ - Bash: cd /tmp; awk -F'\t' '{split($1,p,"/"); d=(length(p)>1?p[1]:"(root)"); c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,q,"\t"); printf "%s %d/%d %.0f%% %s\n", q[1],c[k],t[q[1]],100*c[k]/t[q[1]],q[2]}}' b.tsv | sort -k1,1 -k2,2nr | awk '{n[$1]++} n[$1]<=4'; echo; awk -F'\t' '{c[$1"\t"$2]++} END{for(k in c)print c[k],k}' b.tsv | sort -k2,2 -k1,1nr | head -50
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E4h-base-2/repo; git show b2005d9 02afce3 --stat --format='%h %s'; git show b2005d9 02afce3 -w | head -80; git show 62628c0 --stat --format=%h | tail -3
+FINAL ANSWER:
+Only `lib` has a single owner. The other three areas have no one at 50% or more.
+
+I counted surviving lines with `git blame`, ignoring whitespace changes and skipping the formatting commit `62628c0`, so those lines go to whoever wrote them before. Both of Troy Goode's identities (`<email redacted>` and `troy@laptop.example`) count as one person. Dependabot is ignored.
+
+| Path | Top holders | Owner? |
+|---|---|---|
+| `lib/` | Troy Goode 159/238 (67%), Douglas Christopher Wilson 9% | Troy Goode |
+| `test/` | Troy Goode 453/966 (47%), Douglas Christopher Wilson 41% | No one reaches 50% |
+| `.github/` | Douglas Christopher Wilson 29%, Íñigo Marquínez Prado 25%, Sebastian Beltran 17% | No one |
+| root files | Troy Goode 32%, Douglas Christopher Wilson 28%, Jon Church 17% | No one |
+
+The root files are `README.md`, `HISTORY.md`, `LICENSE`, `package.json`, `.eslintrc.yml` and `.gitignore`.
+
+Suggested CODEOWNERS:
+
+```
+# lib: Troy Goode holds 67% of surviving lines
+/lib/    @<troy-goode-handle>
+
+# test, .github and root files: no one holds 50%, so no owner is named
+# Add a team here if you want review routing:
+# /test/     @org/team
+# /.github/  @org/team
+# *          @org/team
+```
+
+- **Handle:** I only have git names and emails, not GitHub usernames. Replace `@<troy-goode-handle>` with the real one.
+- **`test/` is close:** Troy Goode holds 47%, so it could pass 50% depending on how you count. His `02afce3` adds 36 lines to `test/vary.js`, which I counted because it is a real change.
+- **Comment-only commit:** `b2005d9` adds `// checked` comments in `lib/index.js`. I counted it because it is not formatting-only. Troy Goode is above 50% in `lib` either way.
+- **Duplicate identity:** `Alejandro Caravaca Puchades` and `alex94puchades` share an email, so they are one person. This does not change any result.
+META cost=0.08144169999999999 ms=27639 turns=5

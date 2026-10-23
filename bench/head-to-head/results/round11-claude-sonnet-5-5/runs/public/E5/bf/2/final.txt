@@ -1,0 +1,64 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -80; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; wc -l lib/index.js
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show --stat --format='%h %an %s' 62628c0 | head; git show --stat --format='%h %an %s' b2005d9 | head -5; git log --reverse --format='%h %ad %an' --date=short -1 -- lib/index.js | head -1
+FINAL ANSWER:
+`lib/index.js` is the `cors` middleware. It has 238 lines and 57 commits since 2013-01-30, from 25 authors.
+
+**Who shaped it**
+- **Troy Goode** wrote it and made 29 of the 57 commits, from the first commit (`bcd03d9`, 2013-01-30) through 2016. He added the core behaviour:
+  - header lookup that ignores case
+  - `origin: false` to turn CORS off
+  - pausing and resuming the request around async middleware
+  - the preflight-only headers
+  - Express 4 support
+  - the `vary` module
+  - the Access-Control-Expose-Headers support
+  - the ESLint switch
+- **Contributors 2013–2015.** Each added one feature or fix:
+  - Simon Mansfield: checks for a missing `Origin` header, and when the credentials header is sent.
+  - Damien Klinnert: only send Access-Control-Allow-Methods on OPTIONS requests.
+  - Eric di Domenico: `origin` can be a callback.
+  - Mathias Buus: use non-Express request and response methods, so it works with Connect.
+  - Typicode: PATCH added to the default methods.
+  - Igor Soarez: `Vary: Origin` for specific origins.
+  - Raymond Feng: `applyHeaders` without a closure.
+  - max.laverse: pass the preflight request on to `next()`.
+  - DracoBlue: expose headers on OPTIONS.
+  - Alejandro Caravaca Puchades and alex94puchades: `RegExp` and array values for `origin`.
+- **Douglas Christopher Wilson** (4 commits, 2017) made later fixes:
+  - `Vary: Access-Control-Request-Headers` when `allowedHeaders` is dynamic.
+  - A fix for a missing `methods` option from an options delegate.
+  - Lint and eslint changes.
+- **Other fixes, 2017–2018:** Tomek Kopczuk (`Vary: Origin` for regex origins), Saad Tazi (frozen options), Benjamin Eidelman (Safari preflight workaround), Chima Alaebo (dead branch removal) and Tom Arad (`maxAge` set to 0).
+- **Recent commits.** LuisEGR (2021) removed unused parameters. Troy Goode's `lib: annotate handlers` (2026-04-10) changed 12 lines. Fiona Formatter's `style: reformat` commit (2026-04-12) reformatted the whole file.
+
+**Whose code is still there**
+
+Plain `git blame` credits Fiona Formatter with 32 lines (`-w -M -C`), because the reformat changed quote style. I re-ran blame with `--ignore-rev 62628c0` to skip that commit. This is the current attribution of the 238 lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Benjamin Eidelman | 3 |
+| Others (Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal) | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy Goode wrote about two thirds of the file as it stands (159 of 238 lines). Wilson is the next largest at 22 lines. Typicode, Tomek Kopczuk, Damien Klinnert and DracoBlue no longer own any lines. Their fixes are either in the code now under other authors' lines, or were replaced.
+
+The reformat commit touched 428 lines in the diffstat (1,016 across four files). If you count authorship by raw `git blame`, it makes Fiona Formatter look like the third-largest contributor. That is formatting only, not logic.
+META cost=0.0689555 ms=16228 turns=5

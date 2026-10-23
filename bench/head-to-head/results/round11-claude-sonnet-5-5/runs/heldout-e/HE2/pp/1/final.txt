@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print $1}' | sort | uniq -c | sort -rn | head -20; cat .git-blame-ignore-revs; git log --oneline | wc -l
+ - Bash: git ls-files | grep -v '^vendor/' | grep -E '\.(go|mod)$' > /tmp/files.txt; cat /tmp/files.txt; for mode in "plain" "follow"; do echo "== $mode"; for f in $(cat /tmp/files.txt | grep '\.go$'); do if [ $mode = plain ]; then git blame --line-porcelain -w --ignore-revs-file .git-blame-ignore-revs "$f"; else git blame --line-porcelain -w -M -C -C --ignore-revs-file .git-blame-ignore-revs "$f"; fi | grep -a '^author ' ; done | sort | uniq -c | sort -rn; done; git shortlog -sne HEAD | head
+FINAL ANSWER:
+Fatih Arslan owns about 54% of the live Go code. Linda_pp is next at about 8%, then Lena Hoffmann at about 6%. The library is not a one-person project, but it is concentrated in one maintainer.
+
+I ran `git blame` on the 6 non-vendored `.go` files, 1,657 lines in total. I skipped `vendor/` because it is third-party code, and I ignored the gofmt commit listed in `.git-blame-ignore-revs`. I used `-w -M -C -C` so lines moved in the recent refactor are credited to the original author, not to whoever moved them.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 | 53.9% |
+| 2 | Linda_pp | 136 | 8.2% |
+| 3 | Lena Hoffmann | 103 | 6.2% |
+| 4 | Matthew Hall | 98 | 5.9% |
+| 5 | Greg Poirson | 63 | 3.8% |
+
+Around 25 other people hold the remaining ~22%. Fatih Arslan's share drops to about 50% if you don't follow moved lines. In that run Raj Patel jumps from 2 to 97 lines, because the move/generated-file commits (`24f8977`, `dee565e`) get credited to them.
+
+The commit history points the same way:
+- Fatih Arslan authored 201 of the 300 commits.
+- The next human author has 5 commits.
+- 38 commits are from dependabot.
+
+The history is more skewed than the live code. Many contributors have a few lines each, but almost all ongoing maintenance comes from one person.
+
+I didn't check recent activity per author. Before you decide, I can check whether Fatih Arslan is still committing, and whether anyone else has merge rights.
+META cost=0.0682354 ms=18945 turns=4

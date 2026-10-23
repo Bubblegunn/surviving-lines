@@ -1,0 +1,56 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL --merge-identities; echo ======; $SL --reviewers src --merge-identities; echo ======; $SL --group-by dir --merge-identities -- src | head -80
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $SL --merge-identities; echo ======; node $SL --reviewers src --merge-identities; echo ======; node $SL --group-by dir --merge-identities -- src | head -80
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $SL --reviewers src --merge-identities; echo ---; node $SL --files --merge-identities -- src | head -40; echo ---; git show --stat c584a1d | head -20; ls src | head -30
+FINAL ANSWER:
+**Short answer:** Andrew Gallant wrote most of `src/` and is the person to ask. Sam Whitfield is a reasonable second reviewer.
+
+**Who wrote the code that is there now** (surviving lines in `src/`, counted with `git blame -w -M -C`):
+
+| Author | Lines | Share | Last commit | Activity |
+|---|---|---|---|---|
+| Andrew Gallant | 2,217 | 76.7% | 2026-01-14 | active |
+| Sebastian Thiel | 66 | 2.3% | 2023-09-05 | inactive |
+| Ashley | 65 | 2.2% | 2017-07-18 | inactive |
+| Aron Griffis | 56 | 1.9% | 2018-08-22 | inactive |
+| mcharsley | 43 | 1.5% | 2017-05-09 | inactive |
+
+- 32 more authors hold the rest.
+- The total is 2,889 non-blank lines (3,262 with blank lines) in 8 files.
+- Andrew Gallant's share on the with-blank basis is 78.2%.
+
+**Who to ask to review:**
+- **Andrew Gallant** is the main choice and is still active. He holds 50% or more of the lines in every file in `src/` except `src/testsuite/mod.rs`. That file has 7 lines, and Sam Whitfield holds 57.1% of it.
+- Among authors with recent commits, the next ones are **Sam Whitfield** (34 lines, 1.2%, last commit 2026-03-23) and Mei Tanaka (13 lines, 0.4%, last commit 2026-02-03).
+- The next two by line count, Sebastian Thiel and Ashley, have not committed in over a year. I would not rely on them.
+
+**Concentration:**
+- Bus factor is 1, measured as the smallest number of authors whose surviving lines reach 50% of the lines counted. Andrew Gallant alone holds 76.7%.
+- Reaching 80% takes 3 authors (2 on the with-blank basis). The scope is `src/` only.
+- For the whole repo (21 files, 3,508 non-blank lines), the bus factor is also 1 (Andrew Gallant, 80.3%). Reaching 80% takes 1 author.
+
+**Per file** (top owner in each):
+- `src/lib.rs` (1,086 lines): 63.3% Andrew Gallant.
+- `src/error.rs` (249 lines): 61.8% Andrew Gallant, with Garrett Berg at 13.3% and Niv Kaminer at 11.6%.
+- `src/util.rs` (46 lines): 73.9% Andrew Gallant, with Aron Griffis at 17.4%.
+- The other `src/` files are above 70% Andrew Gallant, apart from `src/testsuite/mod.rs`.
+
+**What the numbers leave out or assume:**
+- **Moved code:** 1,579 of the 2,889 lines (54.7%) were written in other paths and moved or copied here. The largest sources are `src/tests/recursive.rs`, `src/lib.rs` and `src/tests/util.rs`. The credit goes to the people who wrote them, not to whoever moved them. Your last commit also renamed `src/tests` to `src/testsuite`.
+- **Copy detection:** the figures use `-w -M -C`. Copy detection moved 147 lines in 4 files to other authors. Without it, Andrew Gallant would hold 80.5% (2,326 lines) and Sam Whitfield 2.5% (72 lines). With it, Andrew Gallant holds 76.7% and Sam Whitfield 1.2% (34 lines). Garrett Berg holds 33 lines (1.1%) with copy detection and none without it.
+- **Mechanical rewrites:** I checked for them across 78 commits and set aside none. One looks mechanical and I did not set it aside: `c584a1d` "style: switch to rustfmt" by Andrew Gallant, 122 surviving lines in `src/`. I confirmed with `git show --stat` that it only reformatted code, so some of his lines are formatting rather than authorship. I did not re-run with `--ignore-rev` to get the figures without it.
+- **Same person under two names:**
+  - Niv Kaminer appears as `nivkner` too (43 lines in `src/`).
+  - Alisha Aneja appears as `Alisha` too (9 lines in `src/`).
+  - The counts already treat each pair as one person, because they share an address.
+  - Igor Gnatenko has 3 commits under two addresses but no surviving lines in `src/`.
+  - The merge is an in-memory guess from names and addresses. I wrote nothing to `.mailmap`.
+- **Possible duplicate, not merged:** `Ashley <<email redacted>>` and `Ashley Mannix <<email redacted>>` may be one person. It is a weak match, so I count them separately: Ashley has 65 lines and Ashley Mannix has 4. If they are the same person, that is 69 lines (2.4%).
+- **Limits:** surviving lines show whose code is still there. They do not show quality, review work or design discussion, and code deleted on purpose counts for nobody.
+META cost=0.1185861 ms=26531 turns=6

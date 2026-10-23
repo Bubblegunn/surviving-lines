@@ -1,0 +1,204 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Which people committed in the 14 days up to the latest commit in this repo (the latest commit is dated 2026-04-12)? For each person give their commits in that window and how many lines of theirs are still in the code today. Set aside formatting-only commits and bots, and count each person once.
+
+CRITERIA:
+1. Reports 2 commits in the window for Troy Goode.
+2. Reports between 780 and 840 lines of Troy Goode that are still in the code today (both of his addresses counted as one person).
+3. Reports Vansh Sharma with 1 commit in the window and 1 line still in the code today.
+4. Does not list Fiona Formatter as a contributor of real work, and names her commit as a formatting-only commit that was set aside, with the reason (whitespace, indentation and quote changes only).
+5. Lists no other person or bot as having committed in the window, and states the date window it used.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: git log -1 --format='%ci' && git log --since='2026-03-29' --format='%h|%ad|%an|%ae|%s' --date=iso --shortstat | head -100; echo; cat .mailmap 2>/dev/null
+ - Bash: git log -12 --format='%h|ad=%ad|cd=%cd|%an <%ae>|cn=%cn|%s' --date=iso; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30
+ - Bash: git show 62628c0 --stat --format= ; git diff -w 62628c0^ 62628c0 | sed "s/\"/'/g" | grep '^[-+][^-+]' | head; echo ---; git show b2005d9 | head -40; git show 02afce3 --stat
+ - Bash: for ig in "" "--ignore-rev 62628c0"; do echo "== $ig"; git ls-files | while read f; do git blame -w --line-porcelain $ig HEAD -- "$f" 2>/dev/null | grep -E '^(author-mail|filename) ' | paste - - | awk -v f="$f" '{print $2, f}'; done | grep -Ei 'troy|vansh|fiona' | sort | uniq -c; done
+ - Bash: git ls-files | while read f; do git blame -w --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" | grep -E '^author-mail ' | awk -v f="$f" '{print $2, f}'; done | grep -Ei 'troy|vansh|fiona' | sort | uniq -c
+FINAL ANSWER:
+Two people committed in that window: **Troy Goode** and **Vansh Sharma**.
+
+The window is 2026-03-29 to 2026-04-12. The nearest commit before it is from 2026-03-02, so the exact start date doesn't change the result.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| **Troy Goode** | 2: `02afce3` test: vary header coverage (04-10), `b2005d9` lib: annotate handlers (04-10) | **746** in total. 48 of these come from the two window commits (36 in `test/vary.js`, 12 in `lib/index.js`). The other 698 are from his older commits. |
+| **Vansh Sharma** | 1: `5317ebe` docs: app.del() → app.delete() in README (#411, 04-07) | **1** (`README.md`) |
+
+How I counted:
+- **Troy is counted once.** His window commits use `troy@laptop.example` and his older commits use `<email redacted>`. Same name, so I treated them as one person. The repo has no `.mailmap` file to confirm this.
+- **Fiona Formatter (`62628c0`, 04-12) is excluded.** I checked the diff: it only changes indentation and quote style across 1016 lines.
+- **Line counts ignore that formatting commit.** I ran `git blame -w --ignore-rev 62628c0` on all tracked files, which gives each line back to whoever wrote it before the reformat. Without this, Fiona would get credit for 291 lines, and Troy's total would drop to 651 lines.
+- **No bot commits fall in the window.** The latest dependabot commits are from 2026-03-02.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: git log -1 --format=%ci && node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>" --since 2026-03-29 --until 2026-04-12T23:59:59 --merge-identities; echo ---; git log --since=2026-03-29 --until=2026-04-13 --format='%h %ci %an <%ae> %s'
+ - Bash: git log -1 --format='%ci %an' ee714bd; git show --stat --format='%h %s' 62628c0 | tail -3; git show --stat --format='%h %s' 5317ebe | tail -2; node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>" --since 2026-03-29 --until 2026-04-12T23:59:59 --merge-identities --json | python3 -c "
+import json,sys;d=json.load(sys.stdin)
+rows=d.get('authors') or d.get('rows') or []
+for r in rows:
+  n=json.dumps(r)
+  if 'Vansh' in n or 'Fiona' in n: print(n)
+print(list(d.keys()))"
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12. Four commits fall in it. After I set aside the formatting commit, two people remain.
+
+| Person | Commits in window | Lines of theirs still in the code |
+|---|---|---|
+| **Troy Goode** | 2: `b2005d9` "lib: annotate handlers" and `02afce3` "test: vary header coverage" (both 2026-04-10) | **649 (39.0%)**, or 810 (40.8%) counting blank lines |
+| **Vansh Sharma** | 1: `5317ebe` "docs: app.del() with app.delete() in README example (#411)" (2026-04-06) | **1 (0.06%)**, or 1 (0.05%) counting blank lines |
+
+**Troy Goode counted once:** Troy appears under two addresses with the same name. I merged them, but that is a guess from the name alone, not confirmed:
+- `troy@laptop.example`: both window commits, 44 lines.
+- `<email redacted>`: 0 commits in the window, 605 lines from older work.
+
+So of Troy's 649 lines, only the 44 under the laptop address come from that address. If the two addresses are different people, the person who committed in the window holds 44 lines. To make the merge permanent, add a `.mailmap` line. I did not write one, because you only asked a question.
+
+**Set aside:**
+- **Formatting commit:** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter (2026-04-12). It changed 4 files, 1,016 lines in and 1,016 out, and only whitespace and quotes. The line counts above give those lines back to their earlier authors. Without that correction, Fiona would show 291 lines (17.5%) and Troy 554 (33.3%).
+- **Bots:** dependabot's latest commit (`ee714bd`, 2026-03-02) is outside the window anyway, and its 10 lines are not credited to anyone.
+
+**How the lines were counted:**
+- Each line is credited to the last person who changed it, ignoring whitespace changes, moved lines and copied lines (`git blame -w -M -C`). The tool covered 1,662 of 1,672 non-blank lines in 18 files (1,995 counting blank lines).
+- The tool checked for other mechanical rewrites and kept 5 small ones in the counts: 739dc11, 00d6eec, 344ce1e and 9c2b59d by Douglas Christopher Wilson, and fcd2b56 by Troy Goode, worth 11 lines.
+- Whole repository: 2 authors hold half the non-blank lines (Troy Goode and Douglas Christopher Wilson together hold 72.2%), and 4 authors hold 80%.
+
+These figures only say whose lines are still in the code. They do not measure review work, line quality, or code that was deleted on purpose.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E2k-hist-1/repo; cat .mailmap 2>/dev/null; echo ---; git log -1 --format='%ad %ci'; git log --since='2026-03-29' --format='%h|%an|%ae|%ci|%s' --shortstat
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E2k-hist-1/repo; git log -8 --format='%h|%an|%ae|%ci|%cn|%s'; echo; git log --format='%an|%ae' | sort | uniq -c | sort -rn | head -20; git show --stat b2005d9 | tail -3; git show b2005d9 | head -40
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E2k-hist-1/repo; git ls-files | grep -v -E '\.(png|jpg|gif|ico)$' | while read f; do git blame -w --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author /{sub(/^author /,""); print c"|"$0"|"f}'; done > /tmp/blame.txt; echo "by author (all-time, ignoring format commit):"; cut -d'|' -f2 /tmp/blame.txt | sort | uniq -c | sort -rn | grep -E 'Troy|Vansh|Fiona'; echo "window commits:"; grep -E '^(b2005d9|02afce3|5317ebe|62628c0)' /tmp/blame.txt | cut -d'|' -f1,2,3 | sort | uniq -c; echo "no ignore-rev, Fiona:"; for f in $(git ls-files); do git blame -w --lin
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), once the formatting commit and bots are set aside.
+
+| Person | Commits in window | Lines from those commits still in code | All their lines still in code |
+|---|---|---|---|
+| **Troy Goode** | 2: `02afce3` test: vary header coverage (04-10), `b2005d9` lib: annotate handlers (04-10) | 48 (36 in `test/vary.js`, 12 in `lib/index.js`) | 746 |
+| **Vansh Sharma** | 1: `5317ebe` docs: app.del() → app.delete() in README (04-06) | 1 (`README.md`) | 1 |
+
+**What I left out or merged:**
+- **Fiona Formatter**, `62628c0` (04-12): a formatting-only commit (4-space indent and double quotes; 1016 lines added, 1016 removed). I ran blame with `--ignore-rev 62628c0 -w`, so lines it reformatted still count for whoever wrote them. Without that, Fiona would get 291 lines.
+- **dependabot[bot]**: no commits in the window anyway. Its latest commits are from 2026-03-02.
+- **Troy Goode** committed under two emails: `troy@laptop.example` for the window commits and `<email redacted>` for older ones. The repo has no `.mailmap`, so I matched them by name and counted Troy once. The 746 covers both emails.
+
+"Lines of theirs" can mean two things, so the table shows both: lines from their commits in the window, and all their lines across the repo's history. Git blame does not always assign lines correctly when it skips a commit, so read the all-time numbers as close estimates.

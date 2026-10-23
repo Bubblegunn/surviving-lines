@@ -1,0 +1,34 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E3-base-1/repo && git ls-files | sed -n 's/.*\.\([^./]*\)$/\1/p' | sort | uniq -c; git ls-files | grep -v '\.' ; git show --stat 62628c0 | head -30; ls .git-blame-ignore-revs 2>/dev/null
+ - Bash: for mode in raw ignore; do echo "== $mode"; opt=""; [ $mode = ignore ] && opt="--ignore-rev 62628c0"; git ls-files | while read f; do e="${f##*.}"; [ "$e" = "$f" ] && e="(none)"; case $f in .gitignore) e=gitignore;; esac; git blame --line-porcelain $opt -- "$f" | sed -n "s/^author-mail /$e /p"; done | sort | uniq -c | sort -k2,2 -k1,1nr; done; git show --stat b2005d9 02afce3 | grep -E '^(Author|    |  )'
+ - Bash: f=<home>/claude-kredi-runs/sub-shim/home/.claude/projects/-Users-efe-claude-kredi-runs-2026-10-23-r11-f9-claude-opus-5-5-P-runs-E3-base-1-repo/981ab8c0-de45-4fe5-a32d-01f565ac8a19/tool-results/bkn3uj17z.txt; sed -n '/== ignore/,$p' $f | grep ' js ' ; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E3-base-1/repo; git log -3 --skip=1 --format='%h %an <%ae> %s' --shortstat; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git log --format='%ae %h %s' | grep -iE 'troy@laptop'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E3-base-1/repo; for opt in "" "-w" "-w --ignore-rev 62628c04a1b16306a0285b3e26645acfa1c21687"; do echo "== [$opt]"; git ls-files '*.js' | while read f; do git blame --line-porcelain $opt -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -5; done; git show b2005d9 | head -40
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E3-base-1/repo; R=62628c04a1b16306a0285b3e26645acfa1c21687; for m in ign ignw; do echo "== $m"; git ls-files '*.js' | while read f; do if [ $m = ign ]; then git blame --line-porcelain --ignore-rev $R -- "$f"; else git blame -w --line-porcelain --ignore-rev $R -- "$f"; fi | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -4; done; echo; for e in md yml json gitignore; do echo "== $e"; git ls-files "*.$e" | while read f; do git blame --line-porcelain -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -2; done; echo "== LICENSE"; git blame --line-porcelain LICENSE | sed -n 's/^author 
+FINAL ANSWER:
+Counts done. Raw `git blame` gives a misleading result for `.js`, so I also ran it a second way.
+
+| Extension | Top owner (surviving lines) | Runner-up |
+|---|---|---|
+| `.js` (7 files) | **Troy Goode**: 612 with `-w` and the reformat commit ignored | Douglas Christopher Wilson: 420 |
+| `.md` (2) | **Troy Goode**: 104 | Jon Church: 72 |
+| `.yml` (6) | **Douglas Christopher Wilson**: 117 | Íñigo Marquínez Prado: 94 |
+| `.json` (1) | **Douglas Christopher Wilson**: 20 | Troy Goode: 12 |
+| `.gitignore` | **Douglas Christopher Wilson**: 4 | Troy Goode: 1 |
+| no extension (`LICENSE`) | **Douglas Christopher Wilson**: 17 | Troy Goode: 5 |
+
+**Caveat for `.js`:** Plain `git blame` gives `.js` to **Fiona Formatter** with 1016 lines. That comes from commit `62628c0` ("style: reformat js with 4-space indent and double quotes"). The commit changed 1016 lines and removed 1016, so it only reformatted code. Blame then names Fiona as the last person to touch each line, not the person who wrote it.
+- Raw blame: Fiona 1016, Troy 139, Doug 35.
+- With `--ignore-rev 62628c0`: Troy 520, Doug 339, Fiona 237. Git cannot match every reformatted line to its earlier version.
+- With `--ignore-rev 62628c0` and `-w` (ignore whitespace): Troy 612, Doug 420, Fiona 0. I use this as the real answer.
+
+**Other notes:**
+- I grouped authors by name. Troy Goode commits under two emails, `<email redacted>` and `troy@laptop.example`.
+- 37 of Troy's `.js` lines come from the two newest commits under `troy@laptop.example`. Commit `b2005d9` only adds `// checked` comments to 12 existing lines, which gives Troy blame for code they may not have written. Commit `02afce3` adds 36 test lines. Troy still leads `.js` without these lines.
+- Only `.js` files were touched by the reformat commit. Plain blame results for the other extensions are accurate.
+- The repo has no `.git-blame-ignore-revs` file. Adding `62628c0` to one would make plain `git blame` give the corrected result.
+META cost=0.2647126 ms=34481 turns=6

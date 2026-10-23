@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/rack/attack/store_proxy/ \u2014 find reviewers who are still active, not just historical authors"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- && git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/rack/attack/store_proxy/ | sort | uniq -c | sort -rn && echo --- && git log --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/rack/attack/store_proxy/ | sort | uniq -c | sort -rn && echo --- && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/rack/attack/store_proxy/ | head -30 && echo --- && echo "repo-wide last commit per author:" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++' | head -30
+ - Bash: git log --all --no-merges --since="2026-07-25" --pretty=format:"%an <%ae>|%ad|%s" --date=short -- lib/rack/attack/store_proxy/ ; echo; echo ---; git log --all --no-merges --pretty=format:"%an <%ae>|%ad" --date=short | grep -i -E "gonzalo|grzuy" | sort -u | head; echo ---; git log --all --no-merges --pretty=format:"%an <%ae>|%ad" --date=short | grep -i -E "tanaka|bartesaghi" | sort -u | head; echo ---; git log --since="90 days ago" --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Suggested reviewers for `lib/rack/attack/store_proxy/`**
+
+1. **Hiroshi Tanaka**: best fit.
+   - Wrote the most recent logic changes in the directory: `Add Valkey store proxy (#310)` on 2026-09-02 and `ValkeyProxy: add wrap and version check (#318)` on 2026-09-16.
+   - Has been active in the last 90 days (2 repo commits).
+   - Caveat: their knowledge is mostly `valkey_proxy.rb`. The addresses on their commits use example domains (`example.net` and `tanaka.example`), so check that they are a real, reachable contributor.
+2. **Santiago Bartesaghi**: second reviewer.
+   - Has commits in this directory on 2024-12-19 and 2026-08-04. The 2026-08-04 commit was only a `Style/StringLiterals` autocorrect.
+   - Most active person in the repo: 3 commits in the last 90 days, the latest on 2026-09-30.
+   - I did not check what the 2024-12-19 commit changed, so I can't say how deep their knowledge of the proxy logic is.
+3. **Jonas Keller**: optional. Active (last commit 2026-08-18) but has no commits in this directory. They would only be a general maintainer reviewer.
+
+**Historical authors to skip, or ask only for context**
+
+- **Gonzalo Rodriguez** (`grzuy`) wrote 23 of about 47 commits here, so they are the main author of the original design.
+  - Their last commit anywhere in the repo is 2025-11-09, which is outside the 90-day window. Treat them as inactive.
+  - I counted two other author names in the repo (`Gonzalo`, `Gonzalo R`) as the same person. The `Gonzalo` commits match their GitHub noreply address; I did not check the `Gonzalo R` ones.
+  - Their history is still useful for the "why" behind the design (`git log -- lib/rack/attack/store_proxy/`).
+- **fatkodima**, **Jonathan del Strother**, **Mitchell Henke**, **Alexey Zapparov**, **Ryan Laughlin** and others have no repo activity in the last 90 days. Jonathan del Strother and Mitchell Henke last committed in late 2023.
+
+**Bus factor for this directory**
+
+- Gonzalo Rodriguez owns about 49% of the commits, so no single person owns more than 80%. By commit count it looks safe.
+- Only two active people have touched it in the last year (Hiroshi Tanaka and Santiago Bartesaghi), and the only logic changes were the two recent Valkey commits. Effective bus factor for the current code is therefore 1 to 2, and it depends on Hiroshi.
+- Because you are changing how the proxies work in general, a review from you plus Hiroshi Tanaka and Santiago Bartesaghi would also spread that knowledge.
+
+This is based on git authorship only. I did not check CODEOWNERS or GitHub membership, and I did not count PR review activity.
+META cost=0.0816066 ms=23048 turns=6

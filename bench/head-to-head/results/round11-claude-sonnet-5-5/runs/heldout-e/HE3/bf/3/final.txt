@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && git ls-files src | head -50 && git log --format='%an' | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files src); do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; echo "--- recent (since 2024) commits on src"; git log --since=2024-01-01 --format='%h %ad %an %s' --date=short -- src | head -20; echo "--- authors per src last 3y"; git log --since=2023-10-23 --format='%an' -- src | sort | uniq -c | sort -rn; ls CODEOWNERS .github/CODEOWNERS 2>&1 | head
+FINAL ANSWER:
+**Who wrote the code now (`git blame -w -M -C -C`, so the renames, moves and license-header commits don't count):**
+
+| File | Main author | Others |
+|---|---|---|
+| `src/lib.rs` | Andrew Gallant (743 lines) | mcharsley, Aron Griffis, Ashley (about 40 each) |
+| `src/error.rs` | Andrew Gallant (169) | Garrett Berg, Niv Kaminer |
+| `src/dent.rs` | Andrew Gallant (291) | Yufeng Wang, Ashley, Mei Tanaka |
+| `src/util.rs` | Andrew Gallant (42) | Aron Griffis |
+| `src/ancestor.rs` | Andrew Gallant (42) | Sam Whitfield (4) |
+| `src/testsuite/recursive.rs` | Andrew Gallant (1008) | Sebastian Thiel, Lukas Kalbertodt |
+| `src/testsuite/util.rs` | Andrew Gallant (252) | Sam Whitfield |
+
+Andrew Gallant wrote most of every file. He has 136 of the repo's commits.
+
+**Recent activity under `src/`:**
+- Sam Whitfield made the last three commits (March 2026): license headers, moving `Ancestor` into its own module, and the `tests` → `testsuite` rename. These are mechanical, so he knows the current layout but didn't write the logic.
+- Mei Tanaka added `dent::describe_file_type` (Feb 2026).
+- Andrew Gallant reapplied `util::same_device` (Jan 2026). Tobias Brandt wrote it originally.
+- Before January 2026, the last change under `src/` was March 2024 (YOSHIOKA Takuma, `FusedIterator`).
+
+**Who to ask:**
+- **Andrew Gallant** is the main reviewer for any logic change. He has the deepest knowledge of all seven files and was active as recently as January 2026.
+- **Sam Whitfield** is a good second reviewer if you touch `ancestor.rs`, `testsuite/` or the module layout.
+- **Mei Tanaka** is the person to ask if your change is in `dent.rs`.
+- **Tobias Brandt** is the person to ask if you touch `same_device` in `util.rs`.
+
+The repo has no `CODEOWNERS` file, so none of this is enforced. I can generate one from this history with the `busfactor` skill if you want. I haven't checked who is currently active outside this git history, such as who has merge rights.
+META cost=0.0598256 ms=20558 turns=4

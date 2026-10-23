@@ -1,0 +1,22 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && git log --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy/ | sort | uniq -c | sort -rn | head -30; echo ---; git log --since='12 months ago' --format='%an <%ae> %ad' --date=short | awk '{print $0}' | sort | uniq -c | sort -rn | head -20; echo ---; ls CODEOWNERS .github/CODEOWNERS 2>&1
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --since='2024-01-01' --format='%h %ad %an <%ae> | %s' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/cache.rb; echo ---; git log -5 --format='%h %ad %an | %cn | %s' --date=short --author=Hiroshi; echo ---; git log --since='2025-01-01' --format='%an' | sort | uniq -c | sort -rn; echo ---; git shortlog -sne --since='2025-01-01' --all | head; grep -n -i -E 'maintain|owner' README.md *.gemspec | head
+FINAL ANSWER:
+Suggested reviewers, based on `git log` for `lib/rack/attack/store_proxy/`. I can't check GitHub membership or availability from here, so "still around" means commits in the last 12 months.
+
+1. **Santiago Bartesaghi** is the best first choice. They have 11 commits across the repo since 2025-01, the most of anyone, and the latest was 2026-09-30. In the proxy directory, they wrote the namespaced-store `reset!` fix (#673, 2024-12) and the 2026-08 style autocorrect. They also use two emails (`<email redacted>` and `<email redacted>`), so shortlog splits their counts.
+2. **Hiroshi Tanaka** wrote the newest proxy code: `valkey_proxy.rb` (#310, 2026-09-02) and its `wrap` and version check (#318, 2026-09-16). They know the current proxy shape and how `wrap` dispatches. They have only those two commits in the repo, and both used `example.*` email domains. Check that they are a real, active contributor before you tag them.
+3. **Jean Boussier** changed the proxies most recently, with an eager store-validity check (#714, 2026-03-24). He is a good second reviewer for the store-validation and `wrap` logic.
+
+**Gonzalo Rodriguez (grzuy)** wrote most of the original proxy code, with about 20 commits in 2018–2019. He still has a few commits in the last 12 months, the latest 2025-11-09, but none in the proxy directory. He is useful if your change alters the design of the proxies, but he is not the person to ask about recent changes.
+
+I'd skip the other historical authors (fatkodima, Stan Hu, Vincent Boisard, Ryan Laughlin and others). They have no commits in the last 12 months.
+
+The repo has no `CODEOWNERS` file, so none of this is enforced. Suggested split: Santiago as primary reviewer, Hiroshi or Jean as second.
+META cost=0.0644731 ms=15703 turns=4

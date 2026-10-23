@@ -1,0 +1,26 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author //" | sed "s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Top owner per extension, by surviving lines from `git blame -w -M -C` on tracked files:
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 581 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 127 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| (no extension) | Douglas Christopher Wilson | 17 |
+
+- **`.js`:** Fiona Formatter is second with 291 lines. Those come from the latest commit, `62628c0`, which reformatted the JS to 4-space indent and double quotes. The `-w` flag ignores whitespace changes. It does not ignore the quote changes, so those lines now blame to that commit. Troy Goode's total is probably understated, and Douglas Christopher Wilson's (219) may be too.
+- **`.yml`:** The lead is Douglas Christopher Wilson with 127 lines, ahead of Íñigo Marquínez Prado with 95.
+- **Files with no extension:** these have 22 lines in total, 17 of them Douglas Christopher Wilson's.
+
+To see ownership before the reformat, I can rerun with `--ignore-rev 62628c0`.
+META cost=0.051355300000000006 ms=11513 turns=3

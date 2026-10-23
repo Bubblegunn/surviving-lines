@@ -1,0 +1,45 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary,mcp__git-historian__file_history", "max_results": 5}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-3/repo"}
+ - Bash: git ls-files '*.py' && cat .mailmap 2>/dev/null; git log --format='%h %an <%ae> %s' | head -40
+ - Bash: for f in $(git ls-files '*.py'); do echo "== $f"; git blame -w -M -C --ignore-rev abe2ea7 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git show --stat abe2ea7 | tail -8; echo; git log --format='%h %ad %an <%ae>' --date=short -- records.py | head -20; grep -n "LEGACY_SKIP" -r . --include=*.py | head
+ - Bash: grep -n "LEGACY_SKIP\|_describe\|_coerce_row\|def normali\|chunk" records.py | head -20; echo ---; git blame -w -M -C --ignore-rev abe2ea7 --date=short -e records.py | awk '$2 ~ /2026|<(marcus|dana|dokafor|tibarra|pre-commit)/' | grep -E '2026-' | cut -c1-110; echo ---; git log --format='%h %ad %an <%ae>' --date=short --since=2026-01-01 | awk '{print $3,$4,$5}' | sort | uniq -c; git log -3 --format='%h %an %s' -- examples/; ls examples
+ - Bash: grep -rnE "LEGACY_SKIP|_chunked|_coerce_row|_describe|_normali[sz]e|normali[sz]e_keys" --include='*.py' . ; echo ---; sed -n 10,25p records.py; echo ---; git blame -w -M -C --ignore-rev abe2ea7 --date=short records.py | grep -E "Dana|dana|Tomás|Marcus|Gardi|pre-commit" | cut -c1-120; git show 54b029d --stat | tail -4
+FINAL ANSWER:
+Blame is done. I ignored the black reformat (`abe2ea7`) and whitespace changes, and followed moved lines. Here is the result.
+
+**Live Python code, by surviving lines (`records.py` is about 620 lines)**
+
+| Author | Lines in `records.py` | Last commit |
+|---|---|---|
+| Kenneth Reitz | 315 (about half) | 2024-07-09 |
+| Greg Troszak | 57 | 2017 |
+| Chad Whitacre | 39 | 2016 |
+| Jan Vlcinsky | 30 | 2018 |
+| Dana Okafor | 28 + 12 as "dana okafor" | 2026-05-11 |
+| mcdallas | 26 | 2018 |
+| Tomás Ibarra | 12 | 2026-04-20 |
+
+- **Tests and other files:** Jan Vlcinsky has most of `conftest.py`, `test_69.py`, `test_105.py` and `test_transactions.py`. Chad Whitacre, Harold Cooper and Joakim Uddholm have most of `test_records.py`. Kenneth Reitz has nearly all of `setup.py`. Joseph Gardi and Taryn Hill have the example script.
+- **Marcus Lindqvist:** he is second by commit count (25), but only 8 of his lines survive. 24 of his commits tweaked `examples/export_legacy.py`, which `54b029d` deleted. His remaining lines are `LEGACY_SKIP` at `records.py:15`, which nothing references.
+- **Priya Raman and pre-commit-ci:** neither wrote logic. Priya added the black formatting and the pre-commit config. The bot's 4 lines in `records.py` are the class-definition lines it reformatted, so ignore them.
+- **Dana Okafor:** the tool treats "Dana Okafor" (`<email redacted>`) and "dana okafor" (`dokafor@fastmail.example`) as two people. The name matches, so it is probably one person with two emails. Git cannot confirm that, so check it before you rely on it. There is no `.mailmap`.
+
+**Who to ask about `records.py`**
+- **Dana Okafor** wrote `_normalize_keys`, `_chunked` and `_describe`. Tomás Ibarra wrote `_coerce_row`. These are the only people with 2026 knowledge of the file.
+- **Kenneth Reitz** wrote the core design, including `Record`, `RecordCollection`, `Database` and `Connection`. He has not committed since 2024-07-09.
+- **Everyone else with surviving lines** last committed in 2016–2018 (Greg Troszak, Chad Whitacre, Jan Vlcinsky, mcdallas). Do not expect answers from them.
+- **Priya Raman** committed most recently (2026-06-03). She can probably tell you who Dana and Tomás are and how to reach them, but she did not write the code.
+- **No one has committed since 2026-06-08.** Git cannot tell me who is reachable today.
+
+**Caveat on "alive":** I counted surviving lines, not code that is called. The 2026 helpers in `records.py` are only partly used. `_normalize_keys` and `_chunked` are used only by tests. `_coerce_row` and `_describe` are not referenced anywhere. The 2026 code is the newest in the file but is not clearly part of the library's behavior.
+
+My counts differ slightly from the `knowledge_risk` tool. For example, it gives Kenneth 296 lines and Greg 76, because I used `-w -M -C` and skipped the black commit.
+META cost=0.1409844 ms=47978 turns=9

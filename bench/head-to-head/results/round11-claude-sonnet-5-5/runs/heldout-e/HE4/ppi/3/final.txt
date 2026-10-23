@@ -1,0 +1,42 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser/ \u2014 who should review changes; weight by surviving lines (git blame), not commit count"}
+ - Bash: ls src/Parser 2>&1 | head -50; echo ---; cat .mailmap
+ - Bash: for f in src/Parser/*.php; do git blame -w -M -C --ignore-rev 45259fd --ignore-rev 73c5c0f --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | awk -v f="$f" '{n=$1; $1=""; printf "%s|%s|%d\n", f, substr($0,2), n}'; done > /tmp/blame.txt; echo "== per author, total (Parser) =="; awk -F'|' '{a[$2]+=$3; t+=$3} END{for(k in a) printf "%5d %5.1f%% %s\n", a[k], 100*a[k]/t, k}' /tmp/blame.txt | sort -rn; echo "== per file =="; awk -F'|' '{t[$1]+=$3; if($3>m[$1]){m[$1]=$3;o[$1]=$2}} END{for(f in t) printf "%s top=%s %d/%d (%.0f%%)\n", f, o[f], m[f], t[f], 100*m[f]/t[f]}' /tmp/blame.txt | sort; echo "== recent activity =="; git log --no-merges --since=90.days --pretty='%aN' -- src/P
+FINAL ANSWER:
+**Reviewers for `src/Parser/`:** Graham Campbell first, and Priscila Duarte as second reviewer or for the files she wrote.
+
+I counted surviving lines with `git blame -w -M -C`. I excluded the two formatting-only commits (the tab re-indent `45259fd` and StyleCI `73c5c0f`), so they don't count as authorship. I applied `.mailmap`, so Graham's three email identities count as one person. That gives 912 lines across 9 files.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Graham Campbell | 782 | 85.7% |
+| Priscila Duarte | 118 | 12.9% |
+| Vance Lucas | 10 | 1.1% |
+| Jonas Staudenmeir | 1 | 0.1% |
+| JT Smith | 1 | 0.1% |
+
+**By file**
+
+| File | Main author of current lines |
+|---|---|
+| `EntryParser.php` (363 lines) | Graham, 100% |
+| `Value.php` (101 lines) | Graham, 100% |
+| `Lines.php` (136 lines) | Graham, 92% |
+| `Entry.php`, `Lexer.php`, `Parser.php`, `ParserInterface.php` | Graham, 98–100% |
+| `Comments.php` (56 lines) | Priscila, 100% |
+| `Interpolator.php` (62 lines) | Priscila, 100% |
+
+- **Graham:** he wrote nearly all the core parsing code, and he has committed 8 times in the last 90 days. Priscila wrote only `Comments.php` and `Interpolator.php`, and she committed 2 times in the same period.
+- **Bus factor:** it is 1 for the core of `src/Parser/`. If Graham left, most of the module would have no author who knows the current code. Priscila is the only other person with real ownership, and only of the two newest files.
+- **Not reviewers:** Vance Lucas, Jonas Staudenmeir and JT Smith have 1.3% of the lines combined. Marta Kowalczyk has a recent commit but no surviving lines at this path, so I'd leave them out.
+- **Limits:**
+  - I did not run the skill's dependents count for importance, because you only asked about reviewers.
+  - `git blame` shows who wrote a line, not who understands it today. Treat Priscila as the review backup for the core files, not as an equal owner.
+
+I did not run the skill's default commit-count workflow, and I did not use its contributor-analyzer agent.
+META cost=0.06410769999999999 ms=20854 turns=5

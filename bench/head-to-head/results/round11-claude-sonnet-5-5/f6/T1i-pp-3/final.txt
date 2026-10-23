@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '(^|/)(node_modules|package-lock\.json)' | grep -E '\.(js|json|md|yml|yaml|ts|html|ejs|css)$|^[^.]*$' | head -300 | wc -l
+ - Bash: cd "$(git rev-parse --show-toplevel)"; git ls-files | grep -vE 'package-lock|node_modules|\.(png|jpg|gif|ico|svg)$' > /tmp/files.txt; cat /tmp/files.txt | wc -l
+while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done < /tmp/files.txt | sort | uniq -c | sort -rn | head -25
+echo --- total commits per author; git shortlog -sn HEAD | head -10
+ - Bash: cd "$(git rev-parse --show-toplevel)"; while read f; do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -1 | sed "s|^|$f: |"; done < /tmp/files.txt; git ls-files | xargs wc -l 2>/dev/null | tail -1
+FINAL ANSWER:
+Troy Goode owns the most surviving code, about 41% of lines. Douglas Christopher Wilson is second at about 32%.
+
+I ran `git blame` on every tracked file at HEAD (19 files, about 2,000 lines). I used `-w -M -C` so whitespace changes and moved code don't count. I also passed `.git-blame-ignore-revs`, so the "reformat js with 4-space indent" commit doesn't take credit for every line.
+
+The percentages are rounded from the top-25 line counts, so treat them as approximate.
+
+| Author | Surviving lines | Share | Commits |
+|---|---|---|---|
+| Troy Goode | 810 | ~41% | 122 |
+| Douglas Christopher Wilson | 629 | ~32% | 143 |
+| Íñigo Marquínez Prado | 95 | ~5% | not in top 10 |
+| Jon Church | 72 | ~4% | 3 |
+| Sebastian Beltran | 67 | ~3% | not in top 10 |
+| Ulises Gascón | 52 | ~3% | 3 |
+| Ignacio Mangas | 44 | ~2% | 2 |
+| Everyone else | each under 2% | ~10% | |
+
+Ownership by area:
+- **Troy Goode** owns the core and most of the tests. That is `lib/index.js` (159 lines, the library's only source file), `README.md`, and four of the five test files (`error-response.js`, `example-app.js`, `issue-2.js`, `vary.js`).
+- **Douglas Wilson** owns the main test file `test/test.js` (339 lines), `package.json`, `HISTORY.md`, `LICENSE`, `ci.yml`, and the lint and ignore configs.
+- **Íñigo Marquínez Prado, Sebastian Beltran and Ulises Gascón** own the GitHub workflow and dependabot files.
+
+Wilson has more commits (143 vs 122) but fewer surviving lines. Much of his work edited or replaced existing lines, such as version bumps, `HISTORY.md` entries and config tweaks. Goode's original code mostly stayed.
+
+The "top author per file" counts are the biggest contributor to each file, not the only one. `lib/index.js` also contains lines from Jon Church, Linus Unnebäck and others.
+META cost=0.09349760000000001 ms=26112 turns=5

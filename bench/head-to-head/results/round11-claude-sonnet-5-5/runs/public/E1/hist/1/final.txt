@@ -1,0 +1,48 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-1/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-1/repo", "top": 20}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-1/repo"}
+ - Bash: for f in lib/index.js test/test.js test/example-app.js test/error-response.js; do echo "== $f"; git blame --ignore-rev 62628c0 -w -M -C --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; git log -1 --format='%an <%ae>' 62628c0
+FINAL ANSWER:
+Two people carry this project: **Douglas Christopher Wilson** and **Troy Goode**. No single directory is a formal single-contributor silo, but ownership of specific files is concentrated. The tools' raw output needs correcting first.
+
+**Correction to the raw output:** `knowledge_risk` names "Fiona Formatter" as owner of about 51% of lines. That is wrong. Fiona's one commit, `62628c0`, reformatted the whole codebase (4-space indent, double quotes), so it took over `git blame`. I re-ran blame ignoring that commit (`--ignore-rev 62628c0`) to get the real owners below.
+
+**Overall (326 non-merge commits, 64 authors)**
+- Bus factor is 2. Wilson has 143 commits (43.9%) and Goode has 95 (29.1%). Together that is 73%.
+- The next-largest human contributor has 4 commits (1.2%).
+- Dependabot has 11 commits (3.4%).
+- The directory-level silo rule (more than 80% by one author) flags nothing. Top-author shares are 37–51%.
+
+**Who owns what (blame, reformat ignored)**
+
+| Area | Main owner | Evidence |
+|---|---|---|
+| `lib/index.js` (the whole library, 238 lines) | Troy Goode | 159 of about 200 attributed lines. Wilson has 22, then Caravaca Puchades 12 and Feng 7. |
+| `test/example-app.js` | Troy Goode | 67 lines vs 14 for Wilson |
+| `test/error-response.js` | Troy Goode | 57 lines vs 9 for Wilson |
+| `test/issue-2.js`, `test/vary.js` | Troy Goode | 83% and 100% |
+| `test/test.js` (main suite) | Wilson 339, Goode 317 | Shared between these two. |
+| `README.md` | Troy Goode (37.5%) | Jon Church 26%, Linus Unnebäck 13% |
+| `package.json`, `LICENSE`, `HISTORY.md`, `.eslintrc.yml`, `.gitignore`, `test/support/env.js` | Douglas Wilson | Wilson owns 48% of `package.json`, 77% of `LICENSE`, 78% of `HISTORY.md`, and 100% of the eslint and support files. |
+| `.github/workflows/ci.yml` | Wilson (49%) | Mangas 24.5%, Gascón 13.6% |
+
+**Single-person dependencies**
+- **Goode:** the core library `lib/index.js` and most of its tests. This is the highest risk, because it is the only source file.
+- **Wilson:** release and packaging metadata (`package.json`, `HISTORY.md`, `LICENSE`) and lint config. His last commit in the surviving file history is 2021-09-07.
+- **Single-owner CI files:** `scorecard.yml` is 93% Íñigo Marquínez Prado (last commit 2024-05-14). `codeql.yml` is 95% Sebastian Beltran (last commit 2025-07-23). `dependabot.yml` is 100% Ulises Gascón.
+
+**Caveats**
+- The tool marks all 18 files as orphaned. That is misleading. It treats anyone with no commit since 2026-04-22 as gone, and the repo's last commit is 2026-04-12, so everyone counts as inactive. Activity is also low (0–4 commits per month recently), so treat "orphaned" as "no recent activity", not "confirmed departed".
+- The mailmap resolves "Efe" and "Fiona Formatter" as separate authors. "Fiona Formatter" looks like a formatter or bot identity, not a person.
+- Analysis covers only 18 tracked text files at HEAD, so history that was deleted or rewritten is not counted.
+
+**Suggested mitigation:** get a second maintainer to review and commit in `lib/index.js` and `package.json` and to take over the release process. The CI files also need a second person who understands them.
+META cost=0.0868068 ms=18624 turns=7

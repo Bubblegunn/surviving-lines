@@ -1,0 +1,31 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -v '^vendor/' | head -100; git log --oneline | wc -l
+ - Bash: git ls-files | grep -v '^vendor/' | grep -E '\.(go|md|yml|mod)$|LICENSE' > /tmp/files.txt; for f in $(cat /tmp/files.txt); do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep -a '^author ' ; done | sort | uniq -c | sort -rn; echo ---; for f in $(grep -E '\.go$' /tmp/files.txt); do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep -a '^author ' ; done | sort | uniq -c | sort -rn; ls .mailmap 2>&1 | head -1; git shortlog -sne HEAD | head
+FINAL ANSWER:
+Fatih Arslan holds about 54% of the live Go source. The next largest holders are far smaller. The library is not a one-person project, but it is clearly led by one person.
+
+I ran `git blame` on every tracked non-vendored `.go` file at HEAD. The run followed moved and copied lines (`-w -M -C -C`) and ignored the two bulk-reformat commits listed in `.git-blame-ignore-revs`, so the `interface{}` to `any` rewrite and the `attribute.go` move don't count as authorship. Attribution is by git author name, with no `.mailmap` to merge aliases. Total: 1,657 lines.
+
+| Rank | Author | Live lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 | 53.9% |
+| 2 | Linda_pp | 136 | 8.2% |
+| 3 | Lena Hoffmann | 103 | 6.2% |
+| 4 | Matthew Hall | 98 | 5.9% |
+| 5 | Greg Poirson (plus a `greg` alias, same email) | 64 | 3.9% |
+
+- **Other contributors:** Cameron Moore, Andrew Austin, Alex Guerrieri, Robert Pająk and Klaus Post each hold 2–3%. About 25 more authors hold the remaining ~14%.
+- **Whole repo:** Including docs, CI config, `go.mod` and the license, Fatih Arslan's share is about 58%.
+- **Commit count:** He has 201 commits, and the next human author has 5. Commit count overstates his lead compared with surviving code.
+
+**Risk:**
+- **Single point of failure:** One person holds a majority, and nobody else is close. If they leave, no second maintainer clearly owns the core.
+- **Nature of the code:** The library is small, at about 1.6k lines, and mostly stable color and attribute handling. That limits the damage if maintenance stops, and forking would be cheap.
+- **Recent activity:** I didn't check whether Arslan is still committing, or who has merge rights on GitHub. `git log --since` and the GitHub collaborators page would answer both.
+META cost=0.09563110000000001 ms=33264 turns=4

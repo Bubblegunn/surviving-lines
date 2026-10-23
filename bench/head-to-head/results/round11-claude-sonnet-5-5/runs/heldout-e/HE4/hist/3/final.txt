@@ -1,0 +1,30 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 3}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE4-hist-3/repo", "path": "src/Parser", "top": 50}
+ - Bash: ls src/Parser && for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author ' ; done | sort | uniq -c | sort -rn
+ - Bash: cat .mailmap; git show --stat --format='%h %an %ad %s' 45259fd | head -5; echo ---; for f in $(git ls-files src/Parser); do git blame -w -M -C --mailmap --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn; echo --- per file; for f in $(git ls-files src/Parser); do echo "$f: $(git blame -w -M -C --mailmap --line-porcelain HEAD -- $f | grep -a '^author ' | sort | uniq -c | sort -rn | head -2 | tr '\n' ' ')"; done; echo; git log --since='6 months ago' --format='%an' --no-merges -- src/Parser | sort | uniq -c
+ - Bash: for f in $(git ls-files src/Parser); do git blame -w -M -C --ignore-rev 45259fd --line-porcelain HEAD -- "$f" | grep -a '^author '; done | sort | uniq -c | sort -rn; echo --- per file; for f in $(git ls-files src/Parser); do echo "$f: $(git blame -w -M -C --ignore-rev 45259fd --line-porcelain HEAD -- $f | grep -a '^author ' | sort | uniq -c | sort -rn | head -2 | tr '\n' ' ')"; done; echo; git log --since='6 months ago' --no-merges --format='%an %ad' --date=short -- src/Parser | sort | uniq -c | head
+FINAL ANSWER:
+**Ask Graham Campbell. Add Priscila Duarte if the change touches `Comments.php` or `Interpolator.php`.**
+
+The history tool's ownership numbers are misleading here. It says Marta Kowalczyk owns 87% of `src/Parser/`, but that comes from one commit: `45259fd` ("chore: indent with tabs", 2026-09-15). That commit changed the whitespace on nearly every line, so a plain blame credits those lines to her. I re-ran blame ignoring whitespace changes and that commit. Her share drops to zero.
+
+Surviving lines in `src/Parser/` (912 lines):
+
+| Author | Lines | Files |
+|---|---|---|
+| Graham Campbell | 782 | `EntryParser.php` (all 363), `Lexer.php`, `Parser.php`, `ParserInterface.php`, `Value.php`, `Entry.php`, and most of `Lines.php` |
+| Priscila Duarte | 118 | `Comments.php` and `Interpolator.php` (all of both) |
+| Vance Lucas | 10 | part of `Lines.php` |
+| Jonas Staudenmeir | 1 | `Entry.php` |
+| JT Smith | 1 | not shown in the per-file output |
+
+Graham and Priscila both made their last Parser commits in the last few months, so both are still around.
+
+Marta only reformatted the files. Review from her would not come from someone who wrote the logic, so I would not pick her.
+META cost=0.07434919999999999 ms=20247 turns=6

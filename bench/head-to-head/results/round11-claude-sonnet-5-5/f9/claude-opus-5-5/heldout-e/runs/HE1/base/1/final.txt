@@ -1,0 +1,62 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files && git log --format='%h %an <%ae> %ad %s' --date=short --stat | head -100 && ls -a && cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn; git rev-list --count HEAD; cat .mailmap 2>/dev/null; echo ---; git log --reverse --format='%h %an %ad %s' --date=short | head -15
+for mode in plain ignore; do echo "== $mode"; extra=""; [ $mode = ignore ] && extra="--ignore-rev abe2ea7 --ignore-rev 0e8fe2e"; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain $extra -- $f | sed -n 's/^author-mail //p;s/^author //p' | paste - - ; done | sort | uniq -c | sort -rn; done
+ - Bash: git show 0e8fe2e | head -40; git show -w --stat abe2ea7 | tail -3; git diff -w --ignore-blank-lines abe2ea7^ abe2ea7 | head -60
+ - Bash: git diff abe2ea7^ abe2ea7 | grep '^[-+][^-+]' | tr "'" '"' | sed 's/^[-+]//' | sed 's/[[:space:]]//g' | sort | uniq -u | head; echo "== ignore-rev blame"
+for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain --ignore-rev abe2ea7 --ignore-rev 0e8fe2e -- $f | sed -n 's/^author-mail //p;s/^author //p' | paste - - ; done | sort | uniq -c | sort -rn
+echo "== records.py only"; git blame -w -M -C --line-porcelain --ignore-rev abe2ea7 --ignore-rev 0e8fe2e -- records.py | sed -n 's/^author-mail //p;s/^author //p' | paste - - | sort | uniq -c | sort -rn; wc -l records.py
+ - Bash: git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --date=short records.py | grep -E 'Marcus|Dana|dana|Tomás|Greg' | cut -c1-140 | awk '{print}' | head -80; git log --format='%h %an %ad %s' --date=short --author=Troszak --author=Whitacre --author=Vlcinsky | head
+ - Bash: grep -rn LEGACY_SKIP --include=*.py .; grep -n '^def \|^class ' records.py; git log -1 --format='%ad' --date=short --author=Reitz; git blame -w --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain records.py | sed -n 's/^author-time //p' | awk '{y=strftime("%Y",$1); c[y]++} END{for(k in c) print k, c[k]}' | sort
+ - Bash: git grep -n LEGACY_SKIP; grep -n '^def \|^class ' records.py; git log -1 --format='%ad' --date=short --author=Reitz; git blame -w --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain records.py | sed -n 's/^author-time //p' | while read t; do date -r $t +%Y; done | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** Kenneth Reitz wrote most of the code that is still alive. For current questions about `records.py`, ask **Dana Okafor** first. Ask **Greg Troszak** about the `Database`/`Connection` layer.
+
+**Method:** I ran `git blame -w -M -C` on every tracked `.py` file, with two commits excluded:
+- `abe2ea7` (Priya Raman, black formatting)
+- `0e8fe2e` (pre-commit bot, `class X(object)` → `class X:`)
+
+I read both diffs, and they only change formatting. Without the exclusion, Priya gets credit for 65 lines and the bot for 4, and she wrote none of that logic.
+
+**Surviving lines in all Python files:**
+
+| Author | Lines | Commits |
+|---|---|---|
+| Kenneth Reitz (2 emails) | 435 | 263 |
+| Jan Vlcinsky | 119 | 25 (2 emails) |
+| Greg Troszak | 89 | 3 |
+| Chad Whitacre | 85 | 11 |
+| Harold Cooper | 51 | 6 |
+| Dana Okafor (2 emails, see below) | 50 | 2 |
+| Joakim Uddholm | 45 | 3 |
+| Marcus Lindqvist | 8 | **25** |
+
+**Why commit counts mislead here:**
+- **Marcus Lindqvist** has the third-highest commit count. Almost all of those commits were tweaks to `examples/export_legacy.py`, and Dana deleted that file in `54b029d`. All that remains of his work is `LEGACY_SKIP` (`records.py:14-21`). Nothing references it any more, so it is dead code and probably safe to delete.
+- **Greg Troszak** has only 3 commits (2017), but he wrote much of the `Database` and `Connection` classes that remain, including `transaction()` (`records.py:266-455`).
+
+**`records.py` (622 lines, blame includes blank lines):**
+- Kenneth Reitz: 318 lines. This is the core `Record`/`RecordCollection` and the CLI. His last commit is from 2024-07-09.
+- Greg Troszak: 58 lines, the connection/transaction layer.
+- Dana Okafor: 40 lines. These are `_normalize_keys`, `_chunked` and `_describe` (2026-04/05). Dana also removed the legacy exporter.
+- Tomás Ibarra: 12 lines, `_coerce_row` (2026-04-20).
+- Chad Whitacre (39) and Jan Vlcinsky (30) were active in 2017–2018.
+
+About 60 lines of `records.py` date from 2026, and all of them come from Dana, Tomás or Marcus.
+
+**Who to ask:**
+1. **Dana Okafor** is the most recent author of real code in `records.py` and knows why the exporter was removed. One caveat: Dana's commits use two identities, `<email redacted>` and `dokafor@fastmail.example` (lowercase name). They are probably the same person, but I could not confirm it from the repo. There is no `.mailmap`.
+2. **Tomás Ibarra**, for `_coerce_row`.
+3. **Greg Troszak** or **Kenneth Reitz**, for the original design of the DB layer and core classes. Their work is from 2017 and 2024, so they may not be reachable.
+
+**Two optional cleanups:**
+- Add a `.git-blame-ignore-revs` file that lists `abe2ea7` and `0e8fe2e`, then run `git config blame.ignoreRevsFile .git-blame-ignore-revs`. After that, plain `git blame` and GitHub's blame view will skip the formatting commits.
+- Add a `.mailmap` to merge the duplicate identities (Dana, Jan, Kenneth).
+
+I can do either if you want.
+META cost=0.383402 ms=61844 turns=8

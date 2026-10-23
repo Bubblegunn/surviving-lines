@@ -1,0 +1,56 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/"}
+ - Bash: git ls-files 'src/*.rs' | wc -l && echo "--- total lines by author (blame, follows moves/copies)" && for f in $(git ls-files 'src/*'); do git blame -w -M -C -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15 && echo "--- commit counts + last active" && git log --no-merges --pretty='%an|%ad' --date=short -- src | awk -F'|' '{c[$1]++; if(!($1 in l)) l[$1]=$2} END{for(a in c) print c[a], a, "last:", l[a]}' | sort -rn | head -10
+ - Bash: for d in $(git ls-files 'src/*' | awk -F/ '{ if (NF>2) print $1"/"$2; else print $0 }' | sort -u); do echo "== $d"; for f in $(git ls-files "$d" ); do git blame -w -M -C -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+**Andrew Gallant wrote most of the code in `src/`. Ask them first, and pick a second reviewer from the list below.**
+
+I used `git blame -w -M -C -C` on the 8 tracked files under `src/`. It counts lines that exist now and follows moved code. Whitespace changes don't count. This matters because the recent "Move Ancestor" and "Rename src/tests" commits would distort commit counts.
+
+**Current line ownership (all of `src/`)**
+
+| Author | Lines |
+|---|---|
+| Andrew Gallant | 2551 |
+| Sebastian Thiel | 74 |
+| Ashley | 68 |
+| Aron Griffis | 59 |
+| mcharsley | 45 |
+| Sam Whitfield | 42 |
+
+I did not total all lines, so I can't give an exact percentage. Andrew owns roughly 8–10 times as many lines as the next author.
+
+**Ownership by file**
+
+| Path | Top authors (lines) |
+|---|---|
+| `src/lib.rs` | Andrew 743, mcharsley 45, Aron Griffis 45 |
+| `src/dent.rs` | Andrew 291, Yufeng Wang 21, Ashley 15 |
+| `src/error.rs` | Andrew 169, Garrett Berg 34, Niv Kaminer 30 |
+| `src/testsuite/` | Andrew 1264, Sebastian Thiel 53, Lukas Kalbertodt 20 |
+| `src/util.rs` | Andrew 42, Aron Griffis 9, Sam Whitfield 5 |
+| `src/ancestor.rs` | Andrew 42, Sam Whitfield 4, vsuryamurthy 1 |
+
+**Who to ask**
+1. **Andrew Gallant** is the only person with real knowledge of every file. They have 56 commits to `src/`. Their last commit there was 2026-01-14, so they have been inactive in `src/` for about 9 months by the command's 90-day rule. They may still be active elsewhere, so check before relying on them.
+2. **Sam Whitfield** is the most recent other contributor to `src/` (2026-03-23, 3 commits). They touch `ancestor.rs` and `util.rs`, but only about 42 lines in total.
+3. **Match a second reviewer to the file you change:**
+   - `lib.rs`: mcharsley or Aron Griffis.
+   - `error.rs`: Garrett Berg or Niv Kaminer.
+   - `dent.rs`: Yufeng Wang or Ashley.
+   - `testsuite/`: Sebastian Thiel.
+
+   I did not check whether these people are still active. Their commits to `src/` are mostly from 2017.
+
+**Risks**
+- The bus factor for `src/` is effectively 1. Every file is dominated by Andrew.
+- Nobody else owns a significant share of any file. If Andrew can't review, the others know only small parts of the code.
+- I skipped the dependents (importance) step. The tree is only 8 files, so I'd treat all of them as important.
+
+Tell me which files your PR touches and I'll narrow the reviewer list to the lines you're changing, using `git blame` on those hunks.
+META cost=0.0634427 ms=20404 turns=5

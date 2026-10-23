@@ -1,0 +1,25 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser | head -50; git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn
+ - Bash: cat .mailmap; git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn; git log -3 --format='%an %ad' --date=short -- src/Parser
+FINAL ANSWER:
+**Graham Campbell** (<email redacted>) should review. They wrote 782 of the 912 lines now in `src/Parser/`, about 86%.
+
+I counted surviving lines with `git blame -w -M -C`, which ignores whitespace-only changes and follows code moved or copied between files. I grouped authors by email, which matches the `.mailmap`.
+
+| Author | Lines still present |
+|---|---|
+| Graham Campbell | 782 |
+| Priscila Duarte | 118 |
+| Vance Lucas | 10 |
+| Jonas Staudenmeir | 1 |
+| JT Smith | 1 |
+
+**Second reviewer:** Priscila Duarte, with 118 lines (about 13%).
+
+Marta Kowalczyk and StyleCI Bot appear in recent `git log` for this directory but own no surviving lines. Their commits were most likely the tab re-indent and style fixes, which `-w` skips. If you want whoever touched it most recently, that would be them, but neither wrote the logic.
+META cost=0.0441383 ms=14289 turns=3

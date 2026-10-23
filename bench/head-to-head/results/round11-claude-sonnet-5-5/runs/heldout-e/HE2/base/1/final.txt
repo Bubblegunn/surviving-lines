@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -v '^vendor/' | head -100; git log --oneline | wc -l; ls
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in $(git ls-files | grep -v -e '^vendor/' -e '^go.sum$' -e LICENSE); do git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep -a '^author \|^author-mail '| paste - - ; done | sort | uniq -c | sort -rn; echo; git shortlog -sne HEAD | head -15; ls .mailmap 2>&1 | head -1
+FINAL ANSWER:
+Fatih Arslan holds about 54% of the live code, and Linda_pp (rhysd) is next at about 7.5%. That makes the project single-maintainer-led but not strictly one person.
+
+I ran `git blame` at HEAD on the non-vendored files (`attribute.go`, `attribute_string.go`, `color.go`, `color_windows.go`, `doc.go`, the test file and similar), using `.git-blame-ignore-revs` to skip the `any` reformat commit. That covers 1,915 lines, and I left out `vendor/`, `go.sum` and `LICENSE.md`.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 1034 | 54.0% |
+| 2 | Linda_pp (rhysd) | 144 | 7.5% |
+| 3 | Lena Hoffmann | 103 | 5.4% |
+| 4 | Raj Patel | 99 | 5.2% |
+| 5 | Matthew Hall | 98 | 5.1% |
+| 6 | Cameron Moore | 50 | 2.6% |
+| 7 | Andrew Austin | 48 | 2.5% |
+
+- **Merged identities:** Albert and bogem share an email and total 54 lines. Greg Poirson and greg share an email and total 39 lines. Neither pair changes the top two.
+- **Long tail:** About 30 more people each hold 1–45 lines.
+- **Commit history:** Fatih has 201 of 300 commits, and dependabot has 38. Dependabot's blame share is only 7 lines.
+- **Suspicious authors:** Lena Hoffmann and Raj Patel use `example.org` and `example.com` addresses. Those look like placeholder or synthetic identities rather than real contributors. If they are not real, Fatih's effective share is higher and the second and third places change.
+
+The bus factor is effectively one: a single person wrote more than half the code, and nobody else holds more than about 8%. The code is small and stable, and many people have contributed small changes, so a fork would be manageable. To judge whether the project is still maintained, check Fatih's recent activity with `git log --author=Fatih --since=1.year`.
+META cost=0.06384010000000001 ms=21558 turns=4

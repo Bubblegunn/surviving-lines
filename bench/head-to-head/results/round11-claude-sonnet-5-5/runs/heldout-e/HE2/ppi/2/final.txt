@@ -1,0 +1,30 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files | grep -v '^vendor/' | grep -E '\.go$' | wc -l; git log --oneline | wc -l; git ls-files | grep -E '\.go$' | grep -v '^vendor/' | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+ - Bash: git shortlog -sn --no-merges HEAD | head -10; git log -1 --format=%ad; git log --format='%an %ad' --date=short | head -3
+ - Bash: git ls-files | grep -E '\.go$' | grep -v '^vendor/' | tee /dev/stderr | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{print "total",t; for(i=1;i<=5;i++){split(a[i],p," "); printf "%s %.1f%%\n", a[i], p[1]/t*100}}'
+FINAL ANSWER:
+Fatih Arslan holds 52.4% of the live code, so this is not a one-person project. It is also not widely spread. One person holds about half the code, and no one else holds more than about 7%.
+
+I measured this with `git blame` on every line in the repo's own Go files today. I excluded `vendor/`. That is 6 files and 1,657 lines. Blame ignores whitespace changes and follows lines moved or copied between files.
+
+| Rank | Author | Live lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 868 | 52.4% |
+| 2 | Linda_pp | 120 | 7.2% |
+| 3 | Lena Hoffmann | 103 | 6.2% |
+| 4 | Matthew Hall | 98 | 5.9% |
+| 5 | Raj Patel | 67 | 4.0% |
+
+- **Next in line:** Linda_pp is second at 7.2%. After that, ownership is a long tail of about 10 or more contributors, each holding 6% or less.
+- **Bus factor is about 1:** Fatih Arslan alone covers more than half the code. If they left, no other person would have deep knowledge of it, because the second-largest holder owns only about one-seventh as much.
+- **Commit history looks more concentrated:** Fatih Arslan has 80 of the 300 commits. The next human authors have 5 or fewer each. 38 commits come from dependabot, which is automated and does not count as people.
+- **The project is still active:** The last commit is dated 2026-08-24, from Raj Patel. Fatih Arslan is not the most recent committer. I did not check whether they are still active.
+- **Per-file ownership not measured:** I did not compute ownership per file, so I can't say which of the 6 files are single-owner. The library is small, so I'd expect `color.go` and `attribute.go` to carry most of the risk. That is a guess, not something I measured.
+- **Unchecked claims:** I assumed "people" means distinct git author names. One person can appear under two names. For example, `Greg Poirson` and `greg` look like the same person. Merging such pairs would change the lower ranks slightly, but not the 52% at the top.
+META cost=0.0611575 ms=17819 turns=6

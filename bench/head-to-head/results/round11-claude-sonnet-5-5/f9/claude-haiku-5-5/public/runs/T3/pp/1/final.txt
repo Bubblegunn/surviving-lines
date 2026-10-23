@@ -1,0 +1,24 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -100 && echo --- && ls -la .mailmap 2>/dev/null; git log --all --format='%an <%ae>' | sort -u | wc -l
+ - Bash: git log --all --format='%an|%ae' | awk -F'|' '{print tolower($1)}' | sort | uniq -c | sort -rn | awk '$1>0' | head -0; git log --all --format='%an' | sort -f | uniq -ci | awk '$1>0' | sort -rn | head -3; git log --all --format='%ae' | sort -f | uniq -ci | sort -rn | head -3; git log --all --format='%an <%ae>' | grep -i -E 'troy|alejandro|alex94|efe' | sort | uniq -c
+ - Write: {"file_path": "<home>/claude-kredi-runs/2026-10-23/r11/f9/claude-haiku-5-5/P/runs/T3-pp-1/repo/.mailmap", "content": "Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n"}
+ - Bash: git shortlog -sne --all | head -5 && echo --- && git shortlog -sne --all | grep -i -E 'troy|alejandro caravaca' && echo --- && git shortlog -sn --all | awk '{n=$1; $1=""; print n"\t"$0}' | wc -l && git shortlog -sn --all | head -1
+FINAL ANSWER:
+Yes, two people were each listed under two identities. I added a `.mailmap` at the repo root that merges them:
+
+- **Troy Goode**: `<email redacted>` and `troy@laptop.example` are now one person, with 122 commits.
+- **Alejandro Caravaca Puchades**: `<email redacted>` appeared under two name spellings, now one entry with 5 commits.
+
+Git history is unchanged. The `.mailmap` only affects how Git reports authors, and `git shortlog` reads it by default. Distinct authors went from 65 to 63.
+
+**New top author: Douglas Christopher Wilson, with 143 commits.** Troy Goode is second with 122. The lead is unchanged, since no duplicate merge reached Douglas's count.
+
+I did not commit the `.mailmap`. Say the word and I'll commit it with the format from your CLAUDE.md.
+
+One thing I did not merge: `Efe <<email redacted>>` has one commit, and I can't tell from the repo whether it's you. Your account email is different, so I left it alone. If it is you, add a line to `.mailmap` for it.
+META cost=0.00583179 ms=16906 turns=5

@@ -1,0 +1,50 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL --reviewers lib/rack/attack/store_proxy/; echo ===; $SL --history lib/rack/attack/store_proxy/
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --reviewers lib/rack/attack/store_proxy/; echo '----'; node $S --history lib/rack/attack/store_proxy/
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; git log --format='%h %ad %an <%ae> %s' --date=short -8 -- lib/rack/attack/store_proxy/; echo ---; git log --since=2025-09-30 --format='%an <%ae>' | sort | uniq -c | sort -rn; echo ---; node $S --identities -- lib/rack/attack/store_proxy/ | sed -n '1,40p'; cat .git-blame-ignore-revs; git show --stat 20d6682 | head -15
+FINAL ANSWER:
+**Recommendation: Hiroshi Tanaka as main reviewer, Santiago Bartesaghi second. Gonzalo is a possible third, if you can confirm it is the same person (see below).**
+
+All numbers come from `surviving-lines --reviewers` and `--history` on `lib/rack/attack/store_proxy/` at HEAD. The tool ran `git blame -w -M -C` over 6 files: 277 non-blank lines, 331 with blank lines. "Active" means at least one commit in the year before 2026-09-30.
+
+**Owners by surviving lines:**
+
+| # | Person | Lines | Share | Last commit here | Still around? |
+|---|---|---|---|---|---|
+| 1 | Hiroshi Tanaka (2 addresses merged) | 72 | 26.0% | 2026-09-16 | **Active.** Wrote the Valkey proxy (#310, #318). |
+| 2 | hakanensari | 63 | 22.7% | 2014-04-15 | Inactive. Only commit was in 2014. |
+| 3 | Gonzalo Rodriguez | 51 | 18.4% | 2019-08-02 | Inactive in this path. See note below. |
+| 4 | fatkodima | 22 | 7.9% | 2019-10-24 | Inactive |
+| 5 | Brad Lindsay | 19 | 6.9% | 2018-02-06 | Inactive |
+
+18 more authors hold the rest of the lines.
+
+**Who to ask:**
+1. **Hiroshi Tanaka.** The only active top owner, and the most recent author in this directory.
+   - 72 lines (26.0%) counts two addresses as one person: `hiroshi@tanaka.example` (59 lines, 21.3%) and `<email redacted>` (13 lines).
+   - This is a strong guess (same name, two addresses), but not confirmed.
+2. **Santiago Bartesaghi.** Active, with 6 commits repo-wide in the last year.
+   - In this path: 5 lines (1.8%). He fixed `reset!` for namespaced stores (#673) and made a style commit here in 2026-08.
+   - His two addresses, `<email redacted>` and `<email redacted>`, are also a strong same-name guess.
+   - He holds few lines here, but he is an active maintainer who knows this code.
+3. **Gonzalo (possible).** As `Gonzalo Rodriguez <<email redacted>>` he has 23 commits and 51 lines here, last in 2019.
+   - A `Gonzalo` / `Gonzalo R` with `<email redacted>` made 4 commits repo-wide in the last year.
+   - Both share the "grzuy" handle, so they are probably the same person. The tool did not link these two addresses, so this is my guess. If it is right, he is the best second reviewer.
+
+Other people active repo-wide (Jean Boussier, Bart de Water, Jonas Keller) hold no lines in this directory.
+
+**Notes on the numbers:**
+- **Bus factor** (fewest authors who together hold 50% of the lines, in this directory): 3 people, who hold 62.5% of non-blank lines (61.9% with blank lines). To reach 80% takes 6 authors.
+- **Reformat commit:** `045616c` (rubocop `Style/StringLiterals`) was ignored because it is listed in `.git-blame-ignore-revs`.
+- **Mechanical rewrites:** the tool checked 35 commits and set none aside. One candidate, `20d6682` (Gonzalo, rubocop `Lint/HandleExceptions`), was kept: it added real `rescue` lines, and only 2 lines survive.
+- **Copy detection** moved 4 lines. hakanensari has 22.7% with it and 23.8% without it. No one's ranking changes.
+- **Same address, several names, counted as one:** Gonzalo Rodriguez / Gonzalo, and madlep / Julian Doherty.
+- **Identity merges:** Hiroshi, Santiago and Jonathan del Strother each appear under two addresses (all strong same-name guesses). They are merged only in the summary above, not in the repository. I did not write `.mailmap`. `surviving-lines --identities` prints the lines if you want to make the merges permanent.
+- **Limits:** these numbers do not count review or design work, and do not say who understands the code best.
+META cost=0.24958260000000002 ms=28175 turns=6

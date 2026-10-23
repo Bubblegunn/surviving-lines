@@ -1,0 +1,28 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git shortlog -sne HEAD -- lib | head -30 && echo --- && git log --format='%ae' -- lib | wc -l && git log --since='2 years ago' --format='%an' -- lib | sort | uniq -c | sort -rn | head
+ - Bash: wc -l lib/index.js && echo --- blame all && git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -12 && echo --- ignoring format commit && git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -12 && git log -3 --format='%h %an %ad %s' --date=short -- lib && git log --format='%an %ad' --date=short -- lib | head -3; git log -1 --format='%an' 62628c0
+FINAL ANSWER:
+**Bus factor: 1.** `lib/` is one file, `lib/index.js` (238 lines), and Troy Goode wrote most of it.
+
+**Surviving lines** (`git blame -w -M -C`, ignoring the 2026-04-12 reformat commit `62628c0`):
+- Troy Goode wrote 159 of 238 lines, about 67%. That is already a majority.
+- Douglas Christopher Wilson wrote 22 lines (9%).
+- Alejandro Caravaca Puchades wrote 12 lines, plus 4 under a second author name, `alex94puchades` (7% combined).
+- About 20 other people wrote 1–7 lines each.
+
+Fiona Formatter shows 32 lines in plain blame. Those come only from the reformat commit, so I excluded them.
+
+**Commit history for `lib/`:** 67 commits. Troy has 34 of them, counting a second email address, `troy@laptop.example`. The next highest is 4.
+
+**Recent activity:** The last three commits to `lib/` are the reformat (2026-04-12), Troy's "annotate handlers" (2026-04-10), and LuisEGR's lint cleanup (2021-07-20). Troy is the only person who has made a real change in about five years.
+
+**How many people have to leave:** One. If Troy leaves, nobody active has meaningful ownership. Wilson and Puchades each wrote under 10% of the lines. I can't tell from git whether they still work on the project or know the code.
+
+**Limits:** The count depends on git author names and emails. I treated the two Troy identities as one person, and Puchades's two as one person. Blame also can't show who understands the code, since review and discussion don't appear in it. A small, single-file module is easier to learn than a large one, so the real risk is lower than 1 suggests. The ownership is still concentrated on one person.
+META cost=0.0550114 ms=15888 turns=4

@@ -1,0 +1,47 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github; echo ---; git ls-files | grep '\.py$'; echo ---; for f in $(git ls-files | grep '\.py$'); do echo "== $f"; git blame -w -M -C --line-porcelain "$f" | grep '^author-mail' | sort | uniq -c | sort -rn; done; echo ---; git log --format='%h %ad %ae %s' --date=short -- records.py
+ - Bash: git rev-parse --is-shallow-repository; git rev-list --count HEAD; git log --no-merges --since=2025-06-01 --format='%ad|%an|%ae' --date=short | sort | uniq -c; echo ---; git blame -w -M -C --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2} /^\t/{ "date -r "t" +%Y" | getline y; close("date -r "t" +%Y"); print y, a}' | sort | uniq -c | sort -k2,2 -k1,1nr | awk '$2>=2025'; wc -l records.py; git log --format='%an <%ae>' | sort -u | grep -iE 'okafor|priya|raman|ibarra|lindqvist|jgleoj'
+ - Bash: git log --no-merges --author=Lindqvist --format='%h' --name-only | grep -v '^[0-9a-f]\{7\}$' | sort | uniq -c; echo ---; git log --no-merges --author=Gardi --name-only --format='%h %s' ; echo ---; git blame -w -M -C --line-porcelain records.py | awk '/^author /{a=substr($0,8)} /^\t/{print a}' | sed 's/dana okafor/Dana Okafor/;s/Kenneth Reitz.*/Kenneth Reitz/' | sort | uniq -c | sort -rn | head -6
+FINAL ANSWER:
+Short answer: Kenneth Reitz wrote about half of `records.py`, but he hasn't committed since 2024-03-29, so he is not who you ask. Ask Dana Okafor.
+
+**Live lines in `records.py` (622 lines, `git blame -w -M -C`)**
+
+| Author | Lines | Last commit |
+|---|---|---|
+| Kenneth Reitz (3 emails) | 311 (50%) | 2024-03-29, merge commits only |
+| Greg Troszak | 57 | 2018 |
+| Chad Whitacre | 39 | 2016 |
+| Dana Okafor (2 emails) | 35 | 2026-05 |
+| Jan Vlcinsky | 30 | 2018 |
+| mcdallas | 26 | 2018 |
+| Priya Raman | 15 | 2026-06 |
+| Tomás Ibarra | 11 | 2026-04 |
+| Marcus Lindqvist | 5 | 2026-03 |
+| pre-commit-ci[bot] | 4 | 2026-06 |
+
+The last two rows come from the 2024 and 2026 commits listed below.
+
+**Who to ask about `records.py`**
+1. **Dana Okafor** has the most surviving lines of anyone who committed in the last 12 months. They wrote the key normalisation and chunking helpers and `_describe`. They appear under `<email redacted>` and `dokafor@fastmail.example`. I assumed these are the same person because the names match. I did not confirm it.
+2. **Tomás Ibarra** wrote `_coerce_row`.
+3. **Priya Raman** is the most recent human committer. They also have 25 lines in `tests/test_transactions.py` and 12 in `tests/test_records.py`.
+
+**Code that looks alive but isn't**
+- **Marcus Lindqvist:** 25 commits in March 2026, but 24 of them were to `examples/export_legacy.py`. That file was deleted in `54c...`, so only 5 of their lines survive in `records.py`.
+- **Joseph Gardi:** their 2026-02 transaction rollback fix no longer appears in blame for `records.py`. Their only surviving lines are 14 in `examples/randomuser-sqlite.py`.
+- **`setup.py`:** Kenneth Reitz wrote 102 of 106 lines, so nobody active has worked on it.
+- **Tests:** `tests/conftest.py`, `test_105.py` and `test_69.py` are mostly or entirely Jan Vlcinsky's code from 2018. `tests/test_records.py` is mostly Chad Whitacre, Harold Cooper (`hrldcpr`) and `tethik`, all from 2016–2018. Only Priya and Dana have recent lines there.
+
+**Caveats**
+- These are git identities only. Someone with no recent commits may still be reachable, and a reviewer who never commits looks like a stranger here.
+- The `busfactor` tool, run with `--no-github --dry-run`, produced only a single fallback rule: Priya, Joseph and Dana. I wrote nothing to the repo. The fallback names Joseph even though he has no surviving lines in `records.py`.
+- The repo isn't shallow (409 commits), so the history is complete.
+META cost=0.11423900000000001 ms=38276 turns=7

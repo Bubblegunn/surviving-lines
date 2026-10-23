@@ -1,0 +1,44 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js"; $SL --group-by ext --merge-identities; echo ----; $SL --group-by ext
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --group-by ext --merge-identities; echo ----; node $S --group-by ext
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E3-ours-1/repo; for c in 62628c0 739dc11 fcd2b56 00d6eec; do git show --stat --format='%h %an %s' $c | tail -n +1 | head -8; echo; done
+FINAL ANSWER:
+Each file type has a different top owner. I counted surviving lines with `git blame -w -M -C` at HEAD across all 18 files: 1,662 non-blank lines were attributed, 1,995 counting blank lines.
+
+| Ext | Lines | Top owner | Runner-up | Bus factor (50%) |
+|---|---|---|---|---|
+| `.js` (7 files) | 1,032 | **Troy Goode, 564 (54.7%)** merged. Unmerged: <email redacted> 520 (50.4%) + troy@laptop.example 44 (4.3%) | Douglas Christopher Wilson, 362 (35.1%) | 1 |
+| `.yml` (6) | 314 | **Douglas Christopher Wilson, 101 (32.2%)** | Íñigo Marquínez Prado, 80 (25.5%) | 2 |
+| `.md` (2) | 253 | **Troy Goode, 71 (28.1%)** | Jon Church, 59 (23.3%) | 2 |
+| `.json` (1) | 40 | **Douglas Christopher Wilson, 20 (50.0%)** | Troy Goode, 12 (30.0%) | 1 |
+| no extension (2) | 23 | **Douglas Christopher Wilson, 21 (91.3%)** | Troy Goode, 2 (8.7%) | 1 |
+
+Only `.js`, `.json` and the files without an extension have one person holding at least half the lines. `.yml` and `.md` don't.
+
+**Bus factor** here means the smallest number of authors whose surviving lines together reach 50% of that file type's lines. I computed it per file type, at the 50% threshold only. I did not run the 80% variant.
+
+**Duplicate identities (guesses from names and addresses, not confirmed):**
+- **Troy Goode** shows up under <email redacted> (93 commits) and troy@laptop.example (2 commits). The evidence is strong (same name), so the `.js` row leads with the merged figure. Nothing is written to `.mailmap`. To make it permanent, run `--identities` and add the line it prints, after you confirm it is one person.
+- **Alejandro Caravaca Puchades** and **alex94puchades** use the same address, so the tool counts them as one person. Their row in `.js` is 30 lines (2.9%). The `.mailmap` line would be:
+  `Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>`
+
+**Left out or adjusted:**
+- **Reformat commit 62628c0** ("style: reformat js…", by Fiona Formatter) is ignored. It rewrote 1,016 lines in 4 files (`lib/index.js` and three test files) and changed only indentation and quotes. If it were counted, it would hold 291 lines, mostly taken from Troy Goode and Douglas Christopher Wilson.
+- **dependabot[bot]** is excluded (10 lines, 11 commits).
+
+**Mechanical rewrite check:** the tool examined 136 commits and set aside only 62628c0. It flagged 5 more as possibly mechanical and kept all of them:
+- 739dc11 (license reformat, 17 lines)
+- fcd2b56 (ESLint switch mixed with cleanup, 11 lines)
+- 00d6eec (eslint config moved to YAML, 9 lines)
+- 344ce1e and 9c2b59d (1 line each)
+
+They are small, and fcd2b56 includes real code changes, so the shares above count them.
+
+These numbers show whose lines still exist. They don't measure code quality, review work, or deleted code.
+META cost=0.2330644 ms=28534 turns=6

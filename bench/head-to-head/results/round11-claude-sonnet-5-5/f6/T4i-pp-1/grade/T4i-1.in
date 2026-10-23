@@ -1,0 +1,140 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I'm about to change lib/index.js. Who should review it?
+
+CRITERIA:
+1. Names Troy Goode first, or as the main reviewer.
+2. Gives evidence with numbers for him (surviving lines or share) rather than only commit counts.
+3. Does not name Fiona Formatter as the main owner and does not name dependabot at all as a reviewer.
+4. Counts Troy's two addresses as one person (a Troy figure above 150 lines, or share above 60%).
+5. Names at least one second reviewer.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1987 bots 10
+  Troy Goode                         810  40.8%
+  Douglas Christopher Wilson         629  31.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  Alejandro Caravaca Puchades         34   1.7%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+  Raymond Feng                         7   2.9%
+  max.laverse                          6   2.5%
+  LuisEGR                              6   2.5%
+  Simon Mansfield                      3   1.3%
+  Igor Soarez                          3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         517  53.5%
+  Douglas Christopher Wilson         374  38.7%
+  Alejandro Caravaca Puchades         18   1.9%
+  Eric di Domenico                    14   1.4%
+  Alberto Leal                        13   1.3%
+  Saad Tazi                            7   0.7%
+  Tom Arad                             5   0.5%
+  Shane Tomlinson                      4   0.4%
+  bus factor (min authors >=50%): 1
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+  Raymond Feng                         7   2.9%
+  max.laverse                          6   2.5%
+  LuisEGR                              6   2.5%
+  Simon Mansfield                      3   1.3%
+  Igor Soarez                          3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 29
+  Douglas Christopher Wilson          21  72.4%
+  Troy Goode                           6  20.7%
+  Fiona Formatter                      2   6.9%
+.js total 1202
+  Troy Goode                         676  56.2%
+  Douglas Christopher Wilson         394  32.8%
+  Alejandro Caravaca Puchades         34   2.8%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 417
+  Troy Goode                         134  32.1%
+  Douglas Christopher Wilson         115  27.6%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+test total 966
+  Troy Goode                         517  53.5%
+  Douglas Christopher Wilson         374  38.7%
+  Alejandro Caravaca Puchades         18   1.9%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Fiona Formatter                      2
+  Troy Goode                           2
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         159
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      1
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          1
+  max.laverse                          6
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         16
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            2
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          22
+  Benjamin Eidelman                    3
+  Chima Alaebo                         1
+  Tom Arad                             1
+  LuisEGR                              6
+  Fiona Formatter                      0
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: git shortlog -sne --no-merges HEAD -- lib/index.js | head -10; echo ---; git log --since="12 months ago" --format='%an %ad' --date=short -- lib/index.js | head -10; echo ---; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+FINAL ANSWER:
+No CODEOWNERS file exists, so I used git history for `lib/index.js`.
+
+- **Troy Goode** is the best reviewer. They have 28 commits on the file, by far the most, and the most recent substantive change (2026-04-10).
+- **Douglas Christopher Wilson** is a good second reviewer. They have 4 commits on the file.
+- **Alejandro Caravaca Puchades** also has 4 commits, and **Simon Mansfield** has 3.
+- **Fiona Formatter** (2026-04-12) is probably the author of the recent style reformat (`62628c0`). I didn't confirm that. If so, they changed formatting only and don't know the file's logic, so don't pick them as reviewer.
+
+I only checked authorship, not who is currently active in the repo. Check whether Troy Goode and Douglas Christopher Wilson are still active before you request review.

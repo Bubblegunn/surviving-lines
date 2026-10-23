@@ -1,0 +1,166 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4).
+
+TASK PROMPT:
+Who actually owns the code in this repo? I want to know whose code is still here today, not who has made the most commits.
+
+CRITERIA:
+1. Names Troy Goode as top owner by surviving lines with a count between 780 and 840 (both addresses counted as one person).
+2. Names Douglas Christopher Wilson second with a count between 600 and 660.
+3. The reformatter (Fiona Formatter) is NOT shown with more than 100 lines.
+4. dependabot is not ranked as an author (absent, or stated as excluded).
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1987 bots 10
+  Troy Goode                         810  40.8%
+  Douglas Christopher Wilson         629  31.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  Alejandro Caravaca Puchades         34   1.7%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+  Raymond Feng                         7   2.9%
+  max.laverse                          6   2.5%
+  LuisEGR                              6   2.5%
+  Simon Mansfield                      3   1.3%
+  Igor Soarez                          3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         517  53.5%
+  Douglas Christopher Wilson         374  38.7%
+  Alejandro Caravaca Puchades         18   1.9%
+  Eric di Domenico                    14   1.4%
+  Alberto Leal                        13   1.3%
+  Saad Tazi                            7   0.7%
+  Tom Arad                             5   0.5%
+  Shane Tomlinson                      4   0.4%
+  bus factor (min authors >=50%): 1
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+  Raymond Feng                         7   2.9%
+  max.laverse                          6   2.5%
+  LuisEGR                              6   2.5%
+  Simon Mansfield                      3   1.3%
+  Igor Soarez                          3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 29
+  Douglas Christopher Wilson          21  72.4%
+  Troy Goode                           6  20.7%
+  Fiona Formatter                      2   6.9%
+.js total 1202
+  Troy Goode                         676  56.2%
+  Douglas Christopher Wilson         394  32.8%
+  Alejandro Caravaca Puchades         34   2.8%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 417
+  Troy Goode                         134  32.1%
+  Douglas Christopher Wilson         115  27.6%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+test total 966
+  Troy Goode                         517  53.5%
+  Douglas Christopher Wilson         374  38.7%
+  Alejandro Caravaca Puchades         18   1.9%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Fiona Formatter                      2
+  Troy Goode                           2
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         159
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      1
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          1
+  max.laverse                          6
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         16
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            2
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          22
+  Benjamin Eidelman                    3
+  Chima Alaebo                         1
+  Tom Arad                             1
+  LuisEGR                              6
+  Fiona Formatter                      0
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -vE '(^|/)(node_modules)/' | head -300 | wc -l; git ls-files | head -80
+ - Bash: cd "$(git rev-parse --show-toplevel)"; for f in $(git ls-files | grep -vE 'LICENSE|\.yml$'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' | sed "s|^|$f\t|"; done > /tmp/blame.tsv; echo TOTAL; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -15; echo; echo LIB; grep '^lib/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -8; echo TESTS; grep '^test/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -8; git rev-list --count HEAD; git shortlog -sn HEAD | head -5
+ - Bash: wc -l < /tmp/blame.tsv; grep -E '^(lib|test)/' /tmp/blame.tsv | wc -l; grep -E '^(HISTORY|README)' /tmp/blame.tsv | cut -f1,2 | sort | uniq -c | sort -rn | head -6
+FINAL ANSWER:
+Troy Goode owns most of the surviving code. Their share is about 50% of all lines and about 57% of the code in `lib/` and `test/`. Douglas Christopher Wilson is second.
+
+I used `git blame` on the current files, with `-w -M -C` so whitespace changes and moved lines don't count as authorship. I also passed `.git-blame-ignore-revs` so the 4-space/double-quote reformat commit (`62628c0`) doesn't credit its author with every line. I left out LICENSE and the `.yml` config files. That leaves 1,592 lines.
+
+**All counted files (1,592 lines)**
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 805 | ~51% |
+| Douglas Christopher Wilson | 485 | ~30% |
+| Jon Church | 72 | ~4.5% |
+| Alejandro Caravaca Puchades | 30 | ~2% |
+| Linus Unnebäck | 26 | ~1.6% |
+| Everyone else | each 17 lines or fewer | ~11% combined |
+
+**`lib/index.js`, the actual implementation**
+- Troy Goode has 159 lines.
+- Douglas Christopher Wilson has 22.
+- Alejandro Caravaca Puchades has 12.
+- Raymond Feng has 7.
+- max.laverse and LuisEGR have 6 each.
+
+**`test/`**
+- Troy Goode has 517 lines.
+- Douglas Christopher Wilson has 372.
+- Alejandro Caravaca Puchades has 18.
+
+**Docs**
+- Jon Church, Linus Unnebäck and Ollie Buck have most of the README lines outside Troy Goode's.
+- Douglas Christopher Wilson has 50 lines in `HISTORY.md`.
+
+Commit counts tell a different story. Douglas Christopher Wilson has 143 of the 355 commits and Troy Goode has 122. Douglas Christopher Wilson's commits are mostly maintenance: changelog entries, dependency bumps and test edits.
+
+Two things could shift these numbers. `-C` can credit copied lines to the original author, and the reformat commit is the only revision I excluded. Other bulk edits are still credited to whoever made them.

@@ -1,0 +1,19 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser/ && git ls-files src/Parser | while read f; do git blame -w -M -C -e --ignore-rev 45259fd --ignore-rev 73c5c0f "$f" 2>&1; done | grep -oE '\(<[^>]+>' | sort | uniq -c | sort -rn; echo ---; git ls-files src/Parser | wc -l; git log --oneline -- src/Parser | wc -l; cat .mailmap
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in $(git ls-files src/Parser); do echo "$f: $(git blame -w -M -C -e --ignore-rev 45259fd --ignore-rev 73c5c0f $f | grep -oE '\(<[^>]+>' | sort | uniq -c | sort -rn | sed 's/(<//;s/>//' | awk '{printf "%s %s; ", $2,$1}')"; done
+FINAL ANSWER:
+Review `src/Parser/` with **Graham Campbell** (<email redacted>). Surviving lines today: Graham 782, Priscila Duarte 118, Vance Lucas 10, and two other authors with 1 each.
+
+**Per file**
+- Graham wrote nearly all of `EntryParser.php` (363 lines), `Lines.php`, `Value.php`, `Entry.php`, `Lexer.php`, `Parser.php` and `ParserInterface.php`.
+- **Priscila Duarte** (<email redacted>) wrote all of `Comments.php` (56 lines) and `Interpolator.php` (62 lines). If the change touches either file, ask her to review it.
+- Vance Lucas has 10 lines in `Lines.php`. That is too little to make them a reviewer.
+
+**Method:** I used `git blame -w -M -C` on each file in `src/Parser/`. This counts the lines that exist now, not commits. I ignored the tab-indent commit (`45259fd`) and the StyleCI commit (`73c5c0f`) so they don't take ownership of every line. `.mailmap` merged Graham's and Priscila's alternate emails.
+META cost=0.06017499999999999 ms=17512 turns=4

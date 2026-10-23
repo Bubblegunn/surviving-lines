@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn; echo ---; git log -8 --format='%h %an %ad %s' --date=short -- lib/rack/attack/store_proxy/; echo ---; ls lib/rack/attack/store_proxy/; echo ---; git log --since='12 months ago' --format='%an <%ae>' | sort | uniq -c | sort -rn; echo; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --since='12 months ago' --format='%h %ad %an | %s' --date=short | head -30; echo ---; git log -3 --format='%h %ad %an %cn' --date=short -- lib/rack/attack/store_proxy/valkey_proxy.rb; ls MAINTAINERS* 2>/dev/null; grep -n -i -A5 'maintain' README.md | head -20
+FINAL ANSWER:
+Review ask:
+
+1. **Santiago Bartesaghi**: best pick. Touched `store_proxy/` in 2024-12 (namespaced `reset!` fix) and 2026-08. Active through 2026-09-30 (sorbet RBI, rubocop, CI). Does most of the current maintenance.
+2. **Hiroshi Tanaka**: wrote `valkey_proxy.rb` (#310, #318) on 2026-09-02 and 2026-09-16. Knows the newest proxy and the wrap/version-check pattern. Only recent proxy work, no history on the older ones. Commits use two emails (`<email redacted>`, `hiroshi@tanaka.example`), same name.
+
+Optional third reviewer:
+- **Jean Boussier**: commits in 2026-03 (#714 "Eagerly check for store validity", Ruby 4.0 CI). Did not edit `store_proxy/` itself, but #714 is store-related. Ask them if your change affects store validity checks.
+
+Skip as primary reviewers:
+- **Gonzalo Rodriguez (grzuy)**: wrote most of the original proxy code (2018–2019). Last commits Nov 2025, CI and test-matrix only. Not recent on this code. Good for design history questions only.
+- Other authors have no commits in the last 12 months (hakanensari, Vincent Boisard, fatkodima, Jonathan del Strother, Mitchell Henke, others).
+
+No `CODEOWNERS` file. Ranking comes from git history only. Git cannot show who is still engaged beyond commits. Check GitHub for recent reviews or comments before you request.
+META cost=0.06377820000000001 ms=19210 turns=4

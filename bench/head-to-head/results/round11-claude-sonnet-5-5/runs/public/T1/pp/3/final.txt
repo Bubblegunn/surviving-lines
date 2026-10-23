@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --oneline | wc -l && git ls-files | wc -l && git log --oneline -i --grep='reformat\|style\|prettier\|lint' | head -20
+ - Bash: git ls-files && echo ---- && echo 62628c0 > /tmp/ignore-revs && for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo ---- plain; for f in $(git ls-files); do git blame -w --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -5
+ - Bash: git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain -- lib/index.js | grep -c '^author ' ; git --version
+ - Bash: git rev-parse 62628c0 > /tmp/ignore-revs && for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn > /tmp/own.txt; awk '{t+=$1} END{print "total",t}' /tmp/own.txt; head -12 /tmp/own.txt; echo ---- lib+test only; for f in lib/index.js test/*.js test/support/env.js; do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -8; echo; git log -1 --format='%an <%ae>' 62628c0
+FINAL ANSWER:
+**Troy Goode owns the most surviving code, and Douglas Christopher Wilson is second.** I counted lines at HEAD with `git blame`, not commits.
+
+The latest commit, `62628c0` ("reformat js with 4-space indent and double quotes"), is by Fiona Formatter. A plain blame credits her with 291 lines. I excluded that commit with `--ignore-revs-file` and used `-w -M -C`, so whitespace changes and moved or copied lines go to the original author.
+
+All 18 tracked files, 1,995 lines in total:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Alejandro Caravaca Puchades | 30 | 1.5% |
+| Linus Unnebäck | 26 | 1.3% |
+| Others | the remainder | |
+
+Code only (`lib/index.js` and the JS files under `test/`) gives a similar order:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 676 |
+| Douglas Christopher Wilson | 394 |
+| Alejandro Caravaca Puchades | 30 |
+| Eric di Domenico | 16 |
+| Alberto Leal | 15 |
+
+- **Caveat:** the formatting commit rewrote most lines, so the ignore step is what keeps the original authors' credit. Blame can still be wrong where a line was reworked as part of the reformat.
+- **Non-code files:** Wilson's share is higher in the all-files count than in the code-only count. That comes from files like `HISTORY.md`, the CI workflows and `package.json`.
+- **Ownership versus maintenance:** Goode wrote the most surviving code, but I haven't checked who maintains the repo now. Recent commits, such as dependency bumps and docs fixes, are a separate question.
+META cost=0.06523290000000001 ms=22713 turns=5

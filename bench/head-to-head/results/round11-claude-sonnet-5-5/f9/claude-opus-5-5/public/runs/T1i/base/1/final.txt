@@ -1,0 +1,59 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-base-1/repo; cat .git-blame-ignore-revs; git config blame.ignoreRevsFile; git log --format='%h %an <%ae> %s' | head -20; git ls-files | head -50; git ls-files | wc -l
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-base-1/repo
+agg(){ git ls-files | while read f; do git blame --line-porcelain $@ -- "$f" | sed -n "s/^author-mail //p;s/^author //p" | paste - - ; done | sort | uniq -c | sort -rn | head -15; }
+echo "== raw"; agg
+echo "== ignore-revs + -w -M -C"; agg -w -M -C --ignore-revs-file .git-blame-ignore-revs
+git show --stat b2005d9 02afce3 | cat; git show b2005d9 | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-base-1/repo
+B="-w -M -C --ignore-revs-file .git-blame-ignore-revs"
+per(){ for f in "$@"; do git blame --line-porcelain $B -- "$f" | sed -n "s/^author //p"; done | sort | uniq -c | sort -rn | head -8; }
+for g in "lib/index.js" "$(git ls-files test | tr '\n' ' ')" "README.md" "HISTORY.md"; do echo "== $g ($(cat $g | wc -l | tr -d ' ') lines)"; per $g; done
+echo "== all, also ignoring b2005d9"; for f in $(git ls-files); do git blame --line-porcelain $B --ignore-rev b2005d9 -- "$f" | sed -n "s/^author //p"; done | sort | uniq -c | sort -rn | head -6
+echo "== lib only, ignoring b2005d9"; git blame --line-porcelain $B --i
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-base-1/repo
+bash <<'EOF'
+B=(-w -M -C --ignore-revs-file .git-blame-ignore-revs)
+per(){ for f in "$@"; do git blame --line-porcelain "${B[@]}" $X -- "$f" | sed -n "s/^author //p"; done | sort | uniq -c | sort -rn | head -6; }
+X=""
+echo "== lib/index.js"; per lib/index.js
+echo "== test/*"; per $(git ls-files test)
+echo "== README.md"; per README.md
+echo "== HISTORY.md"; per HISTORY.md
+X="--ignore-rev b2005d9"
+echo "== lib/index.js ignoring b2005d9"; per lib/index.js
+echo "== all files ignoring b2005d9"; per $(git ls-files)
+EOF
+cat .mailmap 2>/dev/null; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1i-base-1/repo; git ls-files | xargs cat | wc -l; wc -l lib/index.js; git ls-files test | xargs cat | wc -l
+FINAL ANSWER:
+Troy Goode owns the most surviving code, about 40% of all lines. Douglas Christopher Wilson is second at about 32%. Everyone else together holds less than 30%.
+
+If you count lines in a plain `git blame`, you get the wrong answer. Fiona Formatter shows up with 1018 of 1995 lines (51%). That is only because their commit `62628c0` reformatted the files to 4-space indent and double quotes. The repo already lists that commit in `.git-blame-ignore-revs`, but `blame.ignoreRevsFile` is not set in the git config, so a plain `git blame` still counts it. I reran the count with `-w -M -C --ignore-revs-file .git-blame-ignore-revs`. That skips the reformat, ignores whitespace changes, and follows lines that were moved or copied.
+
+**Whole repo (1995 lines):**
+- Troy Goode: 810 (41%). They have two emails, `<email redacted>` with 762 lines and `troy@laptop.example` with 48. There is no `.mailmap`, so I merged the two by name.
+- Douglas Christopher Wilson: 629 (32%)
+- Íñigo Marquínez Prado: 95
+- Jon Church: 72
+- Sebastian Beltran: 67
+- Ulises Gascón: 52
+- Others: under 50 lines each
+
+**By area:**
+- `lib/index.js` (238 lines, the actual library): Troy has 159 lines (67%), Douglas 22, Alejandro Caravaca Puchades 12. Troy clearly owns the code that runs.
+- `test/` (966 lines): Troy 517 (54%), Douglas 374 (39%).
+- `README.md`: Troy 116, Jon Church 72, Linus Unnebäck 26.
+- `HISTORY.md`: Douglas 50 of about 64 lines.
+
+**Two more points:**
+- Commit `b2005d9` ("lib: annotate handlers", from Troy's laptop email) only adds `// checked` comments to 12 existing lines. It takes over blame for lines other people wrote. When I ignore it too, Troy loses only about 2 lines in `lib/index.js`, so the result does not change.
+- By commit count the order is different: Douglas has 143 commits and Troy 122. Douglas made more commits, but more of Troy's lines are still in the code today.
+
+To make plain `git blame` skip the reformat on your machine, run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+META cost=0.243132 ms=33698 turns=6

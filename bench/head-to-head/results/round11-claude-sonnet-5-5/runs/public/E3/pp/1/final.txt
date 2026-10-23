@@ -1,0 +1,24 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do git blame --line-porcelain -w -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{sub(/^author /,""); print f"\t"$0}'; done | awk -F'\t' '{n=split($1,p,"/"); b=p[n]; e=(b ~ /\./ && b !~ /^\.[^.]*$/)? b : b; if (b ~ /^\./ && gsub(/\./,"&",b)==1) ext="(dotfile)"; else if (b ~ /\./) {m=split(b,q,"."); ext="."q[m]} else ext="(none)"; c[ext"\t"$2]++} END{for(k in c) print k"\t"c[k]}' | sort -t$'\t' -k1,1 -k3,3nr
+FINAL ANSWER:
+Top owner of surviving lines per extension, from `git blame` on every tracked file:
+
+| Extension | Top owner | Lines | Runner-up |
+|---|---|---|---|
+| `.js` | Troy Goode | 517 of 1,211 | Fiona Formatter (291), Douglas Christopher Wilson (245) |
+| `.md` | Troy Goode | 116 | Jon Church (72), Douglas Christopher Wilson (67) |
+| `.yml` | Douglas Christopher Wilson | 117 | Íñigo Marquínez Prado (95), Sebastian Beltran (63) |
+| `.json` | Douglas Christopher Wilson | 20 | Troy Goode (12) |
+| no extension | Douglas Christopher Wilson | 17 | Troy Goode (5) |
+| dotfiles (`.gitignore` etc.) | Douglas Christopher Wilson | 4 | Troy Goode (1) |
+
+- **`.js` blame:** I ran blame with `-w`, which ignores whitespace-only changes. The 4-space reindent in the latest commit (`62628c0`) therefore doesn't take ownership of lines. The quote change from single to double quotes still counts as a real edit. That is why Fiona Formatter holds 291 `.js` lines. Without the reformat commit, Troy Goode and Douglas Christopher Wilson would likely hold more.
+- **Extension rule:** Files are grouped by the text after the last dot, so `.gitignore` counts as a dotfile and `LICENSE` counts as no extension.
+- **`Efe`:** This is the current git user. They hold 6 `.md` lines, which is not enough to appear in the top three.
+META cost=0.05608030000000001 ms=14677 turns=3

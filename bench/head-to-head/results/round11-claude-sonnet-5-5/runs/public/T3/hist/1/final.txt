@@ -1,0 +1,24 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all && echo --- && ls -la .mailmap 2>&1; git config --get mailmap.file
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Write: {"file_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T3-hist-1/repo/.mailmap", "content": "Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n"}
+ - Bash: git shortlog -sne --all | head -4 && git shortlog -sne --all | grep -Ei 'troy|alejandro c|alex94'; git shortlog -se --all | awk '{print $NF}' | sort | uniq -d
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** had two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** had two names on the same email (`<email redacted>`): "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit).
+
+I added a `.mailmap` at the repo root that maps each of them to one identity. Git history is unchanged, so there are no rewritten hashes. I haven't committed `.mailmap`.
+
+After the fix, `git shortlog -sne --all` shows Troy Goode with 122 commits and Alejandro with 5, and no duplicates remain.
+
+**Top author is still Douglas Christopher Wilson with 143 commits.** Troy Goode is second with 122, up from 120 after the merge.
+
+The check was by name and email only. I didn't try to match people across clearly different names and emails. "Efe" (`<email redacted>`) and "Fiona Formatter" (`fiona@formatter.example`) each appear once.
+META cost=0.0625926 ms=14285 turns=5

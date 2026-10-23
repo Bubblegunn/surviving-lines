@@ -1,0 +1,41 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.py' | wc -l && git ls-files '*.py' && echo --- && git ls-files '*.py' | xargs -I{} git blame --line-porcelain -- {} | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short -- '*records.py' && echo --- && git blame --line-porcelain -- $(git ls-files '*records.py') | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: echo "== records.py surviving lines (raw) ==" && git blame --line-porcelain -- records.py | grep '^author ' | sort | uniq -c | sort -rn && echo "== records.py, ignoring whitespace + black commit abe2ea7 ==" && printf 'abe2ea7\n0e8fe2e\n' > /tmp/ignore-revs.txt && git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- records.py | grep '^author ' | sort | uniq -c | sort -rn && echo "== all .py, ignoring formatting ==" && git ls-files '*.py' | xargs -I{} git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- {} | grep '^author ' | sort | uniq -c | sort -rn | head -20 && echo "== records.py last-touch per line by commit date (2026 = recent) ==" && git blame -
+ - Bash: git rev-parse abe2ea7 0e8fe2e > /tmp/ignore-revs.txt && echo "== records.py, -w + ignore black/precommit commits ==" && git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- records.py | grep '^author ' | sort | uniq -c | sort -rn | head -12 && echo "== all .py, same ignores ==" && git ls-files '*.py' | xargs -I{} git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- {} | grep '^author ' | sort | uniq -c | sort -rn | head -12 && echo "== records.py: lines by year of blame ==" && git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- records.py | grep '^author-time ' | cut -d' ' -f2 | while read t; do date -r $t +%Y; done | sort | uniq -
+ - Bash: git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- records.py | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2} /^\t/{ if (t>=1704067200) print a }' | sort | uniq -c | sort -rn && echo "== records.py lines from 2024+ by author ==" && git blame -w --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain -- records.py | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2} /^\t/{ if (t>=1704067200) print a }' | wc -l && echo "== Joseph Gardi / Marcus commits ==" && git log --format='%h %an %ad %s' --date=short --author='Joseph Gardi\|Marcus Lindqvist' -- records.py tests | head && echo "== records.py: git log recent 2026 authors ==" && git log --since=2025-10-01 --f
+FINAL ANSWER:
+**Short answer:** Kenneth Reitz wrote most of the Python that survives today. For `records.py`, ask **Dana Okafor** first, then **Tomás Ibarra** for typed-column coercion and **Marcus Lindqvist** for `LEGACY_SKIP`.
+
+**Surviving lines, all 9 tracked `.py` files** (`git blame`, ignoring whitespace and the two formatting-only commits `abe2ea7` and `0e8fe2e`):
+
+| Author | Lines alive |
+|---|---|
+| Kenneth Reitz | 431 |
+| Jan Vlcinsky | 119 |
+| Greg Troszak | 110 |
+| Joakim Uddholm | 73 |
+| Chad Whitacre | 58 |
+| Harold Cooper | 51 |
+| Dana Okafor | 38 (+ a lowercase "dana okafor" variant) |
+
+**`records.py` specifically:**
+- About 318 surviving lines date from 2016, mostly Kenneth Reitz's original rewrite. He still owns most of the code, but he has no recent commits to it. The latest is a 2024 SQLAlchemy update.
+- Lines last touched in 2024 or later, by author: Kenneth Reitz 46 (from the 2024 update), Dana Okafor 40 (both spellings), Tomás Ibarra 12, Marcus Lindqvist 8.
+- Recent substantive commits:
+  - **Dana Okafor**: key normalisation and chunking helpers (2026-04-06), `_describe` (2026-05-11). Best first contact.
+  - **Tomás Ibarra**: `_coerce_row` for typed columns (2026-04-20).
+  - **Marcus Lindqvist**: `LEGACY_SKIP` columns (2026-03-02).
+  - **Joseph Gardi**: transaction context manager re-raises after rollback (2026-02-08).
+  - **Priya Raman**: black formatting only (2026-06-03), so not a code owner.
+
+**Caveats:**
+- Blame measures surviving lines, not who understands the code or who should approve changes. Reviewers and maintainers are not captured.
+- "Dana Okafor" and "dana okafor" show different emails (`dokafor@fastmail.example`, `<email redacted>`). I assumed they are one person but did not verify it.
+- Emails are on placeholder-looking domains, so confirm contact details through your team, not from git.
+META cost=0.00817378 ms=29624 turns=6

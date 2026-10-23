@@ -1,0 +1,65 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' && git log --format='%h %an <%ae> %s' | head -50 && cat .git-blame-ignore-revs 2>/dev/null; cat .mailmap 2>/dev/null
+ - Bash: IGN="--ignore-rev abe2ea7 --ignore-rev 0e8fe2e"
+echo "== raw blame (all py), by name+email"; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain $f | grep -E '^author(-mail)? ' | paste - - ; done | sort | uniq -c | sort -rn
+echo "== ignoring formatter commits"; for f in $(git ls-files '*.py'); do git blame -w -M -C $IGN --line-porcelain $f | grep -E '^author(-mail)? ' | paste - - ; done | sort | uniq -c | sort -rn
+echo "== records.py ignoring formatter"; git blame -w -M -C $IGN --line-porcelain records.py | grep -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn
+echo "== LOC"; wc -l $(git ls-files '*.py')
+ - Bash: git log --format='%h %ad %an %s' --date=short -- records.py | head -30; git show --stat 54b029d 70b10b2 85c2e3a 7557b2c | grep -vE '^\s*$' | head -40
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-base-2/repo
+B() { git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain "$@" | grep '^author ' | sort | uniq -c | sort -rn; }
+echo "== all py, formatter ignored"; for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn
+echo "== records.py"; B records.py
+echo "== records.py: lines by 2026 authors"; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e -e --date=short records.py | grep -E 'example\.(org|net|com)|fastmail' | cut -c1-140
+echo "== LEGACY_SKIP / _coerce_row / _describe usage"; g
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-base-2/repo
+grep -rnE 'LEGACY_SKIP|_coerce_row|_describe|_normalize_keys|_chunked' . --include='*.py' | grep -v '^./.git/'
+echo; git log --format='%an' --since=2026-01-01 -- . | sort | uniq -c
+echo "== git commits touching records.py per original-author lineage; last activity per author"; git log --format='%ad %an' --date=short | awk '{d=$1; $1=""; if(!($0 in s)) s[$0]=d} END{for(a in s) print s[a], a}' | sort -r | head -15
+FINAL ANSWER:
+Method: `git blame -w -M -C` on all 9 tracked `.py` files, with the two formatting commits (`abe2ea7` black by Priya, `0e8fe2e` pre-commit bot) ignored. Without that, Priya gets 65 lines, but those lines are really other people's code reformatted.
+
+**Surviving lines, all Python (1062 lines)**
+
+| Author | Lines |
+|---|---|
+| Kenneth Reitz | 435 |
+| Jan Vlcinsky | 119 |
+| Greg Troszak | 89 |
+| Chad Whitacre | 85 |
+| Harold Cooper | 51 |
+| Joakim Uddholm | 45 |
+| Dana Okafor (two identities, see below) | 50 |
+| mcdallas | 26 |
+| Joseph Gardi | 22 |
+| Tomás Ibarra | 12 |
+| Marcus Lindqvist | 8 |
+
+Priya Raman and the bot have 0 surviving lines of their own after the ignore.
+
+**records.py (622 lines)**
+- Kenneth Reitz: 318 lines (about 51%). This is the core library.
+- Greg Troszak: 58.
+- Chad Whitacre: 39.
+- Jan Vlcinsky: 30.
+- Dana Okafor: 40, counting both identities.
+- Many contributors have fewer than 30 lines each.
+
+**Commit counts mislead here**
+- Marcus Lindqvist has 25 commits since January. All but one are "tweak legacy exporter (N)" on `examples/export_legacy.py`, which Dana deleted in `54b029d`. Marcus has 8 surviving lines, all in the `LEGACY_SKIP` constant.
+- Dana Okafor appears as `Dana Okafor <<email redacted>>` and `dana okafor <dokafor@fastmail.example>`. There is no `.mailmap`. I assumed they are the same person based on the matching name and email pattern, but I haven't verified it. If they are different people, Dana's lines split into 28/12 in records.py.
+- The 2026 additions are mostly unused. `LEGACY_SKIP`, `_coerce_row` and `_describe` have no callers anywhere. `_normalize_keys` and `_chunked` are only called from tests. Alive in the sense of executed in the library, records.py is Reitz's code.
+
+**Who to ask about records.py**
+- For how the library works (Records, RecordCollection, Database): Kenneth Reitz. His last commit here is July 2024 and he is the upstream author. Check whether they are still reachable.
+- For the 2026 helpers, why they exist, and whether to delete them: Dana Okafor. Dana is the most recent substantive author in records.py, and removed the exporter that `LEGACY_SKIP` was for. Ask Tomás Ibarra about `_coerce_row` specifically.
+- Troszak, Whitacre and Vlcinsky wrote real chunks of records.py, but I didn't check how recently they were active.
+
+I'd add a `.mailmap` for Dana and a `.git-blame-ignore-revs` file listing `abe2ea7` and `0e8fe2e`, so plain `git blame` and `git shortlog` give these numbers. I haven't created either file.
+META cost=0.12927919999999998 ms=37314 turns=7

@@ -1,0 +1,75 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -E '\.(js|ts|json|md)$' | grep -v node_modules | wc -l; git shortlog -sne --all --no-merges | head -30; git log -1 --format=%cd
+ - Bash: ls .mailmap 2>&1 | head -1; git ls-files | grep -vE '^(node_modules|\.github)/' | head -60; echo; git ls-files | wc -l
+ - Bash: cd "$(git rev-parse --show-toplevel)"
+for f in lib/index.js test/*.js test/support/env.js package.json README.md HISTORY.md; do
+ git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");a[$0]++;t++} END{for(k in a)printf "%s\t%s\t%d\t%d\n",f,k,a[k],t}'
+done > /tmp/blame.tsv
+echo "== per file"; sort -t$'\t' -k1,1 -k3,3nr /tmp/blame.tsv | awk -F'\t' '{printf "%-26s %-32s %4d/%4d %3.0f%%\n",$1,$2,$3,$4,100*$3/$4}' | awk '{c[$1]++} c[$1]<=3'
+echo "== total (source: lib+test)"; grep -E '^(lib|test)/' /tmp/blame.tsv | awk -F'\t''{a[$2]+=$3;t+=$3} END{for(k in a)printf "%5d %5.1f%% %s\n",a[k],100*a[k]/t,k}' | sort -rn 
+ - Bash: grep -E '^(lib|test)/' /tmp/blame.tsv | awk -F'\t' '{a[$2]+=$3;t+=$3} END{for(k in a)printf "%5d %5.1f%% %s\n",a[k],100*a[k]/t,k}' | sort -rn | head -8; echo; grep -E '^(lib|test)/' /tmp/blame.tsv | awk -F'\t' '{t+=$3} END{print t" lines total"}'; git log --all --format='%an' --since=2025-07-23 | sort | uniq -c | sort -rn | head; git log -3 --format='%h %an %cs %s' --author=Troy; git log -2 --format='%h %an %cs %s' --author=Fiona
+FINAL ANSWER:
+## Bus factor: surviving code ownership
+
+I used `git blame` at HEAD with `-w -M -C`. I excluded reformat commit `62628c0` through `.git-blame-ignore-revs`, so "Fiona Formatter" does not appear as owner. Without that exclusion, the reformat would have taken most lines.
+
+The scope was 1,202 lines in `lib/` and `test/`. The other tracked files (README, HISTORY, package.json) are in the per-file table below.
+
+### Project bus factor: 2
+
+Troy Goode and Douglas Christopher Wilson together own 89% of the surviving source lines. Losing both would leave about 11% of the code with a knowledgeable maintainer.
+
+| Owner | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 676 | 56.2% |
+| Douglas Christopher Wilson | 394 | 32.8% |
+| Alejandro Caravaca Puchades | 30 | 2.5% |
+| Eric di Domenico | 16 | 1.3% |
+| Alberto Leal | 15 | 1.2% |
+| everyone else | 71 | ~6% |
+
+### Per file
+
+| File | Top owner | Second owner |
+|---|---|---|
+| `lib/index.js` (core) | Troy 67% | Doug 9% |
+| `test/test.js` (largest, 731 lines) | Doug 46% | Troy 43% |
+| `test/error-response.js` | Troy 86% | Doug 14% |
+| `test/example-app.js` | Troy 83% | Doug 17% |
+| `test/issue-2.js` | Troy 83% | Doug 17% |
+| `test/vary.js` | Troy 100% | none |
+| `test/support/env.js` | Doug 100% (2 lines) | none |
+| `README.md` | Troy 42% | Jon Church 26% |
+| `package.json` | Doug 48% | Troy 29% |
+| `HISTORY.md` | Doug 78% | Ulises Gascón 9% |
+
+### Risks
+
+- **`lib/index.js`**: Troy owns 67%. Other contributors own small slices, and the next largest is Doug at 9%. This is the main risk.
+- **`test/vary.js`**: Troy owns 100%. It is a small file.
+- **Doug is inactive.** His last commit is 2021-09-07, and he still owns 33% of the surviving lines, including about half of `test/test.js`. This is the stale-knowledge risk. His code is still here, but he is not maintaining it.
+- **Troy is active.** His last commits are 2026-04-10.
+
+### Why this differs from commit counts
+
+- Commit counts rank Doug first (143 commits against Troy's 93).
+- Surviving lines rank Troy first (56% against 33%).
+- Troy appears under two emails (`<email redacted>` and `troy@laptop.example`). There is no `.mailmap`, so tools that group by email split his commits. I merged them by name.
+
+### Recommendations
+
+1. **Now:** Have someone other than Troy review the next change to `lib/index.js`.
+2. **Short term:** Ask Jon Church, Ulises Gascón or Sebastian Beltran to take over `test/test.js` and `package.json`. All three committed in 2025–2026.
+3. **Ongoing:** Add a `.mailmap` so Troy's two identities merge in future reports.
+
+Limits:
+- I did not run the dependents-count step (how many files import each file), because the repo has only one source file in `lib/`.
+- I did not delegate to the contributor-analyzer agent. The data was small enough to compute directly.
+META cost=0.12219260000000001 ms=38549 turns=8

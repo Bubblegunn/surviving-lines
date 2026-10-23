@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL="node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js"; $SL --group-by dir --suggest-codeowners --merge-identities 2>&1
+ - Bash: node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js --group-by dir --suggest-codeowners --merge-identities 2>&1
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E4h-ours-1/repo; S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; git show --stat --format='%h %an %s' 62628c0 fcd2b56 739dc11 | cat; echo ====; node $S --group-by dir 2>&1 | sed -n '1,40p'; echo ====; node $S --group-by dir --merge-identities --ignore-rev fcd2b56 2>&1 | grep -A4 -E '^(test|lib)  '
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E4h-ours-1/repo; S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --group-by dir 2>&1 | grep -A5 -E '^(test|lib)  '; echo; echo ---; node $S --group-by dir --merge-identities --ignore-rev fcd2b56 2>&1 | grep -A5 -E '^(test|lib)  '; git show fcd2b56 -- test | head -60
+FINAL ANSWER:
+I have the numbers. Here are the suggestions.
+
+## Suggested CODEOWNERS
+
+```
+# Suggested from surviving lines (git blame -w -M -C). Review before you commit this.
+/lib/   <email redacted>   # Troy Goode: 144 of 214 lines, 67.3%
+/test/  <email redacted>   # Troy Goode: 420 of 820 lines, 51.2%. This only holds if both of his addresses are one person (see below).
+# /.github/: nobody holds half. Highest is Douglas Christopher Wilson with 92 of 305 lines (30.2%).
+# root files: nobody holds half. Highest is Douglas Christopher Wilson with 95 of 323 lines (29.4%).
+```
+
+You may want to use the GitHub handle (`@...`) instead of the email. The tool only knows the email.
+
+## Per directory (merged figure first)
+
+| dir | top holder | lines | share | unmerged |
+|---|---|---|---|---|
+| lib | Troy Goode (2 addresses) | 144/214 | 67.3% | <email redacted> alone: 132 (61.7%), so he owns it either way |
+| test | Troy Goode (2 addresses) | 420/820 | 51.2% | <email redacted> 388 (47.3%) + troy@laptop.example 32 (3.9%) |
+| .github | Douglas Christopher Wilson | 92/305 | 30.2% | nobody holds half |
+| root | Douglas Christopher Wilson | 95/323 | 29.4% | nobody holds half |
+
+- **The `/test/` line depends on the merge.** I counted <email redacted> and troy@laptop.example as one person because the name is the same. That is a guess from names and addresses. If you don't merge them, nobody holds half of `test/`: the top share is 47.3% and Douglas Christopher Wilson has 42.0%. To make the merge permanent, add `Troy Goode <<email redacted>> <troy@laptop.example>` to `.mailmap` after you confirm it's him.
+- **Root files**: the tool gives no CODEOWNERS pattern for them, because a root pattern would also match every directory. Nobody holds half there anyway.
+- **The same person under two names**: Alejandro Caravaca Puchades and `alex94puchades` share one address and are counted as one. This doesn't change any owner. A guess, still to confirm: `Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>`.
+
+## What was left out
+
+- **Formatting commit:** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter. It only changed whitespace and quotes in `lib/index.js` and three test files (1,016 lines). It is not counted. If it were counted, Fiona Formatter would get 291 lines (17.5% overall), mostly taken from Troy Goode and Douglas Christopher Wilson.
+- **Bots:** dependabot[bot] is not counted (10 lines, 11 commits).
+- **Other possible mechanical commits:** I looked at 136 commits and set aside only `62628c0`. I kept the other five candidates (`739dc11`, `fcd2b56`, `00d6eec`, `344ce1e`, `9c2b59d`):
+  - `fcd2b56` (Troy's ESLint cleanup) is a real code change, not only formatting. I re-ran without it to check, and `test` and `lib` gave the same figures (51.2% and 67.3%).
+  - `739dc11` (LICENSE reformat) only touches a root file, where nobody is near half.
+- **Basis:** 1,662 of 1,672 non-blank lines were attributed (1,995 lines with blank lines), from all 18 files. Copy detection was the default `-C`.
+- **Bus factor** (the fewest people who together hold 50% of the surviving lines): 1 for `lib` and `test` (Troy Goode), 2 for `.github` and root.
+
+Surviving lines show who wrote the code that is still there, not who should review changes to it. Check with the team before you commit this.
+META cost=0.2625068 ms=61852 turns=7

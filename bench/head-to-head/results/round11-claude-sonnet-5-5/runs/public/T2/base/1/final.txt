@@ -1,0 +1,23 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files lib | head -50; echo ---; git shortlog -sne HEAD -- lib | head -30; echo ---; git log --format='%an' -- lib | wc -l
+ - Bash: wc -l lib/index.js; echo "--- blame raw"; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -15; echo "--- blame ignoring reformat/annotate"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -15; echo "--- recent 24mo"; git shortlog -sn --since='24 months ago' HEAD -- lib; echo "--- last commit dates"; git log -3 --format='%ad %an %s' --date=short -- lib
+FINAL ANSWER:
+**Bus factor is 1.** Troy Goode alone covers most of `lib`.
+
+- **Scope:** `lib` has one file, `lib/index.js`, with 238 lines and 25 authors in its history.
+- **Surviving lines:** I counted with `git blame -w -M -C` and skipped the `62628c0` reformat commit. Troy Goode owns 159 of 238 lines, or 67%. That is past 50% on one person. The next authors are Douglas Wilson (22), Alejandro Caravaca Puchades (12, plus 4 under the alias `alex94puchades`) and Raymond Feng (7). Everyone else has 6 lines or fewer.
+- **Duplicate identity:** `troy@laptop.example` is also Troy Goode. It adds to the 159 lines in the "ownership" count but doesn't change the result.
+- **Recent activity:** Over the last 24 months, only two authors touched `lib`: Troy Goode (`lib: annotate handlers`, 2026-04-10) and "Fiona Formatter". Fiona's single commit is a whitespace/quote reformat, so it adds no understanding of the code. Before the 2026-04-10 commit, the last change was from LuisEGR in 2021-07 (a lint cleanup).
+
+**Answer to your question:** if Troy Goode leaves, nobody who remains owns more than about 9% of the lines. That includes Douglas Wilson, the next author. Losing Troy removes the only active owner. The remaining authors are historical contributors, most of whom committed once.
+
+Raw blame is misleading here. Without `--ignore-rev`, "Fiona Formatter" shows 32 lines of ownership from the reformat. That is formatting, not knowledge.
+
+The file is small (238 lines), so the cost of someone new learning it is low, even though ownership is concentrated.
+META cost=0.055638099999999996 ms=14158 turns=4

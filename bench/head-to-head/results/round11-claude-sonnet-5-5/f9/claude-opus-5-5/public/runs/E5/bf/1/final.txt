@@ -1,0 +1,50 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E5-bf-1/repo; echo ---; git log --follow --format='%h %ad %an <%ae> %s' --date=short -- lib/index.js | head -80; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E5-bf-1/repo; git show --stat --format='%H%nAuthor: %an <%ae> %ad%nCommitter: %cn <%ce> %cd%n%B' b2005d9 62628c0; git show b2005d9 -- lib/index.js | head -80; echo ===; git show -w 62628c0 -- lib/index.js | head -40; git diff --stat 62628c0^ 62628c0 -w --ignore-blank-lines -- lib/index.js
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E5-bf-1/repo; git diff -w --stat 62628c0^ 62628c0 -- lib/index.js; git diff -w 62628c0^ 62628c0 -- lib/index.js | head -30; echo "--- raw blame"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "--- blame -w"; git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "--- blame -w ignore both"; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E5-bf-1/repo; for opt in "-w --ignore-rev 62628c0" "-w --ignore-rev 62628c0 --ignore-rev b2005d9"; do echo "--- $opt"; git blame $opt --line-porcelain lib/index.js | grep '^author-mail ' | sort | uniq -c | sort -rn | head -5; done; git log --all --format='%an <%ae>' | sort | uniq -c | grep -i -e troy -e fiona; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 lib/index.js | awk '{print $1}' | uniq -c | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E5-bf-1/repo; echo "-- ignore reformat only"; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author-mail ' | sort | uniq -c | sort -rn | head -4; echo "-- ignore both"; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js > /tmp/bl.txt; grep '^author-mail ' /tmp/bl.txt | sort | uniq -c | sort -rn | head -3; echo "-- top commits"; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 -s lib/index.js | awk '{print $1}' | sort | uniq -c | sort -rn | head -12 | while read n h; do echo "$n $(git log -1 --format='%h %ad %an: %s' --date=short ${h#^})"; done; ls .git-bl
+FINAL ANSWER:
+Troy Goode wrote `lib/index.js` and still wrote most of it: about 157 of its 238 lines (66%). A plain `git blame` hides that. It credits Fiona Formatter with 214 lines because of one reformat commit in April 2026.
+
+**Why plain blame is wrong here**
+
+The two newest commits change formatting and comments only, not behaviour:
+- `62628c0` (2026-04-12, Fiona Formatter): changes the indent from 2 to 4 spaces and single quotes to double quotes. With `-w`, it still shows as 32 changed lines, and those are only the quote swaps.
+- `b2005d9` (2026-04-10, "Troy Goode `<troy@laptop.example>`"): adds `// checked` to the end of 12 function lines. Nothing else changes.
+
+The real authorship comes from blaming past both commits:
+```
+git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 lib/index.js
+```
+The repo has no `.git-blame-ignore-revs` file, so tools like GitHub's blame view will show the inflated numbers. Adding `62628c0` to that file would fix it.
+
+**Identity flag:** Troy's other 29 commits all use `<email redacted>` and stop in 2016. The 2026 commit uses `troy@laptop.example`. It could be Troy on a new machine, but nothing in the history confirms that. Treat it as unverified.
+
+**History by era**
+- **2013 (creation):** Troy writes the first commit and most of the core in "wrapping up" (`4f13c63`). That commit alone accounts for 58 lines still in the file. Early contributors added a few features: Simon Mansfield (origin checks and the credentials header), Eric di Domenico (origin as a callback), Mathias Buus (support without Express), and Damien Klinnert (preflight-only headers).
+- **2014–2015 (growth):** Troy adds Express 4 support, `exposedHeaders` and the `vary` module. He also moves the project to ESLint (`8ec22a9`, 34 lines still in the file). Alejandro Caravaca Puchades adds RegExp and array values for `origin` (16 lines). Raymond Feng speeds up `applyHeaders` (9 lines). max.laverse adds `preflightContinue` (6 lines).
+- **2016:** Troy's last commit under his gmail address is 2.8.0 (`5dae6d8`).
+- **2017–2021 (maintenance):** Douglas Christopher Wilson takes over as main maintainer. He adds `Vary: Access-Control-Request-Headers` and other fixes (22 lines). Smaller fixes come from Tomek Kopczuk, Saad Tazi, Benjamin Eidelman (a Safari preflight workaround), Tom Arad (`maxAge: 0`) and LuisEGR (lint cleanup, 6 lines).
+- **2026:** only the two formatting/comment commits above.
+
+**Whose code is still in the file (238 lines)**
+
+| Author | Lines |
+|---|---|
+| Troy Goode (gmail) | 157 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 16 |
+| Raymond Feng | 9 |
+| max.laverse, LuisEGR | 6 each |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+In total, 19 people's code is still in the file. Typicode, Damien Klinnert, DracoBlue, jordandenison and Kopczuk all committed to it, but none of their lines remain.
+META cost=0.292836 ms=44370 turns=6

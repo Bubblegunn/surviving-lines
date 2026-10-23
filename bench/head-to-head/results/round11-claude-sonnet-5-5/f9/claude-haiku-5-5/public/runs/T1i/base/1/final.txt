@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | wc -l && git ls-files -z | xargs -0 file --mime-type | grep -v 'image/\|font/\|binary' | cut -d: -f1 | wc -l
+ - Bash: git ls-files | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn; echo ---; git ls-files | sed 's/^/  /' | head -50
+ - Bash: git ls-files | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo ---; git log --format='%an' -- lib test README.md package.json | sort | uniq -c | sort -rn | head -5; echo ---; git log -1 --format='%h %an %ad %s' 62628c0; git log --format='%h %an %ad %s' -n 3 --reverse | head -3; git log --reverse --format='%h %an %ad %s' | head -2
+FINAL ANSWER:
+Current code is mostly Troy Goode and Douglas Christopher Wilson. I ran `git blame` over all 19 tracked files, with whitespace ignored and the formatting-only commit excluded via `.git-blame-ignore-revs`.
+
+Surviving lines by author (after excluding the reformat):
+
+| Author | Lines still in the repo |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+Then a long tail: dependabot, Eric di Domenico, Alberto Leal, max.laverse, Saad Tazi, and others with single-digit counts. Your own account (`Efe`) has a few lines in the tree.
+
+Two things affect how to read this:
+
+- **The formatting commit matters.** `62628c0` ("reformat js with 4-space indent and double quotes", by "Fiona Formatter") rewrote most JS lines. Without ignoring it, Fiona Formatter gets 293 lines and Troy and Douglas lose most of theirs. Ignoring it is the right view for "whose code is it," but the blame is still last-touch, not original authorship.
+- **Blame measures who last touched a line, not who wrote the logic.** Troy and Douglas dominate because `lib/` and `test/` were largely their work over 2013 onward. A line counts toward whoever last changed it, so a rewrite erases the original author's credit.
+
+The commit history, which you said you don't want, shows the same two names at the top: Troy Goode has 93 commits touching `lib`, `test`, `README.md`, and `package.json`, and Douglas Christopher Wilson has 90.
+META cost=0.0045648 ms=14986 turns=4

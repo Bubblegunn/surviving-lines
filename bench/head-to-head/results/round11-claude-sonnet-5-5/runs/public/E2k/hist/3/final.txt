@@ -1,0 +1,25 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; git log --since='2026-03-29' --format='%h|%an|%ae|%ad|%s' --date=iso --no-merges; git shortlog -sne HEAD | head -30; cat .mailmap 2>/dev/null
+ - Bash: echo 62628c04a1b16306a0285b3e26645acfa1c21687 > /tmp/ign; git ls-files -z | xargs -0 -n1 git blame --ignore-revs-file /tmp/ign -w -M -C --line-porcelain HEAD -- 2>/dev/null | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^summary /{} /^\t/{c[a" "m]++} END{for(k in c)print c[k],k}' | sort -rn | grep -Ei 'troy|vansh|fiona'
+echo ---; for c in 5317ebe 02afce3 b2005d9; do echo $c; git show --stat --format= $c; done
+echo ---; git blame --ignore-revs-file /tmp/ign --line-porcelain HEAD -- $(git ls-files) 2>/dev/null | grep -c '^boundary' 
+ - Bash: for f in $(git ls-files); do git blame --ignore-revs-file /tmp/ign -w --line-porcelain HEAD -- $f 2>/dev/null | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E '02afce3|b2005d9|5317ebe'
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12. Two people qualify.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage; `b2005d9` lib: annotate handlers | 810 in total, 48 of them from the window commits |
+| **Vansh Sharma** | `5317ebe` docs: app.del() with app.delete() in README example (#411) | 1 |
+
+- **Troy Goode:** Troy appears under two emails (`<email redacted>` and `troy@laptop.example`). I counted them as one person. The 810 lines are 762 under the first email and 48 under the second. The 48 lines from the window commits are 36 in `test/vary.js` and 12 in `lib/index.js`.
+- **Vansh Sharma:** The 1 line is in `README.md`.
+- **Excluded:** Fiona Formatter (`62628c0`, the reformat to 4-space indent and double quotes) is formatting-only. The window also contains no bot commits, so dependabot doesn't appear.
+- **Blame method:** I ran `git blame` with `62628c0` ignored, so reformatted lines stay credited to their original authors instead of Fiona. I also used `-w -M -C`, which ignores whitespace and follows moved or copied lines.
+- **Scope of the line counts:** "Lines of theirs" is every surviving line blamed to that person across the repo. If you meant only lines from the window commits, Troy has 48 and Vansh has 1.
+META cost=0.0574876 ms=22023 turns=4

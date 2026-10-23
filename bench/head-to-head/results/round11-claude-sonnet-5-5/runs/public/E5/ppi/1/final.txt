@@ -1,0 +1,99 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js"}
+ - Glob: {"pattern": "lib/index.js"}
+ - Bash: git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -80; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo AUTHORS; git shortlog -sn --follow -- lib/index.js HEAD
+ - Bash: git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js; git log --follow --reverse --pretty=format:"%h %ad %an %s" --date=short -- lib/index.js | head -3; git log --all -i --grep=revert --oneline -- lib/index.js | head
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+FINAL ANSWER:
+## Code History: `lib/index.js`
+
+### Quick Context
+> This is the `cors` middleware core. Troy Goode wrote it in January 2013. Most of it is still his, with a 2026 formatting pass on top.
+
+### Decision Timeline
+- **2013-01-30, Troy Goode:** first commit. Same day: case-insensitive header lookup, and `origin: false` disables CORS.
+- **2013-02 to 2013-04, Troy Goode, Damien Klinnert, Simon Mansfield:**
+  - Request pause/resume for async middleware.
+  - Preflight-only headers, per the CORS spec.
+  - `HEAD` added to the default methods.
+  - Checks for a missing `Origin` header.
+  - Credentials header moved.
+- **2013-10, Eric di Domenico, Mathias Buus, Troy Goode:** `origin` can be a callback. Support for Connect without Express (v2.1.0).
+- **2014, Troy Goode and others:**
+  - `Access-Control-Expose-Headers`.
+  - `PATCH` added to the default methods (Typicode).
+  - Uppercase method normalization (Shane Tomlinson).
+  - Express 4 support (v2.3.2, v2.4.0).
+  - `Vary: Origin` (Igor Soarez), then the `vary` module.
+- **2015:**
+  - Raymond Feng removed a closure in `applyHeaders`.
+  - Alejandro Caravaca Puchades (also committing as alex94puchades) added regexp and array `origin`.
+  - max.laverse added passing preflight to `next()`.
+  - DracoBlue added exposed headers on `OPTIONS`.
+  - Troy Goode moved to ESLint.
+- **2016-08:** Troy Goode fixed #66 and #73 (v2.8.0).
+- **2017, Douglas Christopher Wilson takes over maintenance:**
+  - Fixes for frozen options and a missing `methods` option.
+  - `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders`.
+  - Safari workaround for the default preflight response (Benjamin Eidelman).
+  - Lint cleanups.
+- **2018-11, Tom Arad:** fixed `maxAge: 0`.
+- **2021-07, LuisEGR:** removed unused parameters.
+- **2026-04, Troy Goode:** "annotate handlers".
+- **2026-04, Fiona Formatter:** reformatted to a 4-space indent and double quotes.
+
+### Narrative
+Troy Goode built the file and maintained it alone until 2016. The 2013–2015 commits added the CORS spec features: preflight handling, `Vary`, callback and regexp origins, and Connect support. Many contributors sent one small fix each. Douglas Wilson took over in 2017 and made mostly correctness fixes and lint cleanups. After 2018 the file changed rarely. The latest two commits are a documentation change and a formatting pass, not new behavior.
+
+### Key Takeaways
+1. Troy Goode shaped the structure and most of the behavior.
+2. Many contributors left single-purpose fixes, such as `Vary`, `PATCH`, Safari, and `maxAge: 0`.
+3. Blame shows who last touched a line, not who wrote the logic. The reformat moved 32 lines to Fiona Formatter, but the logic in them is older.
+
+### Whose code is still in it
+Counts come from `git blame -w -C -C -C` over the current 238 lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 138 | 58% |
+| Fiona Formatter | 32 | 13% |
+| Douglas Christopher Wilson | 18 | 8% |
+| Alejandro Caravaca Puchades + alex94puchades | 15 | 6% |
+| Raymond Feng | 7 | 3% |
+| LuisEGR | 6 | 3% |
+| max.laverse | 5 | 2% |
+| Simon Mansfield, Igor Soarez | 3 each | 3% combined |
+| Mathias Buus, Eric di Domenico, Benjamin Eidelman, Alberto Leal | 2 each | 3% combined |
+| Saad Tazi, Hannah Wolfe, Chima Alaebo | 1 each | 1% combined |
+
+These authors' commits no longer own any current line:
+- DracoBlue
+- Eran Tiktin
+- Tomek Kopczuk
+- Tom Arad
+- jordandenison
+- Shane Tomlinson
+- Typicode
+- Damien Klinnert
+
+Their changes were later rewritten or moved.
+
+### Metrics
+| Metric | Value |
+|---|---|
+| Total commits | 62 |
+| Contributors | 25 names. 17 still own lines. |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Medium overall. High in 2013–2017, low since 2018. |
+
+Caveats:
+- I ran this directly, not through the git-archaeologist agent.
+- I did not check PRs or reverts. The `git log --grep=revert` check returned nothing.
+- `git shortlog --follow` failed, so I counted authors from the `git log --follow` output.
+META cost=0.08232980000000001 ms=22645 turns=7

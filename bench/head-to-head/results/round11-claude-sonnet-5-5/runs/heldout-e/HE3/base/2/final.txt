@@ -1,0 +1,38 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls; ls src | head -50; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS MAINTAINERS 2>&1 | head
+ - Bash: git log --oneline | wc -l; echo "--- blame (raw, -w -M -C)"; for f in $(git ls-files src); do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn; echo "--- blame ignoring license/rename/move commits"; for f in $(git ls-files src); do git blame -w -M -C --line-porcelain --ignore-rev 1bd192e --ignore-rev 6ecd630 --ignore-rev 1bc543a -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn; echo "--- commits touching src by author"; git shortlog -sne HEAD -- src; echo "--- last 12 months"; git shortlog -sne --since="12 months ago" HEAD -- src; echo "--- last commit date"; git log -1 --format='%ad %an'
+ - Bash: for f in $(git ls-files src | grep -v testsuite); do echo "== $f"; git blame -w -M -C --line-porcelain --ignore-rev 1bd192e --ignore-rev 6ecd630 --ignore-rev 1bc543a -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; echo "recent:"; git log -4 --format='  %ad %an: %s' --date=short -- "$f"; done; echo "== testsuite"; git ls-files src/testsuite; git log -4 --format='  %ad %an: %s' --date=short -- src/testsuite; echo "== recent src commits"; git log --since="12 months ago" --format='%h %ad %an <%ae>: %s' --date=short -- src
+FINAL ANSWER:
+**Who wrote the current code (`git blame -w -M -C`, ignoring the license-header, rename and move commits):**
+
+- **Andrew Gallant** wrote about 2,570 of roughly 3,300 lines in `src/`, which is about 78%. This is the original author.
+- Next are Sebastian Thiel (75), Ashley (68), Aron Griffis (59) and mcharsley (45). Everyone else has 42 lines or fewer.
+
+**Per file:**
+
+| File | Main author | Recent activity |
+|---|---|---|
+| `lib.rs` | Gallant (747); mcharsley and Griffis (45 each) | Sam Whitfield, 2026-03 (rename, move, license headers) |
+| `dent.rs` | Gallant (294); Yufeng Wang (21) | Mei Tanaka added `describe_file_type`, 2026-02 |
+| `error.rs` | Gallant (172); Garrett Berg (34); Niv Kaminer (30) | No logic changes since 2023 |
+| `util.rs` | Gallant (45); Griffis (9) | Tobias Brandt added `same_device`. Gallant reverted it, then reapplied it, 2026-01 |
+| `ancestor.rs` | Gallant (42) | Sam Whitfield moved it out of `lib.rs`, 2026-03 |
+| `testsuite/` | Not blamed | Sam Whitfield renamed it from `tests/`, 2026-03 |
+
+**Who to ask for review:**
+
+1. **Andrew Gallant** is the default choice. He wrote most of the code and is the only author with recent logic changes in `util.rs`. The repo has no `CODEOWNERS` or `MAINTAINERS` file, so this comes from git history only. I can't tell from the repo whether he is still the active maintainer. Check the GitHub maintainer list or recent merges.
+2. **Sam Whitfield** is the best second reviewer if you touch `lib.rs`, `ancestor.rs` or `testsuite/`. They did the three most recent structural changes, and the current layout is theirs.
+3. **Mei Tanaka** is a good reviewer if you touch `dent.rs`, because they made its latest change.
+4. **Tobias Brandt** is a good reviewer if you touch `util.rs` or `same_device`.
+
+Sam Whitfield's commits are mostly mechanical, so their blame share is small. They know the current structure but didn't write much of the logic.
+
+Tell me which files your PR changes and I can narrow the reviewer list to the exact lines.
+META cost=0.0741768 ms=25512 turns=5

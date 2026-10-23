@@ -1,0 +1,55 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | head -50 && git ls-files | wc -l && git log --format='%h %an <%ae> %s' | head -40 && git shortlog -sne --all | head -40
+ - Bash: git show --stat 62628c0 b2005d9 02afce3 | head -60; git diff -w --ignore-blank-lines 62628c0^ 62628c0 --stat; git log --format='%h %an %s' | grep -iE 'style|format|lint|whitespace|indent|prettier|standard|semicolon' ; cat .mailmap 2>/dev/null; ls .git-blame-ignore-revs 2>/dev/null
+ - Bash: git show b2005d9 | head -50; echo ---; git diff 62628c0^ 62628c0 -- lib/index.js | head -40; echo ---; for c in $(git rev-list --no-merges HEAD); do n=$(git show -w --ignore-blank-lines --format= $c | grep -c '^[+-][^+-]'); [ "$n" = 0 ] && git log -1 --format='%h %an %s' $c; done
+ - Bash: git log --format='%an|%ae' | sort -u | awk -F'|' '{print $1}' | sort | uniq -d; git log --format='%ae|%an' | sort -u | awk -F'|' '{print $1}' | sort | uniq -d
+printf '%s\n' 62628c04a1b16306a0285b3e26645acfa1c21687 $(git rev-parse e5fe9c8 8277075 eeb5dc2 b42b8b3 a80ef6b 60e4e36) > /tmp/bf-ignore-revs
+for f in $(git ls-files); do git blame -w -M -C --line-porcelain --ignore-revs-file /tmp/bf-ignore-revs -- "$f" | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{print f"\t"a"\t"$2}'; done > /tmp/bf-blame.tsv; wc -l /tmp/bf-blame.tsv
+ - Bash: cd /tmp && git -C <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E4h-bf-1/repo log --format='%an|%ae' | grep -i -e puchades -e troy | sort -u
+awk -F'\t' '{f=$1; a=$2; if (a ~ /\[bot\]/) next; if ($3 ~ /troy@laptop|troygoode/) a="Troy Goode"; z=(f ~ /\//)? substr(f,1,index(f,"/")-1) : f; if (z=="lib"||z=="test"||z==".github") ; else z="(root) " f; n[z]++; c[z"|"a]++} END{for(k in c){split(k,p,"|"); printf "%s\t%s\t%d\t%d\t%.1f%%\n", p[1], p[2], c[k], n[p[1]], 100*c[k]/n[p[1]]}}' bf-blame.tsv | sort -t$'\t' -k1,1 -k3,3nr | awk -F'\t' '$1!=prev{print "== "$1" ("$4" lines)"; prev=$1; k=0} k<4{print "   "$2"  "$3"  "$5; k++}'
+awk -F'\t' '$2 ~ /bot/' bf-blame.tsv | cut -f1 |
+ - Bash: for e in <email redacted> <email redacted> troy@laptop.example; do git log -1 --format="$e %ad" --date=short --author=$e; done; git log -1 --format=%ad --date=short
+FINAL ANSWER:
+I counted surviving lines with `git blame -w -M -C`. Bot lines were dropped from both the owner's count and the total. Each person is counted once.
+
+**Commits left out of the count:**
+- `62628c0` (Fiona Formatter's 4-space and double-quote reformat).
+- Six whitespace-only commits: `e5fe9c8`, `8277075`, `eeb5dc2`, `b42b8b3`, `a80ef6b`, `60e4e36`.
+
+**Identities merged:**
+- `<email redacted>` and `troy@laptop.example` count as Troy Goode.
+- Two spellings of the name on `<email redacted>` count as one person.
+
+## Suggested CODEOWNERS
+
+```
+# Root files
+/.eslintrc.yml   <email redacted>   # 7/7 lines, 100%
+/.gitignore      <email redacted>   # 4/5, 80%
+/HISTORY.md      <email redacted>   # 50/64, 78%
+/LICENSE         <email redacted>   # 17/22, 77%
+/package.json    <email redacted>   # 20/40, exactly 50%
+# /README.md — no owner: Troy Goode 42%, Jon Church 26%, Linus Unnebäck 9%
+
+# Directories
+/lib/            <email redacted>      # 159/238, 67%
+/test/           <email redacted>      # 517/966, 54% (Douglas Wilson 39%)
+# /.github/ — no owner: Douglas Wilson 32%, Íñigo Marquínez Prado 26%, Sebastian Beltran 17%, Ulises Gascón 12%
+```
+
+GitHub logins were not looked up, so the lines use emails. Replace them with `@handle` before you use the file.
+
+## Check these before you commit the file
+
+1. **Both named owners look inactive.** Douglas Wilson's last commit was 2021-09-07. Troy Goode's last commit from his usual address was 2019-05-27. GitHub requests review from every listed owner, so naming people who no longer respond can block PRs. Confirm they still review, or name an active maintainer instead.
+2. **I can't confirm that `troy@laptop.example` is Troy.** I merged it with Troy only because the names match. Its two commits are from April 2026, and that is the only recent activity under his name. If it is a different person, Troy's share of `/test/` falls to 481/966 (49.8%), and `/test/` has no owner. `/lib/` still goes to Troy either way.
+3. **`package.json` is exactly at the 50% line.** If you counted dependabot's 2 lines in the total, Douglas would have 20/42 (48%) and the file would have no owner.
+4. **`b2005d9 lib: annotate handlers` is still counted.** It only adds `// checked` comments to 12 lines, but it is not a formatting change, so I kept it. Without it, Troy's share of `/lib/` is 62%, so the result is the same.
+5. **Line counts don't measure knowledge.** Someone who reviews a lot but rarely commits doesn't show up in these numbers. Treat this file as a draft to correct.
+META cost=0.3167596 ms=52507 turns=9

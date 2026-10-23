@@ -1,0 +1,32 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; git log --since='2026-03-29' --until='2026-04-12 23:59:59' --format='%h|%an|%ae|%ad|%s' --date=short --no-merges
+ - Bash: git log -12 --format='%h|%an|%ae|%cn|%ad|%s' --date=iso; cat .mailmap 2>/dev/null; echo ---; git shortlog -sne --since=2026-03-29 HEAD; echo ---; git blame --line-porcelain HEAD -- $(git ls-files) 2>/dev/null | grep -a '^author-mail' | sort | uniq -c | sort -rn | head -20
+ - Bash: git show --stat --format='%h %an' b2005d9 02afce3 5317ebe 62628c0 | head -40; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail'; done | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -aE '^[0-9a-f]{40} '|cut -c1-7; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe'; git blame --line-porcelain HEAD -- lib/index.js | grep -ac '^author-mail <troy@laptop'; git blame -w --ignore-rev 62628c0 HEAD -- lib/index.js | grep -a '^\^\?b2005d9' | head -3
+FINAL ANSWER:
+Window is 2026-03-29 to 2026-04-12. Two people qualify.
+
+**Troy Goode**
+- `02afce3` (2026-04-10) `test: vary header coverage`. 36 lines still in code (`test/vary.js`).
+- `b2005d9` (2026-04-10) `lib: annotate handlers`. 12 lines still in code (`lib/index.js`).
+- Total: 2 commits, 48 lines surviving.
+- Git shows two author emails for this name: `troy@laptop.example` and `<email redacted>`. I counted them as one person. Only the laptop address made commits in the window.
+
+**Vansh Sharma**
+- `5317ebe` (2026-04-07) `docs: app.del() with app.delete() in README example (#411)`. 1 line still in code (`README.md`).
+- Total: 1 commit, 1 line surviving.
+
+**Excluded**
+- Fiona Formatter: `62628c0` is formatting only (reindent and quotes).
+- `dependabot[bot]`: bot. Its latest commits are also dated 2026-03-02, outside the window.
+
+I measured surviving lines with `git blame -w --ignore-rev 62628c0`. This skips Fiona's reformat, so Troy's lines still count for Troy. Without that flag, Fiona's reformat takes credit for most of Troy's `lib/index.js` lines.
+
+I read "lines of theirs" as lines from their commits in the window. If you meant all lines they have ever written, Troy's total is much larger. Blame shows 698 lines under `<email redacted>` and 48 under the laptop address.
+META cost=0.06849799999999999 ms=23986 turns=6

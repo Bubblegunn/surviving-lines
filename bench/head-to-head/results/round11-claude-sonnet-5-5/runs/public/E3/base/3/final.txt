@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{f=$NF; if (f ~ /\./) {n=split(f,a,"."); print a[n]} else print "(none)"}' | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files); do case "$f" in *.*) e="${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,""); print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1rn
+FINAL ANSWER:
+Top owner of surviving lines by extension (`git blame -w`, tracked files at HEAD):
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension (one file) | Douglas Christopher Wilson | 17 |
+
+- **`.js`:** Fiona Formatter is second with 291 lines. Commit `62628c0` reformatted the JS to 4-space indent and double quotes. `-w` ignores whitespace-only changes, but the quote changes still count as edits. Without that commit, Troy Goode's lead would probably be larger.
+- **`.md`:** Jon Church is second with 72 lines. Douglas Christopher Wilson has 67.
+- **`.yml`:** Íñigo Marquínez Prado is second with 95 lines.
+
+Blame attributes lines to commit authors, so it doesn't follow lines that were moved or copied between files.
+META cost=0.0496973 ms=12093 turns=4

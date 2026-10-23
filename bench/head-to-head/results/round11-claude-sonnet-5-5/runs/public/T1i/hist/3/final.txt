@@ -1,0 +1,38 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -50
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1i-hist-3/repo
+echo "== ignoring reformat commit (code files) =="
+for f in lib/index.js test/*.js test/support/env.js; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+echo "== naive blame (no ignore) =="
+for f in lib/index.js test/*.js test/support/env.js; do git blame --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -5
+echo "== per file =="
+for f in lib/index.js test/*.js; do echo "-- $f"; git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain "$f" | grep '^author ' | sort | uni
+FINAL ANSWER:
+**Troy Goode owns most of the surviving code, about 57%. Douglas Christopher Wilson owns about 33%.** The remaining ~10% is spread across many small contributors.
+
+I counted lines at HEAD in `lib/index.js` and the `test/` JS files, using `git blame`. Surviving lines per author:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 676 | ~57% |
+| Douglas Christopher Wilson | 394 | ~33% |
+| Alejandro Caravaca Puchades | 30 | ~2.5% |
+| Eric di Domenico | 16 | ~1.3% |
+| Alberto Leal | 15 | ~1.3% |
+| ~10 others | 1–9 each | the rest |
+
+- **Reformat commit:** A plain `git blame` credits 1016 of the 1194 lines (~85%) to "Fiona Formatter". That is the `62628c0` commit, which reformatted the JS to 4-space indent and double quotes. I excluded it with the repo's `.git-blame-ignore-revs`, and also used `-w -M -C` to ignore whitespace and follow moved or copied lines. This is why the numbers above reflect who wrote the logic.
+- **By file:**
+  - Troy owns most of `lib/index.js` (159 lines, against 22 for Douglas) and the smaller test files.
+  - `test/test.js` is close to even: Douglas has 339 lines and Troy 317.
+  - `test/vary.js` is entirely Troy's.
+- **Not counted:** I left out `README.md`, `HISTORY.md`, the config files and the CI workflows. The numbers cover code only.
+- **Name merging:** I didn't merge name variants. For example, "alex94puchades" (4 lines) is probably the same person as Alejandro Caravaca Puchades, and the git-historian tools mention `.mailmap` but I haven't checked whether this repo has one. Merging them wouldn't change the top two.
+META cost=0.060370299999999995 ms=17162 turns=5

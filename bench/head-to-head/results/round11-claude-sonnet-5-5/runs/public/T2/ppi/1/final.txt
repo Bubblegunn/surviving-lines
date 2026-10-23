@@ -1,0 +1,71 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: find lib -type f -name "*.js" | head -50; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn | head -20; echo ---; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | sort -t'|' -k1,1 -u | head -20; echo ---; git log -1 --format=%ad --date=short
+ - Bash: for f in $(find lib -type f -name "*.js"); do n=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort -u | wc -l); top=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -1); tot=$(git log --all --no-merges --oneline -- $f | wc -l); dep=$(grep -rlE "require\(.*$(basename $f .js)['\"]" --include=*.js lib index.js 2>/dev/null | wc -l); echo "$f | contributors=$n | commits=$tot | top=$top | dependents=$dep"; done
+ - Bash: wc -l lib/index.js; echo --- blame; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -12; echo --- last; for a in "Troy Goode" "Douglas Christopher Wilson" "Alejandro Caravaca Puchades" "Simon Mansfield" "Fiona Formatter"; do echo "$a: $(git log --all --no-merges --author="$a" --format=%ad --date=short -- lib | head -1)"; done; echo --- since2y; git log --all --no-merges --since=2y --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo --- blame-ignore; git blame -w -M --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; ls lib; grep -rn "lib" package.json | head
+FINAL ANSWER:
+## Bus factor of `lib/`: 1
+
+`lib/` is one file, `lib/index.js` (238 lines). It is the package `main` entry. If Troy Goode left, more than 50% of the code would have no knowledgeable maintainer.
+
+Period: all history. Generated 2026-10-22.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 1 |
+| Files with 1 contributor | 0 |
+| Files with 3+ contributors | 1 (25 people have touched it) |
+| Commits touching `lib/` | 62, non-merge |
+
+Many people have touched the file, but most of them made one commit each.
+
+### Ownership
+
+| Measure | Top owner | Share |
+|---|---|---|
+| Commits | Troy Goode | 33 of 62 (about 53%) |
+| Lines, `git blame -w -M` (ignores whitespace and moved code) | Troy Goode | 138 of 238 (about 58%) |
+| Lines, plain `git blame` | Fiona Formatter | 214 of 238 (about 90%) |
+
+The plain blame figure is misleading. Fiona Formatter's commit `62628c0` only reformatted the file (4-space indent, double quotes). Troy Goode's commit share and whitespace-ignoring blame are the real picture.
+
+Other authors by line count, whitespace-ignoring blame: Fiona Formatter 32 (reformat residue), Douglas Christopher Wilson 18, Alejandro Caravaca Puchades 12, Raymond Feng 7.
+
+### Is the owner active?
+
+| Person | Last commit to `lib/` | Status |
+|---|---|---|
+| Troy Goode | 2026-04-10 | Last touched about 6 months ago, over the 90-day threshold |
+| Fiona Formatter | 2026-04-12 | Formatting only |
+| Douglas Christopher Wilson | 2017-10-04 | Inactive |
+| Alejandro Caravaca Puchades | 2015-05-28 | Inactive |
+| Simon Mansfield | 2013-05-22 | Inactive |
+
+The other 20 or so contributors have 1–4 commits each, and none of them has touched the file for years.
+
+### Answer to "how many people before nobody understands it?"
+
+- **One.** Losing Troy Goode leaves no active contributor with real knowledge of `lib/index.js`.
+- Troy Goode already looks inactive on this file by the 90-day rule. So the risk may already exist, not just be possible.
+- The history is long, but most of it comes from drive-by contributors.
+
+### Caveats
+
+- **Importance check:** I could not meaningfully count dependents. `lib/index.js` is the sole entry point, so everything depends on it. Treat it as CRITICAL by importance.
+- **Commit dates:** a `--since=2y` filter returned no commits, which contradicts the April 2026 dates above. The likely cause is that committer dates differ from author dates, so I did not use a recent-activity window. The 90-day activity check above uses author dates.
+- **Single file:** the module-level bus factor is the file-level one. There are no other files to average against.
+- **Not checked:** activity outside `lib/` (tests, docs). Someone may know the code well without having committed to it.
+
+### Recommendations
+
+1. **Immediate:** add a second reviewer for any change to `lib/index.js`. Ask Troy Goode to write down the non-obvious behavior and design reasons.
+2. **Short-term:** have an active maintainer make a few small, reviewed changes to the file so that more than one person has recent knowledge of it.
+3. **Ongoing:** keep `test/` coverage tied to `lib/index.js` behavior. Add `.git-blame-ignore-revs` with `62628c0` so blame stays useful.
+META cost=0.072784 ms=26701 turns=6

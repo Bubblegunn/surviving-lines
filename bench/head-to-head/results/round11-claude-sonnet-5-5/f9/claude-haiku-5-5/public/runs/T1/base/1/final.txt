@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | wc -l && git ls-files -z | xargs -0 file --mime-type | grep -v 'image/\|font/\|binary' | cut -d: -f1 | wc -l
+ - Bash: git ls-files -z | xargs -0 file --mime-type | grep -v 'image/\|font/\|binary' | cut -d: -f1 | tr '\n' '\0' | xargs -0 git blame -w -e --line-porcelain HEAD -- 2>/dev/null | awk '/^author-mail /{m=$0} /^\t/{ if (m!="") {c[m]++; m=""} } END{for(k in c) print c[k], k}' | sort -rn | head -30
+ - Bash: git ls-files -z | xargs -0 file --mime-type | grep -v 'image/\|font/\|binary' | cut -d: -f1 > /tmp/textfiles.txt; while IFS= read -r f; do git blame -w -e --line-porcelain HEAD -- "$f" 2>/dev/null; done < /tmp/textfiles.txt | awk '/^author-mail /{m=$0} /^\t/{ if (m!="") {c[m]++; m=""} } END{for(k in c) print c[k], k}' | sort -rn | head -30; echo ---; while IFS= read -r f; do echo "$f"; done < /tmp/textfiles.txt | head -30
+ - Bash: git show -s --format='%h %an <%ae> %ad %s' 62628c0 b2005d9 02afce3; echo ---; while IFS= read -r f; do git blame -w --line-porcelain HEAD -- "$f" 2>/dev/null; done < /tmp/textfiles.txt | awk '/^[0-9a-f]{40} /{h=substr($1,1,7)} /^\t/{c[h]++} END{for(k in c) print c[k], k}' | sort -rn | head -8; echo ---; git remote -v; git log --format='%an' | sort | uniq -c | sort -rn | head -3
+ - Bash: while IFS= read -r f; do git blame -w -e --line-porcelain HEAD -- "$f" 2>/dev/null; done < /tmp/textfiles.txt | awk '/^author-mail /{m=$0} /^\t/{t++; if(m!=""){c[m]++; m=""}} END{print "total", t; for(k in c) print c[k], k}' | sort -rn | head -4; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+**Short answer:** Troy Goode and Douglas Christopher Wilson own most of the surviving code. Fiona Formatter's share is large but mostly mechanical.
+
+Surviving lines by `git blame` at HEAD, across the 18 tracked text files. The total is roughly 2,500 lines, so these shares are approximate:
+
+| Author | Surviving lines | Share | Notes |
+|---|---|---|---|
+| Troy Goode (`<email redacted>` + `troy@laptop.example`) | ~650 | ~25% | Two emails, combined here. Largest single owner. |
+| Douglas Christopher Wilson (`<email redacted>`) | 470 | ~19% | Second-largest owner. |
+| Fiona Formatter (`fiona@formatter.example`) | 291 | ~12% | Almost all from one commit, `62628c0` ("reformat js with 4-space indent and double quotes"). |
+| Everyone else | ~1,100 | ~45% | Long tail, e.g. `inigomarquinez` 95, `<email redacted>` 72, `bjohansebas` 67. |
+
+Caveats:
+- **Fiona's share is a reformat, not authorship.** Her commit rewrote indentation and quotes across the JS, so blame credits her for lines whose logic someone else wrote. The original authors of those lines are hidden. Troy and Doug are probably understated, but I can't quantify by how much without re-blaming past `62628c0`.
+- **`-w` ignores whitespace only.** Quote changes still count as edits, so the reformat share is partly reattributed.
+- **Blame measures who last touched a line, not who designed it.** Use it as a rough ownership signal, not a credit list.
+
+If you want the reformat ignored, I can re-run blame with `git blame --ignore-rev 62628c0` and show the adjusted numbers.
+META cost=0.005639690000000001 ms=22266 turns=6

@@ -1,0 +1,62 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' && echo --- && git shortlog -sne --all --no-merges && echo --- && git log --all --no-merges --format='%h %an %ad %s' --date=short
+ - Bash: printf 'abe2ea7\n0e8fe2e\n' > /tmp/ignore-revs && for f in $(git ls-files '*.py'); do echo "== $f ($(wc -l <$f) lines)"; git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain -- $f | grep '^author ' | sed 's/^author //' | tr 'A-Z' 'a-z' | sort | uniq -c | sort -rn; done; echo; echo "== naive blame (no ignore) records.py"; git blame --line-porcelain records.py | grep '^author ' | sort | uniq -c | sort -rn; echo; git log --format='%h %an %ad %s' --date=short -- records.py | head -20
+ - Bash: git rev-parse abe2ea7 0e8fe2e > /tmp/ignore-revs && for f in $(git ls-files '*.py'); do echo "== $f ($(wc -l <$f) lines)"; git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain -- $f | grep '^author ' | sed 's/^author //' | tr 'A-Z' 'a-z' | sort | uniq -c | sort -rn; done; echo; echo "== last commit date per person (all)"; git log --all --no-merges --format='%an|%ad' --date=short | tr 'A-Z' 'a-z' | awk -F'|' '!s[$1]++' | head -12
+FINAL ANSWER:
+**Short answer:** ask Dana Okafor about `records.py`. Kenneth Reitz wrote most of it, but he hasn't committed since 2024-03-29.
+
+I used `git blame -w -M -C` on the 9 tracked `.py` files, so the counts are lines that survive today. I skipped the black and pre-commit.ci formatting commits (`abe2ea7`, `0e8fe2e`), which would otherwise credit Priya Raman and the bot with lines they only reformatted.
+
+I treated "Dana Okafor" and "dana okafor" (two emails) as one person. I also treated "Paul Philip Voelker" as one person, though only his commit identities differ. Please confirm the Dana merge, because the ranking depends on it.
+
+**Surviving lines, all Python (1062 lines)**
+
+| Author | Lines | Last commit | Status |
+|---|---|---|---|
+| Kenneth Reitz | 435 (41%) | 2024-03-29 | inactive |
+| Jan Vlcinsky | 119 | 2018 | inactive |
+| Greg Troszak | 89 | 2017 | inactive |
+| Chad Whitacre | 85 | 2016 | inactive |
+| Harold Cooper | 51 | 2016 | inactive |
+| Dana Okafor | 50 | 2026-05-11 | active |
+| Joakim Uddholm | 45 | 2018 | inactive |
+| Joseph Gardi | 22 | 2026-02-08 | recent |
+| Tomás Ibarra | 12 | 2026-04-20 | recent |
+| Marcus Lindqvist | 8 | 2026-03-27 | recent |
+
+I'm calling Joseph Gardi "recent" rather than "active" because I can't tell whether they are still around. Their last commit was 2026-02-08.
+
+**Ownership of `records.py` (622 lines)**
+- Kenneth Reitz: 318 lines (51%). This is the original core: `Record`, `RecordCollection`, `Database`, and the CLI.
+- Greg Troszak: 58 lines. Transaction and connection-pool handling, plus the "db closed" check.
+- Dana Okafor: 40 lines. Key normalisation, chunking helpers, and `_describe`.
+- Chad Whitacre: 39 lines. `.first()` / `.one()`.
+- Jan Vlcinsky: 30 lines. CLI handling.
+- Tomás Ibarra: 12 lines. `_coerce_row`.
+- Marcus Lindqvist: 8 lines. `LEGACY_SKIP`.
+
+**Who to ask**
+1. **Dana Okafor** for current behaviour and recent design. Dana is the only active author who owns a meaningful part of the file.
+2. **Tomás Ibarra** for `_coerce_row` and typed columns.
+3. For the core design (iteration, slicing, `Record`) or transactions, no active person owns that code. Kenneth Reitz and Greg Troszak are the original authors, but both have been inactive for years. Expect to work out those parts from the tests and the history.
+
+**Why commit counts mislead here**
+- Marcus Lindqvist has 25 commits, the second most in the repo. 24 of them tweak the legacy exporter example, which commit `54b029d` deleted. Only 8 lines of Marcus's work are left in `records.py`.
+- Priya Raman has 2 commits and 15 lines in a plain blame. Those are formatting only, so I excluded them.
+- Reitz has 202 commits, but most are README edits. His code share is still the largest.
+
+**Bus factor**
+- On surviving code, the project bus factor is 1: Kenneth Reitz alone owns 41%, and the top 3 contributors together own about 64%.
+- Only about 7% of the code (Dana, Tomás and Marcus) has an author who committed this year. That's 70 of 1062 lines, and Marcus's 8 of them are probably not worth asking about.
+- The weakest areas are the transaction logic in `records.py` and `tests/test_transactions.py`, where the main authors have been gone since 2017–2018.
+- I did not check dependent counts or `git log --all` branch-only history beyond the commit list above.
+
+I'd start by asking Dana to walk you through `records.py`. I'd also write tests or notes around the transaction code before you change it.
+META cost=0.1277429 ms=36327 turns=7

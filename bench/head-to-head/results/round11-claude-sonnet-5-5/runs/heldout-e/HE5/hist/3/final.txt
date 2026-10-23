@@ -1,0 +1,26 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: ls lib/rack/attack/store_proxy/; git log --since="12 months ago" --format='%an|%ad' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | head -30
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-hist-3/repo", "path": "lib/rack/attack/store_proxy", "inactive_after": "6 months ago"}
+ - Bash: git shortlog -sne --since="6 months ago" HEAD | head; echo ---; git log --format='%an|%ad|%s' --date=short -- lib/rack/attack/store_proxy | head -30; echo ---; git log -1 --format='%an %ad' --date=short
+FINAL ANSWER:
+I'd suggest two reviewers.
+
+- **Hiroshi Tanaka** is the best choice. They wrote all 88 lines of `valkey_proxy.rb`: the Valkey proxy (#310) on 2026-09-02, then `wrap` and the version check (#318) on 2026-09-16. They are the only active person who has made real changes to the proxy layer recently. If your change touches the shared proxy structure, they know how the newest proxy was built.
+- **Santiago Bartesaghi** is the second reviewer. Their last commit in the repo was 2026-09-30. In this directory they wrote the `reset!` fix for namespaced cache stores (#673, 2024-12-19), which covers `redis_cache_store_proxy.rb` (about 12% of its lines). Their 2026-08-04 commit there was only a style autocorrect, so their knowledge is limited to that one proxy and the reset behavior.
+
+**Coverage gap:** 5 of the 6 proxy files are mostly owned by people with no commits in the last 6 months.
+
+- **Inactive authors:** hakanensari, Gonzalo Rodriguez, Jonathan del Strother, Brad Lindsay, Brian Kephart, fatkodima and others.
+- **Files affected:** `dalli_proxy.rb`, `redis_store_proxy.rb`, `mem_cache_store_proxy.rb`, `redis_proxy.rb` and `redis_cache_store_proxy.rb`. In each, inactive authors own 88–100% of the lines.
+- **Effect on review:** if your change alters the Dalli, MemCache or Redis proxies, neither reviewer has deep knowledge of those. Test those paths yourself and say in the PR which backends you tested.
+
+Jonas Keller also committed in the last 6 months, but never in this directory. I'd only add them if you need a maintainer to approve the PR, not for knowledge of this code.
+
+I counted someone as active if they committed in the last 6 months, which is the tool's default. Hiroshi Tanaka appears under two email addresses in the history, but the tool treats them as one person.
+META cost=0.059196700000000005 ms=14590 turns=5

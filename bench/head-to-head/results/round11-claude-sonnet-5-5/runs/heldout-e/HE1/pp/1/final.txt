@@ -1,0 +1,57 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | xargs wc -l; echo; git log --format='%h %an <%ae> %ad %s' --date=short | head -50
+ - Bash: ls -a | head -40; cat .mailmap .git-blame-ignore-revs 2>/dev/null; echo ---; git log --format='%an <%ae>' | sort | uniq -c | sort -rn
+ - Bash: printf '%s\n%s\n' abe2ea7 0e8fe2e > /tmp/ignore-revs
+for f in $(git ls-files '*.py'); do
+  git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | awk -v f="$f" '/^author-mail /{print f, $2}'
+done > /tmp/blame.txt
+echo "== per-file+author =="; sort /tmp/blame.txt | uniq -c | sort -k2,2 -k1,1rn
+echo "== total =="; awk '{print $2}' /tmp/blame.txt | sort | uniq -c | sort -rn
+ - Bash: git rev-parse abe2ea7 0e8fe2e > /tmp/ignore-revs; cat /tmp/ignore-revs
+for f in $(git ls-files '*.py'); do
+  git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | awk -v f="$f" '/^author-mail /{print f, $2}'
+done > /tmp/blame.txt
+echo "== per-file+author =="; sort /tmp/blame.txt | uniq -c | sort -k2,2 -k1,1rn
+echo "== total =="; awk '{print $2}' /tmp/blame.txt | sort | uniq -c | sort -rn
+ - Bash: git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --date=short -e records.py | awk '{print}' | grep -E 'dana|dokafor|tibarra|marcus' | cut -c1-150; echo; grep -n 'LEGACY_SKIP\|_describe\|_coerce_row\|^def \|^class ' records.py | head -60; echo; git log --format='%an %ad' --date=short -1 --author='Kenneth'; git log --format='%an %ad' --date=short -1 --author='Jan Vl'; git log --format='%an %ad' --date=short -1 --author='Gdtroszak\|Greg'
+ - Bash: grep -rnE 'LEGACY_SKIP|_normalize_keys|_chunked|_coerce_row|_describe' --include='*.py' --include='*.md' --include='*.rst' . | grep -vE '^\./records.py:(15|457|473|485|497):'; echo "exit $?"
+FINAL ANSWER:
+Measured with `git blame -w -M -C`, ignoring the black and pre-commit.ci commits (`abe2ea7`, `0e8fe2e`) so formatting doesn't count as authorship. I merged the same person's email addresses. This is a count of lines still present, not a measure of which lines matter.
+
+**Python lines still alive (1062 total, all `.py` files)**
+
+| Author | Lines | Where |
+|---|---|---|
+| Kenneth Reitz | ~435 | `records.py` 318, `setup.py` 102, a few test lines |
+| Jan Vlčinský | 119 | tests only: `conftest.py`, `test_transactions.py`, `test_105.py`, `test_69.py` |
+| Greg Troszak | 89 | `records.py` 58, `test_transactions.py` 31 |
+| Chad Whitacre | 85 | `records.py` 39, `test_records.py` 46 |
+| Harold Cooper | 51 | mostly `test_records.py` |
+| Joakim Uddholm | 45 | `records.py` 11, `test_records.py` 34 |
+| Dana Okafor | 50 | `records.py` 40, `test_records.py` 10 |
+| mcdallas | 26 | `records.py` |
+
+Smaller contributors follow, including Joseph Gardi (22, the example script and the transaction re-raise fix) and Tomás Ibarra (12).
+
+**Where commit counts mislead**
+- **Marcus Lindqvist** has 25 commits, but only 8 lines survive. 24 of those commits are "tweak legacy exporter" edits to an example file that was later deleted. The 8 lines are the `LEGACY_SKIP` tuple, `records.py:14-19`.
+- **Dana Okafor** appears under two identities. `<email redacted>` has 38 lines and `dokafor@fastmail.example` has 12. The name matches only by case, so merging them is my inference. Confirm it with Dana.
+- **Jan Vlčinský** has 25 commits across two emails. Their code is only in the tests, and the last commit was 2018.
+
+**Who to ask about `records.py`** (622 lines)
+- **Original core** (`Record`, `RecordCollection`, `Database`, `Connection`, the CLI): Kenneth Reitz, 318 lines. Their last commit was 2024-07-09, and they merged a PR in 2024 rather than writing code. Troszak (58), Whitacre (39), Vlčinský (30) and mcdallas (26) own the older pieces. Troszak's and Whitacre's last commits are from 2017 or earlier. Vlčinský's is 2018. Don't assume any of them is reachable.
+- **Everything added in 2026:** Dana Okafor is your best contact. They wrote `_normalize_keys`, `_chunked` and `_describe`, and they're the only one active in the file across multiple commits. Tomás Ibarra wrote `_coerce_row`.
+
+**Dead code in the newest additions**
+- `LEGACY_SKIP`, `_coerce_row` and `_describe` are not referenced anywhere in the repo, not even in tests.
+- `_normalize_keys` and `_chunked` are only called from tests.
+- The legacy exporter example that `LEGACY_SKIP` supported was deleted in `54b029d`, so `LEGACY_SKIP` has no consumer left.
+
+Ask Dana whether the 2026 helpers are meant to be wired in or are unfinished. Check that `LEGACY_SKIP` is really unused, then delete it.
+META cost=0.1165908 ms=41988 turns=8

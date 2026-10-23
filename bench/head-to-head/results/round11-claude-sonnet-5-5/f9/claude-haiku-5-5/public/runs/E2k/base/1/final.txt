@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an <%ae>' --date=short && echo --- && git log --since='2026-03-29' --until='2026-04-13' --format='%h %ad %an <%ae> %s' --date=short --no-merges && echo --- && git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -50
+ - Bash: git ls-files -z | xargs -0 -I{} sh -c 'git blame --line-porcelain -- "{}" 2>/dev/null' | awk '
+/^[0-9a-f]{40} /{sha=$1}
+/^author-mail /{mail=$2}
+/^\t/{ n[mail]++; if (sha ~ /^(b2005d9|02afce3|5317ebe)/) w[mail]++ }
+END{ for (m in n) printf "%6d total  %4d from-window-commits  %s\n", n[m], w[m]+0, m }' | sort -rn | head -40
+ - Bash: git ls-files -z | xargs -0 -I{} sh -c 'git blame --ignore-rev 62628c0 --line-porcelain -- "{}" 2>/dev/null' | awk '
+/^author-mail /{mail=$2}
+/^\t/{ n[mail]++ }
+END{ for (m in n) printf "%6d  %s\n", n[m], m }' | grep -E 'troy|vansh|fiona'; echo ---; git show --stat --format='%h %s' 62628c0 | tail -1; git show --stat --format= b2005d9 02afce3 5317ebe
+ - Bash: git ls-files -z | xargs -0 -I{} sh -c 'git blame --ignore-rev 62628c0 --line-porcelain -- "{}" 2>/dev/null' | awk '
+/^[0-9a-f]{40} /{sha=substr($1,1,7)}
+/^author-mail /{mail=$2}
+/^\t/{ if (sha=="b2005d9"||sha=="02afce3"||sha=="5317ebe") w[mail" "sha]++ }
+END{ for (k in w) print w[k], k }'
+FINAL ANSWER:
+**Two people committed in the window** (2026-03-29 to 2026-04-12, the 14 days up to the latest commit, 62628c0 on 2026-04-12). Fiona Formatter's 62628c0 is excluded as formatting-only. No bot commits fell in the window.
+
+**1. Troy Goode**: 2 commits, both on 2026-04-10
+- `b2005d9` lib: annotate handlers
+- `02afce3` test: vary header coverage
+- Lines still in the code today: **642** in total (across all history). 47 of those are from the `troy@laptop.example` identity and 595 from `<email redacted>`; I counted both as one person. From the two in-window commits: **47** lines (36 from `02afce3`, 11 from `b2005d9`).
+
+**2. Vansh Sharma**: 1 commit, 2026-04-07
+- `5317ebe` docs: app.del() with app.delete() in README example (#411)
+- Lines still in the code today: **1** (that README line).
+
+**How I counted:** `git blame` across all tracked files at HEAD, attributing each surviving line to its last author. I ran it with `--ignore-rev 62628c0`, because the formatting commit rewrote 1,016 lines and reassigned them to Fiona. Without that flag, Troy's total would be undercounted at 261 and Fiona would show 1,016.
+
+The line counts are the lines each person wrote that survive today, across their whole history, and they are not limited to the window. If you meant only lines from the in-window commits, the answers are 47 for Troy and 1 for Vansh.
+META cost=0.00652173 ms=24296 turns=5

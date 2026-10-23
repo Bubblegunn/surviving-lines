@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --all --no-merges --pretty=format:"%an|%ad|%s" --date=short -- lib/index.js | head -15; echo ---; git log --follow --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log -1 --pretty=format:"%ad" --date=short; echo; grep -rl "index" --include="*.js" lib test 2>/dev/null | head; echo ---; git blame -w -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Reviewers for `lib/index.js`: Troy Goode first, Douglas Christopher Wilson second.**
+
+I ran `git log` and `git blame` on the file directly instead of launching the contributor-analyzer agent. This is one file, so the full repo-wide report wasn't needed.
+
+**File bus factor: 2.** 25 people have committed to it, but two people hold most of the knowledge.
+
+| Contributor | Commits | Blame lines | Last touch |
+|---|---|---|---|
+| Troy Goode | 29 of 55 (53%) | 138 | 2026-04-10 (`lib: annotate handlers`) |
+| Douglas Christopher Wilson | 4 | 18 | 2017-10-04 |
+| Alejandro Caravaca Puchades | 4 | 12 | not checked |
+| Fiona Formatter | 1 | 32 | 2026-04-12 (reformat only) |
+| 21 others | 1–3 each | ≤7 each | — |
+
+- **Troy Goode** is the primary reviewer. They own about half the commits and the most lines, and they touched the file 12 days ago.
+- **Douglas Christopher Wilson** is the secondary reviewer. Their four commits were:
+  - the `Vary: Access-Control-Request-Headers` header;
+  - the fix for a missing `methods` option;
+  - two lint/build changes.
+
+  These touch the header and options logic, which is subtle CORS behavior. Their last commit to this file was in 2017, so I did not check whether they are active elsewhere.
+- **Alejandro Caravaca Puchades** is a fallback reviewer.
+- **Fiona Formatter** is not a useful reviewer. Their 32 blame lines come from the 2026-04-12 reformat (4-space indent, double quotes), so they don't know the logic.
+
+**Risk:** Medium. The file has a single main owner and is active, so it is not critical. The only other deep knowledge comes from a contributor who last committed to it in 2017.
+
+**Recommendation:** Request Troy Goode as the reviewer. If your change affects `Vary` headers, `allowedHeaders` or the options delegate, also ask Douglas Christopher Wilson or check their earlier commits (`git log -- lib/index.js`). This is a shared-knowledge risk, so a second reviewer on header changes helps.
+
+The project-wide bus factor was not computed, since you only asked about this file.
+META cost=0.056430400000000006 ms=15810 turns=4

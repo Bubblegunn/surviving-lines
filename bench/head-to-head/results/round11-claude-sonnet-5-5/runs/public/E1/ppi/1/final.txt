@@ -1,0 +1,64 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; echo ---; find . -type f \( -name "*.js" -o -name "*.ts" \) -not -path "*/node_modules/*" -not -path "./.git/*" | wc -l; ls
+ - Bash: for f in $(find . -type f \( -name "*.js" -o -name "*.ts" \) -not -path "*/node_modules/*" -not -path "./.git/*"); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -4; done; echo; echo "last commit per author:"; git log --all --no-merges --pretty=format:"%an|%cd" --date=short | awk -F'|' '!s[$1]++' | head -6; echo; grep -rn "require(" lib | head -20
+ - Bash: git log --all --no-merges --author="Douglas" -1 --format=%cd --date=short; git log --all --no-merges --author="Troy" -1 --format=%cd --date=short; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn | head -3; git log --all --no-merges --pretty=format:"%an" -- test | sort | uniq -c | sort -rn | head -3; git shortlog -sn --all --no-merges -- lib | head -1
+FINAL ANSWER:
+## Bus Factor Analysis (period: all)
+
+**Project bus factor: 1.** Troy Goode is the single owner of the core code. Douglas Christopher Wilson is the second contributor, but has been inactive since 2021-09-07.
+
+### Overview
+
+The repo has 7 JS files and 1 runtime dependency file, `lib/index.js`. I analyzed all 7 files. No "Fiona Formatter" or bot commits count as ownership. The `62628c0` reformat commit and dependabot touched files without authoring logic.
+
+| File | Top contributor (commits) | Others | Bus factor |
+|---|---|---|---|
+| `lib/index.js` | Troy Goode (29 of ~40, ~72%) | Wilson 4, Caravaca Puchades 4, Mansfield 3 | 1 (not >80%, but no one else is near) |
+| `test/vary.js` | Troy Goode (1 of 1) | none | 1 |
+| `test/example-app.js` | Troy Goode (10 of 13) | Wilson 2, formatter 1 | 1 |
+| `test/issue-2.js` | Troy Goode (10 of 12) | Wilson 2 | 1 |
+| `test/error-response.js` | Troy Goode (4 of 8) | Wilson 3, formatter 1 | 2 |
+| `test/test.js` | Douglas Wilson (8 of 11) | 3 one-off contributors | 1, and Wilson is inactive |
+| `test/support/env.js` | Douglas Wilson (1 of 1) | none | 1, and Wilson is inactive |
+
+### Critical risk areas
+
+| File | Sole owner | Owner active? | Dependents | Risk |
+|---|---|---|---|---|
+| `lib/index.js` | Troy Goode | Last commit 2026-04-10, about 6 months ago, so inactive by the 90-day rule | It is the package entry point, so every consumer | CRITICAL |
+| `test/test.js` | Douglas Wilson | Inactive since 2021-09-07 | Main test suite | HIGH |
+
+### By module
+
+| Module | Primary owner | Ownership | Bus factor |
+|---|---|---|---|
+| `lib/` | Troy Goode | 33 of ~41 commits, ~80% | 1 |
+| `test/` | Troy Goode (32), Wilson (23) | Troy ~55% | 2, but only Troy is recent |
+
+### Heat map
+
+```
+repo/
+├── lib/   [████████░░] 🔴 Bus Factor 1 (Troy Goode ~80%, inactive ~6mo)
+└── test/  [██████░░░░] 🟡 Bus Factor 2 (Troy ~55%, Wilson ~40%, Wilson inactive since 2021)
+```
+
+### Recommendations
+
+1. **Immediate:** A second person should review `lib/index.js`. Tell them to read the Troy Goode commit history, since he wrote most of it.
+2. **Short-term:** `lib/index.js` is small and has only two dependencies, `object-assign` and `vary`. Document its behavior and add a few inline comments.
+3. **Ongoing:** Distribute review and merge duty. Recent activity is formatter, bot and drive-by commits (Vansh Sharma, Ulises Gascón, Phillip Barta), so recruit one of them as a maintainer.
+
+### Caveats
+
+- The repo is small, so commit counts per file are low and percentages are rough.
+- The activity check is relative to today (2026-10-22). The last repo commit is 2026-04-12.
+- I did not run the contributor-analyzer agent. The `git log` data was enough for 7 files.
+META cost=0.07849700000000001 ms=25044 turns=7

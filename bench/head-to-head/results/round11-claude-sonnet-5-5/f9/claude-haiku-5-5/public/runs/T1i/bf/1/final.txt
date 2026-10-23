@@ -1,0 +1,48 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "Who owns the code that is still present at HEAD today? Attribute surviving lines (git blame on current files), not commit counts. Report ownership by surviving line share per area, and flag single-owner areas and departed authors."}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ 2>&1; git ls-files | wc -l; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head -30; git log --reverse --format='%h %ad %ae' --date=short | head -3; git log -1 --format='%h %ad' --date=short
+ - Bash: git ls-files | while read f; do git blame --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed "s|^|$f\t|"; done > /tmp/blame_mail.txt; awk -F'\t' '{print $2}' /tmp/blame_mail.txt | sort | uniq -c | sort -rn; echo ---; awk -F'\t' '{print $1}' /tmp/blame_mail.txt | sort | uniq -c | sort -rn
+ - Bash: git log --format='%ae|%an|%ad' --date=short | awk -F'|' '{k=$1; if(!(k in last)||$3>last[k]) last[k]=$3; if(!(k in first)||$3<first[k]) first[k]=$3; n[k]++; name[k]=$2} END{for(k in n) print k"|"name[k]"|"first[k]"|"last[k]"|"n[k]}' | sort -t'|' -k4; echo ---; git log -1 --format=%ad --date=short; git ls-files | grep -v '^\.' | head -30
+ - Bash: cat .git-blame-ignore-revs; git ls-files | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' | sed "s|^|$f\t|"; done > /tmp/blame2.txt; awk -F'\t' '{print $2}' /tmp/blame2.txt | sort | uniq -c | sort -rn; echo ---; awk -F'\t' '{print $1}' /tmp/blame2.txt | sort | uniq -c | sort -rn | awk '{print}' ; echo; awk -F'\t' '{print $1"\t"$2}' /tmp/blame2.txt | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{c[$2]=c[$2]" "$0} END{}1' | head -0; for f in $(git ls-files); do echo "== $f"; grep -F "$f	" /tmp/blame2.txt | awk -F'\t' '{print $2}' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: git log --format='%h %ae %ad %s' --date=short --author=formatter; git log --format='%h %ae %ad %s' --date=short --author=troy@laptop; git log --format='%h %ae %ad %s' --date=short -- test/test.js | head -5; echo; git blame --ignore-revs-file .git-blame-ignore-revs -l HEAD -- test/test.js | awk '{print $1}' | sort | uniq -c | sort -rn | head -5
+ - Bash: awk -F'\t' '{m=$2; gsub(/.*<|>.*/,"",m); if(m ~ /troygoode|troy@laptop/) m="Troy Goode"; else if(m ~ /somethingdoug/) m="Doug Wilson"; else if(m ~ /formatter/) m="(formatter commit 62628c0)"; print m}' /tmp/blame2.txt | sort | uniq -c | sort -rn | awk '{t+=$1; print} END{print "TOTAL", t}' | head -20; echo; git log -1 --format='%h %s' 9f866e1 >/dev/null; git show -s --format='%an <%ae>' troy@laptop.example 2>/dev/null; git log --format='%an' --author=troy@laptop | sort -u
+FINAL ANSWER:
+**Short answer:** Most of the code that survives at HEAD is by two people, Troy Goode (~32%) and Doug Wilson (~28%). Doug has not committed since 2021, so about 28% of the surviving lines have no active author. Counting departed authors overall, roughly 40% of surviving lines sit with people who are no longer active.
+
+I did this with `git blame` on the 19 tracked text files at HEAD (about 2,000 lines). I did not run the skill's `ownership.mjs`, because it weights commits by age rather than counting surviving lines. "Active" means a commit in the 12 months before the newest commit (2026-04-12). Departure is inferred from commit activity, not from anything you've told me.
+
+**Surviving lines by person**
+
+| Person | Lines | Share | Last commit | Status |
+|---|---|---|---|---|
+| Troy Goode | 642 | 32% | 2026-04-10 | Active |
+| Doug Wilson | 564 | 28% | 2021-09-07 | Departed |
+| Formatter commit (fiona@formatter.example) | 239 | 12% | 2026-04-12 | Not an author, see caveats |
+| Íñigo Marquínez | 94 | 5% | 2024-05-14 | Departed |
+| Jon Church | 72 | 4% | 2026-01-16 | Active |
+| Sebastian Beltran | 67 | 3% | 2025-07-23 | Active |
+| Ignacio Mangas | 54 | 3% | 2025-12-01 | Active |
+| Ulises Gascón | 52 | 3% | 2026-01-22 | Active |
+| Linus Unnebäck | 37 | 2% | 2016 | Departed |
+| Others (about 25 people) | ~250 | ~13% | 2013–2025 | Mostly departed |
+
+**Single-owner and departed-owner areas**
+
+- **Departed owner:** `HISTORY.md` is 78% Doug (50 of 64 lines). `LICENSE` is 77% Doug. `test/test.js` is 37% Doug (270 lines), the largest single block of departed-owned code.
+- **Sole owner departed:** `test/support/env.js` and `test/.eslintrc.yml` are entirely Doug's. `scorecard.yml` is 93% Íñigo, who has been inactive since 2024.
+- **Single active owner:** `test/vary.js` is 100% Troy. `error-response.js`, `example-app.js` and `issue-2.js` are 81–85% Troy. `codeql.yml` is 96% Sebastian. `dependabot.yml` is 100% Ulises.
+- **Shared:** `lib/index.js` (the core library) is about 54% Troy, with Doug's 36 lines the largest departed share. `ci.yml` is about half Doug, who is departed.
+
+**Caveats**
+
+- **Formatter commit:** `62628c0` (2026-04-12) reformatted the JS files. `git blame --ignore-revs-file` did not reassign those lines, because the reformat changed the text (quotes and indentation), not just whitespace. The 239 lines are shown as the formatter's. Their real earlier authors are in the pre-reformat history, so Troy and Doug are probably understated and the formatter is overstated. Fixing this needs parent-line mapping, which I did not do.
+- **Identity merge:** I merged `<email redacted>` and `troy@laptop.example` as Troy Goode because both carry that name. I did not verify it. The `*.example` addresses look like placeholders, so confirm them.
+- **Ownership is inferred:** A departed author may still be reachable, and an active author with no recent commits will show as departed. Check the roster before acting on the "departed" labels.
+
+I can rerun this with the formatter lines reassigned to their pre-reformat authors, or run the skill's CODEOWNERS generator for a commit-weighted comparison.
+META cost=0.01131371 ms=45681 turns=9

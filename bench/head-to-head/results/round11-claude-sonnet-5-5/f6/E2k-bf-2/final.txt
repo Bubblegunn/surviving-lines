@@ -1,0 +1,22 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %cd' --date=iso && git log --since='2026-03-29 00:00' --until='2026-04-13 00:00' --format='%h|%an|%ae|%ad|%s' --date=short --no-merges
+ - Bash: git shortlog -sne HEAD | head -20; cat .mailmap 2>/dev/null; git show --stat --format='%h %s' b2005d9 02afce3 5317ebe | cat; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do git blame -w -C -C -M --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files); do git blame -w -C -C -M --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -aE '^[0-9a-f]{40} ' | cut -c1-7 ; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe|62628c0'
+FINAL ANSWER:
+Two people committed in the window, 2026-03-29 to 2026-04-12. I excluded Fiona Formatter's commit `62628c0` (a style-only reformat) and made no exclusions for bots, since none committed in the window.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (2026-04-10); `b2005d9` lib: annotate handlers (2026-04-10) | 48 (36 + 12) |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) (2026-04-07) | 1 |
+
+- **Troy Goode:** he appears under two emails, `troy@laptop.example` and `<email redacted>`. I counted him once. `02afce3` added 36 lines in `test/vary.js`, and all 36 survive. `b2005d9` changed 12 lines in `lib/index.js`, and all 12 survive.
+- **Vansh Sharma:** the one README line he changed survives.
+- **How I counted lines:** I used `git blame` and skipped the formatting commit, so the reformat doesn't take credit for lines it only re-indented. I read "lines of theirs" as lines that come from their commits in this window, not every line they have ever written. Troy has about 810 surviving lines in the repo overall.
+META cost=0.0774636 ms=19871 turns=5

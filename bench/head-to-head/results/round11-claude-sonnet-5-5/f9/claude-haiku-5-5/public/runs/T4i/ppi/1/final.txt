@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "--- all-time authors (no merges):" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "--- last 6 months:" && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "--- last commit touching file:" && git log -1 --pretty=format:"%h %an %ad %s" -- lib/index.js && echo && echo "--- repo-wide contributors (6m):" && git shortlog -sn --no-merges --since="6 months ago" --all && echo && echo "--- blame line counts:" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo && echo "--- importers of lib/index.js:" && grep
+ - Bash: git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo "--- recent commits:"; git log --no-merges -6 --pretty=format:"%h %an %ad %s" --date=short -- lib/index.js; echo; echo "--- wc:"; wc -l lib/index.js; echo "--- Troy last commit:"; git log -1 --pretty=format:"%h %ad %s" --date=short --author="Troy Goode" -- lib/index.js
+FINAL ANSWER:
+**Who should review `lib/index.js`: Troy Goode is the main reviewer.** Troy has the most surviving code and the most commits, but has not touched the file in about six months, so get a second reviewer too.
+
+**Ownership** (`lib/index.js`, 238 lines, the package `main` in `package.json`):
+
+| Contributor | Commits (all-time) | Surviving lines (blame, ignoring style-only commits) | Last commit to file |
+|---|---|---|---|
+| Troy Goode | 29 | 109 | 2026-04-10 (`b2005d9 lib: annotate handlers`) |
+| Douglas Christopher Wilson | 4 | 36 | 2017-10-04 |
+| Fiona Formatter | 0 (in the file's history, one commit) | 57 | 2026-04-12 (`62628c0` reformat only) |
+| Raymond Feng, LuisEGR, Tom Arad, others | a few each | 22 combined | 2018–2021 |
+
+- Plain `git blame` credits Fiona with 214 of 238 lines. That comes from the reformat commit `62628c0`, not from real authorship. Use `git blame --ignore-revs-file .git-blame-ignore-revs` to see the true picture, which the table above uses.
+- Second reviewer: Douglas Christopher Wilson has the next-largest real share, but his last commit is from 2017. Check whether he is still reachable before relying on him.
+
+**Risk:**
+- Troy's last commit was 196 days ago, past the 90-day activity threshold this analysis uses. Troy is the main knowledge holder and may not be active.
+- Repo-wide `git shortlog --since="6 months ago" --all` returned nothing. No one has committed to the repo in six months, so there may be no active maintainer at all.
+- Importers: no internal `require` of `lib/index.js` was found. Its real dependents are outside this repo (npm consumers of the package), so their impact can't be measured here.
+
+**Bus factor for this file: 1 in practice.** Troy is the only recent author with substantial knowledge, and that knowledge is dated.
+
+**Suggested before your change:**
+1. Ask Troy for a review if they are reachable.
+2. If not, ask Douglas Christopher Wilson, or find the current package maintainers outside the repo.
+3. Keep the change small and well tested, since no active author can be asked about intent.
+
+I ran the file-level checks directly and did not launch the contributor-analyzer agent, since this is a single-file question. The `--period` and `--lang` options were not applied: the 6-month window had no commits, so the all-time numbers above are the ones that matter.
+META cost=0.00567661 ms=21199 turns=5

@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | awk -F/ '{f=$NF; if (f ~ /\./ && f !~ /^\.[^.]*$/) {sub(/.*\./,"",f); print f} else print "(none)"}' | sort | uniq -c | sort -rn; git log --format='%h %an <%ae> %s' -8; git show --stat 62628c0 | tail -5; git show --stat b2005d9 | tail -3; git show --stat 02afce3 | tail -3
+ - Bash: ls -a .mailmap .git-blame-ignore-revs 2>&1; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30
+run() { for f in $(git ls-files); do b=$(basename "$f"); case "$b" in *.*) e="${b##*.}"; [ "$b" = ".$e" ] && e="(none)";; *) e="(none)";; esac
+  git blame --line-porcelain $@ -- "$f" | sed -n 's/^author-mail //p' | sed "s|^|$e |"; done | sort | uniq -c | sort -k2,2 -k1,1nr; }
+echo "== RAW"; run; echo "== IGNORE 62628c0"; run --ignore-rev 62628c0
+FINAL ANSWER:
+Blame on HEAD (`master`, 62628c0), counted by author email:
+
+| Ext | Files | Top owner (surviving lines) | Runner-up |
+|---|---|---|---|
+| `.js` | 7 | **Fiona Formatter**: 1016 / 1202 (85%) | Troy Goode: 139 (two emails combined) |
+| `.yml` | 6 | **Douglas Christopher Wilson**: 117 / 383 | Íñigo Marquínez Prado: 94 |
+| `.md` | 2 | **Troy Goode**: 104 / 345 | Jon Church: 72 |
+| `.json` | 1 | **Douglas Christopher Wilson**: 20 / 42 | Troy Goode: 12 |
+| no extension | 2 | **Douglas Christopher Wilson**: 21 / 27 | Troy Goode: 6 |
+
+**The `.js` result is misleading.** Fiona owns those lines because of one commit, 62628c0 "style: reformat js with 4-space indent and double quotes". It changed 1016 lines across `lib/index.js` and three test files and did not change behavior. When I re-ran blame with `--ignore-rev 62628c0`:
+
+| `.js` owner | Lines |
+|---|---|
+| **Troy Goode** | 520 (473 from <email redacted> + 47 from troy@laptop.example) |
+| Douglas Christopher Wilson | 339 |
+| Fiona Formatter | 237 (lines git couldn't trace back past the reformat, mostly quote-style changes) |
+| Others | 106 |
+
+For "who wrote the JS code", the answer is **Troy Goode**. The other file types are the same with or without ignoring the reformat.
+
+The repo has no `.mailmap`, so identities are matched by email only. I treated `troy@laptop.example` (author of the two newest commits besides the reformat) as the same person as `<email redacted>` because the name matches. That doesn't change any winner.
+
+If you want blame to skip the reformat by default, you could add 62628c0 to a `.git-blame-ignore-revs` file.
+META cost=0.17932199999999998 ms=21073 turns=3

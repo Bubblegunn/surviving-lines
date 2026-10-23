@@ -1,0 +1,44 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1-bf-1/repo
+files=$(git ls-files | grep -vE '(package-lock\.json|yarn\.lock|\.(png|jpg|gif|ico|svg|woff2?)$)')
+echo "files: $(echo "$files" | wc -l)"
+run(){ echo "$files" | while read -r f; do git blame -w -M -C --line-porcelain "$@" -- "$f" 2>/dev/null | grep -a '^author '; done | sort | uniq -c | sort -rn | head -15; }
+echo "== plain blame (-w -M -C)"; run
+echo "== ignoring reformat 62628c0"; run --ignore-rev 62628c0
+echo "== by file type, ignoring reformat"
+for ext in js md json yml; do echo "-- .$ext"; git ls-files "*.$ext" | while read -r f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a
+FINAL ANSWER:
+Current ownership comes from `git blame` on the 18 tracked files, with whitespace and moved lines ignored. I excluded lockfiles and images. I did not use the busfactor skill, because it weights commits by age and doesn't count surviving lines.
+
+The last commit, `62628c0`, reformatted all the JS. A plain blame gives 291 lines to "Fiona Formatter", which misstates ownership. I excluded that commit and used the second table.
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+The remaining authors each have 16 lines or fewer. That includes dependabot with 10.
+
+- **Overall:** Troy Goode and Douglas Christopher Wilson own about 70% of the lines between them. Troy has roughly 40%. These are estimates, because I only listed the top 15 authors and didn't compute the exact total.
+- **JS source:** Troy has 676 lines and Douglas has 394. The next author has 30.
+- **Docs:** Troy has 116 lines of Markdown, Jon Church 72 and Douglas 67.
+- **CI config (`.yml`):** this is spread out. Douglas has 127 lines, Íñigo 95, Sebastian 63, Ulises 45 and Ignacio 44.
+- **Config JSON:** the file is mostly Douglas's, at 20 lines, but it is small.
+
+I didn't check who is still active. Blame shows whose code survives, not who can still review it. I can check that against recent commits and flag any area where the main owner has left.
+META cost=0.0653926 ms=18332 turns=5

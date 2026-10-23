@@ -1,0 +1,38 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary,mcp__git-historian__blame_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1i-hist-1/repo", "top": 30, "max_files": 1000}
+ - Bash: cat .git-blame-ignore-revs && for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -15; echo ---; for f in lib/index.js test/test.js; do echo $f; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -5; done
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that survives. Neither is a recent committer.
+
+The reformat commit `62628c0` rewrote every JS line, so plain blame credits it to "Fiona Formatter". That gives 51% of the lines, which is wrong. I re-blamed with `git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs`. The `-w` flag ignores whitespace changes. `-M` and `-C` follow lines moved or copied within the repo. The ignore file already lists that commit. I counted all tracked files at HEAD, about 2,000 lines in total.
+
+| Author | Surviving lines | Approx. share |
+|---|---|---|
+| Troy Goode | 810 | ~40% |
+| Douglas Christopher Wilson | 629 | ~31% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Everyone else | under 30 each | the rest |
+
+The shares are my rounding from the line counts. The 4-space reindent and quote change are skipped, but the text of each line still belongs to its original author.
+
+By file:
+- **`lib/index.js`** (the core): Troy Goode 159 lines, Douglas Christopher Wilson 22, Alejandro Caravaca Puchades 12, Raymond Feng 7.
+- **`test/test.js`**: Douglas Christopher Wilson 339 lines, Troy Goode 317.
+- **CI, security and dependency config in `.github/`**: Íñigo Marquínez Prado, Sebastian Beltran, Ulises Gascón and Ignacio Mangas.
+- **`README.md`**: Troy Goode, Jon Church and Linus Unnebäck.
+
+Activity is the other half of the picture. By the tool's 6-months-ago cutoff, none of the authors is active. Troy Goode's last commit was 2026-04-10. Douglas Christopher Wilson's last commit was 2021-09-07, so the 31% he owns has had no commits from him for five years. Most of the repo counts as orphaned, though that is partly an artifact of the cutoff date. The 6-months-ago default is arbitrary, and I can re-run with a different date if you want.
+
+I did not run blame on deleted files or on history before the oldest surviving line.
+META cost=0.0817592 ms=17905 turns=5

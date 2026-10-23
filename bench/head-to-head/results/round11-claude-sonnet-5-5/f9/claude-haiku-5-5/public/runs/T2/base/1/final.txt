@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib && echo "--- total commits touching lib:" && git log --oneline -- lib | wc -l && echo "--- authors by commit count (lib):" && git shortlog -sne HEAD -- lib && echo "--- authors by lines of current lib (blame):" && git ls-files lib | xargs -I{} git blame --line-porcelain -- {} 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: echo "--- per-file last-touch and top authors:" && for f in $(git ls-files lib); do echo "$f | $(git log -1 --format='%ad %an' --date=short -- $f) | authors: $(git log --format='%an' -- $f | sort | uniq -c | sort -rn | head -3 | awk '{c=$1; $1=""; printf "%s(%s) ", $0, c}')"; done; echo "--- distinct authors overall:" && git log --format='%an' -- lib | sort -u
+ - Bash: git show --stat --format='%h %an %ad %s' 62628c0 -- lib | head -5 && echo "--- ignoring whitespace in that commit:" && git show -w --stat --format='%h' 62628c0 -- lib | tail -2 && echo "--- lib line count:" && wc -l lib/index.js && echo "--- recent lib commits (last 12):" && git log --format='%h %ad %an %s' --date=short -12 -- lib && echo "--- commits by author in last 2 years:" && git log --since=2024-10-23 --format='%an' -- lib | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer: bus factor 1 on paper. Losing Troy Goode is the real risk. The code is small enough that someone who reads the CORS spec could rebuild the understanding, so it would take losing most of the people who have touched it, not just one.**
+
+What the history shows for `lib/` (a single file, `lib/index.js`, 238 lines):
+
+- **Troy Goode** wrote 33 of the 67 commits that touch `lib/`, and the only recent substantive work: `b2005d9` (2026-04-10, "annotate handlers").
+- **Everyone else** has 1 to 4 commits each. The last substantive logic change was in 2018 (`Fix setting "maxAge" option to 0`). Most later commits are lint or style.
+- **Activity is very low.** In the last two years, `lib/` has 2 commits: Troy's and one reformat.
+- **The blame is misleading.** `62628c0` (2026-04-12, Fiona Formatter) reindented and requoted the whole file. That gives Fiona 214 of 238 lines in `git blame`. Ignoring whitespace, the commit touches only 32 lines. Use `git blame -w` or add the commit to `.git-blame-ignore-revs` to see real ownership.
+
+What this means for "how many leave before nobody understands it":
+
+- **Knowledge in people:** Troy is the only one with recent, sustained context. Next is a long tail of one-off contributors (Douglas Christopher Wilson has the most older work, about 5 commits). Realistically, losing Troy leaves a team with no one who has worked in this file recently.
+- **Knowledge in the code:** 238 lines, mostly CORS option handling, which is well specified (Fetch standard, MDN). Someone competent could rebuild understanding from the code and spec in days, not months.
+- **So:** the threshold is effectively 1 for day-to-day maintenance, and about 2 to 3 people who know CORS well before the module is truly opaque.
+
+Caveats:
+- Git history shows who committed, not who understands the code. Knowledge can live in heads that never committed here.
+- I can't see whether these people are still active or reachable, or whether this repo is a vendored copy of an upstream project. If it is, the upstream maintainers are the real bus factor.
+- Some author emails look like placeholders (`fiona@formatter.example`, `troy@laptop.example`), so the identities may not be reliable.
+META cost=0.00477497 ms=18257 turns=4

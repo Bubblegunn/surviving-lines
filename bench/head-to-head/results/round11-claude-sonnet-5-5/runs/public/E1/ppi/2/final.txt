@@ -1,0 +1,80 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules | wc -l; echo ---; for f in $(git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules); do n=$(git log --all --no-merges --pretty=format:"%an" -- "$f" | sort -u | wc -l | tr -d ' '); top=$(git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn | head -1 | sed 's/^ *//'); tot=$(git log --all --no-merges --oneline -- "$f" | wc -l | tr -d ' '); echo "$n|$tot|$top|$f"; done | sort -t'|' -k1,1n -k2,2nr | head -60; echo ---; git log -1 --format=%cd; git shortlog -sn --since="90 days ago" --no-mer
+ - Bash: for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a: $(git log --all --no-merges --author="$a" -1 --format=%cd --date=short)"; done; echo; git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn | head -4; echo; grep -rl "lib/index\|require(.\./\.\./lib\|require(.\.\./" test lib package.json 2>/dev/null | wc -l; git ls-files | grep -v '^test/' ; for f in $(git ls-files | grep -vE '^(test/|lib/)'); do echo "$f: $(git log --all --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-22
+
+The repo is small: 7 JS source files and 1 main library file. Treat the percentages below with that in mind.
+
+### Project-level bus factor: 2
+
+Two people, Troy Goode and Douglas Christopher Wilson, account for about 238 of the ~270 non-merge commits. If both left, almost no one would be left who knows the code. Troy Goode is the most recent committer (2026-04-10) and has the largest share of the core file.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 7 |
+| Files with bus factor 1 | 2 (29%), both tests with 1 commit each |
+| Files with bus factor 2 | 1 (14%) |
+| Files with bus factor 3+ | 4 (57%) |
+| Critical single-owner files | 0 |
+
+### Single-contributor files
+
+| File | Sole owner | Commits | Risk |
+|---|---|---|---|
+| `test/vary.js` | Troy Goode | 1 | LOW (one test file) |
+| `test/support/env.js` | Douglas Christopher Wilson | 1 | LOW (one test helper) |
+
+No file with high importance has a single contributor.
+
+### Concentration without bus factor 1
+
+| File | Contributors | Primary owner | Share |
+|---|---|---|---|
+| `lib/index.js` (core library) | 25 | Troy Goode | 29/62 commits (47%) |
+| `package.json` | 2 or more | Douglas Christopher Wilson | 68 commits, with Troy Goode at 37 |
+| `README.md` | 2 or more | Troy Goode | 29 commits (about 80% of those in the top two) |
+| `.github/workflows/ci.yml` | 3 or more | Douglas Christopher Wilson | 10 commits |
+| `HISTORY.md` | 2 | Douglas Christopher Wilson | 4 of 5 commits |
+
+`lib/index.js` is imported or required by the test files and `package.json`, so it is the file that matters most. It has 25 contributors, so it is not a single-owner file.
+
+### Owner activity
+
+| Person | Last commit | Status |
+|---|---|---|
+| Troy Goode | 2026-04-10 | No commits in the last 90 days, about 6 months ago |
+| Douglas Christopher Wilson | 2021-09-07 | Inactive for about 5 years |
+
+Nobody has committed in the last 90 days. The most recent commit in the repo is 2026-04-12.
+
+### Heat map
+
+```
+repo/
+├── lib/index.js   [█████░░░░░] 🟡 25 contributors (Troy Goode 47%)
+├── test/          [████░░░░░░] 🟢 mostly 3+ contributors, 2 files with 1
+├── package.json   [███████░░░] 🟡 Wilson and Goode only (Wilson 68 commits)
+├── README.md      [████████░░] 🟡 Goode dominant
+└── .github/       [██████░░░░] 🟡 Wilson on CI, dependabot on the rest
+```
+
+### Recommendations
+
+1. **Immediate:** Have a third person review `package.json` and `lib/index.js` changes. Those two files have the most dependents, and Goode and Wilson drive most of the changes to them.
+2. **Short-term:** Write short notes on the release process, the CI setup (`ci.yml`) and the `package.json` conventions. Wilson wrote most of those and has been inactive since 2021.
+3. **Ongoing:** Add a second reviewer to `README.md` and `HISTORY.md`, and give the two single-owner test files a second reader.
+
+### Caveats
+- Counts use `git log --no-merges` author names. I did not merge name aliases. The dependabot[bot] account (11 commits) is counted as a contributor.
+- The 7-file sample is too small for the project-level number to be exact.
+META cost=0.07006659999999999 ms=23098 turns=5

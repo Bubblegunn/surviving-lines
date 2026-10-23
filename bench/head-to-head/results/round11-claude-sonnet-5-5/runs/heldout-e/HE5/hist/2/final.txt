@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-hist-2/repo", "path": "lib/rack/attack/store_proxy", "inactive_after": "6 months ago"}
+ - Bash: git log --format='%an <%ae> %ad %s' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb | head -60; echo ---; git shortlog -sne --since="6 months ago" HEAD | head -20; echo ---; git log -1 --format=%ad --date=short
+FINAL ANSWER:
+Two people are still active and have touched this code: **Hiroshi Tanaka** and **Santiago Bartesaghi**. I counted someone as active if they committed in the last 6 months, since 2026-04-23.
+
+- **Hiroshi Tanaka** is the best first reviewer.
+  - They wrote `valkey_proxy.rb` and own 100% of it. The commits are "Add Valkey store proxy (#310)" on 2026-09-02 and "ValkeyProxy: add wrap and version check (#318)" on 2026-09-16.
+  - They are the only active author with substantive recent work on how proxies are built and wrapped.
+  - Their commits use two email addresses, `hiroshi@tanaka.example` and `<email redacted>`. The history tool merged them into one author. I didn't check whether they really are one person.
+- **Santiago Bartesaghi** is the second reviewer.
+  - They fixed `reset!` for namespaced cache stores (#673, 2024-12-19), which touched `redis_cache_store_proxy.rb`. They own about 12% of that file.
+  - Their 2026-08-04 commit, "Autocorrect Style/StringLiterals", was a style autocorrect. It doesn't show deep knowledge of the proxies.
+  - Their last commit anywhere in the repo was 2026-09-30. They are the most active contributor over the last 6 months, with 3 commits.
+
+Most of the other store proxy code has no active author left. Five of the six files in `lib/rack/attack/store_proxy/` are owned mostly by inactive authors: `dalli_proxy.rb`, `redis_store_proxy.rb`, `mem_cache_store_proxy.rb`, `redis_proxy.rb` and `redis_cache_store_proxy.rb`. Gonzalo Rodriguez wrote much of that code, but their last commit was in 2021. Only `valkey_proxy.rb` has an active owner.
+
+If your change touches the Redis, Dalli or MemCache proxies, nobody active knows that code well. Ask Hiroshi and Santiago to review it carefully, and run the tests against real backends.
+
+Jonas Keller also committed in the last 6 months, but never touched the store proxy code, so I left them out.
+META cost=0.07259840000000001 ms=15793 turns=5

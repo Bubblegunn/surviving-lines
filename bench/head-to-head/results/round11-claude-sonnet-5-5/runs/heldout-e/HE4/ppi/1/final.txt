@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser/ \u2014 who should review a change; weight by who wrote the lines that exist now (blame), not commit count"}
+ - Bash: ls src/Parser/ 2>&1 | head -50; echo ---; for f in $(git ls-files src/Parser/); do git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn; echo --- mailmap; cat .mailmap
+ - Bash: for f in $(git ls-files src/Parser/); do echo "== $f"; git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3; done; echo --- last commit per author; git log --use-mailmap --format='%aN|%ad' --date=short -- src/Parser/ | awk -F'|' '!s[$1]++'; echo --- blame by mailmap; git blame -w -M -C --line-porcelain -e -- src/Parser/*.php 2>/dev/null | head -0; git ls-files src/Parser/ | xargs -I{} git blame -w -M -C --line-porcelain {} | grep -a '^author-mail' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Reviewers for a change to `src/Parser/`: Graham Campbell first, Priscila Duarte second.**
+
+Ownership is by surviving lines (`git blame -w -M -C`, so whitespace-only changes like the tab reindent don't count). Authors are merged through `.mailmap`.
+
+| Author | Lines in `src/Parser/` today | Share |
+|---|---|---|
+| Graham Campbell | 782 | 86% |
+| Priscila Duarte | 118 | 13% |
+| Vance Lucas | 10 | 1% |
+| Jonas Staudenmeir | 1 | <1% |
+| JT Smith | 1 | <1% |
+
+**By file, pick the reviewer for the file being changed:**
+- **Graham Campbell** wrote nearly all of these files:
+  - `EntryParser.php` (363 of 363 lines)
+  - `Lines.php` (125 of 136)
+  - `Value.php` (101 of 101)
+  - `Entry.php`, `Lexer.php`, `Parser.php` (58 of 59 for `Entry.php`; all 58 lines each for the other two)
+  - `ParserInterface.php` (19 of 19)
+- **Priscila Duarte** wrote all of the following:
+  - `Comments.php` (56 of 56)
+  - `Interpolator.php` (62 of 62)
+- **Vance Lucas** has 10 surviving lines in `Lines.php`. They are too few to make him a reviewer.
+
+**Activity:** Graham Campbell's last commit to `src/Parser/` was 2026-08-24. Priscila Duarte's was 2026-09-08. Both are recent.
+
+**Things to know:**
+- Graham Campbell owns most of the directory by lines. That is a bus-factor risk, since he is the only person who wrote the core parsing files (`EntryParser`, `Lexer`, `Parser`, `Value`). Having Priscila Duarte co-review changes to those files would spread that knowledge.
+- Marta Kowalczyk and the StyleCI bot appear in `git log` for this path but have no surviving lines. A commit-count ranking could name them. They haven't written any of the code that exists now.
+- I ran `git blame` directly instead of following the skill's commit-count workflow, because you asked for line-based ownership. I did not run the agent step or the dependents/importance step.
+META cost=0.0632954 ms=21936 turns=5

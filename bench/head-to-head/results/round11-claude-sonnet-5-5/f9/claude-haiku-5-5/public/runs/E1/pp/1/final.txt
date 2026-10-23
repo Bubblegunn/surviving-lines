@@ -1,0 +1,82 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: echo "commits: $(git rev-list --all --no-merges --count)" && git shortlog -sn --all --no-merges | head -30 && echo "---files" && git ls-files | wc -l && git ls-files | sed 's|/[^/]*$||' | sort | uniq -c | sort -rn | head -40
+ - Bash: git ls-files && echo "---" && for f in $(git ls-files | grep -E '\.(js|json|yml|md)$'); do total=$(git log --no-merges --pretty=format:"%an" -- "$f" | wc -l); [ "$total" -eq 0 ] && continue; top=$(git log --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn | head -1); n=$(git log --no-merges --pretty=format:"%an" -- "$f" | sort -u | wc -l); last=$(git log -1 --format=%cs -- "$f"); echo "$f | commits=$total | authors=$n | top=[$top] | last=$last"; done
+ - Bash: head -5 package.json && echo "--- lib/index.js authors (all)" && git log --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- lib/index.js authors since 2025-10-23" && git log --no-merges --since=2025-10-23 --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- lib/index.js authors since 2026-07-25 (90d)" && git log --no-merges --since=2026-07-25 --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- repo-wide last 90d" && git shortlog -sn --no-merges --since=2026-07-25 --all && echo "--- repo-wide last 1y" && git shortlog -sn --no-merges --since=2025-10-23 --all && echo "--- Troy Goode / Douglas first and 
+ - Bash: git rev-parse --is-shallow-repository && git log -1 --format='%cs %an' && echo "--- zero-history files" && for f in test/vary.js test/support/env.js .eslintrc.yml test/.eslintrc.yml .gitignore LICENSE .github/dependabot.yml; do echo "$f: $(git log --all --format=%an -- "$f" | wc -l)"; done && echo "--- ci.yml authors" && git log --no-merges --format='%cs %an' -- .github/workflows/ci.yml | head -5 && echo "--- Douglas last 10 commits" && git log --author="Douglas" --no-merges --format='%cs %s' | head -10 && echo "--- Troy last 8" && git log --author="Troy" --no-merges --format='%cs %s' | head -8 && echo "--- Test authors" && for f in test/*.js; do echo "$f: $(git log --no-merges --format=%an 
+ - Bash: for f in test/support/env.js .eslintrc.yml test/.eslintrc.yml .github/dependabot.yml; do echo "$f: $(git log --all --format='%cs %an' -- "$f")"; done; echo "--- lib/index.js dependents in repo"; grep -rl "require(.*lib\|require('\.\./\|require('\.\./\.\./" test | head; grep -n "require(" test/*.js | grep -v "'[a-z]" | head
+FINAL ANSWER:
+## Bus Factor Analysis
+
+Period: all history (default) | Repo: `cors` 2.8.6, Node.js CORS middleware | Generated: 2026-10-23
+
+The repo has 18 tracked files and 326 non-merge commits. Almost all source is in one file, `lib/index.js`.
+
+### Answer
+
+**Troy Goode** is the main person whose departure would hurt now. **Douglas Christopher Wilson** wrote most of the history, but has not committed since September 2021.
+
+- **Troy Goode:** 95 commits (about 29% of all). Owns `lib/index.js` (29 of 61 commits), most of the test suite, and the README. Last commit 2026-04-10. Only 2 commits in the last year.
+- **Douglas Christopher Wilson:** 143 commits (about 44% of all). Owns `package.json` (68 of 112 commits), `test/test.js`, and the early build and tooling. Last commit 2021-09-07.
+- **Nobody** committed in the last 90 days. The last commit in the repo is from 2026-04-12.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Tracked files | 18 (11 with history) |
+| Project-level bus factor (commits) | 2. The top two authors cover about 73% of commits; Douglas alone is about 44%. |
+| Project-level bus factor (active) | 0 by the 90-day rule. The best available is Troy, last active about 6.5 months ago. |
+| Files whose top author has >50% of commits | 4 of 11 (`package.json`, `test/test.js`, `test/issue-2.js`, `test/example-app.js`), plus `test/error-response.js` at 4/7 |
+| Files with 1 author in history | 4 single-commit files (`test/support/env.js`, `.eslintrc.yml`, `test/.eslintrc.yml`, `.github/dependabot.yml`) |
+
+### Critical Risk Areas
+
+| File | Sole / top owner | Owner active? | In-repo dependents | Risk |
+|---|---|---|---|---|
+| `lib/index.js` | Troy 48% (29/61); 25 authors total | Troy: last commit 2026-04 | Public API for all npm users; 3 test files import it | **HIGH** |
+| `package.json` | Douglas 61% (68/112) | Douglas: no commits since 2021 | Version, deps, and scripts for every consumer | **HIGH** |
+| `test/example-app.js`, `test/issue-2.js` | Troy 10 of 12 and 10 of 11 | Troy: 2026 | Regression tests for `lib/index.js` | MEDIUM |
+| `test/test.js` | Douglas 8 of 10 | No | Main test suite | MEDIUM |
+| `.github/workflows/ci.yml` | Douglas 10 of 15 originally; Ignacio Mangas made the last two edits (2025-11/12) | Ignacio: last edit 2025-12 | CI for every PR | MEDIUM |
+
+Caveat on the dependents column: the real consumers are external npm users, which the repo cannot show. The in-repo count is only the test files.
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary owner | Ownership % | Bus factor (>50% rule) |
+|---|---|---|---|---|
+| `lib/` | 25 | Troy Goode | 48% | 2 |
+| `test/` (core) | 4+ | Troy (4 files) / Douglas (test.js) | 57–100% per file | 1 |
+| `package.json` | 9 | Douglas | 61% | 1 |
+| `.github/` | 5+ | Douglas (old), dependabot, Ignacio | mixed | 2+ (but recent work is one person) |
+| `README.md`, `HISTORY.md` | 30 / 6 | Troy / Douglas | 45% / 50% | 3+ (low risk) |
+
+### Knowledge Heat Map (Text)
+
+```
+repo/
+├── lib/index.js      [██████████] 🔴 Troy 48% (25 authors, but Troy last active 2026-04)
+├── package.json      [██████████] 🔴 Douglas 61% (inactive since 2021-09)
+├── test/             [████████░░] 🟡 Troy on most files; Douglas on test.js
+├── .github/          [█████░░░░░] 🟡 Douglas (old), Ignacio (recent), dependabot
+└── README/HISTORY    [███░░░░░░░] 🟢 many contributors
+```
+
+### Recommendations
+
+1. **Immediate:** Pair Troy with a second person on `lib/index.js` and the Express tests, so the public API is understood by someone besides Troy. Confirm at least one other person has npm publish rights. The repo cannot show this; it needs checking in the npm account.
+2. **Short term:** Write down the release process and the Node.js version policy, which currently live in Douglas's old build commits. Review `package.json` dependency changes, which dependabot now mostly makes.
+3. **Ongoing:** Add a `CODEOWNERS` file (none exists in the tracked files) so review requests reach more than one person. Consider rotating review of `lib/index.js` between Troy and Ignacio Mangas, the most recent CI contributor.
+
+### Method
+
+- Commit counts use `git log --no-merges` on the checked-out history. Repo-wide totals use `--all`.
+- Bus factor per file is the minimum number of authors whose commits together exceed 50%. Active means a commit in the last 90 days.
+- I did not separate bot commits from humans for per-file counts. Dependabot appears only in CI and deps files.
+META cost=0.010493180000000001 ms=49051 turns=8

@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- path authors && git log --format='%aN <%aE>|%ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | awk -F'|' '{n[$1]++; if(!($1 in last)) last[$1]=$2; first[$1]=$2} END{for(k in n) print n[k], k, "first="first[k], "last="last[k]}' | sort -rn && echo --- repo-wide recent && git log --since=2025-10-23 --format='%aN <%aE>' | sort | uniq -c | sort -rn && echo --- latest commit && git log -1 --format='%ad' --date=short
+ - Bash: git log --since=2025-10-23 --format='%h %ad %aN <%aE> | committer: %cN | %s' --date=short && echo --- path recent && git log --since=2023-01-01 --format='%h %ad %aN | %s' --date=short -- lib/rack/attack/store_proxy/ && echo --- owners && ls .github 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null; grep -n -i -A3 'maintain' README.md | head -20; grep -n 'authors\|email' *.gemspec
+FINAL ANSWER:
+Suggested reviewers:
+
+1. **Santiago Bartesaghi** is the main pick. They are active now (latest commit 2026-09-30) and committed to the repo several times in 2026. On the store proxies, they fixed `reset!` for namespaced cache stores (#673, 2024-12) and did the 2026-08 style autocorrect. They also handled recent CI and dependency maintenance.
+2. **Gonzalo Rodriguez** (`grzuy`) is the second pick. They wrote most of the store proxy code, about 30 commits from 2018 to 2019 under two identities. They are still active: in 2025-11 they committed as "Gonzalo R" on CI and Appraisals updates, and they committed Bart de Water's change in 2025-10. Their last commit in `store_proxy/` was in 2019, but their history there is the deepest.
+3. **Hiroshi Tanaka** is optional. They wrote the newest code, the Valkey proxy (#310, #318, Sept 2026), so they know `valkey_proxy.rb` best. I can't tell whether they review PRs. GitHub made the commits, so I can't see who merged them. The two commits use different emails (`example.net` and `tanaka.example`), which may be one person with two identities.
+
+I left out **Jean Boussier**. They are active (March 2026), but their commits touched store validity checks, not `store_proxy/`. They are a reasonable extra reviewer if your change affects store validation.
+
+I left out these historical authors:
+- Aaron Suggs, the gem author, has no repo commits since 2025-10.
+- hakanensari, Vincent Boisard and fatkodima have no recent commits.
+- Mitchell Henke and Jonathan del Strother made one-off changes in 2023.
+
+The repo has no `CODEOWNERS` file. I judged "still around" from commits since 2025-10-23, so check GitHub for who has merge rights.
+META cost=0.06882569999999999 ms=19858 turns=4

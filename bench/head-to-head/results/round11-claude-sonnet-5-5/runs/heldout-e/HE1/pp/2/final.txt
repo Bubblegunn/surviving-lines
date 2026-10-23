@@ -1,0 +1,66 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | xargs wc -l; echo; git log --format='%h %an <%ae> %ad %s' --date=short | head -50; echo; git shortlog -sne HEAD
+ - Bash: printf '%s\n' abe2ea7 0e8fe2e > /tmp/ignore-revs.txt
+for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain "$f" | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print f, k, c[k]}'; done | awk '{t[$2]+=$3; pf[$1" "$2]=$3} END{for(k in t) print t[k], k}' | sort -rn
+echo ---records.py; git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain records.py | awk '/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print c[k], k}' | sort -rn
+echo ---raw blame no ignore; git blame --line-porcelain records.py | awk '/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print c[k], k}' | sort -rn
+echo ---test
+ - Bash: git rev-parse abe2ea7 0e8fe2e > /tmp/ignore-revs.txt
+B="git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain"
+agg='/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print c[k], k}'
+echo ---all py; for f in $(git ls-files '*.py'); do $B "$f" | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print c[k], k}'; done | awk '{t[$2]+=$1} END{for(k in t) print t[k], k}' | sort -rn
+echo ---records.py; $B records.py | awk "$agg" | sort -rn
+echo ---per file; for f in tests/*.py setup.py examples/*.py; do echo $f; $B "$f" | awk "$agg" | sort -rn | head -4; done
+echo ---records by recent commits; $B records.py | awk '/^author-mail /{m=$2} /^author-time /{t=$2} /
+ - Bash: b() { git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain "$1"; }
+agg='/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print c[k], k}'
+echo ---all py; for f in $(git ls-files '*.py'); do b "$f" | awk "$agg"; done | awk '{t[$2]+=$1} END{for(k in t) print t[k], k}' | sort -rn
+echo ---records.py; b records.py | awk "$agg" | sort -rn
+echo ---per file; for f in tests/*.py setup.py examples/*.py; do echo $f; b "$f" | awk "$agg" | sort -rn | head -4; done
+echo ---Marcus records.py lines; b records.py | grep -c 'marcus'
+echo ---Dana commits; git show 70b10b2 --stat --format=%s | tail -3; git show 54b029d --stat --format=%s | tail -4; git show 85c2e3a --stat --format=%s | 
+FINAL ANSWER:
+Short version: Kenneth Reitz wrote most of the surviving code, but his last commit was 2024-07, so the people to ask about `records.py` are Dana Okafor, then Tomás Ibarra.
+
+I ran `git blame` on every tracked `.py` file with `-w -M -C`. I ignored the two formatting commits (`abe2ea7` black, `0e8fe2e` pre-commit.ci), so they don't take credit for every line they reflowed. I merged Kenneth's two identities (`<email redacted>` and his laptop email) and Dana's two identities. Counts are surviving lines.
+
+**All Python (1062 lines)**
+
+| Author | Live lines | Where |
+|---|---|---|
+| Kenneth Reitz | ~435 | `records.py` (318), `setup.py` (102) |
+| Jan Vlcinsky | 119 | `tests/conftest.py`, `tests/test_transactions.py`, small regression tests |
+| Greg Troszak | 89 | `records.py` (58), `tests/test_transactions.py` (31) |
+| Chad Whitacre | 85 | `records.py` (39), `tests/test_records.py` (46) |
+| Harold Cooper, Joakim Uddholm | 51, 45 | mostly `tests/test_records.py` |
+| Dana Okafor | 50 | `records.py` (40), plus a few test lines |
+| Others | under 30 each | |
+
+**`records.py` (622 lines)**
+- Kenneth Reitz wrote about 51% of it (318 lines), mostly the original core. He last committed in July 2024.
+- Greg Troszak 58, Chad Whitacre 39, Jan Vlcinsky 30, and mcdallas 26 wrote most of the rest. Their code is older, and none of them has committed since 2024 or earlier.
+- The recent code is Dana Okafor's. Her 40 live lines are the key normalisation and chunking helpers (`70b10b2`) and `_describe` (`54b029d`).
+- Tomás Ibarra wrote 12 live lines, `_coerce_row` (`85c2e3a`).
+- Marcus Lindqvist has 8 live lines in `records.py`, the `LEGACY_SKIP` columns (`7557b2c`).
+
+**Marcus and Priya**
+- Marcus has 25 commits, but 24 of them tweaked `examples/export_legacy.py`. Dana deleted that file in `54b029d`. His surviving contribution is those 8 lines.
+- Priya Raman's two commits are black formatting and the pre-commit config. Her only live code is the tooling config. I'd ask her about CI and formatting, not `records.py`.
+
+**Who to ask**
+1. Dana Okafor for anything added since April 2026. She also removed the legacy exporter, so she knows why it went.
+2. Tomás Ibarra for `_coerce_row` and typed-column behavior.
+3. Marcus Lindqvist for why `LEGACY_SKIP` exists. It is a small amount of code, and I'd ask him about what the legacy exporter needed.
+4. For the core query and connection logic from 2024 and earlier, no one is likely reachable. Check `git log -L` on the specific function and read the linked PRs.
+
+**Limits**
+- Line counts don't measure importance. Eight lines in `LEGACY_SKIP` could matter more than 300 lines of boilerplate.
+- Author names and emails don't prove who is still around. I didn't check whether anyone is still active outside this repo.
+- Merge commits credit the original PR author, not Kenneth. His 318 lines include only his own authored code.
+META cost=0.1144172 ms=36105 turns=6

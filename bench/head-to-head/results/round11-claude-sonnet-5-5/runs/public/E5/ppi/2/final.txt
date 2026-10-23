@@ -1,0 +1,75 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js: who shaped it, and whose code is still in it today?"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -40 && echo && echo "TOTAL: $(git log --follow --oneline -- lib/index.js | wc -l)" && echo "--- authors by commits" && git log --follow --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- blame (ignoring whitespace, moves)" && git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && wc -l lib/index.js && echo "--- blame ignoring reformat commit" && git blame -w -C -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && git log --diff-filter=A --follow --pretty=format:"fi
+FINAL ANSWER:
+## 🔍 Code History: `lib/index.js`
+
+### Quick Context
+> This is the core of the `cors` middleware: it builds CORS headers and handles preflight `OPTIONS` requests. Troy Goode wrote it in 2013 and wrote most of the lines that remain today.
+
+### Decision Timeline
+- **2013-01-30:** Troy Goode made the first commit (`bcd03d9`).
+- **2014:** Express 4 support (`c78ed42`), `Access-Control-Expose-Headers` (`0a80d70`), and the `vary` module (`165f35e`), all by Troy.
+  - Contributors added `PATCH` as a default method (Typicode), method-name normalization (Shane Tomlinson), and `Vary: Origin` for specific origins (Igor Soarez).
+- **2015:**
+  - Regex and array values for `options.origin` came from Alejandro Caravaca Puchades.
+  - `applyHeaders` lost its closure (Raymond Feng).
+  - `preflightContinue` came from max.laverse.
+  - Exposed headers were added to the `OPTIONS` response (DracoBlue).
+  - Troy switched the project to ESLint.
+- **2016–2017:** Troy published 2.8.0 (`5dae6d8`). From 2017 Douglas Christopher Wilson, who maintains the repo, made `Vary` and options-delegate fixes.
+  - Benjamin Eidelman added a Safari pre-flight workaround, and Saad Tazi fixed handling of frozen options.
+- **2018–2021:** Only small changes: Tom Arad's `maxAge: 0` fix and LuisEGR's unused-parameter lint cleanup.
+- **2026-04:** Troy Goode annotated the handlers (`b2005d9`). Fiona Formatter then reformatted the whole file to 4-space indent and double quotes (`62628c0`).
+
+### Narrative
+Troy Goode wrote the original structure and kept adding to it through 2016. After that, Douglas Christopher Wilson was the main maintainer and made small fixes. Most other contributors added one feature or one bug fix each. Almost all later changes were small, and the 2026 reformat touched the most lines.
+
+### Key Takeaways
+1. **Troy Goode shaped the file most.** He made 29 of the 62 commits and the first commit, and wrote about two thirds of today's lines.
+2. **Plain `git blame` is misleading.** It credits Fiona Formatter with 32 of 238 lines because of the style reformat. With `--ignore-rev 62628c0`, Troy has 159 lines, or about 67%.
+3. **The rest comes from about 17 other authors.** Douglas Christopher Wilson has 22 lines and Alejandro Caravaca Puchades 12. Raymond Feng has 7, and max.laverse and LuisEGR have 6 each. Everyone else has 4 lines or fewer.
+
+### Metrics
+| Metric | Value |
+|--------|-------|
+| Total commits | 62 (`--follow`) |
+| Contributors | 25 (top: Troy Goode 29, Douglas Christopher Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3) |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Medium overall. Heavy in 2014–2017, light since. |
+
+Surviving lines, ignoring the reformat commit (`git blame -w -C -C -C --ignore-rev 62628c0`):
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield | 3 |
+| Igor Soarez | 3 |
+| Benjamin Eidelman | 3 |
+| Saad Tazi | 2 |
+| Mathias Buus | 2 |
+| Eric di Domenico | 2 |
+| Alberto Leal | 2 |
+| Tom Arad | 1 |
+| Shane Tomlinson | 1 |
+| Hannah Wolfe | 1 |
+| Eran Tiktin | 1 |
+| Chima Alaebo | 1 |
+
+The file has 238 lines.
+
+I ran `git log` and `git blame` directly, not through the git-archaeologist agent. This is shallow-style history: I didn't check PRs or reverts.
+META cost=0.0757563 ms=20326 turns=5

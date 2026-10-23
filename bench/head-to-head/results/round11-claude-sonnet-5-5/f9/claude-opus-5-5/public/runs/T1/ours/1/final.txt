@@ -1,0 +1,51 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL; echo ======; $SL --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S; echo =====; node $S --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js; node $S --merge-identities 2>&1 | head -30; git show --stat 62628c0 | head -30
+ - Bash: node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js --identities 2>&1 | grep -v '^$' | head -20
+FINAL ANSWER:
+Two people own most of the code: Troy Goode and Douglas Christopher Wilson. Together they hold about 72% of the lines still in the repo, counting Troy's two addresses as one person.
+
+I counted with `git blame -w -M -C` at HEAD. That covers 18 of 18 files and 1,662 of 1,672 lines (non-blank; 1,995 with blank lines).
+
+| # | Author | Lines (non-blank) | With blank | Commits |
+|---|---|---|---|---|
+| 1 | **Troy Goode** (2 addresses) | 649 · **39.0%** | 810 · 40.8% | 95 · 30.2% |
+| 2 | Douglas Christopher Wilson | 551 · **33.2%** | 629 · 31.7% | 143 · 45.4% |
+| 3 | Íñigo Marquínez Prado | 80 · 4.8% | 95 · 4.8% | 2 |
+| 4 | Jon Church | 59 · 3.5% | 72 · 3.6% | 3 |
+| 5 | Sebastian Beltran | 57 · 3.4% | 67 · 3.4% | 2 |
+| 6 | Ulises Gascón | 46 · 2.8% | 52 · 2.6% | 3 |
+| 7 | Ignacio Mangas | 38 · 2.3% | 44 · 2.2% | 2 |
+| 8 | Alejandro Caravaca Puchades | 30 · 1.8% | 34 · 1.7% | 5 |
+| 9 | Linus Unnebäck | 26 · 1.6% | 26 · 1.3% | 1 |
+| 10 | Ollie Buck | 14 · 0.8% | 17 · 0.9% | 1 |
+
+The other 52 authors hold 6.7% together. The largest of them is Eric di Domenico with 0.7%.
+
+**Commit counts mislead here.** Douglas made the most commits (45%), but Troy has more code still in the repo.
+
+**Troy Goode's two addresses are probably one person.** He appears as `<email redacted>` (510 lines, 30.7%) and `troy@laptop.example` (44 lines, 2.6%). I counted these as one person because the name is the same on both. That is a strong guess, but it comes only from names and addresses. Counted separately, his main address alone is 36.4%, and he is still first. To make the merge permanent, add this line to `.mailmap` (I have not written it):
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+```
+"alex94puchades" is already counted together with Alejandro Caravaca Puchades, because both names use the same address. These lines would also record it in `.mailmap`:
+```
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+```
+
+**A reformat commit is left out of the counts.** Commit `62628c0`, "style: reformat js…" by Fiona Formatter, only changed indentation and quotes. It touched 4 files: `lib/index.js` and three test files (1,016 lines changed). I checked it with `git show --stat`. If it were counted, Fiona Formatter would get 291 lines (17.5%). Troy would drop to 554 (33.3%) and Douglas to 376 (22.6%). That would credit a formatter run, not authorship.
+
+**Other checks:**
+- **Mechanical rewrites:** 136 commits that still hold lines were checked. Only `62628c0` was set aside. Five other commits look mechanical but I kept them in the counts, because together they hold 39 lines and do not change the result: `739dc11`, `fcd2b56`, `00d6eec`, `344ce1e` and `9c2b59d`.
+- **Bots:** dependabot[bot] is not credited (10 lines, 11 commits).
+- **Bus factor (whole repo, by lines):** 2. Bus factor here means the smallest number of authors who together hold half the lines. Troy and Douglas hold 72.2% of the non-blank lines, or 72.5% counting blank lines. It takes 4 authors to reach 80%.
+
+**Limits:** these numbers show whose lines remain. They do not show who reviewed the code, who did the design work, or how good the code is.
+META cost=0.2454278 ms=25548 turns=7

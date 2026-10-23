@@ -1,0 +1,27 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser | head -50; for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+Ownership by surviving lines in `src/Parser/` (`git blame -w -M -C`, so whitespace-only commits like the tab reindent don't count):
+
+| Author | Lines | Share |
+|---|---|---|
+| Graham Campbell | 782 | ~86% |
+| Priscila Duarte | 118 | ~13% |
+| Vance Lucas | 10 | ~1% |
+| Others (Jonas Staudenmeir, JT Smith) | 2 | <1% |
+
+By file:
+- **Graham Campbell** owns `EntryParser.php`, `Lexer.php`, `Parser.php`, `ParserInterface.php`, `Value.php`, `Entry.php` and `Lines.php`.
+- **Priscila Duarte** owns `Comments.php` and `Interpolator.php` in full. These are the two newest files, added in #604 and #601.
+
+**Reviewer:** Graham Campbell for most changes. If the change touches only `Comments.php` or `Interpolator.php`, use Priscila Duarte. If it spans both groups, ask both.
+
+Blame follows the current author of each line, not the person who first designed the file. A big refactor could hide an earlier owner. Other contributors have less than 1% of the lines each.
+META cost=0.053219 ms=14345 turns=4

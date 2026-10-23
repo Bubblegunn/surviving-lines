@@ -1,0 +1,48 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4-ppi-1/repo; git ls-files | grep -vE 'node_modules' | head -50; echo ---; git log --no-merges --pretty='%h %ad %an <%ae> | %s' --date=short --shortstat -- lib/index.js | head -80; echo ---; git log --no-merges --pretty='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo; git log -1 --pretty='%ad' --date=short
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T4-ppi-1/repo; echo "raw blame:"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "blame ignoring formatter commit:"; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git show b2005d9 --stat --format='%an <%ae>%n%s%n%b' | head; git show b2005d9 -- lib/index.js | head -40; echo ---; for a in "Troy Goode" "Douglas Christopher Wilson" "Alejandro" "Fiona"; do echo "$a: $(git log --all -1 --author="$a" --pretty='%ad %ae' --date=short)"; done; git log --all --since=2026-07-25 --pretty='%ad %an' --date=short | he
+FINAL ANSWER:
+I ran the bus-factor analysis on `lib/index.js`. The short answer: **Troy Goode** should be the primary reviewer and **Douglas Christopher Wilson** the second. Neither has committed in the last 90 days.
+
+## 🚌 Bus Factor: `lib/index.js`
+Period: all history | Generated: 2026-10-23
+
+### Who wrote the current code
+
+I ran `git blame` ignoring whitespace and skipping commit `62628c0` (a reformat that only changed indentation and quotes):
+
+| Author | Lines owned | Commits | Last commit (repo) | Active (90d)? |
+|---|---|---|---|---|
+| Troy Goode | 159 / 238 (67%) | 29 | 2026-04-10 * | ❌ (~6 months) |
+| Douglas Christopher Wilson | 22 (9%) | 4 | 2021-09-07 | ❌ |
+| Alejandro Caravaca Puchades | 16 (7%, two author names) | 5 | 2015 on lib | ❌ |
+| 16 others | 1–7 lines each | 1 each | — | ❌ |
+
+- **Bus factor: 1.** Troy owns two-thirds of the logic. The next owner has 9%.
+- **Raw `git blame` gives the wrong answer.** It credits "Fiona Formatter" with 214 lines, but that commit only reformatted the file. Do not choose Fiona as a reviewer based on that number.
+- **\* Troy's 2026 activity is weak evidence.** Both of Troy's 2026 commits come from a different email (`troy@laptop.example`) than the 120 older ones (`<email redacted>`). Commit `b2005d9` only adds `// checked` comments to function lines. I could not confirm it is the same person or that they still know the code.
+- **Nobody is active on this file.** The last commit in the whole repo is from 2026-04-12, and there is no CODEOWNERS file.
+
+### Who should review
+
+1. **Troy Goode (primary):** wrote most of the origin, preflight and headers logic. Contact them at `<email redacted>` and confirm they are available.
+2. **Douglas Christopher Wilson (second):** wrote the `Vary` header handling, the `methods` delegate fix and the lint setup. Pick them if your change touches `Vary` or options delegates.
+3. **Pick by area if your change is narrow:**
+   - Origin regex or array matching → Alejandro Caravaca Puchades
+   - Preflight passed to `next()` → max.laverse
+   - Safari preflight workaround → Benjamin Eidelman
+4. **Fallback:** if none of them responds, have a current maintainer review it against the tests in `test/test.js`, `test/vary.js` and `test/error-response.js`. Git history gives no active owner here.
+
+### Recommendations
+- **Now:** use two reviewers, Troy plus whoever maintains the repo today. That spreads knowledge of the file to a second person.
+- **Short term:** add a `.github/CODEOWNERS` entry for `lib/index.js` so future changes get a reviewer automatically.
+- **Ongoing:** add `62628c0` to a `.git-blame-ignore-revs` file so the reformat stops hiding the real authors in `git blame`.
+
+If you share which part of the file you plan to change, I can narrow this to the people who wrote that part.
+META cost=0.21273040000000001 ms=27066 turns=5

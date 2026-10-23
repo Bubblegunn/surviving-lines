@@ -1,0 +1,40 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "Per file type (by extension), who owns the most surviving lines in this repo?"}
+ - Bash: [ -f "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" ] && node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by ext --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by ext 2>&1 | head -60
+FINAL ANSWER:
+**Who owns the most surviving lines, per file extension** (ref `HEAD`, 1,662 of 1,672 lines attributed; 1,662 non-blank lines, 1,995 with blank lines)
+
+| Extension | Top owner (merged) | Lines | Share | Bus factor (50%) |
+|---|---|---|---|---|
+| `.js` (1,032 lines) | Troy Goode (2 addresses) | 564 | 54.7% | 1: Troy alone |
+| `.yml` (314 lines) | Douglas Christopher Wilson | 101 | 32.2% | 2: Douglas + Íñigo Marquínez Prado (57.6%) |
+| `.md` (253 lines) | Troy Goode | 71 | 28.1% | 2: Troy + Jon Church (51.4%) |
+| `.json` (40 lines) | Douglas Christopher Wilson | 20 | 50.0% | 1: Douglas alone |
+| no extension (23 lines) | Douglas Christopher Wilson | 21 | 91.3% | 1: Douglas alone |
+
+**Troy Goode, `.js`.** Merged, 564 lines (54.7%). Unmerged: `<email redacted>` 520 (50.4%) and `troy@laptop.example` 44 (4.3%). The merge is a guess from the same name, not confirmed. The `.md` figure is the same either way, because all 71 lines sit under the gmail address. Troy's share falls below half only in the unmerged view. Bus factor is 1 in both views.
+
+**Other rows:**
+- `.js`: Douglas Christopher Wilson 362 (35.1%), alex94puchades 30 (2.9%), then 11 more authors below 2%.
+- `.yml`: Íñigo Marquínez Prado 80 (25.5%), Sebastian Beltran 53 (16.9%), Ulises Gascón 41 (13.1%), Ignacio Mangas 38 (12.1%), Carlos Serrano 1 (0.3%).
+- `.md`: Jon Church 59 (23.3%), Douglas 47 (18.6%), Linus Unnebäck 26 (10.3%), Ollie Buck 14 (5.5%), Efe 6 (2.4%), plus 14 more authors.
+- `.json`: Troy 12 (30.0%), Sebastian Beltran 4 (10.0%), then 1-line holders.
+- No extension (23 lines): Douglas 21 (91.3%), Troy 2 (8.7%).
+
+No `.js`, `.yml`, `.md` or `.json` row has an owner holding everything. Only the extensionless files have one owner over half.
+
+**Identity note.** The tool also reports `alex94puchades` (`<email redacted>`, 30 `.js` lines) and `Alejandro Caravaca Puchades` as one address under two names. Its `.js` table still shows `alex94puchades` as a separate row, so I am not sure the merge applies there. I did not write any `.mailmap` file, since you asked a question, not for a fix.
+
+**Left out:**
+- `dependabot[bot]`: 10 lines, 11 commits, excluded as a bot.
+- Commit `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter, 2026-04-12): set aside as a whitespace/quote-only change, so the `.js` figures leave it out. Without that correction, overall Troy is 33.3% and Douglas 22.6%. The tool gives no per-extension figures for that view.
+- Mechanical-rewrite check: 136 commits examined, 1 set aside (`62628c0`). Five more look mechanical and are kept in the counts: `739dc11` (docs: reformat license, Douglas, 17 lines), `fcd2b56` (ESLint switch, Troy, 11 lines), `00d6eec` (Douglas, 9 lines), `344ce1e` (Douglas, 1 line), `9c2b59d` (Douglas, 1 line). I did not inspect these with `git show --stat`, so I have not confirmed they are mechanical.
+
+**Method.** Blame was run with `git blame -w -M -C` and `--ignore-rev 62628c0`. The tool printed no copy-detection note, so no share moved by more than 2 points under copy detection. Bus factor counts lines: the fewest authors whose surviving lines reach 50% of the lines counted. Per-extension results cover the whole repository (18 of 18 files, no sampling). Shares are of non-blank lines. Surviving lines measure survivorship, not quality, and they do not show review or design work.
+META cost=0.006889950000000001 ms=21511 turns=5

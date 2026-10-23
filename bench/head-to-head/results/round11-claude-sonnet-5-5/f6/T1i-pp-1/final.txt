@@ -1,0 +1,45 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -100; git rev-list --count HEAD
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo ALL; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -15; echo CODE; grep -E '^(lib|test)/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -15; echo LIB; grep -E '^lib/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head; wc -l /tmp/blame.tsv; git shortlog -sn HEAD | head -5; git log -1 --format=%ad
+FINAL ANSWER:
+Troy Goode owns the most surviving code, not Douglas Christopher Wilson, who has the most commits.
+
+I ran `git blame` on every tracked file at HEAD (1,997 lines). I used `-w -M -C` and the repo's `.git-blame-ignore-revs`, so the 4-space reformat (`62628c0`) doesn't count as authorship.
+
+**All tracked files**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+
+**Code only (`lib/` and `test/`)**
+- Troy Goode: 676 lines
+- Douglas Christopher Wilson: 396 lines
+- Alejandro Caravaca Puchades: 30 lines
+- Eric di Domenico: 16 lines
+- Alberto Leal: 15 lines
+
+**`lib/` only**
+- Troy Goode: 159 lines
+- Douglas Christopher Wilson: 22 lines
+- Alejandro Caravaca Puchades: 12 lines
+- Raymond Feng: 7 lines
+- max.laverse and LuisEGR: 6 lines each
+
+- **Commits vs. surviving lines:** `git shortlog` ranks Douglas first (143 commits to Troy's 122). Troy still owns about 7 times as many lines in `lib/`, because the original implementation survives. Douglas's commits are mostly maintenance, tests, docs and dependency work.
+- **Non-code files:** Íñigo, Jon, Sebastian and Ulises appear in the all-files table mainly through docs and config files (`README.md`, `HISTORY.md`, `.github/`, `package.json`). They don't appear in the code-only counts.
+- **Bots:** `dependabot[bot]` holds 10 lines, all in `package.json` or workflow files.
+
+Blame credits the last author to touch a line. A line Troy wrote that someone later edited slightly counts for the editor. `-M -C` follows moved lines but not every rewrite, so Troy's real share is probably a bit higher than shown.
+META cost=0.0880087 ms=19095 turns=4

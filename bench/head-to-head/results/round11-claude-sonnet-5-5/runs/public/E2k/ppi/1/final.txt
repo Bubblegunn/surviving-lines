@@ -1,0 +1,29 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:sprint-health
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:sprint-health", "args": "--team"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; echo ---; git log --since="2026-03-29" --until="2026-04-13" --no-merges --pretty=format:"%h|%an|%ae|%ad|%s" --date=short --shortstat
+ - Bash: git log -8 --pretty=format:"%h|%an|%ae|%cn|%ad|%s" --date=short; echo; cat .mailmap 2>/dev/null; echo ---; git log --since="2026-03-29" --until="2026-04-13" --no-merges --name-only --pretty=format:"%h %an"; echo ---; git ls-files | grep -v node_modules | head -50
+ - Bash: cd "$PWD"; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain "$f" 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^[0-9a-f]{40} /{h=substr($1,1,7)} /^filename /{print a"|"h}' ; done | sort | uniq -c | sort -rn > /tmp/blame.txt; awk '{print}' /tmp/blame.txt | awk -F'|' '{split($1,x," "); n=x[1]; sub(/^ *[0-9]+ /,"",$1); c[$1]+=n} END{for(k in c)print c[k],k}' | sort -rn; echo ---; grep -E "\|(b2005d9|02afce3|5317ebe)" /tmp/blame.txt
+FINAL ANSWER:
+Two people committed in the window 2026-03-29 to 2026-04-12, once the formatter and bots are set aside.
+
+| Person | Commits in window | Lines still in code |
+|---|---|---|
+| Troy Goode | 2 (`02afce3` test: vary header coverage, `b2005d9` lib: annotate handlers) | 48 from those commits (all 48 lines they added). 810 lines of theirs overall. |
+| Vansh Sharma | 1 (`5317ebe` README `app.del()` → `app.delete()`) | 1 (their only line in the repo) |
+
+**Excluded:**
+- **Fiona Formatter:** her one commit (`62628c0`, 4-space indent and double quotes) rewrote 1016 lines and changed no behavior.
+- **Bots:** `dependabot[bot]` has no commits in the window. Its latest commits are from 2026-03-02.
+
+**Counting:**
+- **Lines:** I used `git blame -w -M -C --ignore-rev 62628c0`. The reformat then doesn't take over everyone's lines, and lines that moved or changed only in whitespace stay with their original author.
+- **Each person once:** each person has a single author name and email in the window, so there was nothing to merge.
+
+I ran only the git commands for this. I didn't launch the contributor-analyzer agent or build the full dashboard, because your question only needed the per-person commits and surviving lines.
+META cost=0.0766443 ms=22241 turns=7

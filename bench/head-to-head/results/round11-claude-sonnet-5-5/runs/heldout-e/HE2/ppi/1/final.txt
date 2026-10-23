@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files '*.go' | grep -v '^vendor/' | wc -l; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head; echo ---; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+ - Bash: git log -3 --format='%h %an %ad %s' --date=short; git log -1 --format='%an %ad' --date=short; git ls-files '*.go' | grep -v '^vendor/' | xargs wc -l | tail -1; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; n[NR]=$0} END{print "total",t, "authors",NR; for(i=1;i<=5;i++)print n[i]}'; echo; git ls-files '*.go' | grep -v '^vendor/'
+FINAL ANSWER:
+**Top owner: Fatih Arslan holds 893 of 1,657 live lines (53.9%).** Linda_pp is next with 136 lines (8.2%).
+
+Ranking by lines that survive at HEAD:
+
+| Rank | Author | Live lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 | 53.9% |
+| 2 | Linda_pp | 136 | 8.2% |
+| 3 | Lena Hoffmann | 103 | 6.2% |
+| 4 | Matthew Hall | 98 | 5.9% |
+| 5 | Greg Poirson | 63 | 3.8% |
+
+- **Method:** `git blame` with `-w -M -C` on every tracked `.go` file outside `vendor/`. That is 6 files: `attribute.go`, `attribute_string.go`, `color.go`, `color_test.go`, `color_windows.go` and `doc.go`. I used `.git-blame-ignore-revs`, which skips the `interface{}` to `any` rewrite.
+- **Spread:** 29 authors own live lines. The top 5 together hold about 78%.
+- **Commit history agrees:** Fatih has 80 of the roughly 140 non-bot commits. Dependabot has 38.
+- **Maintenance:** Raj Patel authored the three newest commits (August 2026), including the move of `Attribute` into `attribute.go`.
+
+**Verdict:** one person wrote just over half the code, but ownership is not concentrated to the point of a one-person project. The #1 share is large and the #2 share is small, so Fatih's departure would remove the main knowledge holder. I did not check whether Fatih still commits. The latest history shows Raj Patel doing the maintenance.
+
+**Caveats:**
+- This is a small library (about 1,650 lines), so each percentage rests on few lines.
+- The `attribute.go` move commit is not in the ignore list. `-M -C` should follow the moved lines. Raj Patel does not appear in the top 5, so the move does not seem to have shifted ownership.
+- Blame sees "Greg Poirson" and "greg" as separate names in the commit log, which may be one person.
+- I ran the blame and commit-count checks directly. I did not launch the contributor-analyzer agent or compute per-file bus factor, because you asked for the line-ownership split.
+META cost=0.0725881 ms=20138 turns=6

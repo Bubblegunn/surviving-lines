@@ -1,0 +1,39 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne HEAD | head -40; echo ---; git ls-files | awk -F/ 'NF>1{print $1} NF==1{print "(root)"}' | sort | uniq -c; echo ---; git log --format='%h %an <%ae> %s' | head -15; cat .mailmap 2>/dev/null
+ - Bash: git ls-files; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{split($1,p,"/"); d=(index($1,"/")?p[1]:"(root)"); c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d/%d\n",a[1],a[2],c[k],t[a[1]]}}' | sort -t$'\t' -k1,1 -k3,3nr | awk -F'\t' '{n[$1]++} n[$1]<=4'
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' | sed "s|^author |$f\t|"; done | grep -ci 'bot'; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '$2 ~ /\[bot\]/{split($1,p,"/"); print (index($1,"/")?p[1]:"(root)")}' | sort | uniq -c; git log --format='%h %an %s' --shortstat | grep -iE 'format|lint|prettier|style|indent|whitespace' | head
+FINAL ANSWER:
+Only `lib` has an owner: Troy Goode holds about 67% of its lines.
+
+I ran `git blame -w` with commit 62628c0 (the formatting-only "reformat js" commit by Fiona Formatter) ignored. That commit would otherwise own most lines. I counted by author name, so Troy Goode's two emails count as one person. `dependabot[bot]` lines were dropped from the totals: 8 in `.github` and 2 in the root files.
+
+| Path | Top author | Share of surviving lines | Owner named? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 (67%) | Yes |
+| `test/` | Troy Goode | 453/966 (47%) | No. Douglas Christopher Wilson is next at 400 (41%). |
+| `.github/` | Douglas Christopher Wilson | 108/366 (30%) | No. Íñigo Marquínez Prado has 95 (26%), Sebastian Beltran 63 (17%) and Ignacio Mangas 54 (15%). |
+| Root files | Troy Goode | 134/415 (32%) | No. Douglas Christopher Wilson has 115 (28%) and Jon Church 72 (17%). |
+
+`test/` is 3 points under the threshold, so I left it unowned.
+
+I don't have GitHub handles for anyone, so `@troygoode` below is a placeholder to replace with the real handle.
+
+```
+# CODEOWNERS
+/lib/   @troygoode
+
+# No single person holds >= 50% of surviving lines; left unowned:
+# /test/
+# /.github/
+# /*       (root files)
+```
+
+I'd check that the person is still active before assigning `lib/`. This count only measures who wrote the surviving lines. It doesn't show who currently reviews or maintains them. For the unowned paths, a team entry may fit better than one person.
+META cost=0.0821097 ms=25083 turns=6

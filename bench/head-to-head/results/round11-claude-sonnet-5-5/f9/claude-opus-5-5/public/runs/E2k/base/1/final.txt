@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%ci' && git log --since='2026-03-29' --format='%h|%ad|%an|%ae|%s' --date=iso --shortstat | head -100; echo; cat .mailmap 2>/dev/null
+ - Bash: git log -12 --format='%h|ad=%ad|cd=%cd|%an <%ae>|cn=%cn|%s' --date=iso; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30
+ - Bash: git show 62628c0 --stat --format= ; git diff -w 62628c0^ 62628c0 | sed "s/\"/'/g" | grep '^[-+][^-+]' | head; echo ---; git show b2005d9 | head -40; git show 02afce3 --stat
+ - Bash: for ig in "" "--ignore-rev 62628c0"; do echo "== $ig"; git ls-files | while read f; do git blame -w --line-porcelain $ig HEAD -- "$f" 2>/dev/null | grep -E '^(author-mail|filename) ' | paste - - | awk -v f="$f" '{print $2, f}'; done | grep -Ei 'troy|vansh|fiona' | sort | uniq -c; done
+ - Bash: git ls-files | while read f; do git blame -w --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" | grep -E '^author-mail ' | awk -v f="$f" '{print $2, f}'; done | grep -Ei 'troy|vansh|fiona' | sort | uniq -c
+FINAL ANSWER:
+Two people committed in that window: **Troy Goode** and **Vansh Sharma**.
+
+The window is 2026-03-29 to 2026-04-12. The nearest commit before it is from 2026-03-02, so the exact start date doesn't change the result.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| **Troy Goode** | 2: `02afce3` test: vary header coverage (04-10), `b2005d9` lib: annotate handlers (04-10) | **746** in total. 48 of these come from the two window commits (36 in `test/vary.js`, 12 in `lib/index.js`). The other 698 are from his older commits. |
+| **Vansh Sharma** | 1: `5317ebe` docs: app.del() → app.delete() in README (#411, 04-07) | **1** (`README.md`) |
+
+How I counted:
+- **Troy is counted once.** His window commits use `troy@laptop.example` and his older commits use `<email redacted>`. Same name, so I treated them as one person. The repo has no `.mailmap` file to confirm this.
+- **Fiona Formatter (`62628c0`, 04-12) is excluded.** I checked the diff: it only changes indentation and quote style across 1016 lines.
+- **Line counts ignore that formatting commit.** I ran `git blame -w --ignore-rev 62628c0` on all tracked files, which gives each line back to whoever wrote it before the reformat. Without this, Fiona would get credit for 291 lines, and Troy's total would drop to 651 lines.
+- **No bot commits fall in the window.** The latest dependabot commits are from 2026-03-02.
+META cost=0.198995 ms=24251 turns=6

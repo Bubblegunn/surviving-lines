@@ -1,0 +1,163 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+We depend on this Go library and I'm worried it is a one-person project. How concentrated is the ownership of the code that is live in the repo today: what share does the top person hold, and who comes next?
+
+CRITERIA:
+1. The top owner is Fatih Arslan with about 56% of live Go lines (accept 52–60%) when tests are included, or about 58% (accept 54–62%) if the answer counts only non-test code and says so. FAIL if the share is outside tolerance, if it is computed from commits, or if someone else is the top owner.
+2. Raj Patel and Lena Hoffmann hold at most 1% each (truth: 0.08% and 0%) or are not listed, and the answer says vendored code and generated code were left out of the count (any wording that names both vendor/ and the generated file). FAIL if either appears with more than 2%, or if the answer does not say vendored and generated files were excluded.
+3. The `interface{}` → `any` rewrite and the move of the Attribute constants to attribute.go are not credited to Raj Patel: if the answer lists a share for Raj Patel it is at most 1%, and the answer says the mass rewrite/move was looked through (it may say so for one of the two). FAIL if Raj Patel is presented as holding more than 2% or as the owner of attribute.go.
+4. The runners-up are correct: Linda_pp about 8.8% (accept 7–11%) and Matthew Hall about 6.7% (accept 5–8.5%), in that order, if the answer gives a number for at least one of them; for non-test-only counting Linda_pp is about 9.9% and bogem about 6.1% (accept ±2 pp). Greg Poirson (two spellings, one email) and bogem/Albert appear once each. dependabot[bot] is not named as an owner. FAIL if the order of the top three is wrong for the stated scope, if dependabot is named as an owner, or if a person is listed twice under two spellings.
+5. A concentration conclusion with numbers: top-1 about 56% and top-3 about 71% (accept 67–75%) for the tests-included scope (non-test scope: top-1 58%, top-3 about 74%, accept 70–78%), and the conclusion that ownership is concentrated in one person. FAIL if the answer concludes ownership is evenly spread, gives a top-3 figure outside tolerance, or gives no concentration figure beyond the top-1 name.
+
+GROUND TRUTH (computed by a script with git blame):
+== e2 ground truth ==
+fixture HEAD: dee565e13e60ee1b10ec60dbeb02b9690ad4729d 2026-08-24 (as-of date = HEAD commit date)
+scope: tracked *.go at HEAD, excluding vendor/ and generated files
+excluded files (non-blank lines): {'generated (Code generated ... DO NOT EDIT)': 99, 'vendored (vendor/)': 107}
+ignored commits (1): 4831a13f all: use any instead of interface{}
+
+-- ALL: attributable human lines = 1262
+    1. Fatih Arslan               706 lines  55.94%  | commits(all history)=80 last_commit=2026-03-20
+    2. Linda_pp                   111 lines   8.80%  | commits(all history)=1 last_commit=2017-05-23
+    3. Matthew Hall                84 lines   6.66%  | commits(all history)=1 last_commit=2026-03-04
+    4. Greg Poirson                49 lines   3.88%  | commits(all history)=7 last_commit=2023-10-17
+    5. Alex Guerrieri              46 lines   3.65%  | commits(all history)=1 last_commit=2015-10-26
+    6. bogem                       44 lines   3.49%  | commits(all history)=3 last_commit=2016-10-19
+    7. Cameron Moore               40 lines   3.17%  | commits(all history)=1 last_commit=2016-09-27
+    8. Robert Pająk                39 lines   3.09%  | commits(all history)=4 last_commit=2023-03-01
+    9. Andrew Austin               37 lines   2.93%  | commits(all history)=1 last_commit=2015-08-23
+   10. Klaus Post                  28 lines   2.22%  | commits(all history)=1 last_commit=2024-04-08
+
+-- non-test code (*.go without _test.go): attributable human lines = 720
+    1. Fatih Arslan               420 lines  58.33%  | commits(all history)=80 last_commit=2026-03-20
+    2. Linda_pp                    71 lines   9.86%  | commits(all history)=1 last_commit=2017-05-23
+    3. bogem                       44 lines   6.11%  | commits(all history)=3 last_commit=2016-10-19
+    4. Matthew Hall                35 lines   4.86%  | commits(all history)=1 last_commit=2026-03-04
+    5. Greg Poirson                29 lines   4.03%  | commits(all history)=7 last_commit=2023-10-17
+    6. majiayu000                  24 lines   3.33%  | commits(all history)=1 last_commit=2026-01-01
+    7. Alex Guerrieri              22 lines   3.06%  | commits(all history)=1 last_commit=2015-10-26
+    8. Martin Lindhe               13 lines   1.81%  | commits(all history)=1 last_commit=2023-03-01
+    9. Andrew Austin               10 lines   1.39%  | commits(all history)=1 last_commit=2015-08-23
+   10. Klaus Post                   8 lines   1.11%  | commits(all history)=1 last_commit=2024-04-08
+
+WATCH Raj Patel: ALL: 1 lines (0.08%); non-test code (*.go without _test.go): 1 lines (0.14%)
+
+WATCH Lena Hoffmann: ALL: 0 lines (0.00%); non-test code (*.go without _test.go): 0 lines (0.00%)
+
+-- identity groups with more than one name/email (merged):
+   Greg Poirson: Greg Poirson <<email redacted>>; greg <<email redacted>>
+   bogem: Albert <<email redacted>>; bogem <<email redacted>>
+
+-- commit-count ranking (no-merges, all history; what a commit count would say):
+   1. Fatih Arslan               80 commits
+   2. dependabot[bot]            38 commits  [bot]
+   3. Greg Poirson                7 commits
+   4. Raj Patel                   4 commits
+   5. Robert Pająk                4 commits
+   6. bogem                       3 commits
+   7. bl-ue                       2 commits
+   8. zdd                         2 commits
+
+.git-blame-ignore-revs content: # gofmt -r 'interface{} -> any' | 4831a13fdfd5301e4926c4bfba3a466b125a38e1 | 
+attribute.go non-blank lines: 86
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE2-ours-1/repo; SL="<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>"; [ -f "$SL" ] && node "$SL" 2>&1
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE2-ours-1/repo; cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' 52aa0a6 | head -5
+FINAL ANSWER:
+Yes, ownership is heavily concentrated in one person. **Fatih Arslan holds 59.5% of the surviving code by themselves.** I counted it with `git blame -w -M -C` at HEAD across all 11 files: 1,460 of 1,467 non-blank lines could be attributed (1,832 lines including blank ones).
+
+**Top holders by surviving lines:**
+
+| # | Author | Lines (non-blank) | Share | Incl. blank | Commits | Last commit |
+|---|---|---|---|---|---|---|
+| 1 | Fatih Arslan | 869 | 59.5% | 1,125 / 61.7% | 80 (57.6%) | 2026-03-20 |
+| 2 | Linda_pp | 111 | 7.6% | 136 / 7.5% | 1 | 2017-05-23 |
+| 3 | Matthew Hall | 84 | 5.8% | 98 / 5.4% | 1 | 2026-03-04 |
+| 4 | Greg Poirson | 49 | 3.4% | 64 / 3.5% | 7 | 2023-10-17 |
+| 5 | Alex Guerrieri | 46 | 3.2% | 47 / 2.6% | 1 | 2015-10-26 |
+| 6 | Albert | 44 | 3.0% | 52 / 2.9% | 3 | 2016-10-19 |
+| 7 | Robert Pająk | 41 | 2.8% | 42 / 2.3% | 4 | 2023-03-01 |
+| 8 | Cameron Moore | 40 | 2.7% | 50 / 2.7% | 1 | 2016-09-27 |
+| 9 | Andrew Austin | 37 | 2.5% | 48 / 2.6% | 1 | 2015-08-23 |
+| 10 | Klaus Post | 28 | 1.9% | 35 / 1.9% | 1 | 2024-04-08 |
+| 11 | majiayu000 | 24 | 1.6% | 27 / 1.5% | 1 | 2026-01-01 |
+| 12 | Thimo | 15 | 1.0% | 15 / 0.8% | 1 | 2014-11-26 |
+
+The other 32 authors hold 4.9% together; the largest of them is Martin Lindhe at 0.9%.
+
+**Who comes next:** Linda_pp, at 7.6%, which is about one eighth of Fatih Arslan's share. Linda_pp's lines all come from a single 2017 commit, so they are not an active second maintainer. Matthew Hall (5.8%, one commit in March 2026) is the next most recent contributor.
+
+**Bus factor** (the smallest number of authors whose surviving lines reach 50% of the lines, whole repo):
+- **1** on non-blank lines, and also 1 when blank lines are counted. Fatih Arslan alone passes 50%.
+- 6 authors are needed to reach 80% (5 if blank lines are counted).
+
+The commit history gives the same picture: Fatih Arslan made 80 of 139 non-merge commits (57.6%), and their last commit was on 2026-03-20.
+
+**What the numbers include and leave out:**
+- **Left out:** 4 files with 237 lines in total:
+  - the vendored code (2 files, 128 lines)
+  - the generated `attribute_string.go` (103 lines)
+  - `go.sum` (6 lines)
+- **Bots:** dependabot[bot] is not credited (7 lines, 38 commits).
+- **Ignored commit:** `4831a13` is skipped because the repo's `.git-blame-ignore-revs` lists it. It was a mechanical `gofmt` rewrite of `interface{}` to `any`, so those lines stay with whoever wrote them originally.
+- **Other mechanical-looking commits:** the tool checked 97 commits that still hold lines. It flagged one more, `52aa0a6` by Leo Correa. I looked at it: it fixes a single typo (`fmt.Ffprintf` to `fmt.Fprintf`), so I kept it. It holds 1 line.
+- **Copy detection** (`-C`) moved 85 lines in one file to a different author. Without it, Fatih Arslan has 56.6% instead of 59.5%, Raj Patel has 6.0% instead of 0.2%, and Alex Guerrieri has 1.6% instead of 3.2%. Without copy detection, Raj Patel would rank second at 6.0%, just ahead of Linda_pp.
+- **Duplicate names:** two people show up under more than one name with the same address, and each is counted once. Greg Poirson also appears as "greg", and Albert also appears as "bogem".
+- **Possible duplicate person:** Erik Hollensbe may appear under two addresses (<email redacted> and <email redacted>). The evidence is weak, so they are counted separately. Merged, they would have 9 lines (0.6%), which changes nothing in the ranking.
+
+**Limits:** these numbers show whose code is still in the repo. They do not show code quality, review work, or who understands the code.
+
+**Overall:** for a dependency, you are relying on one maintainer. Nearly all other contributors made a single drive-by commit, several of them years ago. Since Fatih Arslan's last commit was in March 2026, the practical risk depends on whether they keep maintaining it. A sensible precaution is to pin the version you use and be ready to fork it; the library is small (about 1,500 lines).
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head; git log --format='%h %an <%ae> %s' | head -30; git shortlog -sne HEAD | head
+ - Bash: cat .mailmap 2>/dev/null; head -5 attribute_string.go; git show --stat dee565e | tail -5
+b(){ for f in "$@"; do git blame -w -M -C -C --line-porcelain --ignore-revs-file .git-blame-ignore-revs -- "$f"; done | grep '^author-mail' | sort | uniq -c | sort -rn; }
+echo "== naive (all non-vendor, no flags)"; for f in $(git ls-files | grep -v '^vendor/'); do git blame --line-porcelain -- $f; done | grep '^author-mail' | sort | uniq -c | sort -rn
+echo "== hand-written .go, moves+ignore-revs"; b $(git ls-files '*.go' | grep -v '^vendor/' | grep -v attribute_string.go)
+echo "== all non-vendor non-go.sum, moves+ignore"; b $(git ls-files | grep -v '^vendor/' | grep -v go.sum)
+ - Bash: git log --format='%an <%ae>' | grep -E 'rhysd|matt.hall' | sort -u; git ls-files vendor | head; for f in $(git ls-files | grep -v '^vendor/'); do git blame --line-porcelain -- $f; done | grep -c '^author-mail'; git log -1 --format=%ad 4c2cd34; git log --since=2024-01-01 --no-merges --format='%an' -- '*.go' ':!vendor' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** Fatih Arslan owns about **57%** of the hand-written Go code that is live today. Next is **Linda_pp (rhysd) at about 9%**, then **Matthew Hall at about 6%**. Everyone else is at 4% or less, across roughly 20 more contributors.
+
+**How I counted:** I ran `git blame` on the current HEAD. It ignores whitespace, follows code that was moved or copied (`-M -C -C`), and skips the gofmt commit listed in `.git-blame-ignore-revs`. I left out `vendor/`, `go.sum` and the generated `attribute_string.go`.
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 893 / 1554 | 57.5% |
+| 2 | Linda_pp (rhysd) | 136 | 8.8% |
+| 3 | Matthew Hall | 98 | 6.3% |
+| 4 | Greg Poirson | 64 | 4.1% |
+| 5 | bogem | 52 | 3.3% |
+
+**Why a quick count gives a different picture:** if you blame all non-vendor files without those options, Fatih drops to about 50% and **Raj Patel looks like #2 at about 8%**. That is misleading. Raj's lines come mostly from mechanical commits:
+- `4831a13`: the `interface{}` → `any` gofmt rewrite.
+- `dee565e`: moving `Attribute` into `attribute.go`.
+
+Once you follow moved code and skip the gofmt commit, Raj has only 2 lines. Lena Hoffmann's 103 lines are all the generated `stringer` file, so they don't show real authorship either.
+
+**What this means for your risk:**
+- It is mostly one person's code. One maintainer wrote more than half of it, and no one else has more than about 9%.
+- Recent activity shows the same pattern. Since 2024 there have been few non-merge Go commits, spread across about 10 people, each with 1–4 commits. Fatih merges all PRs. Most recent commits are dependabot dependency updates.
+- This is a small, stable library (about 1.5k lines), so it doesn't need many maintainers. Your real exposure is that one person controls merging and releases, not that the code is complex.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head -20; git log --format='%h %an <%ae> %s' | head -20; git shortlog -sne | head -20
+ - Bash: cat /private/tmp/claude-501/-Users-efe-claude-kredi-runs-2026-10-23-r11-f9-claude-opus-5-5-E-runs-HE2-bf-1-repo/14b2f455-aae7-4d6c-b73d-3066c33f202d/tasks/by2f0eyk5.output
+ - Bash: git shortlog -sne HEAD </dev/null | head; head -5 attribute_string.go; wc -l *.go; git ls-files vendor | head; git show --stat dee565e | tail -5
+blame(){ for f in $(git ls-files '*.go' ':!vendor' ':!attribute_string.go'); do git blame --line-porcelain $@ HEAD -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn; }
+echo "== raw"; blame
+echo "== ignore-revs + -w -C -C -M"; blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs
+ - Bash: ls .mailmap 2>&1; for f in $(git ls-files '*.go' ':!vendor' ':!attribute_string.go'); do git blame --line-porcelain -w -M -C -C --ignore-revs-file .git-blame-ignore-revs HEAD -- "$f" | sed -n 's/^author-mail //p'; done | sort | uniq -c | sort -rn | head -8; git log -1 --format=%ad --date=short --author=Fatih HEAD; git log --format='%an' --since=2025-10-23 HEAD | sort | uniq -c
+FINAL ANSWER:
+The background command that was just reported as stopped was my first exploratory call. Its last step, `git shortlog` without `HEAD`, hung waiting for input, so it ran until the time limit and was stopped. I then ran that step again correctly (with `HEAD`) in a later command. The ownership numbers in my previous answer come from those later runs and are unchanged.

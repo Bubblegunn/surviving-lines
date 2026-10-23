@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src/Parser | wc -l && git ls-files -z src/Parser | xargs -0 -n1 git blame -w -M -e -- 2>/dev/null | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/' | sort | uniq -c | sort -rn; echo ---; cat .mailmap
+FINAL ANSWER:
+Line-level `git blame` on `src/Parser/` (9 files, ~912 lines) gives this split. I ran it with `-w -M`, so whitespace-only changes like the tab re-indent and StyleCI fixes don't count as authorship. `.mailmap` merges duplicate identities.
+
+| Author | Lines surviving |
+|---|---|
+| Graham Campbell (<email redacted>) | 792 (~87%) |
+| Priscila Duarte (<email redacted>) | 118 (~13%) |
+| <email redacted> | 1 |
+| <email redacted> | 1 |
+
+**Reviewer: Graham Campbell.** He wrote almost all of the current code.
+
+**Second reviewer: Priscila Duarte.** She owns the other ~13%. If your change touches specific files, run `git blame -w -M -e <file>` on those files, because her lines may be concentrated in one or two of them.
+
+The two one-line contributors are not worth requesting.
+META cost=0.0467463 ms=12439 turns=3

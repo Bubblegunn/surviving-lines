@@ -1,0 +1,41 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk", "max_results": 1}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1-hist-1/repo", "max_files": 1000, "top": 15}
+ - Bash: git log --author="Fiona" --format='%h %an <%ae> %ad %s' | head; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo; for f in lib/index.js test/test.js; do echo $f; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -5; done
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the surviving code. Troy owns about 40% and Douglas about 31%.
+
+The default blame tool credits "Fiona Formatter" with 51% of the lines. That is wrong for your question. Fiona's only commit is `62628c0`, the 4-space and double-quote reformat. Blame attributes every line that commit touched to Fiona, even though the logic comes from earlier authors.
+
+I re-ran `git blame` with that commit ignored (`--ignore-rev 62628c0 -w -M -C`) across all 18 tracked files. That gives about 2,000 surviving lines, split like this:
+
+| Author | Lines | Share (approx.) | Last commit |
+|---|---|---|---|
+| Troy Goode | 810 | ~40% | 2026-04-10 |
+| Douglas Christopher Wilson | 629 | ~31% | 2021-09-07 |
+| Íñigo Marquínez Prado | 95 | ~5% | 2024-05-14 |
+| Jon Church | 72 | ~4% | 2026-01-16 |
+| Sebastian Beltran | 67 | ~3% | 2025-07-23 |
+| Ulises Gascón | 52 | ~3% | 2026-01-22 |
+| Ignacio Mangas | 44 | ~2% | 2025-12-01 |
+| Everyone else | under 30 each | the rest | — |
+
+The percentages use the older ~2,000-line total from the first tool run. I did not recompute it after ignoring the reformat, so they are approximate.
+
+- **Core code:** In `lib/index.js`, Troy owns 159 of 238 lines and Douglas owns 22. Alejandro Caravaca Puchades has 12, Raymond Feng has 7, and max.laverse has 6.
+- **Tests:** `test/test.js` is split almost evenly between Douglas (339 lines) and Troy (317).
+- **Config, CI and docs:** These are spread across Douglas, Íñigo, Sebastian, Ulises, Ignacio, and Jon.
+
+Every file is orphaned under the tool's rule. The tool counts an author as inactive if they have no commit since 2026-04-22. By that rule all the authors above are inactive.
+
+- Troy's last commit was 2026-04-10, so they just missed the cutoff.
+- Douglas's last commit was in 2021, so their lines have gone longest without their own touch.
+- Fiona's formatting commit is the most recent of all, and that commit is also what makes the default numbers misleading.
+META cost=0.0820158 ms=21613 turns=6

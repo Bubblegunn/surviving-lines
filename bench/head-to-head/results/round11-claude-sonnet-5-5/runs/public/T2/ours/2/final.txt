@@ -1,0 +1,52 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL -- lib; echo ======; $SL --merge-identities -- lib; echo ======; $SL --files --merge-identities -- lib
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl -- lib; echo ======; sl --merge-identities -- lib; echo ======; sl --files --merge-identities -- lib
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-P/runs/T2-ours-2/repo; sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl --merge-identities -- lib; echo; sl --files --merge-identities -- lib; echo; git show --stat fcd2b56 | head -20; git show --stat 62628c0 | head
+FINAL ANSWER:
+**Bus factor of `lib/`: 1.** This is measured by surviving lines, not by who understands the code. The definition is the smallest number of authors whose surviving lines together reach 50% of the lines counted.
+
+`lib/` is one file, `lib/index.js`, with 214 non-blank lines (238 with blank lines). Counts use `git blame -w -M -C`. The whole file was counted, not a sample.
+
+| Author | Lines | Share | With blank lines | Commits |
+|---|---|---|---|---|
+| Troy Goode (2 addresses) | 144 | 67.3% | 159 (66.8%) | 33 (50.0%) |
+| Douglas Christopher Wilson | 20 | 9.3% | 22 (9.2%) | 4 |
+| Alejandro Caravaca Puchades | 14 | 6.5% | 16 (6.7%) | 5 |
+| LuisEGR | 6 | 2.8% | 6 (2.5%) | 1 |
+| Raymond Feng | 6 | 2.8% | 7 (2.9%) | 1 |
+| max.laverse | 5 | 2.3% | 6 (2.5%) | 1 |
+| Benjamin Eidelman | 3 | 1.4% | 3 (1.3%) | 1 |
+| Igor Soarez | 3 | 1.4% | 3 (1.3%) | 1 |
+| Alberto Leal | 2 | 0.9% | 2 (0.8%) | 1 |
+| Mathias Buus | 2 | 0.9% | 2 (0.8%) | 1 |
+
+14 more authors hold 4.2% together. The largest of them is Saad Tazi at 0.9%.
+
+**Bus factor numbers (scope: `lib/`, 214 non-blank lines):**
+- **50% threshold:** 1. Troy Goode alone holds 67.3% of the lines.
+- **80% threshold:** 3 authors.
+- **Unmerged identities:** the 50% figure is still 1. Troy Goode's `<email redacted>` address alone holds 61.7%, and the 80% figure is 4 authors.
+
+**What this means:** if Troy Goode left, the people left would hold about a third of the file's lines. Wilson, Puchades and the other authors hold small, scattered pieces. No other person holds more than 9.3%. Line counts cannot show who understands the code. Review work, design and pairing leave no lines behind, so this is only an estimate.
+
+**Caveats:**
+- **Troy Goode identity merge:** the table counts `<email redacted>` (132 lines) and `troy@laptop.example` (12 lines) as one person. That is a guess from the matching name. I did not write a `.mailmap`, so nothing is saved.
+- **Alejandro Caravaca Puchades:** the same address, `<email redacted>`, appears under two names, `Alejandro Caravaca Puchades` and `alex94puchades`. The tool counts them as one person. The 14 lines are the combined count.
+- **Reformat commit ignored:** `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter, 2026-04-12) only changed whitespace and quotes. It rewrote 32 lines of `lib/index.js`, and the table leaves it out.
+  - With the commit counted, Fiona Formatter would hold 32 lines (15.0%) and Troy Goode would hold 123 (57.5%).
+  - The bus factor would still be 1.
+- **Mechanical rewrites checked:** I examined 31 commits that hold surviving lines. I set aside only `62628c0`. `fcd2b56` ("switch to ESLint; clean up", Troy Goode, 2015-05-28) looks mechanical, but I kept it. It changed 30 lines of `lib/index.js` and 5 of those survive. I did not re-run without it.
+- **Copy detection:** the figures use the default `-C`. The tool flagged no author whose share moves by more than 2 points under copy detection.
+- **Left out:** the tool dropped no lockfiles, generated files or vendored code.
+- **Per-file view:** `lib/index.js` is the only file, and no single owner holds 80% of it. Troy Goode has 67.3%, with Wilson at 9.3% and Puchades at 6.5% next.
+
+**Other uses of the same numbers:**
+- **Activity:** Troy Goode's last commit to the file was 2026-04-10 under the laptop address. The Gmail address was last used on 2019-05-27.
+- **Recent maintainers:** Wilson's last commit was in 2021, and the others on the list are older. Nobody who holds many lines has touched the file recently.
+META cost=0.0840928 ms=33412 turns=6

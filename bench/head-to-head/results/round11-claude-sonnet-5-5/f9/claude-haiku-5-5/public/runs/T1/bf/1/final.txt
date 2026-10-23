@@ -1,0 +1,55 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "Who owns the code that is still in this repo today? Attribute surviving lines (git blame on current HEAD), not commit counts. Report per-area ownership and any single-maintainer or unmaintained areas."}
+ - Bash: git ls-files | wc -l && git ls-files | sed 's|/[^/]*$||' | sort | uniq -c | sort -rn | head -30 && ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/ 2>&1; ls scripts 2>&1
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github --cache /tmp/busfactor-authors.json 2>&1 | head -150
+ - Bash: for f in $(git ls-files); do case "$f" in *.png|*.jpg|*.gif|*.ico|*.woff*|*.lock) continue;; esac; git blame --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{print f"\t"m}'; done | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: echo "--- surviving lines per author (HEAD blame, text files) ---"; for f in $(git ls-files); do case "$f" in *.png|*.jpg|*.gif|*.ico|*.woff*|*.lock) continue;; esac; git blame --line-porcelain HEAD -- "$f" 2>/dev/null | awk '/^author-mail /{m=$2} /^\t/{print m}'; done | sort | uniq -c | sort -rn; echo "--- per-author first/last commit (all history) ---"; git log --no-merges --format='%ae|%ad' --date=short | awk -F'|' '{ if(!($1 in last)) last[$1]=$2; first[$1]=$2; n[$1]++ } END{for(a in n) print n[a]"\t"first[a]"\t"last[a]"\t"a}' | sort -k3 -r; echo "--- files: dominant surviving author ---"; for f in $(git ls-files); do case "$f" in *.png|*.jpg|*.gif|*.ico|*.woff*|*.lock) continue;; esac; 
+ - Bash: git log --format='%h %ae %ad %s' --date=short --author='fiona@formatter.example' --author='troy@laptop.example'; echo ---; git show --stat --format='%h %an <%ae> %ad%n%s' --date=short 62628c0 | tail -15; echo ---; git show --stat --format='%h %an <%ae> %ad%n%s' --date=short b2005d9 | tail -8; echo ---; git log --format='%h %ae %ad %s' --date=short -- lib/index.js | head -5; echo "--- commits per-author, lines changed in fiona's commits ---"; git log --author='fiona@formatter.example' --numstat --format='%h' | awk 'NF==3{a+=$1; d+=$2} END{print "added",a,"deleted",d}'
+ - Bash: echo "--- surviving lines, ignoring reformat commit 62628c0 ---"; for f in $(git ls-files); do case "$f" in *.png|*.jpg|*.gif|*.ico|*.woff*|*.lock) continue;; esac; git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | awk '/^author-mail /{m=$2} /^\t/{print m}'; done | sort | uniq -c | sort -rn | head -20; echo "--- per file top 2 ---"; for f in lib/index.js test/test.js test/error-response.js test/example-app.js README.md .github/workflows/ci.yml package.json; do echo "## $f"; git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | awk '/^author-mail /{m=$2} /^\t/{print m}' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+**Short answer:** Most surviving code traces to two people, Doug (`<email redacted>`) and Troy Goode (`<email redacted>`). Neither has committed since 2021 and 2019, so their code is mostly orphaned. The one person who looks like the biggest owner by raw blame, `fiona@formatter.example`, got there with one bulk reformat commit.
+
+**The reformat distorts the numbers.** Commit `62628c0` (fiona, 2026-04-12, "style: reformat js with 4-space indent and double quotes") rewrote 1,016 lines across 4 files. Plain `git blame` on HEAD credits it, so fiona shows 1,016 surviving lines. With `git blame --ignore-rev 62628c0`, the ranking changes:
+
+| Author | Surviving lines (raw) | Surviving lines (ignoring reformat) | Last commit |
+|---|---|---|---|
+| fiona | 1,016 | 237 | 2026-04-12 |
+| doug | 260 | 564 | 2021-09-07 |
+| troygoode | 224 | 595 | 2019-05-27 |
+| inigomarquinez | 94 | 94 | 2024-05-14 |
+| jonchurch | 72 | 72 | 2026-01-16 |
+| bjohansebas | 67 | 67 | 2025-07-23 |
+| ignaciomangas | 54 | 54 | 2025-12-01 |
+| ulisesgascongonzalez | 52 | 52 | 2026-01-22 |
+| troy@laptop.example | 37 | 47 | 2026-04-10 |
+
+**Per area** (ignoring the reformat; "active" = committed since 2025-04-12, 12 months before the newest commit):
+
+| Zone | Main surviving owners | Verdict |
+|---|---|---|
+| `lib/index.js` | troygoode 98, fiona 57, doug 36 | Spread across people. Active share depends on whether troy@laptop is the same person as troygoode (see below). |
+| `test/test.js` | doug 270, troygoode 213, fiona 178 | Spread. Doug and troygoode are inactive. Fiona is the only active major owner. |
+| `test/error-response.js`, `test/example-app.js`, `README.md` | troygoode dominant | Orphaned if troygoode is inactive. README's second owner (jonchurch) is active. |
+| `test/vary.js` | troy@laptop 36/36 | **Bus factor 1** (one active person, sole author). |
+| `.github/workflows/codeql.yml` | bjohansebas 63/66 | **Bus factor 1**. Active only under the 2025-04 cutoff; see sensitivity below. |
+| `.github/workflows/scorecard.yml` | inigomarquinez 68/73 | **Orphaned**. Last commit 2024-05. |
+| `.github/workflows/ci.yml` | doug 108, ignaciomangas 54, ulisesgascongonzalez 30, inigomarquinez 26 | Mixed. Doug and inigo inactive; ignacio and ulises active. |
+| `.github/dependabot.yml` | ulisesgascongonzalez 15/15 | **Bus factor 1**, active. |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `.gitignore`, `test/support/env.js`, `LICENSE`, `HISTORY.md` | doug, nearly all | **Orphaned**. |
+| `package.json` | doug 20, troygoode 12, bjohansebas 4 | Mostly orphaned. |
+
+**Orphaned** = no active author holds the majority of the surviving lines. **Bus factor 1** = one active author holds it. These are different risks; the table keeps them separate.
+
+**Caveats:**
+- **Identity:** `troy@laptop.example` committed on 2026-04-10 under the name "Troy Goode", which probably matches `<email redacted>`. I did not merge them. If they are the same person, troygoode is active and `lib/index.js` and the test files are not orphaned. Please confirm.
+- **Activity cutoff:** I used the repo's newest commit (2026-04-12) as "now". If you measure from today (2026-10-23), bjohansebas (last 2025-07) drops out, and `codeql.yml` becomes orphaned.
+- **The script:** I ran `ownership.mjs --dry-run --no-github`, so it wrote nothing into the repo. Its CODEOWNERS named fiona as the `*` fallback owner. That is driven by the reformat commit and should not be used as-is. The script weights commits by age, not surviving lines, so I used blame for the numbers above.
+- **Identity mapping:** No GitHub logins were resolved, so everything is by email.
+
+I haven't written a CODEOWNERS file or an HTML report. If you want either, I can generate them, or add the reformat commit to a `.git-blame-ignore-revs` file so future blame stays accurate.
+META cost=0.010405560000000001 ms=43026 turns=9

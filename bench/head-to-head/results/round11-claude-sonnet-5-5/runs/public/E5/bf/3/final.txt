@@ -1,0 +1,40 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -15; echo ---; git log --follow --oneline -- lib/index.js | wc -l; echo --- blame; git blame -w -M -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git blame -w -M -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -47 | head -47 | sed -n '1,47p'; echo; git show --stat --format='%h %an %s' 62628c0 | head -5; git log --format='%ad' --date=short -1 --follow -- lib/index.js
+FINAL ANSWER:
+Troy Goode shaped `lib/index.js` and still owns most of it. Other authors added specific fixes and features.
+
+**Origin:** Troy Goode created the file on 2013-01-30 (`bcd03d9`, "first commit"). He is the author of 29 of the 62 commits that touch it.
+
+**Timeline**
+- **2013:** Troy made the first versions: case-insensitive header lookup, `origin: false` to disable CORS, and pause/resume for async middleware. Damien Klinnert and Simon Mansfield made small preflight and `Origin` header fixes. Eric di Domenico added `origin` as a callback, and Mathias Buus added Connect support without Express.
+- **2014:** Troy added `Access-Control-Expose-Headers` and Express 4 support. Typicode added PATCH to the default methods. Alberto Leal and Shane Tomlinson fixed bugs. Igor Soarez added `Vary: Origin`, which Troy moved to the `vary` module.
+- **2015:** Raymond Feng removed a closure in `applyHeaders`. max.laverse added preflight pass-through to `next()`, and DracoBlue added exposed headers on `OPTIONS`. Alejandro Caravaca Puchades (also as alex94puchades) added RegExp and array `origin` matching. Troy switched the linting to ESLint.
+- **2016–2018:** Douglas Christopher Wilson did most of the work, with four commits. These were `Vary` handling, a fix for a missing `methods` option, and lint upkeep. Others added a Safari preflight workaround (Benjamin Eidelman), a fix for frozen options (Saad Tazi), and a `maxAge: 0` fix (Tom Arad).
+- **2021 and 2026:** LuisEGR removed unused function parameters in a lint fix (`f038e77`). Troy returned on 2026-04-10 with an annotation commit. On 2026-04-12 a formatter bot ("Fiona Formatter") reformatted the whole file to 4-space indent and double quotes (`62628c0`).
+
+**Whose code is in it today**
+
+The file has 238 lines. A plain `git blame` credits the formatter bot with 32 of them. I re-ran blame with the reformat commit ignored (`--ignore-rev 62628c0`, plus `-w -M -C -C`). It gives this count of surviving lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield | 3 |
+
+I only printed the top eight authors, so the other contributors' lines aren't listed. The rest of the lines belong to them.
+
+About two thirds of the file is still Troy's. The next largest share is Wilson's, mostly the `Vary` handling and lint fixes. Caravaca Puchades' RegExp/array `origin` matching also survives.
+META cost=0.0640525 ms=16955 turns=4

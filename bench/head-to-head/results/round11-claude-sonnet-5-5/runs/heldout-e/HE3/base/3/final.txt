@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100 && echo --- && git shortlog -sne HEAD -- src | head && echo --- && ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr > /tmp/blame_files.txt; echo "== per file"; cat /tmp/blame_files.txt; echo "== total"; for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -nr | head -10; echo "== recent 12 months"; git log --since='12 months ago' --format='%an|%ad|%s' --date=short -- src | head -20
+FINAL ANSWER:
+Andrew Gallant wrote most of `src/`. Ask them to review, and add Mei Tanaka if you touch `dent.rs`.
+
+**Who wrote the current code**
+
+I used `git blame -w -M -C -C`, which ignores whitespace and follows moved and renamed code. This counts lines that still exist at HEAD.
+
+| File | Main author | Others |
+|---|---|---|
+| `src/lib.rs` | Andrew Gallant (743 lines) | Many contributors with 45 lines or fewer each |
+| `src/dent.rs` | Andrew Gallant (291) | Yufeng Wang (21), Ashley (15), Mei Tanaka (14) |
+| `src/error.rs` | Andrew Gallant (169) | Garrett Berg (34), Niv Kaminer (30) |
+| `src/util.rs` | Andrew Gallant (42) | Aron Griffis (9) |
+| `src/ancestor.rs` | Andrew Gallant (42) | Sam Whitfield (4) |
+| `src/testsuite/recursive.rs` | Andrew Gallant (1008) | Sebastian Thiel (53), Lukas Kalbertodt (20) |
+| `src/testsuite/util.rs` | Andrew Gallant (252) | |
+
+Across all of `src/`, Andrew Gallant owns 2551 lines. The next highest is Sebastian Thiel with 74.
+
+**Who to ask**
+
+- **Andrew Gallant:** the main author of every file and active on `src/` as recently as 2026-01-14.
+- **Mei Tanaka:** added `describe_file_type` in `dent.rs` on 2026-02-03. Ask them if your PR touches that area.
+- **Sam Whitfield:** made the recent restructuring commits (`Ancestor` module split, `tests` renamed to `testsuite`, license headers). Ask them if your PR touches those files or paths.
+- **Tobias Brandt:** wrote the original `same_device` commit in `util.rs`. Blame credits Andrew Gallant for those lines because their reapply commit replaced it. Ask Tobias if your PR touches `same_device`.
+
+The repo has no `CODEOWNERS` file, so this list comes only from git history. Tell me which files your PR changes and I can narrow it to the people who last touched those lines.
+META cost=0.061906199999999995 ms=17476 turns=4

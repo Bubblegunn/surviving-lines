@@ -1,0 +1,44 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-1/repo"}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-1/repo", "file": "records.py"}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE1-hist-1/repo"}
+ - Bash: git log --format='%h %ad %an <%ae> %s' --date=short -n 12 && echo --- && git log --format='%an <%ae>' | sort | uniq -c | grep -iE 'dana|priya|ibarra|lindqvist|reitz' && echo --- && git log -1 --format='%ad' --date=short --author='Marcus Lindqvist' && git blame -w -M -C --line-porcelain records.py | grep '^author ' | sort | uniq -c | sort -rn | head -8
+FINAL ANSWER:
+**Whose code is alive in `records.py`** (622 lines at HEAD, from `git blame`; `-w` ignores whitespace-only changes):
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Kenneth Reitz | 296 (311 with `-w`) | 47.6% | 2024-07-09 |
+| Greg Troszak | 76 | 12.2% | 2017 |
+| Jan Vlcinsky | 42 | 6.8% | 2018 |
+| Joakim Uddholm | 27 | 4.3% | 2018 |
+| Dana Okafor | 25 | 4.0% | 2026-04-06 |
+| Chad Whitacre | 24 | 3.9% | 2016 |
+| mcdallas | 17 | 2.7% | 2018 |
+| Priya Raman | 15 | 2.4% | 2026-06-03 |
+| Tomás Ibarra | 11 | 1.8% | 2026-04-20 |
+| dana okafor | 10 | 1.6% | 2026-05-11 |
+
+- **Original design:** Reitz wrote about half the file, and the oldest line is from 2014-12-24. About 95% of the file belongs to authors with no commit in the last 6 months. Troszak, Vlcinsky, Uddholm, Whitacre and mcdallas have all been inactive since 2018 or earlier.
+- **Recent work:** Dana Okafor, Ibarra and Raman wrote the recent additions (`_coerce_row`, `_describe`, the key normalisation and chunking helpers).
+
+**Who to ask:**
+1. **Dana Okafor** is the best contact. Git lists `Dana Okafor <<email redacted>>` and `dana okafor <dokafor@fastmail.example>` as two identities, which together own 35 lines (5.6%). They look like the same person: same name, and the commits are 5 weeks apart. I haven't confirmed it. Check with the team before treating them as one person. That person wrote the most recent substantive code, and their last commit was 2026-05-11.
+2. **Tomás Ibarra** wrote `_coerce_row` (2026-04-20). The tool counts them as inactive, but only by 3 days, so ask them too.
+3. **Priya Raman** is active, but her 15 lines come from the `style: format with black` commit (abe2ea7). She can tell you about the CI and pre-commit setup, but not about the logic in `records.py`.
+4. **Reitz** wrote the core, but their last commit is 2024-07-09. They are probably not a practical contact.
+
+**Commit counts mislead here:**
+- **Marcus Lindqvist:** The #2 committer by count, with 25 commits. All the ones I saw are `examples: tweak legacy exporter (N)`. That example was deleted in 54b029d, so none of it is alive. They own 5 lines of `records.py`.
+- **Reitz:** The 204 commits (about half of all commits) match the blame share, so for Reitz the count does reflect live code.
+- **Black reformat:** It made Raman the blame owner of 15 lines that she only reformatted. `-w` doesn't undo that when the lines were rewrapped, so some original authors are probably hidden behind her name.
+
+The mailmap isn't merging the two Dana identities, which also makes the tool's active/inactive flags inconsistent for them. If you add a `.mailmap` entry, the `knowledge_risk` output will list them as one active person.
+META cost=0.0956385 ms=25526 turns=7

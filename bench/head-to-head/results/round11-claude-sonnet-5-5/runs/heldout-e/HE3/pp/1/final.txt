@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100 && echo --- && git ls-files src | wc -l && echo "--- surviving lines by author (blame, ignoring whitespace, moved lines)" && git ls-files src | grep -E '\.rs$' | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -E '^author ' ; done | sort | uniq -c | sort -rn
+ - Bash: echo "--- commits touching src by author (all time)" && git shortlog -sne HEAD -- src && echo "--- last 12 months" && git shortlog -sne --since="12 months ago" HEAD -- src && echo "--- recent commits" && git log -15 --format='%h %ad %an <%ae> %s' --date=short -- src && echo "--- CODEOWNERS?" && ls .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS MAINTAINERS* OWNERS* 2>&1 | head
+ - Bash: for f in $(git ls-files src); do echo "== $f ($(wc -l <$f) lines)"; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; echo "--- Sam lines"; git blame -w -M -C --line-porcelain src/ancestor.rs src/dent.rs src/util.rs 2>/dev/null | grep -c 'author Sam'; git blame -w -M -C -e src/util.rs | grep -E 'same_device|Whitfield|Brandt' | head; echo "--- Tobias/Mei/Sam commits"; git show --stat --format='%h %an %s' b6f2e37 7d18e40 97090d6 3442e3b | head -40; git log -1 --format=%B 7d18e40; git branch -a; git config --get-all remote.origin.url
+FINAL ANSWER:
+Andrew Gallant wrote most of `src/`. Ask Andrew to review, but the right second reviewer depends on which files your PR touches.
+
+**Who wrote what is there now.** I used `git blame -w -M -C`, which ignores whitespace and follows moved lines.
+- **Andrew Gallant:** about 2,550 surviving lines, roughly 75% of `src/`. He is the main author of every file.
+- **Others:** about 35 other people each own 1 to 75 lines.
+- **Sam Whitfield:** 42 lines in the blame totals, but the files only show about 19 (5 in `testsuite/mod.rs`, 5 in `testsuite/util.rs`, 5 in `util.rs`, 4 in `ancestor.rs`). All of these come from their three March 2026 commits. Those commits added license headers, moved `Ancestor` into `ancestor.rs`, and renamed `src/tests` to `src/testsuite`. They don't own any logic.
+
+**Per-file owners, for choosing a second reviewer:**
+
+| File | Main author | Next |
+|---|---|---|
+| `lib.rs` (1158 lines) | Andrew, 743 | mcharsley 45, Aron Griffis 45 |
+| `testsuite/recursive.rs` (1097) | Andrew, 1008 | Sebastian Thiel 53 |
+| `dent.rs` (371) | Andrew, 291 | Yufeng Wang 21, Mei Tanaka 14 |
+| `error.rs` (267) | Andrew, 169 | Garrett Berg 34, Niv Kaminer 30 |
+| `util.rs` (56) | Andrew, 42 | Aron Griffis 9 |
+| `ancestor.rs` (47) | Andrew, 42 | Sam Whitfield 4 |
+
+**Blame is misleading for `util.rs::same_device`.** Blame says Andrew wrote it, but Tobias Brandt wrote it in `b6f2e37` on 2026-01-12. Andrew reverted it the next day, then re-applied it on 2026-01-14. If your PR touches `same_device`, Tobias knows the original intent. Andrew knows why it was reverted. I didn't read the revert message for the reason, so check `7d18e40` before you rely on that function.
+
+**Who is active.** Only four people have touched `src/` in the last 12 months: Sam Whitfield (3 commits), Andrew Gallant (2), Mei Tanaka (1) and Tobias Brandt (1). Mei Tanaka wrote `describe_file_type` in `dent.rs` on 2026-02-03, so ask Mei about `dent.rs`. Most of the long-tail authors haven't touched `src/` in years, so they may not be around.
+
+**Suggested reviewers:**
+- Ask Andrew Gallant for anything in `lib.rs`, `error.rs`, `testsuite/` or `util.rs`.
+- For `dent.rs`, add Mei Tanaka.
+- For `same_device`, add Tobias Brandt.
+- For module layout or the `testsuite` rename, Sam Whitfield did that restructuring recently.
+
+There is no `CODEOWNERS` or `MAINTAINERS` file and no git remote, so nothing in the repo says who is supposed to review. This ranking comes from git history only. If you tell me which files your PR touches, I can narrow it to one or two names.
+META cost=0.0810921 ms=24762 turns=5

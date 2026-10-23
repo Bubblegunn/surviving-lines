@@ -1,0 +1,49 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: echo "== commits by author ==" && git shortlog -sne --all | head -50 && echo "== total commits ==" && git rev-list --all --count && echo "== tracked files ==" && git ls-files | wc -l && echo "== top-level ==" && git ls-files | awk -F/ '{print $1}' | sort | uniq -c | sort -rn | head -40
+ - Bash: git ls-files && echo "== blame share per file (lines by author) ==" && for f in $(git ls-files | grep -vE '\.(png|jpg|gif|lock)$'); do echo "--- $f"; git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: echo "== commits per author, last 12 months ==" && git shortlog -sn --since="2025-10-23" --all && echo "== last commit date per author ==" && git log --all --format='%an|%ad' --date=short | awk -F'|' '{ if (!($1 in last)) last[$1]=$2; first[$1]=$2 } END { for (a in last) print last[a], first[a], a }' | sort -r | head -20 && echo "== last 15 commits ==" && git log --format='%h %ad %an %s' --date=short | head -15
+ - Bash: echo "== reformat commit size ==" && git show --stat --format='%h %an %s' 62628c0 | tail -8 && echo "== ignore reformat + whitespace; recount ==" && for f in lib/index.js test/test.js test/error-response.js test/example-app.js; do echo "--- $f"; git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -4; done && echo "== who authored the original lib/index.js and test/test.js ==" && git log --format='%h %ad %an %s' --date=short --follow -- lib/index.js | tail -5 && git log --format='%h %ad %an %s' --date=short -- test/test.js | tail -3
+ - Bash: echo "== commits per year, top authors ==" && git log --all --format='%ad|%an' --date=format:%Y | awk -F'|' '{c[$1" "$2]++} END{for(k in c) print k, c[k]}' | sort -k1,1 -k3,3nr | awk '{y=$1; if (cnt[y]++<4) print}' && echo "== release/version commits ==" && git log --format='%h %ad %an %s' --date=short -i --grep='^[0-9]\+\.[0-9]\+\.[0-9]\+' | head -15 && echo "== package.json maintainers/author/CODEOWNERS ==" && grep -nE '"(author|maintainers|version|repository)"' -A2 package.json | head -20; ls -la .github | head; git ls-files | grep -i codeowners; echo "== CI/workflow: who last touched release-related config ==" && git log --format='%h %ad %an %s' --date=short -- .github/workflows/ci.yml |
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson"; do echo "== $a: range + per-year ==" && git log --all --author="$a" --format='%ad' --date=short | sort | sed -n '1p;$p' && git log --all --author="$a" --format='%ad' --date=format:%Y | sort | uniq -c; done && echo "== committer (merger) counts, last 2 years ==" && git log --all --since=2024-10-23 --format='%cn' | sort | uniq -c | sort -rn && echo "== who merged PRs (GitHub web-flow vs direct) ==" && git log --all --since=2024-10-23 --format='%cn' | grep -c 'GitHub' ; echo "== 2026 commits in full ==" && git log --all --since=2026-01-01 --format='%h %ad %an | %s' --date=short
+FINAL ANSWER:
+## Bus factor: `cors` (expressjs/cors, v2.8.6)
+
+**Short answer:** The core library depends on one person, Troy Goode, and he has been mostly inactive since 2016. Test coverage and maintainership depend on Troy and Douglas Christopher Wilson, and Douglas has had no commits since 2021-09-07. Only the CI and docs work has enough active people to be safe.
+
+### Single-contributor areas
+
+| Area | Owner (by surviving code) | Bus factor | Status |
+|---|---|---|---|
+| `lib/index.js` (the whole library) | **Troy Goode** (159 lines; next is Douglas with 22) | **1** | Troy's commits: 2013–2016 mostly, then 2 in April 2026. Active maintainer role is unclear. |
+| `test/test.js` | Douglas (365 lines), Troy (253) | 2, both inactive | Douglas last committed 2021. |
+| `test/vary.js`, `test/issue-2.js` | Troy only | 1 | Troy. |
+| `test/error-response.js`, `test/example-app.js` | Troy (majority) | 1 | Troy. |
+| npm publishing and release | Not visible in git | Unknown | 2.8.6 was merged by Ulises Gascón (2026-01-22). Who holds npm publish rights is not in the repo. |
+| Maintainer history (LICENSE, package.json, .gitignore, CI config) | Douglas Christopher Wilson, 143 commits, 2017–2021 | Historic sole maintainer, now gone | He wrote most of the release and project plumbing before 2021. |
+
+### Areas with healthy spread
+
+- **CI and workflows** (`.github/workflows/ci.yml`): Douglas, Ignacio Mangas, Ulises Gascón, and Íñigo Marquínez Prado have all touched it. Ignacio and Ulises committed in late 2025.
+- **CodeQL / Scorecard**: Sebastian Beltran and Íñigo Marquínez Prado. Thin, but split between two people.
+- **README / docs**: Troy, Jon Church (active in January 2026), Linus Unnebäck, Ollie Buck. Jon is recently active.
+- **Dependencies**: Dependabot does most of this. Human review is a separate question.
+
+### Caveats on the data
+
+- **The raw blame is misleading.** Commit `62628c0` (Fiona Formatter, 2026-04-12) reformatted about 1,000 lines across 4 files. Raw blame credits her with most of `lib/index.js` and `test/test.js`. I re-ran blame with that commit ignored, and the figures above use that version.
+- **Two identities look like placeholders:** `troy@laptop.example` and `fiona@formatter.example`. The repo may have been rewritten or synthesized, so treat the exact person-level claims as provisional.
+- Git shows authorship of surviving lines, not who can merge or publish. Merge rights, npm ownership, and GitHub org roles are not in the repo. I did not check them.
+- Each contributor's current availability is unknown. Activity dates are the only evidence I have.
+
+### Recommended actions
+
+1. Run `npm owner ls cors` to confirm who can publish. Add a second owner if only one exists.
+2. Add a `CODEOWNERS` file. None exists now.
+3. Add `.git-blame-ignore-revs` containing `62628c0` so blame stops misattributing the reformat.
+4. Get one active second reviewer who understands `lib/index.js` and can review changes to it.
+META cost=0.00906788 ms=38008 turns=7

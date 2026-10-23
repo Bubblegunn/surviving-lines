@@ -1,0 +1,29 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print $1}' | sort | uniq -c | sort -rn | head; git rev-list --count HEAD; cat .git-blame-ignore-revs; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head
+ - Bash: git ls-files vendor .github; echo ---; for f in $(git ls-files '*.go' | grep -v '^vendor/'); do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; echo --- incl generated excluded:; for f in $(git ls-files '*.go' | grep -v '^vendor/' | grep -v attribute_string.go); do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- $f | grep '^author-mail ' ; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Ownership is concentrated but not one-person. I ran `git blame` on every line of the repo's own Go code and ignored vendored dependencies. Blame followed code moved between files, ignored whitespace changes, and used the repo's `.git-blame-ignore-revs`. The total is 1,657 live lines.
+
+| Rank | Author | Live lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan (`<email redacted>`) | 893 | 53.9% |
+| 2 | rhysd (`<email redacted>`) | 136 | 8.2% |
+| 3 | lena.hoffmann (`<email redacted>`) | 103 | 6.2% |
+| 4 | matt.hall (`<email redacted>`) | 98 | 5.9% |
+| 5 | Greg Poirson | 64 | 3.9% |
+
+- **Generated code:** Lena Hoffmann's 103 lines are all in `attribute_string.go`, which is generated. If you exclude that file, Fatih holds 893 of 1,554 lines (57.5%). The runners-up are rhysd (8.8%) and matt.hall (6.3%).
+- **Long tail:** About 20 more people each hold a few dozen lines or fewer.
+- **Commit history:** Fatih made 201 of the 300 commits. 38 more are from dependabot.
+
+Fatih owns a bit more than half of the live code, and the next person owns under a tenth. That is a clear single-maintainer lean, but the code is not all in one person's hands.
+
+I did not check who is still active, so I can't say whether Fatih or rhysd is still committing. I also did not merge authors who use more than one email. The blame view also credits mechanical edits, such as gofmt-style rewrites, to whoever made them. If you want the "who is active" check, I can run the `busfactor` script with `--no-github`. It weights recent commits more and flags zones where everyone who worked on them has gone quiet.
+META cost=0.0735441 ms=22073 turns=6

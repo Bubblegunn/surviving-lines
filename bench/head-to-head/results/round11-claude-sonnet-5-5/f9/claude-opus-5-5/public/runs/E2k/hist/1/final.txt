@@ -1,0 +1,24 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E2k-hist-1/repo; cat .mailmap 2>/dev/null; echo ---; git log -1 --format='%ad %ci'; git log --since='2026-03-29' --format='%h|%an|%ae|%ci|%s' --shortstat
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E2k-hist-1/repo; git log -8 --format='%h|%an|%ae|%ci|%cn|%s'; echo; git log --format='%an|%ae' | sort | uniq -c | sort -rn | head -20; git show --stat b2005d9 | tail -3; git show b2005d9 | head -40
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E2k-hist-1/repo; git ls-files | grep -v -E '\.(png|jpg|gif|ico)$' | while read f; do git blame -w --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author /{sub(/^author /,""); print c"|"$0"|"f}'; done > /tmp/blame.txt; echo "by author (all-time, ignoring format commit):"; cut -d'|' -f2 /tmp/blame.txt | sort | uniq -c | sort -rn | grep -E 'Troy|Vansh|Fiona'; echo "window commits:"; grep -E '^(b2005d9|02afce3|5317ebe|62628c0)' /tmp/blame.txt | cut -d'|' -f1,2,3 | sort | uniq -c; echo "no ignore-rev, Fiona:"; for f in $(git ls-files); do git blame -w --lin
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), once the formatting commit and bots are set aside.
+
+| Person | Commits in window | Lines from those commits still in code | All their lines still in code |
+|---|---|---|---|
+| **Troy Goode** | 2: `02afce3` test: vary header coverage (04-10), `b2005d9` lib: annotate handlers (04-10) | 48 (36 in `test/vary.js`, 12 in `lib/index.js`) | 746 |
+| **Vansh Sharma** | 1: `5317ebe` docs: app.del() → app.delete() in README (04-06) | 1 (`README.md`) | 1 |
+
+**What I left out or merged:**
+- **Fiona Formatter**, `62628c0` (04-12): a formatting-only commit (4-space indent and double quotes; 1016 lines added, 1016 removed). I ran blame with `--ignore-rev 62628c0 -w`, so lines it reformatted still count for whoever wrote them. Without that, Fiona would get 291 lines.
+- **dependabot[bot]**: no commits in the window anyway. Its latest commits are from 2026-03-02.
+- **Troy Goode** committed under two emails: `troy@laptop.example` for the window commits and `<email redacted>` for older ones. The repo has no `.mailmap`, so I matched them by name and counted Troy once. The 746 covers both emails.
+
+"Lines of theirs" can mean two things, so the table shows both: lines from their commits in the window, and all their lines across the repo's history. Git blame does not always assign lines correctly when it skips a commit, so read the all-time numbers as close estimates.
+META cost=0.1675198 ms=25210 turns=4

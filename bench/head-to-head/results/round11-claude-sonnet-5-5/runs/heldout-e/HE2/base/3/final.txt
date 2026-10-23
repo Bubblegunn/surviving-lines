@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | awk -F/ '{print $1}' | sort | uniq -c | sort -rn | head -20; cat .git-blame-ignore-revs; git log --oneline | wc -l
+ - Bash: git ls-files | grep -v '^vendor/' | grep -vE '^(go.sum|LICENSE.md)$' > /tmp/files.txt; cat /tmp/files.txt; git ls-files vendor; echo ---; for f in $(cat /tmp/files.txt); do git blame -w -M -C -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn; echo; git shortlog -sne HEAD | head
+FINAL ANSWER:
+Top owner is Fatih Arslan (`<email redacted>`), with 1105 of 1915 live lines, or **57.7%**. It's concentrated but not a one-person project: 35 distinct author emails hold live lines.
+
+Next in line:
+
+| Rank | Author | Lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 1105 | 57.7% |
+| 2 | rhysd | 136 | 7.1% |
+| 3 | <email redacted> | 103 | 5.4% |
+| 4 | <email redacted> | 98 | 5.1% |
+| 5 | Greg Poirson | 64 | 3.3% |
+
+After that come about 30 more authors at 2.7% or less each. The top 5 together hold about 79%.
+
+**Method:** I ran `git blame` at HEAD with `-w -M -C -C` and `--ignore-revs-file .git-blame-ignore-revs`. The ignore file skips the `interface{}` to `any` rewrite. The move and whitespace flags keep the `attribute.go` split from credit-shifting to the person who did the refactor. I excluded `vendor/`, `go.sum` and `LICENSE.md`. Lines are grouped by author email, not name.
+
+- **Commits:** by commit count Fatih is higher, at 201 of 300 (67%). Dependabot is second with 38, and it holds only 7 live lines.
+- **Odd emails:** two authors use placeholder addresses (`<email redacted>` with 103 lines, `<email redacted>` with 4). I didn't check whether these are real contributors or rewritten or synthetic history.
+- **Active maintainers:** this doesn't show who is still active. Ownership of live lines says little about who can merge or release today. For that, check recent commit dates and the GitHub maintainer list.
+META cost=0.062076599999999996 ms=18341 turns=4

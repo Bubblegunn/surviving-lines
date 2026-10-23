@@ -1,0 +1,50 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by dir 2>&1 | grep -E "^(test|lib|\.)|Troy|alex94|Alejandro"
+FINAL ANSWER:
+Only `lib/` clearly belongs to one person. `test/` is borderline. `.github/` and the root files have no majority owner.
+
+```
+/lib/   <email redacted>
+/test/  <email redacted>
+```
+
+Leave `/.github/` and the root files without an owner line. Check the `/test/` line before using it (see below).
+
+| Path | Top author by surviving lines | Owner line? |
+|---|---|---|
+| `lib/` | Troy Goode, 144 of 214 lines (67.3%) | Yes. Unmerged, the `<email redacted>` address alone holds 132 lines (61.7%). |
+| `test/` | Troy Goode, 420 of 820 lines (51.2%) | Borderline. Unmerged, `<email redacted>` holds 388 lines (47.3%), which is under half. |
+| `.github/` | Douglas Christopher Wilson, 92 of 305 lines (30.2%) | No. Nobody holds half. |
+| Root files | Douglas Christopher Wilson, 95 of 323 lines (29.4%) | No. Nobody holds half. Troy Goode has 85 lines (26.3%). |
+
+- **Troy Goode merge:** the merged figure counts `<email redacted>` (605 lines, 93 commits) and `troy@laptop.example` (44 lines, 2 commits) as one person. The tool rates the evidence as strong, but it is a guess from names and addresses until you confirm it. The `/test/` line depends on that guess. If these are two people, nobody holds half of `test/`. I didn't write a `.mailmap`.
+- **`CODEOWNERS` addresses:** the `CODEOWNERS` lines use `<email redacted>`. You may prefer a GitHub handle.
+- **Alejandro Caravaca Puchades:** one address appears under two names (also `alex94puchades`). This tool run didn't merge them, because it only merged the Troy Goode addresses. In `lib/` the 14 lines under `alex94puchades` and any lines under the full name would add up to a small share. It doesn't change any owner above.
+- **Leftover shares:** in `lib/` and `test/`, Douglas Christopher Wilson holds 9.3% and 42.0%. Nobody else is above 7%.
+- **Bus factor** is the smallest number of authors whose surviving lines together reach 50% of the lines counted. Per directory:
+  - `lib/`: 1 (Troy Goode, 67.3% of 214 lines)
+  - `test/`: 1 on the merged count (51.2% of 820 lines). Unmerged it is 2: Troy Goode's gmail address and Douglas Christopher Wilson hold 89.3% together.
+  - `.github/`: 2 (Douglas Christopher Wilson and Íñigo Marquínez Prado, 56.4% of 305 lines)
+  - Root files: 2 (Douglas Christopher Wilson and Troy Goode, 55.7% of 323 lines)
+  - I didn't compute the "to reach 80%" figure. The whole repository is 2 on the merged count (Troy Goode and Douglas Christopher Wilson, 56.0% of 1,662 lines).
+- **Scope:** all 18 files were counted, and 1,662 of 1,672 non-blank lines were attributed (1,995 with blank lines). Copy detection was `git blame -w -M -C`. The commit column covers 315 non-merge commits.
+- **Left out:**
+  - Commit `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter, 291 lines) is a formatting-only commit and is excluded. Counting it would give Fiona Formatter 17.5% overall. Without the exclusion Troy Goode would drop to 33.3% across the repository.
+  - The bot `dependabot[bot]` (10 lines, 11 commits) is not credited.
+- **Mechanical rewrites:** the tool examined 136 commits and set aside only `62628c0`. It flagged five more that look mechanical and were not set aside:
+  - `739dc11` (license reformat, 17 lines)
+  - `fcd2b56` (ESLint switch, 11 lines)
+  - `00d6eec` (YAML ESLint config, 9 lines)
+  - `344ce1e` (1 line)
+  - `9c2b59d` (1 line)
+
+  Two commits are by Troy Goode or touch `lib/`/`test/`, but all five are small. They can't change any owner above.
+- **What these numbers can't show:** line counts say who wrote the code that is left. They say nothing about quality, review work, or who should approve changes.
+META cost=0.0783069 ms=22507 turns=5

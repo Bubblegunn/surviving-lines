@@ -1,0 +1,22 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && git log --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb | sort | uniq -c | sort -rn | head -30; echo ---; git log --since='12 months ago' --format='%an <%ae> %ad' --date=short | awk '{print}' | head -0; git shortlog -sne --since='12 months ago' HEAD | head -20
+ - Bash: git log --since='2024-01-01' --format='%h %ad %an <%ae> %s' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb test/ spec/ 2>/dev/null | head -30; echo ---ALL; git log -25 --format='%h %ad %an <%ae> %s' --date=short; echo ---; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null; grep -n -i -E 'maintain|owner' README.md | head
+ - Bash: git log --since='2023-01-01' --format='%h %ad %an | %s' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb; echo ---; git show --stat --format='%h %an %s' 728d610 | head; echo ---; git log --all --author='Tanaka' --format='%h %ad %an <%ae> %s' --date=short; git log --author='Jonas' --format='%h %ad %s' --date=short --stat | head -12
+FINAL ANSWER:
+Suggested reviewers, most relevant first:
+
+1. **Hiroshi Tanaka.** They wrote the newest proxy, `valkey_proxy.rb`, in 0e16a98 (2026-09-02) and extended it in 21afafc (2026-09-16). They are the only person who has changed `store_proxy/` in the last year besides Santiago's lint autocorrect. They know the current `wrap` and version-check design. They commit under two emails (`hiroshi@tanaka.example` and `<email redacted>`), so check that both are the same person before you tag them on GitHub.
+2. **Santiago Bartesaghi** (`<email redacted>` and `<email redacted>`). They are the most active maintainer, with commits as recent as 2026-09-30. They last made a real change in this area in 86650c4 (2024-12-19), which fixed `reset!` with a namespaced cache store. They have also handled most of the CI and test changes. They are the best person to approve a change to the proxy structure.
+3. **Jean Boussier.** Their last commit was 2026-03-24, so they are less active than the first two. In 728d610 they changed `lib/rack/attack/cache.rb`, which builds and uses the proxies, so they know how the proxies are wrapped. Add them if your change touches `cache.rb` or how the store is validated.
+
+Optional: **Gonzalo Rodriguez** (`grzuy`) wrote most of the original proxy code in 2018–2019 and cut the v6.8.0 release in October 2025. Their recent commits are CI and release work, so they probably wouldn't give the most useful code review. They are a reasonable maintainer sign-off on a breaking change.
+
+I left out these historical authors because I found no recent commits from them: hakanensari, Vincent Boisard, Stan Hu, fatkodima, Brian Kephart, Mitchell Henke and Jonathan del Strother. The last commit by any of them is from 2023.
+
+There is no `CODEOWNERS` file, so this comes only from git history. Activity is based on commit dates, not on whether someone is available now.
+META cost=0.08967599999999999 ms=20957 turns=4

@@ -1,0 +1,32 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-bf-3/repo; ls lib/rack/attack/store_proxy/ 2>&1; echo ---PATH; git shortlog -sne HEAD -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---RECENT PATH; git log --since=2025-10-23 --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---REPO RECENT; git shortlog -sne --since=2025-10-23 HEAD; echo ---LAST; git log -1 --format='%ad' --date=short; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-bf-3/repo; for p in "Gonzalo" "grzuy" "hakanensari" "Santiago" "Hiroshi" "fatkodima" "Vincent" "Aaron"; do echo "== $p"; echo -n "path last: "; git log -1 -i --author="$p" --format='%ad' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo -n "repo last: "; git log -1 -i --author="$p" --format='%ad' --date=short; done; echo; git log --format='%h %ad %an %s' --date=short -8 -- lib/rack/attack/store_proxy/; echo; git log --since=2026-01-01 -i --author=Gonzalo --format='%ad %s' --date=short | head
+FINAL ANSWER:
+I'd ask **Santiago Bartesaghi** and **Hiroshi Tanaka**. I'd add **Gonzalo Rodriguez** if you're changing the overall design.
+
+Active here means a commit in the last year. The repo's last commit is 2026-09-30.
+
+| Person | Commits in `store_proxy/` | Last commit in `store_proxy/` | Last commit in repo | Why |
+|---|---|---|---|---|
+| Santiago Bartesaghi (`<email redacted>`, `<email redacted>`) | 2 | 2026-08-04 | 2026-09-30 | Most active maintainer. Fixed `reset!` for namespaced cache stores in 2024 and has 6 repo commits in the past year. |
+| Hiroshi Tanaka (`<email redacted>`, `hiroshi@tanaka.example`) | 2 | 2026-09-16 | 2026-09-16 | Wrote the newest proxy, `ValkeyProxy` (#310, #318), so they know the current proxy pattern. They have no other commits in the repo. |
+| Gonzalo Rodriguez (`grzuy`) | 30 | 2019-08-02 | 2025-11-09 | Top historical author of this code. Still committing to the repo, but nothing in `store_proxy/` since 2019. |
+
+Authors I'd skip, because their last commit in this repo is years old and none of them has touched the repo in the past year:
+- **hakanensari** (8 commits, last commit 2014)
+- **Vincent Boisard** (6 commits, last commit 2016)
+- **fatkodima** (4 commits, last commit 2019)
+- **Aaron Suggs** (4 commits, last commit 2017)
+- **Jonathan del Strother** (2 commits, last commit in `store_proxy/` 2023-11-20)
+- **Mitchell Henke** (1 commit, last commit in `store_proxy/` 2023-10-14)
+
+Notes:
+- Both Santiago and Hiroshi appear under two emails each. I merged them by name, and there is no `.mailmap` in the repo.
+- Hiroshi's addresses use `example.net` and `.example`, which are placeholder domains. Check that their GitHub handle is real before you request a review.
+- I used git history only, since the repo has no `CODEOWNERS` file. GitHub review activity could change this list.
+META cost=0.0555784 ms=20755 turns=3

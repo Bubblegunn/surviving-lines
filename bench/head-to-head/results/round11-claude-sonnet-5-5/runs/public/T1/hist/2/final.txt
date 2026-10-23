@@ -1,0 +1,43 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T1-hist-2/repo", "top": 20}
+ - Bash: git show -s --format='%h %an %ad %s' 62628c0 && for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -12
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that is still here. The line-blame numbers from the history tool are misleading on their own.
+
+**Why the first numbers mislead:** The tool's blame report credits "Fiona Formatter" with 50.9% of the lines (1016 of about 1996). That comes from one commit, `62628c0` ("style: reformat js with 4-space indent and double quotes", 2026-04-12). It rewrote the whitespace and quotes of nearly every JS line, so blame gives the lines to the reformatter instead of the original authors.
+
+**Corrected ownership:** I re-ran `git blame -w --ignore-rev 62628c0` over every tracked file. That ignores the reformat commit and whitespace changes. Approximate shares of about 1996 lines:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 746 | ~37% |
+| Douglas Christopher Wilson | 645 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~3.6% |
+| Sebastian Beltran | 67 | ~3.4% |
+| Ignacio Mangas | 54 | ~2.7% |
+| Ulises Gascón | 52 | ~2.6% |
+
+Everyone else is below 2% each. I only looked at the top 12 authors, so the long tail is not in the table.
+
+**By area:**
+- **Core code and tests** (`lib/index.js`, `test/*`): mostly Troy Goode. Douglas Christopher Wilson owns the small support files.
+- **CI and project config** (`.github/*`, `package.json`, `.eslintrc.yml`, `LICENSE`, `HISTORY.md`): mostly Douglas Christopher Wilson, Íñigo Marquínez Prado, Sebastian Beltran, Ignacio Mangas and Ulises Gascón.
+- **README:** Troy Goode, Jon Church and Linus Unnebäck.
+
+**Activity:** The tool flags every file as orphaned, meaning no commit since 2026-04-22 from the authors who own more than 50% of the lines. Two things affect how far to trust that:
+- Troy Goode's last commit is 2026-04-10, and the tool's activity cutoff is 2026-04-22. Troy Goode therefore counts as inactive only because of that cutoff.
+- Douglas Christopher Wilson's last commit is 2021-09-07, so their code has gone about five years without their involvement.
+
+**Caveats:**
+- `-w` also ignores whitespace-only changes made by other authors, which slightly favors the original authors.
+- I did not use `-C` or `-M`, so code moved between files is credited to whoever moved it.
+- Commits were counted by name after `.mailmap` resolution. If one person committed under two names, their share is split.
+META cost=0.0777788 ms=22907 turns=5

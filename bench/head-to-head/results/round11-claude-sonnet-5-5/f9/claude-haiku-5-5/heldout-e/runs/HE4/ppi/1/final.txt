@@ -1,0 +1,65 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/Parser/ \u2014 who should review a change here? Rank by who wrote the code that is there now (current line authorship via git blame), not by total commit count."}
+ - Bash: ls -la src/Parser 2>&1; echo "---"; find src/Parser -type f 2>/dev/null | head -100
+ - Bash: for f in src/Parser/*.php; do echo "== $f"; git blame --line-porcelain -- "$f" | awk '/^author /{a=substr($0,8)} /^author-time /{t=$2} /^\t/{ if(a!=""){c[a]++; if(t>m[a])m[a]=t}; a="" } END{for(k in c) printf "%4d lines  %s  last-touch=%s\n", c[k], k, strftime("%Y-%m-%d", m[k])}' | sort -rn; done; echo "== ALL"; git blame --line-porcelain -- src/Parser/*.php | awk '/^author /{a=substr($0,8)} /^\t/{ if(a!=""){c[a]++}; a="" } END{for(k in c) printf "%5d %s\n", c[k], k}' | sort -rn; echo "== mapping"; git log --format='%h %ad %an' --date=short -- src/Parser | head -40; echo "total commits: $(git log --oneline -- src/Parser | wc -l)"; echo "HEAD date: $(git log -1 --format=%cd --date=short)"
+ - Bash: python3 -I - <<'EOF'
+import subprocess, datetime, collections, glob
+files = sorted(glob.glob("src/Parser/*.php"))
+tot = collections.Counter(); last = {}
+for f in files:
+    out = subprocess.run(["git","blame","--line-porcelain","--",f],capture_output=True,text=True).stdout.splitlines()
+    c = collections.Counter(); lt = {}
+    a=None; t=None
+    for line in out:
+        if line.startswith("author "): a=line[7:]
+        elif line.startswith("author-time "): t=int(line[12:])
+        elif line.startswith("\t"):
+            c[a]+=1; tot[a]+=1
+            lt[a]=max(lt.get(a,0),t); last[a]=max(last.get(a,0),t)
+    n=sum(c.values())
+    print(f"== {f} ({n} lines)")
+    for k,v in c.most_common():
+
+ - Bash: python3 -I - <<'EOF'
+import subprocess, datetime, collections, glob
+files = sorted(glob.glob("src/Parser/*.php"))
+tot = collections.Counter(); last = {}
+for f in files:
+    out = subprocess.run(["git","blame","-w","--ignore-rev","45259fd","--ignore-rev","73c5c0f","--line-porcelain","--",f],capture_output=True,text=True).stdout.splitlines()
+    c = collections.Counter(); lt={}
+    a=None;t=None
+    for line in out:
+        if line.startswith("author "): a=line[7:]
+        elif line.startswith("author-time "): t=int(line[12:])
+        elif line.startswith("\t"):
+            c[a]+=1; tot[a]+=1; lt[a]=max(lt.get(a,0),t); last[a]=max(last.get(a,0),t)
+    n=sum(c.values())
+    print(f"== {f} ({n} 
+FINAL ANSWER:
+**Recommended reviewer for `src/Parser/`: Graham Campbell.** He wrote about 87% of the lines that exist there now. Priscila Duarte is the second reviewer for `Comments.php` and `Interpolator.php`, which she wrote entirely.
+
+Ranking by current line authorship, ignoring whitespace:
+
+| File | Lines | Current author | Notes |
+|---|---|---|---|
+| EntryParser.php | 363 | Graham Campbell (100%) | Largest file |
+| Lines.php | 136 | Graham Campbell (99%) | |
+| Value.php | 101 | Graham Campbell (100%) | |
+| Lexer.php | 58 | Graham Campbell (100%) | |
+| Parser.php | 58 | Graham Campbell (100%) | |
+| Entry.php | 59 | Graham Campbell (98%) | |
+| ParserInterface.php | 19 | Graham Campbell (100%) | |
+| Comments.php | 56 | Priscila Duarte (100%) | |
+| Interpolator.php | 62 | Priscila Duarte (100%) | |
+
+**Caveat that changed the answer:** My first pass, without ignoring whitespace, put Marta Kowalczyk at 87%. That came from her commit `45259fd` ("indent with tabs per .editorconfig"), which re-indented the files and so claimed the lines. Ignoring whitespace and the two formatting commits (`45259fd`, StyleCI `73c5c0f`) removes her from the picture. She made no surviving logic changes in this directory. If you want her as a reviewer for style or formatting, that is a separate question.
+
+**Bus factor:** effectively 1 for `src/Parser/` as a whole. Graham owns 87% of the lines, and Priscila holds the rest. Both are recently active in this directory: Graham last touched it on 2026-08-24 and Priscila on 2026-09-08, against a HEAD date of 2026-09-22.
+
+I did not count how many other files import each of these classes, so I can't say which of them carry the most risk if Graham is unavailable. I can run that check if you want it.
+META cost=0.00794354 ms=26176 turns=7

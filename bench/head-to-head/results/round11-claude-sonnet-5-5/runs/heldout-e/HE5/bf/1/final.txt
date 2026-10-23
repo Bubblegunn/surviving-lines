@@ -1,0 +1,24 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib/rack/attack/store_proxy/ && echo --- && git log --format='%an <%ae>|%ad' --date=short -- lib/rack/attack/store_proxy/ | awk -F'|' '{c[$1]++; if(!($1 in last)) last[$1]=$2; first[$1]=$2} END{for(a in c) print c[a], a, "first="first[a], "last="last[a]}' | sort -rn; echo --- repo-wide recent; git log --since=2025-10-23 --format='%an <%ae>' | sort | uniq -c | sort -rn; echo; git log -1 --format=%ad --date=short
+ - Bash: git log --since=2025-10-23 --format='%ad %an | %cn | %s' --date=short -- lib/rack/attack/store_proxy/ lib/rack/attack/store_proxy.rb; echo ---; git log --since=2025-10-23 --author='Gonzalo' --format='%ad %s' --date=short; echo ---; git log --since=2025-10-23 --author='Jean Boussier' --format='%ad %s' --date=short; git log --since=2025-10-23 --author='Jonas Keller' --format='%ad %s' --date=short
+FINAL ANSWER:
+**Suggested reviewers**
+
+1. **Hiroshi Tanaka** is the best match. They wrote the two newest store proxy changes: the Valkey proxy (#310, 2026-09-02) and the Valkey `wrap` and version check (#318, 2026-09-16). Those changes were made through GitHub PRs. The `Hiroshi Tanaka` entries use two different email addresses, and both are `example` domains. Check that it is one person.
+2. **Santiago Bartesaghi** is a good second reviewer. They have been active in the repo through 2026-09, with 6 commits in the last year. Their only commits in `store_proxy/` are a 2024-12 change and a 2026-08 style autocorrect, so they know the area less well than Hiroshi.
+3. **Gonzalo Rodriguez** (grzuy) is optional. They wrote most of the store proxy code, with about 27 commits in `store_proxy/` between 2018 and 2019. Their last repo activity was 2025-11, which was CI and Appraisals updates. They know the design history well, but they may be less available than the two above.
+
+**Other recent contributors**
+- Jean Boussier made commits as recently as 2026-03 (store validity check #714, Ruby 4.0 CI). They have not touched `store_proxy/`, but they work on how the store is validated, so they are a reasonable choice if your change affects that.
+- Jonas Keller made a style fix on 2026-08-18. They have no history in `store_proxy/`.
+
+**Skip as reviewers**
+- Fatkodima, Ryan Laughlin, Stan Hu, Vincent Boisard, Brian Kephart and the other older contributors. Their `store_proxy/` commits are from 2015 to 2023. They have no repo activity in the last year.
+
+I judged "still around" by commits in the last 12 months, since 2025-10-23. Git history can't show who is currently a maintainer or available. Check the GitHub maintainers list or `CODEOWNERS` before you request reviews. I can run the `busfactor` skill to draft a `CODEOWNERS` file if you want one.
+META cost=0.0507123 ms=17083 turns=3

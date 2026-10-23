@@ -1,0 +1,66 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -E '\.(js|ts|json|md)$' | grep -v node_modules | wc -l && git ls-files | grep -E '\.(js|ts)$' | head -50 && git log --pretty='%an' | sort | uniq -c | sort -rn | head -10 && git rev-list --count HEAD
+ - Bash: IGN=62628c0
+for f in $(git ls-files | grep -E '\.(js|md)$'); do git blame -w -M -C --ignore-rev $IGN --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | awk -v f=$f '{t+=$1; c[NR]=$0} END{printf "%s total=%d top: %s | %s\n", f, t, c[1], c[2]}'; done
+echo ---ALL JS
+for f in $(git ls-files | grep -E '\.js$'); do git blame -w -M -C --ignore-rev $IGN --line-porcelain HEAD -- $f | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn
+echo ---LIB
+git blame -w -M -C --ignore-rev $IGN --line-porcelain HEAD -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+echo ---NO IGNORE
+git blame -w --line-porcelain HEAD -- lib/index.js | g
+ - Bash: git log --pretty='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | grep -E 'Wilson|Goode|Fiona|Alejandro Caravaca'; git log -3 --format='%h %an %ad %s' --date=short 62628c0; git log --author='Troy Goode' --since=2025-10-22 --oneline | wc -l; git log --author='Douglas' --since=2025-10-22 --oneline | wc -l
+FINAL ANSWER:
+## Bus Factor Analysis (surviving lines)
+Period: all | Generated: 2026-10-22
+
+I used `git blame` on HEAD instead of the skill's commit-count method. Blame shows who wrote the lines still in the files. I ran it with `-w -M -C`, and I excluded the reformat commit `62628c0`. Without that exclusion, "Fiona Formatter" would own 32 lines of `lib/index.js` for only changing indentation and quotes.
+
+### Project-level bus factor: 1
+
+Troy Goode wrote about **56%** of the surviving JS lines (676 of about 1,210). That is more than half the codebase.
+
+| Author | Surviving JS lines | Share | Commits (all time) | Last commit |
+|---|---|---|---|---|
+| Troy Goode | 676 | ~56% | 122 | 2026-04-10 |
+| Douglas Christopher Wilson | 394 | ~33% | 143 | 2021-09-07 |
+| Alejandro Caravaca Puchades | 30 | ~2% | 4 | 2015 |
+| About 17 other people | 5–16 each | ~9% combined | | |
+
+Commit counts point to Wilson as the top contributor, with 143 commits against Troy's 122. Surviving lines point to Troy. Wilson made many small commits, mostly maintenance, and his last commit was in 2021. Troy's code is what is still in the repo.
+
+### Per-file ownership
+
+| File | Lines | Top owner | Second |
+|---|---|---|---|
+| `lib/index.js` (the only source file) | 238 | Troy 159 (67%) | Wilson 22 (9%) |
+| `test/test.js` | 731 | Wilson 339 (46%) | Troy 317 (43%) |
+| `test/error-response.js` | 66 | Troy 86% | Wilson |
+| `test/example-app.js` | 81 | Troy 83% | Wilson |
+| `test/issue-2.js` | 48 | Troy 83% | Wilson |
+| `test/vary.js` | 36 | Troy 100% | none |
+| `test/support/env.js` | 2 | Wilson 100% | none |
+| `README.md` | 277 | Troy 42% | Jon Church 26% |
+| `HISTORY.md` | 64 | Wilson 78% | Ulises Gascón |
+
+### Risk
+
+- **`lib/index.js`: HIGH.** It is the whole library, and it has one dominant owner, Troy, at 67%. Another 17 people wrote the remaining 24%, but each wrote 1–12 lines.
+- **Troy is the only active owner.** His last commit was 2026-04-10, which is 6 months ago. He made 2 commits in the past year. I can't tell from git whether he is still maintaining the repo.
+- **Wilson's code is inactive.** Nothing from him has been committed since 2021. His 394 lines are mostly in `test/test.js`, where he and Troy are almost equal. That file is the one place with real shared knowledge.
+- **Docs are better spread out.** `README.md` has 3 or more authors, and `HISTORY.md` is mostly Wilson's.
+
+### Recommendations
+
+1. **Now:** Have a second person review `lib/index.js` and own it. It is small at 238 lines, so one pass is enough.
+2. **Short term:** Find out whether Troy still maintains the repo. If not, name a successor.
+3. **Ongoing:** Require review from someone other than Troy on changes to `lib/`.
+
+Limits: blame joins authors by name only. If one person committed under two names or emails, their lines are split across those entries, which would understate their share. I didn't check `.mailmailmap` or the email addresses. I didn't run the importer-count step because the repo has one source file.
+META cost=0.0866926 ms=28797 turns=7

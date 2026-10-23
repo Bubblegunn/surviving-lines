@@ -1,0 +1,88 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | head -50; echo; git log -1 --format=%cd; git rev-list --count HEAD
+ - Bash: for f in $(git ls-files | grep -vE '^(node_modules|\.git/)'); do t=$(git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn); n=$(echo "$t" | wc -l); top=$(echo "$t" | head -1 | sed 's/^ *//'); tot=$(echo "$t" | awk '{s+=$1}END{print s}'); echo "$f | contributors=$n | total=$tot | top=$top"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" | sort | uniq -c; echo; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a last: $(git log --all --author="$a" -1 --format=%cd)"; done; grep -rl "lib/index\|require(\"../lib\|require('../lib" test | wc -l
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-22
+
+I ran git commands directly, without the contributor-analyzer agent, because the repo has only 18 tracked files.
+
+### Project-level bus factor: 2
+
+If **Douglas Christopher Wilson** and **Troy Goode** left, more than 50% of the commit history would have no knowledgeable maintainer. Together they have 238 of the 354 commits. The repo has 354 commits; the 238 comes from the non-merge counts. Wilson has 143 and Goode has 95. This is a commit-count measure only. I did not measure surviving lines.
+
+### Overview
+
+There is one source file, `lib/index.js`. The 18 tracked files break down as follows.
+
+| Metric | Value |
+|---|---|
+| Tracked files analyzed (all types) | 18 |
+| Bus factor 1 (one contributor ever) | 5 (28%) |
+| Bus factor 2 | 3 (17%) |
+| Bus factor 3 or more | 10 (55%) |
+| Critical single-owner files | 0 |
+
+The five single-contributor files are:
+- `.eslintrc.yml` (Wilson)
+- `test/.eslintrc.yml` (Wilson)
+- `test/support/env.js` (Wilson)
+- `test/vary.js` (Goode)
+- `.github/dependabot.yml` (Ulises Gascón)
+
+All five are config or small test files. None of them is critical.
+
+### Critical risk areas
+
+No file is both single-owner and widely depended on.
+
+| File | Main contributor | Share | Contributors | Risk |
+|---|---|---|---|---|
+| `lib/index.js` (the whole library) | Troy Goode | 29 of 62 commits (47%) | 25 | LOW |
+| `package.json` | Douglas Christopher Wilson | 68 of 113 commits (60%) | 9 | MEDIUM |
+| `.github/workflows/ci.yml` | Douglas Christopher Wilson | 10 of 16 commits (62%) | 5 | MEDIUM |
+| `.github/workflows/scorecard.yml` | dependabot[bot] | 7 of 9 commits | 3 | LOW (bot) |
+
+### Knowledge distribution by module
+
+| Module | Contributors | Main owner | Ownership | Bus factor |
+|---|---|---|---|---|
+| `lib/` | 25 | Troy Goode | 47% | 3 or more |
+| `test/` | 4 | Troy Goode / Douglas Christopher Wilson | about 50% each | 2 |
+| `.github/` | 5 or more, including bots | Douglas Christopher Wilson / dependabot[bot] | 50–60% | 2 |
+| Root config (`package.json`, eslint) | 9 | Douglas Christopher Wilson | 60% | 2 |
+
+### Knowledge heat map
+
+```
+.
+├── lib/        [█████░░░░░] 🟢 25 contributors (Goode 47%)
+├── test/       [█████░░░░░] 🟡 Bus factor 2 (Goode / Wilson)
+├── .github/    [██████░░░░] 🟡 Wilson 62% on ci.yml, the rest is mostly bots
+└── package.json[██████░░░░] 🟡 Wilson 60%
+```
+
+### Owner activity
+
+- The latest commit in the repo is dated 2026-04-12. No one has committed in the last 90 days, and about 6 months have passed since that date.
+- **Troy Goode**'s last commit was on 2026-04-10, so they are the more recent of the two main owners.
+- **Douglas Christopher Wilson**'s last commit was on 2021-09-07, so they are inactive for about 5 years. Wilson is the main owner of `package.json`, CI and the eslint config.
+- Recent activity is mostly dependabot (11 commits).
+
+### Caveats
+
+- The tool counts commits, not lines. The latest commits are a mass reformat (`62628c0` re-indented the JS to 4 spaces) and bot bumps. These can skew commit shares and the apparent ownership.
+- The history looks like a fork of the `express-*` family (the README fix is `app.del()` to `app.delete()`), so the long history comes from imported upstream commits.
+
+### Recommendations
+
+1. **Immediate**: Nobody currently depends on a single person for `lib/index.js`, so no urgent action is needed. Check that someone other than Wilson can edit the CI workflow and `package.json` (publish and scripts).
+2. **Short-term**: Document the release and CI process, because Wilson is the main owner and inactive. Have a second maintainer review changes to `.github/workflows/ci.yml`.
+3. **Ongoing**: The library has no maintainer activity in the last 6 months. Confirm who currently owns it, since the real risk is inactivity and not concentration. Run `git blame -w --ignore-rev 62628c0 lib/index.js` to see who owns the surviving lines.
+META cost=0.072012 ms=24150 turns=5

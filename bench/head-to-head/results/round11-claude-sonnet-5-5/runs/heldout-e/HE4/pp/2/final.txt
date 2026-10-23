@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser 2>&1 | head -50; git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep -a '^author ' ; done | sort | uniq -c | sort -rn
+ - Bash: cat .mailmap; echo ---; git ls-files src/Parser | while read f; do git blame -w -M -C --line-porcelain -- "$f" | grep -a -E '^author(-mail)? ' | paste - - | sort | uniq -c | sort -rn | sed "s|^|$f |"; done; echo ---; git log -1 --format='%an %ad' -- src/Parser
+FINAL ANSWER:
+**Reviewer: Graham Campbell** (<email redacted>). Of the 912 lines now in `src/Parser/`, they wrote 782 (about 86%).
+
+I counted surviving lines with `git blame -w -M -C`. The `-w` flag ignores whitespace-only changes, so the recent tab re-indent and StyleCI commits don't take credit for lines they only reformatted. The `-M` and `-C` flags follow lines that were moved or copied. The repo's `.mailmap` was applied, so Graham's three identities count as one person.
+
+| Author | Lines | Files |
+|---|---|---|
+| Graham Campbell | 782 | `EntryParser`, `Lines`, `Value`, `Entry`, `Lexer`, `Parser`, `ParserInterface` |
+| Priscila Duarte | 118 | `Comments`, `Interpolator` (all of both files) |
+| Vance Lucas | 10 | `Lines` |
+| Jonas Staudenmeir | 1 | `Entry` |
+| JT Smith | 1 | `Lines` |
+
+**Priscila Duarte** wrote all of `Comments.php` and `Interpolator.php`. If the change touches only those two files, they are the better reviewer.
+
+The most recent commit touching `src/Parser/` is from StyleCI Bot, so "last person to touch it" would point you to a bot.
+META cost=0.050113500000000005 ms=16639 turns=3

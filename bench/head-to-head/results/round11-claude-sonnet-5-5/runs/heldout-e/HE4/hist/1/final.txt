@@ -1,0 +1,27 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 3}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE4-hist-1/repo", "path": "src/Parser", "top": 50}
+ - Bash: git log -3 --format='%h %an %ad %s' --date=short 45259fd && git show --stat --format= 45259fd | tail -3 && git blame -w -C -M --line-porcelain src/Parser/*.php | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: for f in src/Parser/*.php; do git blame -w -M -C --line-porcelain -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn; echo ---; for f in src/Parser/*.php; do echo $f; git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -2; done
+FINAL ANSWER:
+**Graham Campbell** should review it. Priscila Duarte is the second choice for `Comments.php` and `Interpolator.php`.
+
+The default blame answer is misleading here. Plain `git blame` credits Marta Kowalczyk with about 87% of `src/Parser/` (791 of 912 lines). That is because her commit `45259fd` (2026-09-15, "indent with tabs") rewrote the whitespace of every line in 43 files. She did not write that code.
+
+I re-ran blame with `-w -M -C`, which ignores whitespace changes and follows moved or copied lines. Among 912 lines, Graham Campbell wrote 782 (about 86%) and Priscila Duarte 118 (about 13%). The remaining 11 lines belong to Vance Lucas (10) and Jonas Staudenmeir and JT Smith (1 each).
+
+| File | Original author |
+|---|---|
+| `EntryParser.php`, `Lexer.php`, `Parser.php`, `ParserInterface.php`, `Value.php` | Graham Campbell, 100% |
+| `Entry.php` | Graham Campbell, 58 of 59 lines (the other line is Jonas Staudenmeir's) |
+| `Lines.php` | Graham Campbell, 125 of 135 lines (Vance Lucas wrote 10) |
+| `Comments.php`, `Interpolator.php` | Priscila Duarte, 100% |
+
+I did not check whether Vance Lucas, Jonas Staudenmeir or JT Smith are still active. I also did not check the 3 binary files in the directory, which the tool skipped.
+META cost=0.0734772 ms=20545 turns=6

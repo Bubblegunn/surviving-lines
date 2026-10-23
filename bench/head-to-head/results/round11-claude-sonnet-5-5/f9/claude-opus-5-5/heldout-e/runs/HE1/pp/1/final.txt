@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git log --format='%h %an <%ae> %ad %s' --date=short --stat; ls -a; git ls-files '*.py'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git log --format='%h %an <%ae> %ad %s' --date=short | head -80; git log --oneline | wc -l; ls -a; git ls-files '*.py'; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git show --stat 0e8fe2e abe2ea7 54b029d 7557b2c | grep -v '^ *$'; cat .mailmap 2>/dev/null; git show 0e8fe2e | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; for f in $(git ls-files '*.py'); do echo "== $f (naive)"; git blame -w --line-porcelain HEAD -- $f | sed -n 's/^author-mail //p' | sort | uniq -c | sort -rn; echo "== $f (ignore fmt, -M -C)"; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain HEAD -- $f | sed -n 's/^author-mail //p' | sort | uniq -c | sort -rn; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git log --format='%ae|%an' | sort -u | grep -Ei 'reitz|gdtroszak|zetaweb|vlcinsky|mc-dallas|tifon|tethik|hrldcpr|okafor|Phrohdoh|tibarra'; git show --stat a1ebdde 5df61d3 91019db | grep -E '^commit|\|'; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e HEAD -- records.py | awk '{print $1}' | uniq -c | awk '{print $2}' | sort | uniq -c | sort -rn | head -5; git log -3 --format='%h %ad %an' --date=short -- records.py | cat; git log --format='%ad %an' --date=short --since=2023-01-01 -- records.py | cat
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; grep -rn 'LEGACY_SKIP\|_describe\|_coerce_row\|_normalise\|_normalize\|_chunk' --include=*.py . ; git log --format=%h -S LEGACY_SKIP | cat
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git grep -n -E 'LEGACY_SKIP|_describe|_coerce_row|normali[sz]e|chunk' -- '*.py'; git log --format='%h %an' -S LEGACY_SKIP | cat
+FINAL ANSWER:
+Kenneth Reitz wrote most of the Python still alive here. For `records.py`, ask Dana Okafor first, then Tomás Ibarra; nobody active owns the old core.
+
+**Method.** I ran `git blame -w -M -C` on every tracked `.py` file and excluded two commits that only reformat code: `abe2ea7`, Priya Raman's black run, and `0e8fe2e`, the pre-commit bot replacing `class X(object)` with `class X`. Without excluding them, Priya gets 65 lines and the bot gets 4, even though neither wrote any logic. Line counts can shift by a few depending on the blame flags.
+
+**Live lines by author, all Python files:**
+| Author | Live lines | Where |
+|---|---|---|
+| Kenneth Reitz (2 emails) | ~435 | `records.py` 318, `setup.py` 102, tests 15 |
+| Jan Vlčinský | ~119 | `records.py` 30, `conftest.py`, transaction tests |
+| Greg Troszak | ~89 | `records.py` 58, `test_transactions.py` 31 |
+| Chad Whitacre | ~85 | `records.py` 39, `test_records.py` 46 |
+| Harold Cooper, Joakim Uddholm | ~50 each | mostly `test_records.py` |
+| Dana Okafor (2 identities) | ~50 | `records.py` 40, tests 10 |
+| mcdallas | 26 | `records.py` |
+| Tomás Ibarra | 12 | `records.py` |
+| Marcus Lindqvist | 8 | `records.py` |
+| Joseph Gardi | 22 | only `examples/randomuser-sqlite.py` (0 in `records.py`) |
+
+**Commit counts mislead here:**
+- **Marcus Lindqvist** has 25 commits, the most in 2026, but 24 of them edited `examples/export_legacy.py`. Dana deleted that file in `54b029d`. Only 8 lines survive: the `LEGACY_SKIP` tuple at `records.py:15`. Nothing references it now, so it is dead code.
+- **Joseph Gardi**'s transaction re-raise fix (`a1ebdde`) added 1 line to `records.py`, and his follow-up `5df61d3` removed it. None of his code remains in that file.
+- **Dana Okafor** commits under two identities: `<email redacted>` and `dokafor@fastmail.example` (lowercase name). I'm assuming this is one person; confirm with them. There is no `.mailmap`, so tools count them as two people.
+
+**Who to ask about `records.py`:**
+1. **Dana Okafor**: most recent author, about 40 live lines. They wrote `_normalize_keys`, `_chunked` and `_describe` (`records.py:457`–`497`), and they deleted the exporter, so they know why `LEGACY_SKIP` was left behind.
+2. **Tomás Ibarra**: `_coerce_row` (`records.py:485`).
+3. The core classes (`Record`, `RecordCollection`, `Database`, `Connection`) are mostly Kenneth Reitz's code from before 2024, plus older contributors (Troszak, Whitacre, Vlčinský). None of them has committed since early 2024. The git history and old PRs are the more realistic source for that part.
+
+`_coerce_row` and `_describe` have no callers and no tests. Only `_normalize_keys` and `_chunked` are tested.
+
+**Optional fixes:**
+- A `.git-blame-ignore-revs` file listing `abe2ea7` and `0e8fe2e` would make blame on GitHub and in local tools show the real authors.
+- A `.mailmap` would merge Dana's two identities and Kenneth's two.
+
+I can add both if you want.
+META cost=0.3073326 ms=52105 turns=8

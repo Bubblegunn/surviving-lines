@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files 'src/*' | wc -l && git ls-files 'src/*' | while read f; do git blame --line-porcelain -- "$f" 2>/dev/null; done | grep -E '^author-mail ' | sort | uniq -c | sort -rn
+ - Bash: git ls-files 'src/*' | while read f; do git blame --line-porcelain -- "$f" 2>/dev/null; done | grep -E '^author ' | sort | uniq -c | sort -rn; echo ---; git log --format='%an <%ae>' -- src | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files 'src/*' | head -100
+ - Bash: for f in $(git ls-files 'src/*'); do echo "== $f"; git blame --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+**Who wrote the current `src/` code** (`git blame` at HEAD, 8 files, about 3,000 lines):
+
+| Author | Lines still in `src/` | Main areas |
+|---|---|---|
+| Andrew Gallant (<email redacted>) | ~2,471 (about 80%) | `dent.rs`, `error.rs`, `lib.rs`, `util.rs`, `testsuite/recursive.rs`, `testsuite/util.rs` |
+| nivkner | 147 | `lib.rs` |
+| Sebastian Thiel | 96 | `testsuite/recursive.rs` |
+| Sam Whitfield | 85 | `ancestor.rs` (47 lines, the file's only surviving author), plus small bits elsewhere |
+| Marvin Löbel | 83 | `testsuite/recursive.rs` |
+| Aron Griffis | 46 | `lib.rs` |
+| Others (about 20 people) | the rest | small contributions |
+
+**Who to ask for review:**
+- **Andrew Gallant** is the main owner of almost every file. Ask them for anything touching `dent.rs`, `error.rs`, `lib.rs`, `util.rs`, or the test helpers.
+- **Sam Whitfield** for changes to `ancestor.rs`. Their lines are the only ones left there.
+- **Sebastian Thiel** or **Marvin Löbel** for `testsuite/recursive.rs` if the change is in the parts they wrote.
+
+**Caveats:**
+- Blame counts surviving lines, not who did the most work. Andrew's share is high partly because their rewrites replaced earlier code.
+- I didn't check whether these people are still active on the project. Check recent commits before you pick a reviewer.
+- Some emails in the history are placeholders (e.g. `@example.com`), so don't rely on them to contact anyone.
+META cost=0.00502232 ms=15394 turns=4

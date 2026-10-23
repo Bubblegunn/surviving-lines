@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/"}
+ - Bash: git rev-list --count HEAD && git log --no-merges --pretty='%an' | sort | uniq -c | sort -rn && echo --- && find src -name '*.rs' | wc -l && for f in $(git ls-files 'src/*.rs'); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$(dirname $f) |"; done | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: for f in $(git ls-files 'src/*.rs'); do tot=$(git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -c '^author '); echo "== $f ($tot lines)"; git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3 | sed 's/author //'; done; echo; echo "last commit per author (top):"; for a in "Andrew Gallant" "Ashley" "Aron Griffis" "mcharsley" "Sebastian Thiel" "Martin Sehnoutka" "Yufeng Wang" "Garrett Berg" "Sam Whitfield"; do echo "$a: $(git log --author="$a" -1 --format=%cd --date=short)"; done; echo; git log -1 --format='HEAD: %cd' --date=short; git log --since=2025-10-23 --oneline | wc -l; git log -5 --format='%h %an %cd %s' --date=short -- src/
+FINAL ANSWER:
+## Bus factor for `src/`
+
+**Andrew Gallant wrote most of the code currently in `src/`.** That count comes from `git blame -w -M -C` at HEAD. Moves, renames and whitespace changes are not credited to whoever did the move. It covers 8 Rust files and about 3,260 lines.
+
+| File | Lines | Top owners (current lines) |
+|---|---|---|
+| `src/lib.rs` | 1158 | Gallant 743 (64%), mcharsley 45, Aron Griffis 45 |
+| `src/testsuite/recursive.rs` | 1097 | Gallant 1008 (92%), Sebastian Thiel 53, Lukas Kalbertodt 20 |
+| `src/dent.rs` | 371 | Gallant 291 (78%), Yufeng Wang 21, Ashley 15 |
+| `src/error.rs` | 267 | Gallant 169 (63%), Garrett Berg 34, Niv Kaminer 30 |
+| `src/testsuite/util.rs` | 257 | Gallant 252 (98%), Sam Whitfield 5 |
+| `src/util.rs` | 56 | Gallant 42 (75%), Aron Griffis 9, Sam Whitfield 5 |
+| `src/ancestor.rs` | 47 | Gallant 42 (89%), Sam Whitfield 4 |
+| `src/testsuite/mod.rs` | 9 | Sam Whitfield 5, Gallant 4 |
+
+Across all of `src/`, Gallant owns about 2,550 of 3,260 lines, roughly 78%. The project-level bus factor is **1**.
+
+### Who is still active
+
+- **Andrew Gallant:** last commit 2026-01-14. The repo's most recent commit is 2026-03-23, so this is about 2 months before HEAD. I didn't check how that compares with today's date (2026-10-23).
+- **Sam Whitfield:** has made the last three commits to `src/` (2026-03-09 to 2026-03-23: license headers, the `Ancestor` module move and the `testsuite` rename). They own few current lines, but they know the current layout.
+- **Mei Tanaka:** added `dent: add describe_file_type` on 2026-02-03. Their current line count in `src/` is small, but the change is recent.
+- **Everyone else with meaningful ownership is inactive.** The last commits from Ashley, Aron Griffis, mcharsley, Martin Sehnoutka and Yufeng Wang were in 2017–2018. Garrett Berg's last commit was in 2018. Sebastian Thiel's was in 2023. Don't ask these people.
+
+### Who to ask for review
+
+1. **Andrew Gallant** is the only person with deep knowledge of nearly every file. Make them the primary reviewer, especially for `lib.rs`, `dent.rs`, `error.rs` and the `recursive.rs` tests.
+2. **Sam Whitfield** is a good second reviewer. They are active on this code now and can check module layout and conventions.
+3. **Mei Tanaka** is useful if your PR touches `dent.rs`.
+
+The most likely candidates for review are the people with recent commits. Ownership by line count and recent activity point to different people, so I'd ask Gallant and Whitfield together.
+
+### Caveats
+
+- I did not run the dependents (import-count) step. `src/` has only 8 files, so I judged it by file role. `lib.rs` and `error.rs` are the core of the crate.
+- I did not use `--all` history or the contributor-analyzer agent. Direct `git blame` answers your question more accurately than commit counts.
+- Total history is 199 commits. Gallant authored 129 of them, about 65%.
+
+If you tell me which files your PR touches, I can narrow this to a per-file reviewer list.
+META cost=0.0701224 ms=22988 turns=5

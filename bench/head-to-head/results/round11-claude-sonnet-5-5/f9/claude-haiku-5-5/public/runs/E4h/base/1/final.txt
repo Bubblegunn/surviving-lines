@@ -1,0 +1,64 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | awk -F/ '{ if (NF>1) print $1; else print "(root) " $1 }' | sort | uniq -c | sort -rn | head -50; echo ---; git ls-files | grep -v / ; echo ---; git ls-files .github | head -30
+ - Bash: git ls-files lib test; echo ---; git log --format='%H|%an|%ae|%s' | wc -l; git log --format='%an <%ae>' | sort | uniq -c | sort -rn
+ - Bash: git log --format='%h %an <%ae> | %s' -- lib test .github package.json README.md HISTORY.md LICENSE .gitignore .eslintrc.yml | grep -iE 'style|format|lint|prettier|reformat|indent|quote|whitespace' ; echo ---; git show --stat 62628c0 | tail -5; git show --ignore-all-space --ignore-blank-lines --stat 62628c0 | tail -2
+ - Bash: for c in 62628c0 eeb5dc2 4e01244 53405aa 8277075; do echo "$c: $(git show -w --ignore-blank-lines --format= $c | grep -c '^[+-][^+-]')"; done; echo; git rev-parse 62628c0 >/tmp/ign-revs.txt; cat > /tmp/blame.sh <<'EOF'
+#!/bin/bash
+# usage: blame.sh <file>  -> prints "author|email" per surviving line (formatting commit ignored)
+git blame --line-porcelain --ignore-revs-file /tmp/ign-revs.txt HEAD -- "$1" | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print a"|"m}'
+EOF
+chmod +x /tmp/blame.sh; for f in $(git ls-files lib test .github README.md HISTORY.md LICENSE .gitignore .eslintrc.yml package.json); do /tmp/blame.sh "$f"; done | sort | uniq -c | sort -rn | head -40
+ - Bash: cat > /tmp/reattr.py <<'EOF'
+import subprocess, difflib, re, sys, collections
+REPO = sys.argv[1]
+FMT = "62628c0"
+def sh(*a):
+    return subprocess.run(a, cwd=REPO, capture_output=True, text=True, check=True).stdout
+def blame(rev, path):
+    out = sh("git", "blame", "--line-porcelain", rev, "--", path)
+    res, author, mail = [], None, None
+    for line in out.splitlines():
+        if line.startswith("author "): author = line[7:]
+        elif line.startswith("author-mail "): mail = line[12:].strip("<>")
+        elif line.startswith("\t"):
+            res.append((line[1:], author, mail))
+    return res
+def norm(s):
+    return re.sub(r"[\s'\"`;,]", "", s)
+files = sh("git", "ls-files", "lib", "t
+ - Bash: sed -i 's|files = sh("git", "ls-files", "lib", "test").split()|files = sh("git", "ls-files", *sys.argv[2:]).split()|' /tmp/reattr.py && for g in "lib" "test" ".github" "README.md HISTORY.md LICENSE .gitignore .eslintrc.yml package.json"; do echo "== $g"; python3 /tmp/reattr.py "$PWD" $g | head -6; done; echo "== test only sans reattribution, for Fiona check"; python3 /tmp/reattr.py "$PWD" .github/workflows/ci.yml .github/dependabot.yml | head -3
+ - Bash: sed -i '' 's|files = sh("git", "ls-files", "lib", "test").split()|files = sh("git", "ls-files", *sys.argv[2:]).split()|' /tmp/reattr.py && grep -n 'ls-files' /tmp/reattr.py && for g in "lib" "test" ".github" "README.md HISTORY.md LICENSE .gitignore .eslintrc.yml package.json"; do echo "== $g"; python3 /tmp/reattr.py "$PWD" $g | head -5; done
+ - Bash: for f in README.md HISTORY.md LICENSE .gitignore .eslintrc.yml package.json; do echo "== $f"; python3 /tmp/reattr.py "$PWD" "$f" | sed -n '1,4p'; done
+FINAL ANSWER:
+Suggested CODEOWNERS, based on `git blame` at HEAD. Handles are placeholders because I can't map names to GitHub usernames from the repo alone. Replace `@TROY_HANDLE` and `@DOUG_HANDLE` with the real ones.
+
+```
+# lib/: Troy Goode, 150 of 238 lines (63%)
+/lib/                     @TROY_HANDLE
+
+# test/: Troy Goode, 486 of 966 lines (50.3%, marginal)
+/test/                    @TROY_HANDLE
+
+# .github/: no owner. Top is Douglas Christopher Wilson at 29.5%, no one reaches half.
+
+# Root files
+/package.json             @DOUG_HANDLE   # Douglas, 20 of 40 lines (50.0%, exactly half)
+/HISTORY.md               @DOUG_HANDLE   # Douglas, 50 of 64 (78%)
+/LICENSE                  @DOUG_HANDLE   # Douglas, 17 of 22 (77%)
+/.gitignore               @DOUG_HANDLE   # Douglas, 4 of 5 (80%, small sample)
+/.eslintrc.yml            @DOUG_HANDLE   # Douglas, 7 of 7 (100%, small sample)
+# README.md: no owner. Troy Goode 37.5%, Jon Church 26%.
+```
+
+Method and caveats:
+- **Bots excluded:** dependabot is skipped.
+- **Identities merged:** Troy Goode's two emails (`<email redacted>`, `troy@laptop.example`) are counted as one person. Alejandro Caravaca Puchades is merged with `<email redacted>`.
+- **Formatting commit undone:** `62628c0` ("style: reformat js…", Fiona Formatter) rewrote 582 lines in `lib/index.js` and three test files. `git blame --ignore-rev` did not reattribute those lines, because the text changed too much. I matched each line's normalized text against the pre-reformat version and gave matched lines back to their original authors. No lines stayed with the formatter after that.
+- **Thin margins:** `test/` at 50.3% and `package.json` at exactly 50.0% pass the half threshold but could flip with small changes. Directory-level owners are a judgment call. Per-file results may differ inside `test/`; I did not check each file separately.
+- **Not committed:** I didn't write this to a file or commit anything.
+META cost=0.011975760000000002 ms=52829 turns=9

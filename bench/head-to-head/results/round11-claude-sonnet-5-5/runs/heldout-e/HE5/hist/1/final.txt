@@ -1,0 +1,22 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE5-hist-1/repo", "path": "lib/rack/attack/store_proxy", "inactive_after": "12 months ago"}
+ - Bash: git log --since="12 months ago" --format='%an <%ae> %ad' --date=short -- lib/rack/attack/store_proxy | sort | uniq -c | sort -rn | head; echo ---; git log -n 400 --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++'
+ - Bash: git log --author='Gonzalo' --format='%h %an <%ae> %ad %s' --date=short | head -8; echo ---; git log --author='Santiago' --format='%h %ad %s' --date=short -- lib/rack/attack/store_proxy | head -3; git log --author='Hiroshi' --format='%h %ad %s' --date=short -- lib/rack/attack/store_proxy
+FINAL ANSWER:
+Ask these two to review:
+
+1. **Hiroshi Tanaka** is the best reviewer. They wrote all of `valkey_proxy.rb` (88 lines, 100% of it). They also made the two most recent proxy changes: the Valkey proxy (#310, 2026-09-02) and the wrap and version check (#318, 2026-09-16). They know how the current proxy and wrapping design works.
+2. **Santiago Bartesaghi** is the second reviewer. They have 10 lines in `redis_cache_store_proxy.rb`. They last touched this directory on 2026-08-04, and they committed elsewhere on 2026-09-30, the most recent commit in the repo. Their commits there are small: a style autocorrect, and "Fix reset! when using namespaced cache store (#673)" from 2024-12. They know the cache-store proxies less well than Hiroshi knows Valkey.
+
+**Gonzalo Rodriguez** also owns a lot of the older code (18.7% of the lines, mostly in `dalli_proxy.rb` and `redis_proxy.rb`). The log shows the same email under the names "Gonzalo" and "Gonzalo R", so I believe it's one person. They are probably the maintainer and are still active, with commits from 2025-10 and 2025-11 (a version bump to 6.8.0 and CI updates). If you change the public proxy behavior, add them as a maintainer reviewer. I haven't checked whether they are still reviewing PRs.
+
+**Skip these authors:** the original authors of the Dalli, Redis, and MemCache proxies, hakanensari (last commit 2014), Brad Lindsay (2018), and Brian Kephart (2018). Jonathan del Strother (2023-11), fatkodima (2019), and the other authors listed above are also inactive. Together they own most of the older proxy code. Five of the six files are mostly owned by authors who haven't committed in over a year.
+
+**Review risk for the older proxies:** Hiroshi and Santiago don't have deep history in the Dalli, MemCache, and Redis proxies. If your change touches those, test it carefully and say what you changed in the PR description.
+META cost=0.0650468 ms=21208 turns=5

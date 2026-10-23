@@ -1,0 +1,39 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser 2>&1 && git ls-files src/Parser | wc -l && git ls-files src/Parser
+ - Bash: git blame --line-porcelain HEAD -- src/Parser | grep -E '^author ' | sort | uniq -c | sort -rn; echo ---; git blame --line-porcelain HEAD -- src/Parser | grep -E '^author-mail ' | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame --line-porcelain HEAD -- "$f" | grep -E '^author ' | sort | uniq -c | sort -rn | head -3; done; echo ---; cat .mailmap 2>/dev/null | head -30
+ - Bash: git show -s --format='%h %an %ad %s' 45259fd 91613ff f292b49 79984a0; echo ---; git blame -w --line-porcelain HEAD -- src/Parser | grep -E '^author ' | sort | uniq -c | sort -rn; echo ---; git log --format='%an' -- src/Parser | sort | uniq -c | sort -rn
+ - Bash: git show --stat --format='%h %an' 45259fd -- src/Parser | tail -12; echo ---; for f in $(git ls-files src/Parser); do git blame -w --line-porcelain HEAD -- "$f" | grep -E '^author '; done | sort | uniq -c | sort -rn; echo ---; git blame -w --line-porcelain HEAD -- src/Parser/EntryParser.php | grep -E '^author ' | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files src/Parser); do echo "== $f"; git blame -w --line-porcelain HEAD -- "$f" | grep -E '^author ' | sort | uniq -c | sort -rn; done
+FINAL ANSWER:
+**Short answer:** Graham Campbell for most of `src/Parser/`. Priscila Duarte for `Comments.php` and `Interpolator.php`. Marta Kowalczyk's raw blame share is misleading, as explained below.
+
+**Why the raw blame is misleading:** Plain `git blame` credits Marta with 791 of 912 lines. That comes from commit `45259fd` ("chore: indent with tabs"), which she made and which rewrote every line in all 9 files (795 lines changed each way). It changed whitespace, not logic.
+
+**Whitespace-insensitive blame (`git blame -w`), per file:**
+
+| File | Owner (lines) |
+|---|---|
+| `EntryParser.php` | Graham Campbell (363/363) |
+| `Value.php` | Graham Campbell (101/101) |
+| `Lines.php` | Graham Campbell (135/136) |
+| `Lexer.php` | Graham Campbell (58/58) |
+| `Parser.php` | Graham Campbell (58/58) |
+| `Entry.php` | Graham Campbell (58/59) |
+| `ParserInterface.php` | Graham Campbell (19/19) |
+| `Interpolator.php` | Priscila Duarte (62/62) |
+| `Comments.php` | Priscila Duarte (56/56) |
+
+Overall: Graham 792 lines, Priscila 118, and one line each for Jonas Staudenmeir and JT Smith, which are too small to matter.
+
+**Caveat:** `-w` only removes whitespace noise. It can't tell whether someone rewrote logic that another person originally wrote. For a stronger answer, check the commits that last touched the logic, not just the lines.
+
+**Suggested reviewers:** Graham Campbell as primary, Priscila Duarte for changes to `Comments.php` or `Interpolator.php`.
+
+I did not change the repo. If you want blame to skip the reindent going forward, add `45259fd` to a `.git-blame-ignore-revs` file and set `git config blame.ignoreRevsFile .git-blame-ignore-revs`. I can do that if you want.
+META cost=0.00615366 ms=20608 turns=7

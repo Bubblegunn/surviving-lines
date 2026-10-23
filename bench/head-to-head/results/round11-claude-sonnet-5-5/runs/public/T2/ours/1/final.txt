@@ -1,0 +1,45 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js'; $SL -- lib; echo ======; $SL --merge-identities -- lib; echo =====; $SL --files -- lib | head -40
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; sl -- lib; echo ======; sl --merge-identities -- lib; echo =====; sl --files -- lib | head -40
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js "$@"; }; ls lib; git show --stat fcd2b56 | head -15; sl --merge-identities --files -- lib 2>&1 | head -40; sl --ignore-rev fcd2b56 --merge-identities -- lib 2>&1 | grep -E "^(author|Troy|Dougl|Alej|bus)"
+FINAL ANSWER:
+**Bus factor of `lib/`: 1.** That is the smallest number of authors whose surviving lines reach 50% of the lines counted. It measures how concentrated the remaining code is, not who understands it. If Troy Goode leaves, no one else holds even a quarter of the code.
+
+**Scope.** `lib/` contains one file, `lib/index.js`. It has 214 non-blank lines (238 with blank lines) at HEAD. Counts use `git blame -w -M -C`, which is the default copy detection. The figures below have not been adjusted for copy detection. No dropped files, bots or placeholder identities were reported.
+
+| Author | Lines | Share | Commits |
+|---|---|---|---|
+| Troy Goode, `<email redacted>` | 132 | 61.7% | 32 (48.5%) |
+| Douglas Christopher Wilson | 20 | 9.3% | 4 (6.1%) |
+| Alejandro Caravaca Puchades | 14 | 6.5% | 5 (7.6%) |
+| Troy Goode, `troy@laptop.example` | 12 | 5.6% | 1 (1.5%) |
+| LuisEGR | 6 | 2.8% | 1 |
+| Raymond Feng | 6 | 2.8% | 1 |
+| max.laverse | 5 | 2.3% | 1 |
+| Benjamin Eidelman | 3 | 1.4% | 1 |
+| Igor Soarez | 3 | 1.4% | 1 |
+| Alberto Leal | 2 | 0.9% | 1 |
+
+15 more authors hold 5.1% together. The largest of them is Mathias Buus at 0.9%.
+
+**Bus factor with the two Troy Goode addresses merged.** The two Troy Goode addresses look like one person: same name, and the strong evidence is the identity hint. This merge is a guess from names and addresses until you confirm it. I did not write a `.mailmap`.
+- Merged, Troy Goode holds 144 lines (67.3%). The bus factor is still 1.
+- Unmerged, the bus factor is 1 and he holds 61.7%.
+
+**Bus factor to reach 80%.** This is 4 authors with the addresses unmerged and 3 authors with them merged. Both figures are for `lib/` only.
+
+**Other adjustments:**
+- **Reformat ignored:** commit `62628c0` ("style: reformat js with 4-space indent and double quotes", Fiona Formatter) rewrote 32 lines. It is left out of the table above. Counting it would give Fiona Formatter 15.0% and Troy 51.9% (unmerged). The bus factor stays 1 either way.
+- **Mechanical rewrites checked:** I examined 31 commits that hold surviving lines. I set aside one, `62628c0`. A second candidate, `fcd2b56` ("switch to ESLint; clean up", Troy Goode, 2015), is not set aside and still counts. It changed 30 lines of `lib/index.js` and holds 5 surviving lines.
+- **Alejandro Caravaca Puchades:** his name and `alex94puchades` share one address (`<email redacted>`). They are counted as one person, with 14 lines. This identity is also a guess from names and addresses.
+
+**Ownership shape.** Only one file is involved. Troy Goode is the top owner with 67.3% (merged). No single owner holds above 80%, and the file does have an owner holding half or more. Most of the rest is spread thinly. The second-largest holder, Douglas Christopher Wilson, has 9.3%, and his last commit was in 2021. Of the three people above 5%, Alejandro Caravaca Puchades last committed in 2015.
+
+**What this does not show.** It does not measure who understands the code. Review, design discussion and deleted code leave no surviving lines. The 2026 commit dates for the second Troy Goode address (and for the reformat commit) are the latest in the history. Troy Goode's `<email redacted>` address last committed in 2019.
+META cost=0.07920649999999999 ms=20578 turns=6

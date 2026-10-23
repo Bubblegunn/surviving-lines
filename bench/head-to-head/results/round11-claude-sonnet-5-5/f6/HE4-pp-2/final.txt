@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls src/Parser | head -50; for f in $(git ls-files src/Parser); do git blame -w -M -C --line-porcelain -- "$f" | grep -E '^author-mail ' ; done | sort | uniq -c | sort -rn | head -15
+ - Bash: cat .mailmap; echo ---; for f in $(git ls-files src/Parser); do git blame -w -M -C -e -- "$f" | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/'; done | sort | uniq -c | sort -rn; echo ---; git shortlog -sne HEAD -- src/Parser | head
+FINAL ANSWER:
+**Review it with Graham Campbell (<email redacted>).** Priscila Duarte (<email redacted>) is a good second reviewer.
+
+I counted surviving lines with `git blame -w -M -C` across all 9 files in `src/Parser/`. That ignores whitespace-only changes, so the recent "indent with tabs" commit doesn't take ownership of any lines. It also follows lines that were moved or copied between files. I applied `.mailmap` so Graham's alternate emails count as one person.
+
+| Author | Lines now |
+|---|---|
+| Graham Campbell | 782 (about 85%) |
+| Priscila Duarte | 118 (about 13%) |
+| Vance Lucas | 10 |
+| JT Smith | 1 |
+| Jonas Staudenmeir | 1 |
+
+- **Graham:** he is also first by commit count (39), so for the parser as a whole both measures agree.
+- **Priscila:** she has only 2 commits touching `src/Parser/`, yet 118 lines survive. Her changes were large, which commit counts hide. I didn't check which files her lines are in.
+- **Not owners:** the StyleCI Bot and Marta Kowalczyk have commits there, but no lines survive under their names. Vance Lucas has 10 lines left.
+
+If the change touches a specific file, I can run the same blame on just that file. Priscila may own more of one file than her overall share suggests.
+META cost=0.0688724 ms=13017 turns=3

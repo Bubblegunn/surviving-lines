@@ -1,0 +1,35 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T3-pp-1/repo; echo ----; git shortlog -sne --all | cat; echo ----; ls -a; cat .mailmap 2>/dev/null
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T3-pp-1/repo; git log --all --format='%h %ad %an <%ae> | %cn <%ce> | %s' --date=short | grep -iE 'troy|puchades|alex94|fiona|efe|dogukan' | head -20; echo ---; git log -5 --format='%h %an <%ae> | %cn <%ce> | %s'; echo ---; git log --all --format='%cn <%ce>' | sort | uniq -c | sort -rn | head
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T3-pp-1/repo; git log --all --format='%an|%ae' | sort -u > /tmp/ids; echo "names w/ >1 email:"; cut -d'|' -f1 /tmp/ids | tr A-Z a-z | sort | uniq -d; echo "emails w/ >1 name:"; cut -d'|' -f2 /tmp/ids | tr A-Z a-z | sort | uniq -d; echo "user parts:"; cut -d'|' -f2 /tmp/ids | cut -d@ -f1 | tr A-Z a-z | sed 's/^[0-9]*+//' | sort | uniq -d
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T3-pp-1/repo; cat > .mailmap <<'EOF'
+Alejandro Caravaca Puchades <<email redacted>>
+Troy Goode <<email redacted>> <troy@laptop.example>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sne --all | grep -ciE 'troy|puchades'
+FINAL ANSWER:
+Yes. Two people show up under more than one identity:
+
+- **Troy Goode** appears with `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits: `02afce3` and `b2005d9`, both from 2026-04-10).
+- **Alejandro Caravaca Puchades** uses one email, `<email redacted>`, but 1 of his 5 commits has the name `alex94puchades` instead of his full name.
+
+No other duplicates turned up. I checked for names with more than one email, emails with more than one name, and matching email usernames.
+
+**Fix:** I added a `.mailmap` file at the repo root. It maps the extra identities onto each person's main one. Git history is not rewritten, so commit hashes stay the same. `git shortlog`, `git log --use-mailmap` and blame now count each person once:
+
+```
+Alejandro Caravaca Puchades <<email redacted>>
+Troy Goode <<email redacted>> <troy@laptop.example>
+```
+
+**Top author:** Douglas Christopher Wilson, with 143 commits. That is the same as before the fix. Troy Goode is second with 122 (was 120), and Alejandro moves up to 5 commits.
+
+I merged the Troy Goode entries because the name matches exactly. But `laptop.example` is a placeholder domain, so that email may come from a misconfigured machine rather than from Troy. If those two commits are not his, remove that line. The top author stays the same either way.
+
+`.mailmap` is not committed yet. Say if you want me to commit it.
+META cost=0.21951040000000002 ms=29647 turns=5

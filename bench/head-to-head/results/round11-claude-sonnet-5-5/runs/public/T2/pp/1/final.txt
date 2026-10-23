@@ -1,0 +1,33 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls lib && echo --- && git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && for f in $(git ls-files lib); do n=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn); echo "$f total=$(echo "$n" | awk '{s+=$1} END{print s}') authors=$(echo "$n" | wc -l) top=$(echo "$n" | head -1)"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; git log -1 --format=%cd; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | awk -F'|' '{if(!($1 in l))l[$1]=$2; f[$1]=$2} END{for(a in l)print a, "last="l[a], "first="f[a]}'
+FINAL ANSWER:
+**Bus factor: 1, borderline 2.** `lib/` has one file, `lib/index.js`, so the whole directory has one risk profile.
+
+**Commit ownership** (history only, no time filter):
+- Troy Goode: 29 of 62 commits to the current file (47%). Counting commits to files that no longer exist under `lib/`, it is 33 of 66 (50%). Active from 2013-01 to 2026-04-10.
+- Douglas Christopher Wilson and Alejandro Caravaca Puchades: 4 each.
+- Simon Mansfield: 3.
+- jordandenison: 2.
+- 20 other people: 1 each. One of them is "Fiona Formatter", the 2026-04-12 reformat commit.
+
+**How many leaving leaves nobody who understands it:**
+- Troy alone holds about half the history. If Troy leaves, no one is left who wrote more than 4 commits, which is about 6%.
+- Remove Troy and the next 3 contributors (Douglas, Alejandro, Simon). That leaves only one-off contributors, and every one of them last committed in 2013–2021.
+- In practice the second group is already gone. Nobody except Troy has touched the file since 2021-07 (LuisEGR), and nobody has committed in the last 90 days.
+
+**Limits of this result:**
+- Commit count is a proxy. It doesn't measure who understands the code, and a single reformat commit counts as a contribution.
+- I didn't check how many files import `lib/index.js`. It is the only file, so every consumer depends on it.
+- I read the whole history, which includes early commits that predate the current code. A `--since` filter would show who is still active.
+
+**Recommendations:**
+- Have a second person review the next change to `lib/index.js` and write down any non-obvious behavior.
+- Check whether the test suite covers `lib/index.js` well enough that someone new can change it safely.
+META cost=0.0693873 ms=20456 turns=5

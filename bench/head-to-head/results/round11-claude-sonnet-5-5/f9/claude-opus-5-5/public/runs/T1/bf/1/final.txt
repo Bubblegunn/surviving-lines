@@ -1,0 +1,39 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1-bf-1/repo; git log --oneline | wc -l; git ls-files | head -50; git show --stat HEAD~2 HEAD~1 HEAD | grep -E '^(commit|Author|    |.*\|)' | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1-bf-1/repo; ls -a; cat .mailmap .git-blame-ignore-revs 2>/dev/null; git show HEAD~1 | head -50; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1-bf-1/repo; for mode in raw ignore; do echo "== $mode"; for f in $(git ls-files); do if [ $mode = raw ]; then git blame --line-porcelain -- "$f"; else git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f"; fi | grep -E '^author-mail ' ; done | sort | uniq -c | sort -rn | head -15; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/T1-bf-1/repo; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain -- "$f" | grep '^author-mail ' | sed "s#^author-mail #$f #"; done | sed -e 's/<troy@laptop.example>/<<email redacted>>/' > /tmp/blame.txt; wc -l < /tmp/blame.txt; echo "== total"; awk '{print $2}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -8; for a in lib/ test/ README.md HISTORY.md; do echo "== $a"; grep "^$a" /tmp/blame.txt | awk '{print $2}' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: grep -c '^lib/' /tmp/blame.txt; grep -c '^test/' /tmp/blame.txt; grep inigomarquinez /tmp/blame.txt | awk '{print $1}' | uniq -c; grep jonchurch /tmp/blame.txt | awk '{print $1}' | uniq -c; grep bjohansebas /tmp/blame.txt | awk '{print $1}' | uniq -c
+FINAL ANSWER:
+The two main owners are **Troy Goode** (about 40% of the lines still in the repo) and **Douglas Christopher Wilson** (about 32%). Troy owns most of the library code itself.
+
+Plain `git blame` gives a misleading answer here. It credits **Fiona Formatter** with 1016 of 1995 surviving lines (51%), but all of those come from commit `62628c0`, which only changed indentation and quotes. Commit `b2005d9` (Troy, laptop email) only added `// checked` comments to 12 existing lines. I ignored both commits and attributed each line to the person who wrote its logic. I also counted Troy's two email addresses as one person.
+
+**Surviving lines by author (1995 tracked lines):**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 808 | 40.5% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Others (long tail) | ~270 | ~14% |
+
+**By area:**
+- **`lib/index.js` (238 lines):** Troy wrote 157 lines (66%). Doug has 22 and Alejandro Caravaca Puchades has 16. Troy is effectively the only owner of the runtime code.
+- **`test/` (966 lines):** Troy has 517 (54%) and Doug has 374 (39%). This area is shared between the two.
+- **`README.md`:** Troy has 116 lines and Jon Church has 72.
+- **`HISTORY.md`:** Mostly Doug (50 lines).
+- **`.github/workflows/`:** Íñigo Marquínez Prado wrote 95 lines of CI config (ci, scorecard) and Sebastian Beltran wrote 63 (codeql).
+
+By commit count Doug leads (143 commits against Troy's 120). By surviving code, Troy is ahead, especially in `lib/`. The bus-factor risk is in `lib/`, because nearly all of it depends on one person.
+
+To make plain `git blame` give this answer too, add a `.git-blame-ignore-revs` file listing `62628c0` and `b2005d9`. Then run `git config blame.ignoreRevsFile .git-blame-ignore-revs`. GitHub's blame view also reads that file. Tell me if you want it.
+META cost=0.21767899999999998 ms=30732 turns=6

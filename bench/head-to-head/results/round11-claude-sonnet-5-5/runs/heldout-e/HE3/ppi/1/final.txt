@@ -1,0 +1,58 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "src/"}
+ - Bash: find src -type f -name "*.rs" | sort && echo --- && git log --all --no-merges --pretty=format:"%an <%ae>" -- src | sort | uniq -c | sort -rn && echo --- && git log -1 --format=%cd && git rev-list --count HEAD
+ - Bash: for f in $(find src -type f -name "*.rs" | sort); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | awk -v f="$f" '{n=$1; $1=""; printf "%s|%s|%d\n", f, substr($0,2), n}'; done
+ - Bash: git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- src | awk -F'|' '!s[$1]++' | head -20; echo ---; git log --all --no-merges --since=2025-10-23 --pretty=format:"%an|%ad|%s" --date=short -- src; echo ---; git log -8 --pretty=format:"%h %an %ad %s" --date=short -- src
+FINAL ANSWER:
+## Bus Factor: `src/` (all history, blame-based)
+
+Period: all history | Generated: 2026-10-23 | 8 Rust files, 3,262 surviving lines, 199 commits in repo
+
+**Project bus factor: 1.** Andrew Gallant wrote 78% of the lines that exist now (2,551 of 3,262). The next largest author has about 2%.
+
+### Who wrote what is there now
+
+I used `git blame -w -M -C`, so whitespace changes, moves and renames don't take credit. The module move and the `tests` to `testsuite` rename are followed back to the original authors.
+
+| File | Lines | Top author | Share | Other notable authors | Bus factor |
+|---|---|---|---|---|---|
+| `src/lib.rs` | 1158 | Andrew Gallant | 64% | mcharsley 4%, Aron Griffis 4%, Ashley 3%, Martin Sehnoutka 3%, plus about 25 others | 3+ |
+| `src/testsuite/recursive.rs` | 1097 | Andrew Gallant | 92% | Sebastian Thiel 5%, Lukas Kalbertodt 2% | 1 |
+| `src/dent.rs` | 371 | Andrew Gallant | 78% | Yufeng Wang 6%, Ashley 4%, Mei Tanaka 4% | 2 |
+| `src/testsuite/util.rs` | 257 | Andrew Gallant | 98% | none | 1 |
+| `src/error.rs` | 267 | Andrew Gallant | 63% | Garrett Berg 13%, Niv Kaminer 11%, Ashley 5% | 3 |
+| `src/util.rs` | 56 | Andrew Gallant | 75% | Aron Griffis 16% | 2 |
+| `src/ancestor.rs` | 47 | Andrew Gallant | 89% | none (Sam Whitfield's 4 lines are header and move edits) | 1 |
+| `src/testsuite/mod.rs` | 9 | Sam Whitfield 56% / Andrew 44% | n/a | too small to matter | n/a |
+
+Sam Whitfield owns the three newest commits (license headers, `Ancestor` move, `testsuite` rename). That is about 42 lines of surviving authorship, mostly headers. Sam knows the new layout but did not write the logic.
+
+### Who is active
+
+- The newest commit in the repo is 2026-03-23. Today is 2026-10-23, so **no one has committed to `src/` in the last 90 days**.
+- Relative to the repo's own last activity (since 2026-01), the active authors are Sam Whitfield, Mei Tanaka, Andrew Gallant (last 2026-01-14) and Tobias Brandt.
+- Sebastian Thiel (2023-09), vsuryamurthy (2023-03) and Marvin Löbel (2021-03) are long inactive. Do not pick them first.
+
+### Who to ask to review
+
+1. **Andrew Gallant** is the default reviewer for anything in `lib.rs`, `dent.rs`, `error.rs`, `ancestor.rs` and `testsuite/`. He is the only person with deep knowledge of `testsuite/recursive.rs`, `testsuite/util.rs` and `ancestor.rs`. His last commit was 2026-01-14, so check he is still reachable.
+2. **Mei Tanaka** is a second reviewer if you touch `dent.rs`. They wrote the newest feature there (`describe_file_type`, 2026-02-03) and still own 14 lines.
+3. **Sam Whitfield** can check module layout, imports and license headers after the recent restructuring. This is not a logic review.
+4. **Sebastian Thiel** is a fallback for `recursive.rs` and `lib.rs` (74 lines). He is inactive since 2023, so only try him if Andrew is unavailable.
+
+### Caveats
+
+- I don't know which files your PR touches. Match the table above to your diff. If it only touches `lib.rs`, you have more reviewer choices. If it touches `recursive.rs`, `testsuite/util.rs` or `ancestor.rs`, Andrew is the only real option.
+- `util.rs` shows `same_device` as Andrew's work. Tobias Brandt added it first (2026-01-12), then Andrew reverted it and reapplied it. I did not check the lines, so Tobias may still know that code.
+- Some author names appear twice in the history with different emails (for example Niv Kaminer and nivkner, Alisha and Alisha Aneja, Ashley and Ashley Mannix). I did not merge them, so those people's shares may be understated.
+- I did not run the contributor-analyzer agent or count importers per file. The repo is small enough to get the ownership numbers directly from blame.
+
+### Recommendation
+
+Ask Andrew Gallant as the main reviewer. Add Mei Tanaka if the PR touches `dent.rs`. Long term, the project has no one but Andrew for the test suite. A second person who reviews `testsuite/` changes would reduce that risk.
+META cost=0.0912338 ms=34365 turns=6

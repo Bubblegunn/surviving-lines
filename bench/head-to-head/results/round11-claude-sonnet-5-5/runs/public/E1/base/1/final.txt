@@ -1,0 +1,47 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -20; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c; git log --oneline | wc -l
+ - Bash: for f in $(git ls-files); do echo "== $f"; git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo; echo LOG; for f in $(git ls-files); do echo "== $f"; git log --follow --format='%aN' -- "$f" | sort | uniq -c | sort -rn | head -3; done
+ - Bash: git log -1 --format='%h %aN <%aE> %ad %s' 62628c0; git log -3 --format='%h %aN %ad %s' -- lib/index.js; for f in lib/index.js test/test.js test/error-response.js test/example-app.js test/issue-2.js README.md; do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; git log --format='%aN' --since=2024-01-01 | sort | uniq -c | sort -rn | head; git log -1 --format=%ad
+ - Bash: for f in lib/index.js test/test.js test/error-response.js test/example-app.js test/issue-2.js test/vary.js README.md; do printf "%s " $f; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | awk '{t+=$1; if(NR==1){n=$1;$1="";a=$0}} END{printf "%d/%d = %d%% %s\n", n,t,100*n/t,a}'; done
+FINAL ANSWER:
+Bus factor is about 2. Two people, Troy Goode and Douglas Christopher Wilson, account for nearly all authorship. Troy Goode is the single point of failure for the core code.
+
+The repo is small: 354 commits, 15 tracked files, and one source file, `lib/index.js`. Blame figures below skip the reformat commit `62628c0` (author "Fiona Formatter"). That commit rewrote the whole file's formatting and would otherwise show up as the main author of the code.
+
+**Single-contributor areas: Troy Goode**
+- `lib/index.js` is the only source file. Troy wrote 66% of its lines (159 of 238) and made 29 of its commits. The next largest authors are Douglas Wilson (22 lines) and Alejandro Caravaca Puchades (12 lines).
+- `test/vary.js` is 100% Troy's.
+- `test/error-response.js` is 86% Troy's.
+- `test/issue-2.js` is 83% Troy's.
+- `test/example-app.js` is 82% Troy's.
+
+**Single-contributor areas: Douglas Christopher Wilson**
+- Douglas owns the repo infrastructure: `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, and most of `package.json` (68 commits).
+- He also wrote most of `.github/workflows/ci.yml` (118 lines) and most of `HISTORY.md` and `LICENSE`.
+- He is the largest author of `test/test.js` at 46%, ahead of Troy at 43%. That file is shared, so it is not a single-person dependency.
+
+**Areas with several contributors**
+- `README.md`: Troy 41%, Jon Church 26%, Linus Unnebäck 10%.
+- `.github/workflows/ci.yml`: Douglas, Ignacio Mangas and Ulises Gascón.
+- The other workflow files each have a different author: `codeql.yml` is Sebastian Beltran's, `scorecard.yml` is Íñigo Marquínez Prado's, and `dependabot.yml` is Ulises Gascón's. Each is a single author but low risk, because the files are small and mostly bot-maintained.
+
+**Recent activity**
+- Since 2024 the most active committers are dependabot[bot] (11 commits), Ulises Gascón (3), and Jon Church (3). The other 2024+ authors have 2 commits or fewer, and none of them wrote much of the code.
+- Troy's last commit is `b2005d9` ("lib: annotate handlers", 2026-04-10). The most recent commit is the reformat on 2026-04-12.
+- Troy and Douglas wrote the code, but recent maintenance has come from others. If Troy leaves, nobody else has deep knowledge of `lib/index.js`.
+
+**Caveats**
+- Git identities are not merged. "Troy Goode" appears under two emails (`<email redacted>` and `troy@laptop.example`), so some per-person counts may be slightly low.
+- "Fiona Formatter" (`fiona@formatter.example`) looks like a placeholder identity.
+- Authorship shows who wrote the code, not who reviews or understands it. PR review data from GitHub is not in git history.
+
+**Suggested actions**
+- Get a second person to review or take ownership of `lib/index.js`. Alejandro Caravaca Puchades and Douglas Wilson already have commits in it.
+- Document the design intent behind `lib/index.js`, since Troy is the only deep author.
+META cost=0.07507710000000001 ms=23196 turns=6

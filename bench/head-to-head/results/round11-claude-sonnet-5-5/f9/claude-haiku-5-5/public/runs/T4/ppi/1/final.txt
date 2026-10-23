@@ -1,0 +1,34 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== all-time ==" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last 6 months ==" && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit per author ==" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | sort -t'|' -k1,1 -k2,2r | awk -F'|' '!seen[$1]++' && echo && echo "== importers ==" && grep -rn "lib/index\|require(.*lib\|from.*lib" --include="*.js" --include="*.json" . 2>/dev/null | grep -v node_modules | grep -v "^./.git/" | head -30
+ - Bash: wc -l lib/index.js && head -5 package.json && echo "== 1y ==" && git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== recent commits ==" && git log --all --no-merges --pretty=format:"%h %an %ad %s" --date=short -8 -- lib/index.js && echo && echo "== total commits to repo ==" && git log --all --no-merges --oneline | wc -l
+FINAL ANSWER:
+**Short answer: Troy Goode should review it.** He is the only person with recent, substantive knowledge of this file.
+
+| Metric | Value |
+|---|---|
+| Total commits to `lib/index.js` (all time, non-merge) | 62 |
+| Troy Goode | 29 (~47%) |
+| Distinct contributors | 26 |
+| Last 6 months | 0 commits |
+| Last 1 year | 2 commits: Troy Goode (2026-04-10, "lib: annotate handlers") and Fiona Formatter (2026-04-12, reformat only) |
+
+- **Troy Goode** is the package author and the main maintainer. He is active: his last commit was April 2026.
+- **Fiona Formatter** made a whitespace/quote reformat. That does not show understanding of the logic, so don't count her as a second owner.
+- Everyone else's last commit is 2013–2021. Treat them as historical contributors, not reviewers.
+
+**Bus factor for this file: effectively 1.** Troy is the only current owner. If he is unavailable, nobody recently active has reviewed the logic.
+
+**Importance:** `lib/index.js` is the package entry point (`"main"` in `package.json`) and the whole public API of the `cors` middleware. In-repo importers are only the tests in `test/`. The real dependents are external npm consumers, which I can't count from this repo.
+
+**Suggested review plan:**
+1. Request review from Troy Goode.
+2. If you need a second pair of eyes, nobody with recent logic knowledge exists in the history. Pick a reviewer who can read the CORS spec and this file's tests (`test/*.js`), and plan a knowledge-sharing session with Troy.
+
+**Scope:** I ran this for `lib/index.js` only. I did not run the full-repo scan or the contributor-analyzer agent, and I did not check for co-authors or mailmap aliases that could merge identities. If you want a full-repo report, I can run `/project-pilot:bus-factor` without a file scope.
+META cost=0.00547279 ms=15397 turns=5

@@ -1,0 +1,38 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-hist-2/repo/src"}
+ - mcp__git-historian__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-hist-2/repo/src"}
+FINAL ANSWER:
+Andrew Gallant wrote most of the current code in `src/`. Nobody who wrote it has committed in the last 6 months, so I can't name an active owner from git history alone.
+
+**Who wrote what (lines surviving at HEAD)**
+- **Andrew Gallant:** 75.8% of `src/` (2,471 lines). He owns 6 of the 8 files and made 52% of all commits. Last commit was 2026-01-14.
+  - `testsuite/recursive.rs`: 87%
+  - `dent.rs`: 93%
+  - `error.rs`: 96%
+  - `testsuite/util.rs`: 98%
+  - `util.rs`: 91%
+  - `lib.rs`: 52%
+- **Sam Whitfield:** 2.6% of `src/` (85 lines). Last commit was 2026-03-23.
+  - Owns `ancestor.rs` (100%) and `testsuite/mod.rs` (56%).
+  - Has a few lines in `util.rs`, `error.rs` and `testsuite/util.rs`.
+- **Smaller contributors in `lib.rs` and `dent.rs`:** nivkner (13% of `lib.rs`, last commit 2017), Aron Griffis (4% of `lib.rs`), Mei Tanaka (14 lines in `dent.rs`, last commit 2026-02-03).
+
+**Who to ask**
+- **Sam Whitfield:** the most recent committer. Their last commit is also the closest to your window.
+- **Andrew Gallant:** the original author of most of the code. Ask them if your change touches `lib.rs`, `dent.rs`, `error.rs` or `recursive.rs` logic.
+- **Mei Tanaka:** only a small share of `dent.rs`, but a recent one.
+
+**Caveats**
+- All 8 files are orphaned by the tool's rule (more than 50% of lines owned by authors with no commit since 2026-04-23). The bus factor for `src/` is 1.
+- Git authorship shows who wrote the code, not who is available or who maintains the repo now. I didn't check for a CODEOWNERS file or the contributor docs. Check those before you pick a reviewer.
+- Some of Sam Whitfield's recent commits are moves and renames, such as `ancestor.rs` and the `src/tests` to `src/testsuite` rename. Those show they know the layout, not necessarily the logic.
+
+If you tell me which files your PR touches, I can narrow this to those files.
+META cost=0.068516 ms=15339 turns=5

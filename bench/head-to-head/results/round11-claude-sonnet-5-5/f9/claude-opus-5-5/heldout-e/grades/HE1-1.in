@@ -1,0 +1,259 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I just took over maintenance of this repo. Who actually wrote the Python code that is still in it today, and who should I ask about records.py? Commit counts don't tell me much, I want to know whose code is really alive.
+
+CRITERIA:
+1. Kenneth Reitz is named the top owner of records.py with a share of about 48% (accept 44–52%) and of all tracked Python code with about 40% (accept 36–44%); at least one of the two numbers must be given. FAIL if someone else is named top owner, if neither number is given, if a number is outside tolerance, or if the shares are derived from commit counts instead of surviving lines.
+2. Each person who appears under several identities is listed once: Jan Vlcinsky/Vlčinský at about 12% of all Python code (accept 9–15%) and Dana Okafor/"dana okafor" at about 4.8% (accept 3–7%), if these people are listed with a number. FAIL if either appears as two separate rows or people, or if Kenneth Reitz's share is split across his two addresses.
+3. The black-style reformat commit (Priya Raman) and the pre-commit.ci bot commit are not credited with code: Priya Raman and the bot each hold at most 1% of lines in the answer or are absent, and the answer says (in any wording) that reformatting/bot commits were looked through or left out. FAIL if Priya Raman or the bot is presented as an owner or as someone to ask, or if the answer does not mention that such commits were excluded or looked through.
+4. Commit-heavy is not owner: Marcus Lindqvist (second-highest commit count, 25) is shown with at most 2% of live lines (truth: 0.7%, 6 lines) or not shown as an owner at all. FAIL if the answer ranks him in the top 3 owners, calls him a main owner, or recommends him as the person to ask about records.py.
+5. The ordering after Kenneth is right for all tracked Python code: Jan Vlcinsky (about 12%) first, then Chad Whitacre and Greg Troszak (each about 8.4%, accept 6–11%), all before Dana Okafor (about 4.8%) and Tomás Ibarra (about 1.2% overall, 2% of records.py; he must be credited, not Kenneth, if mentioned). The answer states what it counted (live lines in Python files, not commits). FAIL if Dana, Marcus, Priya or the bot appear above Chad Whitacre or Greg Troszak, or if the unit counted is not stated.
+
+GROUND TRUTH (computed by a script with git blame):
+== e1 ground truth ==
+fixture HEAD: 0e8fe2e37aabc97d1aaac9c9592def4b889fced7 2026-06-08 (as-of date = HEAD commit date)
+scope: tracked *.py files at HEAD
+excluded files (non-blank lines): none
+ignored commits (2): abe2ea78 style: format with black, 0e8fe2e3 [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+-- ALL: attributable human lines = 819
+    1. Kenneth Reitz              330 lines  40.29%  | commits(all history)=204 last_commit=2024-03-29
+    2. Jan Vlcinsky                98 lines  11.97%  | commits(all history)=15 last_commit=2018-04-28
+    3. Chad Whitacre               69 lines   8.42%  | commits(all history)=11 last_commit=2016-11-21
+    4. Greg Troszak                69 lines   8.42%  | commits(all history)=3 last_commit=2017-12-09
+    5. Dana Okafor                 39 lines   4.76%  | commits(all history)=2 last_commit=2026-05-11
+    6. Harold Cooper               38 lines   4.64%  | commits(all history)=6 last_commit=2016-02-11
+    7. Joakim Uddholm              30 lines   3.66%  | commits(all history)=3 last_commit=2018-02-15
+    8. Joseph Gardi                22 lines   2.69%  | commits(all history)=3 last_commit=2026-02-08
+    9. mcdallas                    21 lines   2.56%  | commits(all history)=6 last_commit=2018-04-27
+   10. Brian Hammond               11 lines   1.34%  | commits(all history)=2 last_commit=2016-02-29
+
+-- records.py: attributable human lines = 482
+    1. Kenneth Reitz              232 lines  48.13%  | commits(all history)=204 last_commit=2024-03-29
+    2. Greg Troszak                48 lines   9.96%  | commits(all history)=3 last_commit=2017-12-09
+    3. Chad Whitacre               34 lines   7.05%  | commits(all history)=11 last_commit=2016-11-21
+    4. Dana Okafor                 33 lines   6.85%  | commits(all history)=2 last_commit=2026-05-11
+    5. Jan Vlcinsky                26 lines   5.39%  | commits(all history)=15 last_commit=2018-04-28
+    6. mcdallas                    21 lines   4.36%  | commits(all history)=6 last_commit=2018-04-27
+    7. Tomás Ibarra                10 lines   2.07%  | commits(all history)=1 last_commit=2026-04-20
+    8. Harold Cooper                9 lines   1.87%  | commits(all history)=6 last_commit=2016-02-11
+    9. Andrew Doroschenko           8 lines   1.66%  | commits(all history)=2 last_commit=2016-02-08
+   10. Beha                         8 lines   1.66%  | commits(all history)=1 last_commit=2020-01-06
+
+-- tests/: attributable human lines = 221
+    1. Jan Vlcinsky                72 lines  32.58%  | commits(all history)=15 last_commit=2018-04-28
+    2. Chad Whitacre               35 lines  15.84%  | commits(all history)=11 last_commit=2016-11-21
+    3. Harold Cooper               29 lines  13.12%  | commits(all history)=6 last_commit=2016-02-11
+    4. Joakim Uddholm              22 lines   9.95%  | commits(all history)=3 last_commit=2018-02-15
+    5. Greg Troszak                21 lines   9.50%  | commits(all history)=3 last_commit=2017-12-09
+    6. Kenneth Reitz               14 lines   6.33%  | commits(all history)=204 last_commit=2024-03-29
+    7. Brobin                      10 lines   4.52%  | commits(all history)=3 last_commit=2016-02-23
+    8. Brian Hammond                8 lines   3.62%  | commits(all history)=2 last_commit=2016-02-29
+    9. Dana Okafor                  6 lines   2.71%  | commits(all history)=2 last_commit=2026-05-11
+   10. Daniel Schep                 4 lines   1.81%  | commits(all history)=2 last_commit=2017-12-07
+
+WATCH Marcus Lindqvist: ALL: 6 lines (0.73%); records.py: 6 lines (1.24%); tests/: 0 lines (0.00%)
+
+WATCH Priya Raman: ALL: 0 lines (0.00%); records.py: 0 lines (0.00%); tests/: 0 lines (0.00%)
+
+WATCH Tomás Ibarra: ALL: 10 lines (1.22%); records.py: 10 lines (2.07%); tests/: 0 lines (0.00%)
+
+WATCH Dana Okafor: ALL: 39 lines (4.76%); records.py: 33 lines (6.85%); tests/: 6 lines (2.71%)
+
+WATCH Kenneth Reitz: ALL: 330 lines (40.29%); records.py: 232 lines (48.13%); tests/: 14 lines (6.33%)
+
+-- identity groups with more than one name/email (merged):
+   Dana Okafor: Dana Okafor <<email redacted>>; dana okafor <dokafor@fastmail.example>
+   Kenneth Reitz: Kenneth Reitz <<email redacted>>; Kenneth Reitz <<email redacted>>
+   Paul Philip Voelker: Paul Philip Voelker <<email redacted>>; Paul Philip Voelker <<email redacted>>
+
+-- commit-count ranking (no-merges, all history; what a commit count would say):
+   1. Kenneth Reitz             204 commits
+   2. Marcus Lindqvist           25 commits
+   3. Jan Vlcinsky               15 commits
+   4. Chad Whitacre              11 commits
+   5. Harold Cooper               6 commits
+   6. mcdallas                    6 commits
+   7. Brobin                      3 commits
+   8. Greg Troszak                3 commits
+
+Marcus Lindqvist commits touching examples/export_legacy.py: 24
+examples/export_legacy.py exists at HEAD: False
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git log --format='%h %an <%ae> %ad %s' --date=short --stat; ls -a; git ls-files '*.py'
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git log --format='%h %an <%ae> %ad %s' --date=short | head -80; git log --oneline | wc -l; ls -a; git ls-files '*.py'; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git show --stat 0e8fe2e abe2ea7 54b029d 7557b2c | grep -v '^ *$'; cat .mailmap 2>/dev/null; git show 0e8fe2e | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; for f in $(git ls-files '*.py'); do echo "== $f (naive)"; git blame -w --line-porcelain HEAD -- $f | sed -n 's/^author-mail //p' | sort | uniq -c | sort -rn; echo "== $f (ignore fmt, -M -C)"; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain HEAD -- $f | sed -n 's/^author-mail //p' | sort | uniq -c | sort -rn; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git log --format='%ae|%an' | sort -u | grep -Ei 'reitz|gdtroszak|zetaweb|vlcinsky|mc-dallas|tifon|tethik|hrldcpr|okafor|Phrohdoh|tibarra'; git show --stat a1ebdde 5df61d3 91019db | grep -E '^commit|\|'; git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e HEAD -- records.py | awk '{print $1}' | uniq -c | awk '{print $2}' | sort | uniq -c | sort -rn | head -5; git log -3 --format='%h %ad %an' --date=short -- records.py | cat; git log --format='%ad %an' --date=short --since=2023-01-01 -- records.py | cat
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; grep -rn 'LEGACY_SKIP\|_describe\|_coerce_row\|_normalise\|_normalize\|_chunk' --include=*.py . ; git log --format=%h -S LEGACY_SKIP | cat
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-pp-1/repo; git grep -n -E 'LEGACY_SKIP|_describe|_coerce_row|normali[sz]e|chunk' -- '*.py'; git log --format='%h %an' -S LEGACY_SKIP | cat
+FINAL ANSWER:
+Kenneth Reitz wrote most of the Python still alive here. For `records.py`, ask Dana Okafor first, then Tomás Ibarra; nobody active owns the old core.
+
+**Method.** I ran `git blame -w -M -C` on every tracked `.py` file and excluded two commits that only reformat code: `abe2ea7`, Priya Raman's black run, and `0e8fe2e`, the pre-commit bot replacing `class X(object)` with `class X`. Without excluding them, Priya gets 65 lines and the bot gets 4, even though neither wrote any logic. Line counts can shift by a few depending on the blame flags.
+
+**Live lines by author, all Python files:**
+| Author | Live lines | Where |
+|---|---|---|
+| Kenneth Reitz (2 emails) | ~435 | `records.py` 318, `setup.py` 102, tests 15 |
+| Jan Vlčinský | ~119 | `records.py` 30, `conftest.py`, transaction tests |
+| Greg Troszak | ~89 | `records.py` 58, `test_transactions.py` 31 |
+| Chad Whitacre | ~85 | `records.py` 39, `test_records.py` 46 |
+| Harold Cooper, Joakim Uddholm | ~50 each | mostly `test_records.py` |
+| Dana Okafor (2 identities) | ~50 | `records.py` 40, tests 10 |
+| mcdallas | 26 | `records.py` |
+| Tomás Ibarra | 12 | `records.py` |
+| Marcus Lindqvist | 8 | `records.py` |
+| Joseph Gardi | 22 | only `examples/randomuser-sqlite.py` (0 in `records.py`) |
+
+**Commit counts mislead here:**
+- **Marcus Lindqvist** has 25 commits, the most in 2026, but 24 of them edited `examples/export_legacy.py`. Dana deleted that file in `54b029d`. Only 8 lines survive: the `LEGACY_SKIP` tuple at `records.py:15`. Nothing references it now, so it is dead code.
+- **Joseph Gardi**'s transaction re-raise fix (`a1ebdde`) added 1 line to `records.py`, and his follow-up `5df61d3` removed it. None of his code remains in that file.
+- **Dana Okafor** commits under two identities: `<email redacted>` and `dokafor@fastmail.example` (lowercase name). I'm assuming this is one person; confirm with them. There is no `.mailmap`, so tools count them as two people.
+
+**Who to ask about `records.py`:**
+1. **Dana Okafor**: most recent author, about 40 live lines. They wrote `_normalize_keys`, `_chunked` and `_describe` (`records.py:457`–`497`), and they deleted the exporter, so they know why `LEGACY_SKIP` was left behind.
+2. **Tomás Ibarra**: `_coerce_row` (`records.py:485`).
+3. The core classes (`Record`, `RecordCollection`, `Database`, `Connection`) are mostly Kenneth Reitz's code from before 2024, plus older contributors (Troszak, Whitacre, Vlčinský). None of them has committed since early 2024. The git history and old PRs are the more realistic source for that part.
+
+`_coerce_row` and `_describe` have no callers and no tests. Only `_normalize_keys` and `_chunked` are tested.
+
+**Optional fixes:**
+- A `.git-blame-ignore-revs` file listing `abe2ea7` and `0e8fe2e` would make blame on GitHub and in local tools show the real authors.
+- A `.mailmap` would merge Dana's two identities and Kenneth's two.
+
+I can add both if you want.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>'; $SL --include '*.py' --merge-identities; echo ======; $SL --reviewers records.py --merge-identities; echo =====; $SL --history records.py --merge-identities
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $SL --include '*.py' --merge-identities; echo ======; node $SL --reviewers records.py --merge-identities; echo ======; node $SL --history records.py --merge-identities
+ - Bash: SL=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $SL --reviewers records.py --merge-identities; printf '\n-----\n'; node $SL --history records.py --merge-identities; printf '\n-----\n'; node $SL --include '*.py' --identities
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-ours-1/repo; git show --stat abe2ea7 | head -20; git show -w --stat abe2ea7 | tail -3; SL=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $SL --reviewers records.py --merge-identities --ignore-rev abe2ea7 | head -16
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE1-ours-1/repo; node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool> --reviewers records.py --merge-identities --ignore-rev abe2ea7 | sed -n '17,40p'; git show abe2ea7 -- records.py | grep '^[-+]' | head -8
+FINAL ANSWER:
+Most of the Python code alive today is Kenneth Reitz's. Jan Vlcinsky is a distant second. For records.py, ask Kenneth Reitz first, but he has made no commit since 2024-03-29. The most recent active contributor to that file is Dana Okafor. These figures come from `surviving-lines` (`git blame -w -M -C` at HEAD), not from commit counts.
+
+**Repo-wide Python:** 9 `*.py` files, 815 non-blank lines (1,062 with blank lines).
+
+| author | lines | share | with blank | commits |
+|---|---|---|---|---|
+| Kenneth Reitz (2 addresses) | 327 | 40.1% | 432 / 40.9% | 204 (61.3%) |
+| Jan Vlcinsky | 98 | 12.0% | 119 / 11.3% | 15 (4.5%) |
+| Chad Whitacre | 69 | 8.5% | 85 / 8.0% | 11 |
+| Greg Troszak | 68 | 8.3% | 88 / 8.3% | 3 |
+| Dana Okafor (2 addresses) | 39 | 4.8% | 50 / 4.7% | 2 |
+| Harold Cooper | 38 | 4.7% | 51 / 4.8% | 6 |
+| Joakim Uddholm | 30 | 3.7% | 45 / 4.3% | 3 |
+| Joseph Gardi | 22 | 2.7% | 22 / 2.1% | 3 |
+| mcdallas | 21 | 2.6% | 26 / 2.5% | 6 |
+| Brobin | 11 | 1.3% | 18 / 1.7% | 3 |
+| Brian Hammond | 11 | 1.3% | 16 / 1.5% | 2 |
+| Tomás Ibarra | 10 | 1.2% | 12 / 1.1% | 1 |
+| Andrew Doroschenko | 9 | 1.1% | 16 / 1.5% | 2 |
+
+The other 39 authors hold 7.6% together. The largest of them is Beha, with 1.0%.
+
+- **Bus factor:** this is the smallest number of authors who together hold 50% of the surviving lines. For the Python code it is 2 (Kenneth Reitz and Jan Vlcinsky, 52.1% of non-blank lines). It takes 7 authors to reach 80%.
+- **Commits vs. lines:** Kenneth Reitz has 61% of the commits but 40% of the lines. Greg Troszak has 0.9% of the commits but 8.3% of the lines.
+
+**records.py:** 478 non-blank lines (622 with blank lines).
+
+| author | lines | share | last commit | status |
+|---|---|---|---|---|
+| Kenneth Reitz | 229 | 47.9% | 2024-03-29 | inactive |
+| Greg Troszak | 47 | 9.8% | 2017-12-09 | inactive |
+| Chad Whitacre | 34 | 7.1% | 2016-11-21 | inactive |
+| Dana Okafor | 33 | 6.9% | 2026-05-11 | active |
+| Jan Vlcinsky | 26 | 5.4% | 2018-04-13 | inactive |
+
+- **Bus factor for this file:** 2 on non-blank lines (Kenneth Reitz and Greg Troszak hold 57.7%), and 6 authors to reach 80%. Counting blank lines it is 1.
+- **First commit:** Brent Tubbs made it on 2016-02-07.
+- **Who to ask:** by lines, the order is Kenneth Reitz, Greg Troszak, Chad Whitacre. All three are inactive (no commit in the year before 2026-06-08). Among people with a commit in that year, the order is Dana Okafor (33 lines), Tomás Ibarra (10 lines) and Marcus Lindqvist (6 lines). For current context, ask Dana Okafor. For design intent, try Kenneth Reitz.
+- **Moved code:** 42 lines (8.7%) of records.py were moved or copied from other files, mostly `proto.py`. Those lines stay credited to the people who first wrote them, not to the person who moved them.
+
+**What I left out or adjusted:**
+- **Black reformat:** commit `abe2ea7` ("style: format with black", by Priya Raman) only changed quotes and whitespace in 65 lines across 4 files. I confirmed this with `git show`. The figures leave it out. If it were counted, Jan Vlcinsky would drop to 86 lines, Greg Troszak to 57, Dana Okafor to 31 and Joseph Gardi to 14.
+- **Other mechanical rewrites:** the tool examined 91 commits that still hold lines. Apart from `abe2ea7`, none looked mechanical.
+- **Bots:** pre-commit-ci[bot] and dependabot[bot] are excluded (4 lines, 2 commits).
+- **Duplicate identities:** I counted each of these pairs as one person. The tool rates them "strong", but they are only guesses from matching names, and nothing was written to the repo:
+  - Kenneth Reitz: <email redacted> and <email redacted>
+  - Dana Okafor: <email redacted> and dokafor@fastmail.example (in records.py, 23 + 10 lines)
+  - Paul Philip Voelker: two addresses, 0 lines
+- **Unattributable lines:** the MacBook address is a machine default, not a real address. The 5 lines committed under it (0.6%) can't be firmly attributed to a person, though they are inside Kenneth Reitz's merged figure.
+
+To make the merges permanent, these lines would go in `.mailmap`:
+```
+Kenneth Reitz <<email redacted>> <<email redacted>>
+Dana Okafor <<email redacted>> <dokafor@fastmail.example>
+Paul Philip Voelker <<email redacted>> <<email redacted>>
+```
+I can add them if you confirm the pairs.
+
+These numbers show whose code survives. They say nothing about its quality, review work, design discussions or code that was deleted on purpose.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: git ls-files && git log --format='%h %an <%ae> %ad %s' --date=short --stat | head -100 && ls -a && cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn; git rev-list --count HEAD; cat .mailmap 2>/dev/null; echo ---; git log --reverse --format='%h %an %ad %s' --date=short | head -15
+for mode in plain ignore; do echo "== $mode"; extra=""; [ $mode = ignore ] && extra="--ignore-rev abe2ea7 --ignore-rev 0e8fe2e"; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain $extra -- $f | sed -n 's/^author-mail //p;s/^author //p' | paste - - ; done | sort | uniq -c | sort -rn; done
+ - Bash: git show 0e8fe2e | head -40; git show -w --stat abe2ea7 | tail -3; git diff -w --ignore-blank-lines abe2ea7^ abe2ea7 | head -60
+ - Bash: git diff abe2ea7^ abe2ea7 | grep '^[-+][^-+]' | tr "'" '"' | sed 's/^[-+]//' | sed 's/[[:space:]]//g' | sort | uniq -u | head; echo "== ignore-rev blame"
+for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain --ignore-rev abe2ea7 --ignore-rev 0e8fe2e -- $f | sed -n 's/^author-mail //p;s/^author //p' | paste - - ; done | sort | uniq -c | sort -rn
+echo "== records.py only"; git blame -w -M -C --line-porcelain --ignore-rev abe2ea7 --ignore-rev 0e8fe2e -- records.py | sed -n 's/^author-mail //p;s/^author //p' | paste - - | sort | uniq -c | sort -rn; wc -l records.py
+ - Bash: git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --date=short records.py | grep -E 'Marcus|Dana|dana|Tomás|Greg' | cut -c1-140 | awk '{print}' | head -80; git log --format='%h %an %ad %s' --date=short --author=Troszak --author=Whitacre --author=Vlcinsky | head
+ - Bash: grep -rn LEGACY_SKIP --include=*.py .; grep -n '^def \|^class ' records.py; git log -1 --format='%ad' --date=short --author=Reitz; git blame -w --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain records.py | sed -n 's/^author-time //p' | awk '{y=strftime("%Y",$1); c[y]++} END{for(k in c) print k, c[k]}' | sort
+ - Bash: git grep -n LEGACY_SKIP; grep -n '^def \|^class ' records.py; git log -1 --format='%ad' --date=short --author=Reitz; git blame -w --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain records.py | sed -n 's/^author-time //p' | while read t; do date -r $t +%Y; done | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** Kenneth Reitz wrote most of the code that is still alive. For current questions about `records.py`, ask **Dana Okafor** first. Ask **Greg Troszak** about the `Database`/`Connection` layer.
+
+**Method:** I ran `git blame -w -M -C` on every tracked `.py` file, with two commits excluded:
+- `abe2ea7` (Priya Raman, black formatting)
+- `0e8fe2e` (pre-commit bot, `class X(object)` → `class X:`)
+
+I read both diffs, and they only change formatting. Without the exclusion, Priya gets credit for 65 lines and the bot for 4, and she wrote none of that logic.
+
+**Surviving lines in all Python files:**
+
+| Author | Lines | Commits |
+|---|---|---|
+| Kenneth Reitz (2 emails) | 435 | 263 |
+| Jan Vlcinsky | 119 | 25 (2 emails) |
+| Greg Troszak | 89 | 3 |
+| Chad Whitacre | 85 | 11 |
+| Harold Cooper | 51 | 6 |
+| Dana Okafor (2 emails, see below) | 50 | 2 |
+| Joakim Uddholm | 45 | 3 |
+| Marcus Lindqvist | 8 | **25** |
+
+**Why commit counts mislead here:**
+- **Marcus Lindqvist** has the third-highest commit count. Almost all of those commits were tweaks to `examples/export_legacy.py`, and Dana deleted that file in `54b029d`. All that remains of his work is `LEGACY_SKIP` (`records.py:14-21`). Nothing references it any more, so it is dead code and probably safe to delete.
+- **Greg Troszak** has only 3 commits (2017), but he wrote much of the `Database` and `Connection` classes that remain, including `transaction()` (`records.py:266-455`).
+
+**`records.py` (622 lines, blame includes blank lines):**
+- Kenneth Reitz: 318 lines. This is the core `Record`/`RecordCollection` and the CLI. His last commit is from 2024-07-09.
+- Greg Troszak: 58 lines, the connection/transaction layer.
+- Dana Okafor: 40 lines. These are `_normalize_keys`, `_chunked` and `_describe` (2026-04/05). Dana also removed the legacy exporter.
+- Tomás Ibarra: 12 lines, `_coerce_row` (2026-04-20).
+- Chad Whitacre (39) and Jan Vlcinsky (30) were active in 2017–2018.
+
+About 60 lines of `records.py` date from 2026, and all of them come from Dana, Tomás or Marcus.
+
+**Who to ask:**
+1. **Dana Okafor** is the most recent author of real code in `records.py` and knows why the exporter was removed. One caveat: Dana's commits use two identities, `<email redacted>` and `dokafor@fastmail.example` (lowercase name). They are probably the same person, but I could not confirm it from the repo. There is no `.mailmap`.
+2. **Tomás Ibarra**, for `_coerce_row`.
+3. **Greg Troszak** or **Kenneth Reitz**, for the original design of the DB layer and core classes. Their work is from 2017 and 2024, so they may not be reachable.
+
+**Two optional cleanups:**
+- Add a `.git-blame-ignore-revs` file that lists `abe2ea7` and `0e8fe2e`, then run `git config blame.ignoreRevsFile .git-blame-ignore-revs`. After that, plain `git blame` and GitHub's blame view will skip the formatting commits.
+- Add a `.mailmap` to merge the duplicate identities (Dana, Jan, Kenneth).
+
+I can do either if you want.

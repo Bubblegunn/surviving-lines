@@ -1,0 +1,342 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I'm about to send a PR that touches files under src/. Who wrote the code that is actually there now, and who should I ask to review it?
+
+CRITERIA:
+1. Andrew Gallant is the main owner of src/ with about 77.6% of live lines (accept 74–81%) and is the main person to ask. FAIL if the share is outside 72–83%, if another person is the primary reviewer, or if the share comes from commit counts.
+2. Sam Whitfield (license headers, module move, directory rename) holds at most 1.5% of src/ (truth: 0.2%) or is not named as an owner. If src/ancestor.rs is discussed, Andrew Gallant has about 90% of it (accept 82–95%) and Sam at most 10%. FAIL if Sam is named as a significant owner of src/, of src/ancestor.rs, or of the tests directory.
+3. The reapplied helper is credited to its original author: Tobias Brandt holds the same_device helper in src/util.rs (about 25 lines, 56% of util.rs, accept 45–65%) and Andrew Gallant does not get those lines. FAIL if util.rs is credited mostly to Andrew Gallant, or if Tobias Brandt is absent when per-file owners are given for util.rs. (If the answer gives no per-file figures for util.rs but mentions Tobias with the helper in src/, that passes.)
+4. The author, not the committer, is credited for the patch applied by the maintainer: Mei Tanaka is credited with the describe_file_type code in src/dent.rs (about 13 lines, 3.8% of dent.rs, accept 2–6%) and Andrew Gallant holds about 79% of dent.rs (accept 74–84%) if per-file shares are given. FAIL if Mei Tanaka is absent when dent.rs owners are listed, or if Andrew Gallant's dent.rs share is above 86%.
+5. The answer states what it left out or merged: at least two of (license-header/boilerplate commit not counted; moved code and the renamed tests directory credited to original authors; reverted-and-reapplied change credited to its first author; author used rather than committer), and it presents everyone other than Andrew as a long tail (none above 3% of src/; Sebastian Thiel about 2.3%, Ashley about 2.3%, if named). FAIL if fewer than two such statements are present, or if any non-Andrew person is given more than 4% of src/.
+
+GROUND TRUTH (computed by a script with git blame):
+== e3 ground truth ==
+fixture HEAD: 1bd192e35e5d403b6a551042356cd72a0a795669 2026-03-23 (as-of date = HEAD commit date)
+scope: tracked *.rs at HEAD
+excluded files (non-blank lines): none
+ignored commits (1): 1bc543a3 Add license headers to Rust sources
+
+-- ALL: attributable human lines = 3175
+   not counted: unattributable:lines blamed to ignored boilerplate commits = 11
+    1. Andrew Gallant            2504 lines  78.87%  | commits(all history)=129 last_commit=2026-01-14
+    2. Sebastian Thiel             67 lines   2.11%  | commits(all history)=1 last_commit=2023-09-05
+    3. Ashley                      65 lines   2.05%  | commits(all history)=2 last_commit=2017-07-18
+    4. Aron Griffis                56 lines   1.76%  | commits(all history)=1 last_commit=2018-08-22
+    5. Niv Kaminer                 43 lines   1.35%  | commits(all history)=2 last_commit=2017-10-01
+    6. mcharsley                   43 lines   1.35%  | commits(all history)=1 last_commit=2017-05-09
+    7. Marvin Löbel                40 lines   1.26%  | commits(all history)=1 last_commit=2021-03-02
+    8. Martin Sehnoutka            38 lines   1.20%  | commits(all history)=1 last_commit=2017-06-16
+    9. Yufeng Wang                 36 lines   1.13%  | commits(all history)=3 last_commit=2017-06-28
+   10. Garrett Berg                33 lines   1.04%  | commits(all history)=1 last_commit=2018-01-30
+
+-- src/: attributable human lines = 2879
+   not counted: unattributable:lines blamed to ignored boilerplate commits = 10
+    1. Andrew Gallant            2208 lines  76.69%  | commits(all history)=129 last_commit=2026-01-14
+    2. Sebastian Thiel             67 lines   2.33%  | commits(all history)=1 last_commit=2023-09-05
+    3. Ashley                      65 lines   2.26%  | commits(all history)=2 last_commit=2017-07-18
+    4. Aron Griffis                56 lines   1.95%  | commits(all history)=1 last_commit=2018-08-22
+    5. Niv Kaminer                 43 lines   1.49%  | commits(all history)=2 last_commit=2017-10-01
+    6. mcharsley                   43 lines   1.49%  | commits(all history)=1 last_commit=2017-05-09
+    7. Marvin Löbel                40 lines   1.39%  | commits(all history)=1 last_commit=2021-03-02
+    8. Martin Sehnoutka            38 lines   1.32%  | commits(all history)=1 last_commit=2017-06-16
+    9. Yufeng Wang                 36 lines   1.25%  | commits(all history)=3 last_commit=2017-06-28
+   10. Garrett Berg                33 lines   1.15%  | commits(all history)=1 last_commit=2018-01-30
+
+-- src/lib.rs: attributable human lines = 1085
+   not counted: unattributable:lines blamed to ignored boilerplate commits = 1
+    1. Andrew Gallant             689 lines  63.50%  | commits(all history)=129 last_commit=2026-01-14
+    2. Aron Griffis                43 lines   3.96%  | commits(all history)=1 last_commit=2018-08-22
+    3. mcharsley                   43 lines   3.96%  | commits(all history)=1 last_commit=2017-05-09
+    4. Martin Sehnoutka            38 lines   3.50%  | commits(all history)=1 last_commit=2017-06-16
+    5. Ashley                      36 lines   3.32%  | commits(all history)=2 last_commit=2017-07-18
+    6. Jonathan Soo                29 lines   2.67%  | commits(all history)=1 last_commit=2017-06-29
+    7. Marvin Löbel                28 lines   2.58%  | commits(all history)=1 last_commit=2021-03-02
+    8. Jos van den Oever           21 lines   1.94%  | commits(all history)=1 last_commit=2016-06-13
+    9. Thayne McCombs              21 lines   1.94%  | commits(all history)=2 last_commit=2017-07-31
+   10. Sebastian Thiel             20 lines   1.84%  | commits(all history)=1 last_commit=2023-09-05
+
+-- src/dent.rs: attributable human lines = 342
+   not counted: unattributable:lines blamed to ignored boilerplate commits = 1
+    1. Andrew Gallant             270 lines  78.95%  | commits(all history)=129 last_commit=2026-01-14
+    2. Yufeng Wang                 21 lines   6.14%  | commits(all history)=3 last_commit=2017-06-28
+    3. Ashley                      15 lines   4.39%  | commits(all history)=2 last_commit=2017-07-18
+    4. Mei Tanaka                  13 lines   3.80%  | commits(all history)=1 last_commit=2026-02-03
+    5. vsuryamurthy                 7 lines   2.05%  | commits(all history)=1 last_commit=2023-03-16
+    6. Andy Gauge                   4 lines   1.17%  | commits(all history)=2 last_commit=2017-07-03
+    7. Ashley Mannix                4 lines   1.17%  | commits(all history)=1 last_commit=2017-08-04
+    8. Jérémie Lawson               4 lines   1.17%  | commits(all history)=4 last_commit=2017-08-04
+    9. Ruud van Asseldonk           4 lines   1.17%  | commits(all history)=1 last_commit=2018-04-09
+
+-- src/util.rs: attributable human lines = 45
+   not counted: unattributable:lines blamed to ignored boilerplate commits = 1
+    1. Tobias Brandt               25 lines  55.56%  | commits(all history)=1 last_commit=2026-01-12
+    2. Andrew Gallant              12 lines  26.67%  | commits(all history)=129 last_commit=2026-01-14
+    3. Aron Griffis                 8 lines  17.78%  | commits(all history)=1 last_commit=2018-08-22
+
+-- src/testsuite/: attributable human lines = 1118
+   not counted: unattributable:lines blamed to ignored boilerplate commits = 6
+    1. Andrew Gallant            1043 lines  93.29%  | commits(all history)=129 last_commit=2026-01-14
+    2. Sebastian Thiel             47 lines   4.20%  | commits(all history)=1 last_commit=2023-09-05
+    3. Lukas Kalbertodt            17 lines   1.52%  | commits(all history)=1 last_commit=2019-07-20
+    4. Marvin Löbel                11 lines   0.98%  | commits(all history)=1 last_commit=2021-03-02
+
+-- src/ancestor.rs: attributable human lines = 41
+    1. Andrew Gallant              37 lines  90.24%  | commits(all history)=129 last_commit=2026-01-14
+    2. Sam Whitfield                3 lines   7.32%  | commits(all history)=3 last_commit=2026-03-23
+    3. vsuryamurthy                 1 lines   2.44%  | commits(all history)=1 last_commit=2023-03-16
+
+WATCH Sam Whitfield: ALL: 6 lines (0.19%); src/: 6 lines (0.21%); src/lib.rs: 3 lines (0.28%); src/dent.rs: 0 lines (0.00%); src/util.rs: 0 lines (0.00%); src/testsuite/: 0 lines (0.00%); src/ancestor.rs: 3 lines (7.32%)
+
+WATCH Tobias Brandt: ALL: 25 lines (0.79%); src/: 25 lines (0.87%); src/lib.rs: 0 lines (0.00%); src/dent.rs: 0 lines (0.00%); src/util.rs: 25 lines (55.56%); src/testsuite/: 0 lines (0.00%); src/ancestor.rs: 0 lines (0.00%)
+
+WATCH Mei Tanaka: ALL: 13 lines (0.41%); src/: 13 lines (0.45%); src/lib.rs: 0 lines (0.00%); src/dent.rs: 13 lines (3.80%); src/util.rs: 0 lines (0.00%); src/testsuite/: 0 lines (0.00%); src/ancestor.rs: 0 lines (0.00%)
+
+-- identity groups with more than one name/email (merged):
+   Alisha: Alisha <<email redacted>>; Alisha Aneja <<email redacted>>
+   Igor Gnatenko: Igor Gnatenko <<email redacted>>; Igor Gnatenko <<email redacted>>
+   Niv Kaminer: Niv Kaminer <<email redacted>>; nivkner <<email redacted>>
+
+-- commit-count ranking (no-merges, all history; what a commit count would say):
+   1. Andrew Gallant            129 commits
+   2. Michal Budzynski            5 commits
+   3. Jérémie Lawson              4 commits
+   4. opilarium                   4 commits
+   5. Igor Gnatenko               3 commits
+   6. Sam Whitfield               3 commits
+   7. Yufeng Wang                 3 commits
+   8. Alisha                      2 commits
+
+recent: 1bd192e Sam Whitfield | Rename src/tests to src/testsuite
+recent: 6ecd630 Sam Whitfield | Move Ancestor into its own module
+recent: 1bc543a Sam Whitfield | Add license headers to Rust sources
+recent: 3442e3b Mei Tanaka | dent: add describe_file_type
+recent: 97090d6 Andrew Gallant | Reapply "util: add same_device helper"
+recent: 7d18e40 Andrew Gallant | Revert "util: add same_device helper"
+recent: b6f2e37 Tobias Brandt | util: add same_device helper
+recent: 6fd031c Andrew Gallant | ci: tweak pinned testing
+src/util.rs same_device lines at HEAD: HEAD:src/util.rs:5
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | wc -l && git ls-files src | head -50 && git log --format='%an' | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files src); do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done; echo "--- recent (since 2024) commits on src"; git log --since=2024-01-01 --format='%h %ad %an %s' --date=short -- src | head -20; echo "--- authors per src last 3y"; git log --since=2023-10-23 --format='%an' -- src | sort | uniq -c | sort -rn; ls CODEOWNERS .github/CODEOWNERS 2>&1 | head
+FINAL ANSWER:
+**Who wrote the code now (`git blame -w -M -C -C`, so the renames, moves and license-header commits don't count):**
+
+| File | Main author | Others |
+|---|---|---|
+| `src/lib.rs` | Andrew Gallant (743 lines) | mcharsley, Aron Griffis, Ashley (about 40 each) |
+| `src/error.rs` | Andrew Gallant (169) | Garrett Berg, Niv Kaminer |
+| `src/dent.rs` | Andrew Gallant (291) | Yufeng Wang, Ashley, Mei Tanaka |
+| `src/util.rs` | Andrew Gallant (42) | Aron Griffis |
+| `src/ancestor.rs` | Andrew Gallant (42) | Sam Whitfield (4) |
+| `src/testsuite/recursive.rs` | Andrew Gallant (1008) | Sebastian Thiel, Lukas Kalbertodt |
+| `src/testsuite/util.rs` | Andrew Gallant (252) | Sam Whitfield |
+
+Andrew Gallant wrote most of every file. He has 136 of the repo's commits.
+
+**Recent activity under `src/`:**
+- Sam Whitfield made the last three commits (March 2026): license headers, moving `Ancestor` into its own module, and the `tests` → `testsuite` rename. These are mechanical, so he knows the current layout but didn't write the logic.
+- Mei Tanaka added `dent::describe_file_type` (Feb 2026).
+- Andrew Gallant reapplied `util::same_device` (Jan 2026). Tobias Brandt wrote it originally.
+- Before January 2026, the last change under `src/` was March 2024 (YOSHIOKA Takuma, `FusedIterator`).
+
+**Who to ask:**
+- **Andrew Gallant** is the main reviewer for any logic change. He has the deepest knowledge of all seven files and was active as recently as January 2026.
+- **Sam Whitfield** is a good second reviewer if you touch `ancestor.rs`, `testsuite/` or the module layout.
+- **Mei Tanaka** is the person to ask if your change is in `dent.rs`.
+- **Tobias Brandt** is the person to ask if you touch `same_device` in `util.rs`.
+
+The repo has no `CODEOWNERS` file, so none of this is enforced. I can generate one from this history with the `busfactor` skill if you want. I haven't checked who is currently active outside this git history, such as who has merge rights.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "src/"}
+ - Bash: git rev-list --count HEAD && git log --no-merges --pretty='%an' | sort | uniq -c | sort -rn && echo --- && find src -name '*.rs' | wc -l && for f in $(git ls-files 'src/*.rs'); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$(dirname $f) |"; done | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: for f in $(git ls-files 'src/*.rs'); do tot=$(git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -c '^author '); echo "== $f ($tot lines)"; git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3 | sed 's/author //'; done; echo; echo "last commit per author (top):"; for a in "Andrew Gallant" "Ashley" "Aron Griffis" "mcharsley" "Sebastian Thiel" "Martin Sehnoutka" "Yufeng Wang" "Garrett Berg" "Sam Whitfield"; do echo "$a: $(git log --author="$a" -1 --format=%cd --date=short)"; done; echo; git log -1 --format='HEAD: %cd' --date=short; git log --since=2025-10-23 --oneline | wc -l; git log -5 --format='%h %an %cd %s' --date=short -- src/
+FINAL ANSWER:
+## Bus factor for `src/`
+
+**Andrew Gallant wrote most of the code currently in `src/`.** That count comes from `git blame -w -M -C` at HEAD. Moves, renames and whitespace changes are not credited to whoever did the move. It covers 8 Rust files and about 3,260 lines.
+
+| File | Lines | Top owners (current lines) |
+|---|---|---|
+| `src/lib.rs` | 1158 | Gallant 743 (64%), mcharsley 45, Aron Griffis 45 |
+| `src/testsuite/recursive.rs` | 1097 | Gallant 1008 (92%), Sebastian Thiel 53, Lukas Kalbertodt 20 |
+| `src/dent.rs` | 371 | Gallant 291 (78%), Yufeng Wang 21, Ashley 15 |
+| `src/error.rs` | 267 | Gallant 169 (63%), Garrett Berg 34, Niv Kaminer 30 |
+| `src/testsuite/util.rs` | 257 | Gallant 252 (98%), Sam Whitfield 5 |
+| `src/util.rs` | 56 | Gallant 42 (75%), Aron Griffis 9, Sam Whitfield 5 |
+| `src/ancestor.rs` | 47 | Gallant 42 (89%), Sam Whitfield 4 |
+| `src/testsuite/mod.rs` | 9 | Sam Whitfield 5, Gallant 4 |
+
+Across all of `src/`, Gallant owns about 2,550 of 3,260 lines, roughly 78%. The project-level bus factor is **1**.
+
+### Who is still active
+
+- **Andrew Gallant:** last commit 2026-01-14. The repo's most recent commit is 2026-03-23, so this is about 2 months before HEAD. I didn't check how that compares with today's date (2026-10-23).
+- **Sam Whitfield:** has made the last three commits to `src/` (2026-03-09 to 2026-03-23: license headers, the `Ancestor` module move and the `testsuite` rename). They own few current lines, but they know the current layout.
+- **Mei Tanaka:** added `dent: add describe_file_type` on 2026-02-03. Their current line count in `src/` is small, but the change is recent.
+- **Everyone else with meaningful ownership is inactive.** The last commits from Ashley, Aron Griffis, mcharsley, Martin Sehnoutka and Yufeng Wang were in 2017–2018. Garrett Berg's last commit was in 2018. Sebastian Thiel's was in 2023. Don't ask these people.
+
+### Who to ask for review
+
+1. **Andrew Gallant** is the only person with deep knowledge of nearly every file. Make them the primary reviewer, especially for `lib.rs`, `dent.rs`, `error.rs` and the `recursive.rs` tests.
+2. **Sam Whitfield** is a good second reviewer. They are active on this code now and can check module layout and conventions.
+3. **Mei Tanaka** is useful if your PR touches `dent.rs`.
+
+The most likely candidates for review are the people with recent commits. Ownership by line count and recent activity point to different people, so I'd ask Gallant and Whitfield together.
+
+### Caveats
+
+- I did not run the dependents (import-count) step. `src/` has only 8 files, so I judged it by file role. `lib.rs` and `error.rs` are the core of the crate.
+- I did not use `--all` history or the contributor-analyzer agent. Direct `git blame` answers your question more accurately than commit counts.
+- Total history is 199 commits. Gallant authored 129 of them, about 65%.
+
+If you tell me which files your PR touches, I can narrow this to a per-file reviewer list.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100 && echo --- && git shortlog -sne HEAD -- src | head && echo --- && ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | head
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr > /tmp/blame_files.txt; echo "== per file"; cat /tmp/blame_files.txt; echo "== total"; for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -nr | head -10; echo "== recent 12 months"; git log --since='12 months ago' --format='%an|%ad|%s' --date=short -- src | head -20
+FINAL ANSWER:
+Andrew Gallant wrote most of `src/`. Ask them to review, and add Mei Tanaka if you touch `dent.rs`.
+
+**Who wrote the current code**
+
+I used `git blame -w -M -C -C`, which ignores whitespace and follows moved and renamed code. This counts lines that still exist at HEAD.
+
+| File | Main author | Others |
+|---|---|---|
+| `src/lib.rs` | Andrew Gallant (743 lines) | Many contributors with 45 lines or fewer each |
+| `src/dent.rs` | Andrew Gallant (291) | Yufeng Wang (21), Ashley (15), Mei Tanaka (14) |
+| `src/error.rs` | Andrew Gallant (169) | Garrett Berg (34), Niv Kaminer (30) |
+| `src/util.rs` | Andrew Gallant (42) | Aron Griffis (9) |
+| `src/ancestor.rs` | Andrew Gallant (42) | Sam Whitfield (4) |
+| `src/testsuite/recursive.rs` | Andrew Gallant (1008) | Sebastian Thiel (53), Lukas Kalbertodt (20) |
+| `src/testsuite/util.rs` | Andrew Gallant (252) | |
+
+Across all of `src/`, Andrew Gallant owns 2551 lines. The next highest is Sebastian Thiel with 74.
+
+**Who to ask**
+
+- **Andrew Gallant:** the main author of every file and active on `src/` as recently as 2026-01-14.
+- **Mei Tanaka:** added `describe_file_type` in `dent.rs` on 2026-02-03. Ask them if your PR touches that area.
+- **Sam Whitfield:** made the recent restructuring commits (`Ancestor` module split, `tests` renamed to `testsuite`, license headers). Ask them if your PR touches those files or paths.
+- **Tobias Brandt:** wrote the original `same_device` commit in `util.rs`. Blame credits Andrew Gallant for those lines because their reapply commit replaced it. Ask Tobias if your PR touches `same_device`.
+
+The repo has no `CODEOWNERS` file, so this list comes only from git history. Tell me which files your PR changes and I can narrow it to the people who last touched those lines.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files src | head -100; echo ---; git shortlog -sne HEAD -- src | head; echo ---; git log --oneline | wc -l
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{t[$2]++; p[$1" "$2]++} END{for(k in t) print t[k], k}' | sort -rn | head -12; echo ---; for f in $(git ls-files src); do echo "== $f"; git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo ---; git log --since='12 months ago' --format='%an' -- src | sort | uniq -c | sort -rn | head; echo ---; git log -5 --format='%h %an %ad %s' --date=short -- src; ls .github CODEOWNERS .github/CODEOWNERS 2>&1 | head
+ - Bash: for a in "Mei Tanaka" "Tobias Brandt" "Sam Whitfield" "Andrew Gallant"; do echo "== $a"; git log --author="$a" --format='%h %ad %s' --date=short -3 -- src; done; echo; git blame -w -M -C -C --line-porcelain HEAD -- src/dent.rs src/util.rs src/lib.rs | grep -E '^author (Mei|Tobias)' | sort | uniq -c
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep -E '^author (Mei Tanaka|Tobias Brandt)' | sed "s|^|$f |"; done | sort | uniq -c
+FINAL ANSWER:
+Andrew Gallant wrote most of the code in `src/` as it stands now. Ask Andrew first. If they aren't available, ask Sam Whitfield or Mei Tanaka.
+
+`git blame` (with `-w -M -C -C`, so whitespace changes and moved or copied lines don't hide the original author) gives 2551 surviving lines in `src/` for Andrew Gallant. The next highest is Sebastian Thiel with 74, then Ashley with 68.
+
+| File | Main author by surviving lines |
+|---|---|
+| `lib.rs` | Andrew, 743 lines, then mcharsley and Aron Griffis with 45 each |
+| `testsuite/recursive.rs` | Andrew, 1008 lines |
+| `testsuite/util.rs` | Andrew, 252 lines |
+| `dent.rs` | Andrew, 291 lines, then Yufeng Wang with 21 and Ashley with 15 |
+| `error.rs` | Andrew, 169 lines, then Garrett Berg with 34 and Niv Kaminer with 30 |
+| `ancestor.rs` and `util.rs` | Andrew, 42 lines each |
+
+The history is more recent than the blame suggests:
+
+- **Last 12 months:** Sam Whitfield made 3 commits and Andrew 2. Mei Tanaka and Tobias Brandt each made 1.
+- **Andrew's recent work:** their last commit under `src/` is the `same_device` reapply on 2026-01-14.
+- **Sam's commits:** these are the license headers, the move of `Ancestor` into its own module, and the rename to `src/testsuite`. Sam knows the current layout but wrote little of the logic. They hold 42 surviving lines.
+- **Mei's commit:** `dent: add describe_file_type` is her only commit, and 14 of its lines are still in `dent.rs`. That is relevant if your PR touches `dent.rs`.
+- **Tobias:** none of his `same_device` lines survive. Andrew reverted and reapplied the change, so Andrew now owns that code.
+
+There is no `CODEOWNERS` file, so nothing in the repo assigns reviewers. These names come only from git history. If your PR is mostly in `dent.rs`, ask Mei as well, since her function is the most recent addition there.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__blame_summary,mcp__tool__bus_factor,mcp__tool__knowledge_risk", "max_results": 5}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-hist-3/repo/src", "top": 20}
+ - mcp__tool__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-hist-3/repo/src"}
+FINAL ANSWER:
+**Who wrote it.** Andrew Gallant wrote most of `src/`. He owns 75.8% of the surviving lines (2,471 of about 3,260) and is the main owner of 6 of the 8 files:
+
+| File | Main owner | Share of lines |
+|---|---|---|
+| `src/testsuite/recursive.rs` | Andrew Gallant | 87.3% |
+| `src/lib.rs` | Andrew Gallant | 52.2% (nivkner 12.7%, Aron Griffis 4%) |
+| `src/dent.rs` | Andrew Gallant | 93% |
+| `src/error.rs` | Andrew Gallant | 96.3% |
+| `src/util.rs` | Andrew Gallant | 91.1% |
+| `src/testsuite/util.rs` | Andrew Gallant | 98.1% |
+| `src/ancestor.rs` | Sam Whitfield | 100% |
+| `src/testsuite/mod.rs` | Sam Whitfield | 55.6% (Gallant 44.4%) |
+
+**Who to ask.** I can't name one clearly good reviewer, because every top owner is inactive by the tool's 6-month rule (no commit since 2026-04-23).
+- **Andrew Gallant:** he is the domain expert, but his last commit was 2026-01-14. He is probably not reachable through this repo.
+- **Sam Whitfield:** the most recent contributor, last commit 2026-03-23. They authored `ancestor.rs`, the Rust license headers and the `src/tests` → `src/testsuite` rename. They are the best candidate for structure and module layout, and for the files they touched.
+- **Mei Tanaka:** last commit 2026-02-03, with 14 lines in `dent.rs`. Pick them only if your PR touches `dent.rs`.
+
+All 8 files are flagged as orphaned, and the bus factor for `src/` is 1: Gallant made 52% of the 107 commits. So the people who last touched this code may no longer be active on it. Check who is currently active on the project (CODEOWNERS, recent PR reviewers) before you pick a reviewer.
+
+Which files does your PR change? With that I can narrow the suggestion to the people who own those files.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>'; $SL --merge-identities -- src; echo ======; $SL --reviewers src --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $S --merge-identities -- src; echo ======; node $S --reviewers src --merge-identities
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $S --reviewers src --merge-identities; git show --stat c584a1d | head -20; node $S --ignore-rev c584a1d --merge-identities -- src | sed -n 1,8p
+FINAL ANSWER:
+Andrew Gallant wrote most of the code in `src/` that survives today, so ask them first. The Sebastian Thiel / Ashley part of my suggestion is a weaker fallback, explained below.
+
+**Who wrote it** (`git blame -w -M -C` at HEAD, 8 files, 2,889 non-blank lines, 3,262 with blank lines)
+
+| Author | Surviving lines | Share | Commits | Last commit |
+|---|---|---|---|---|
+| Andrew Gallant | 2,217 | 76.7% | 56 | 2026-01-14 |
+| Sebastian Thiel | 66 | 2.3% | 1 | 2023-09-05 |
+| Ashley | 65 | 2.2% | 1 | 2017-07-18 |
+| Aron Griffis | 56 | 1.9% | 1 | 2018-08-22 |
+| Niv Kaminer | 43 | 1.5% | 2 | 2017-10-01 |
+| mcharsley | 43 | 1.5% | 1 | 2017-05-09 |
+| Marvin Löbel | 39 | 1.3% | 1 | 2021-03-02 |
+| Martin Sehnoutka | 38 | 1.3% | 1 | 2017-06-16 |
+| Yufeng Wang | 36 | 1.2% | 3 | 2017-06-28 |
+| Sam Whitfield | 34 | 1.2% | 3 | 2026-03-23 |
+| Garrett Berg | 33 | 1.1% | 1 | 2019-01-30 |
+| Jonathan Soo | 32 | 1.1% | 1 | 2017-06-29 |
+
+25 more authors hold 6.5% together. The largest of them is Thayne McCombs at 0.7%.
+
+**Who to ask to review**
+- **Andrew Gallant** is the clear choice. They hold 76.7% of the lines, are active, and last committed on 2026-01-14.
+- **Sebastian Thiel** (66 lines, 2.3%) and **Ashley** (65 lines, 2.2%) are next by surviving lines. Both are inactive: Thiel's last commit was in 2023 and Ashley's in 2017. They hold few lines, so I would not count on either of them.
+- **Sam Whitfield** (34 lines, 1.2%, last commit 2026-03-23) and **Mei Tanaka** (13 lines, 0.4%, last commit 2026-02-03) are the most active people after Gallant. That ranking only looks at recent commits.
+- The code is concentrated in one person, so Gallant is a single point of review. The bus factor is 1. That means one author alone holds at least 50% of the lines counted, and it covers all of `src/`. Reaching 80% takes 3 authors (2 if blank lines are counted).
+
+**What the numbers leave out or may get wrong**
+- **Moved code:** 1,579 of the 2,889 lines (54.7%) were written in other paths and moved or copied into `src/`. The largest sources are `src/tests/recursive.rs`, `src/lib.rs` and `src/tests/util.rs`. Credit goes to whoever wrote the lines, not to whoever moved them.
+- **Copy detection:** the figures above use `-w -M -C`. Without copy detection, Gallant has 80.5% (2,326 lines), Sam Whitfield 2.5% (72 lines) and Garrett Berg 0.0% (0 lines). The top reviewer stays the same either way.
+- **Mechanical rewrites:** I checked for them and set none aside. One commit looks mechanical and I kept it in: `c584a1d` "style: switch to rustfmt" by Gallant, which holds 122 surviving lines. I inspected it with `git show --stat`. It touched `src/` and a few other files. With it excluded, Gallant has 2,210 lines (76.5%), so it makes almost no difference.
+- **Duplicate identities:**
+  - Niv Kaminer also appears as `nivkner` on the same address, which is already counted as one person.
+  - Alisha Aneja also appears as `Alisha` on the same address. That is 9 lines in total, and I didn't merge them.
+  - **Ashley / Ashley Mannix:** weak match from the name alone. I kept them separate (65 and 4 lines). If they are one person, that is 69 lines (2.4%).
+  - Nothing is merged in `.mailmap`, and I didn't write to it.
+- **Excluded:** no bots, lockfiles, generated files, or vendored code were reported as excluded.
+
+These numbers measure whose lines are still in the code. They don't measure review skill or who understands the code best. Check with Gallant, and consider also asking someone active who touched the files you changed.

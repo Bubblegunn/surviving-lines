@@ -1,0 +1,44 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners --merge-identities
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by dir | grep -E "^(test|lib|\.)|Troy"
+FINAL ANSWER:
+## Suggested CODEOWNERS
+
+```
+/lib/   <email redacted>
+/test/  <email redacted>
+```
+
+No line for `/.github/` or for the root files, because nobody holds half of them.
+
+The counts come from `git blame -w -M -C` on 1,662 non-blank lines in 18 files. They are surviving lines, not commits.
+
+| Path | Top holder | Share of lines | Owner? |
+|---|---|---|---|
+| `lib/` (214 lines, 1 file) | Troy Goode, 2 addresses merged: 144 lines. Unmerged: `<email redacted>` 132 (61.7%) and `troy@laptop.example` 12 (5.6%). | 67.3% | Yes, Troy Goode |
+| `test/` (820 lines, 7 files) | Troy Goode, 2 addresses merged: 420 lines. Unmerged: `<email redacted>` 388 (47.3%) and `troy@laptop.example` 32 (3.9%). | 51.2% | Yes, Troy Goode, with a caveat (see below) |
+| `.github/` (305 lines, 4 files) | Douglas Christopher Wilson, 92 lines | 30.2% | Nobody holds half |
+| Root files (323 lines, 6 files) | Douglas Christopher Wilson, 95 lines. Troy Goode is next with 85 (26.3%). | 29.4% | Nobody holds half |
+
+- **`test/` caveat:** The 51.2% share only counts if the two Troy Goode addresses are one person. Counted separately, `<email redacted>` holds 47.3%, which is under half. Both addresses carry the same name, and `troy@laptop.example` has only 2 commits. That is a guess from names and addresses until you confirm it. `.mailmap` was not changed.
+- **Which address to use:** I used `<email redacted>` in the CODEOWNERS lines because it has 93 of his 95 commits. Replace it with his GitHub handle if you have it.
+- **`.github/`:** The top holders are Douglas Christopher Wilson (30.2%), Íñigo Marquínez Prado (26.2%), Sebastian Beltran (17.4%), Ulises Gascón (13.4%) and Ignacio Mangas (12.5%). The two largest together hold 56.4%.
+
+**Left out of the counts**
+- **Reformat commit:** `62628c0` ("style: reformat js with 4-space indent and double quotes", by Fiona Formatter, 291 lines, 17.5% of the plain count) is ignored. Without that correction, Fiona Formatter would top the plain count at 291 lines, which would put her ahead of everyone else.
+- **Bots:** `dependabot[bot]` (10 lines, 11 commits) is excluded and gets no credit.
+- **Mechanical rewrites:** I checked and set aside only `62628c0`. Five other commits look mechanical but were kept: `739dc11` (license reformat, 17 lines), `fcd2b56` (ESLint switch, 11 lines), `00d6eec` (9 lines), `344ce1e` (1 line) and `9c2b59d` (1 line). They are small and do not change the owners above.
+- **Duplicate names:** Alejandro Caravaca Puchades and `alex94puchades` share one address (30 lines), so they are counted as one person. This does not change any owner.
+- **Copy detection:** The figures use the default `-C` setting.
+
+**Limits**
+- The `lib/` and `test/` shares are about who wrote the lines that remain. They do not show who should review changes.
+- `lib/` is a single file, so the "owner" there is one file's author.
+- Bus factor is the smallest number of authors who together hold 50% of the lines. It is 1 for `lib/` and 1 for `test/` (merged), and 2 for `.github/` and the root files.
+META cost=0.0740919 ms=20564 turns=5

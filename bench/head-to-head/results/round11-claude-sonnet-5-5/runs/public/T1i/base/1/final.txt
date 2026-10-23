@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -vE '(^|/)(node_modules|\.git)/' | grep -vE '\.(png|jpg|gif|ico|lock)$|package-lock' | wc -l; for f in $(git ls-files | grep -vE '\.(png|jpg|gif|ico)$|package-lock'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -25
+FINAL ANSWER:
+Ownership is measured by `git blame` line attribution across the 19 tracked files, which shows who last wrote each line that exists today.
+
+I ignored the 4-space/double-quote reformat commit (`62628c0`) through the repo's `.git-blame-ignore-revs`, and I ignored whitespace changes. I also followed code moved or copied between files. Without those settings, the reformat would have credited most lines to whoever ran it.
+
+| Author | Surviving lines | Share of the top 25 |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~2% |
+| Linus Unnebäck | 26 | ~1% |
+| Everyone else | under 20 each | the remainder |
+
+- **Two authors dominate:** Troy Goode and Douglas Christopher Wilson together own roughly 73% of the code that survives.
+- **Limits of the count:** I only listed the top 25 authors, so the shares are approximate. Authors with only a few lines each are not shown. Several people appear under more than one name or email, for example "Efe" and "Efe Genc", and "Alejandro Caravaca Puchades" and "alex94puchades". I didn't merge them, so those people's real totals are slightly higher than shown.
+- **Meaning of "owns":** It means the last person to touch a line. Someone who rewrote a line a little still gets credit for it, even if the logic came from someone else.
+
+I can merge the duplicate identities with a `.mailmap`, or break the counts down per file or per directory.
+META cost=0.043195 ms=14800 turns=2

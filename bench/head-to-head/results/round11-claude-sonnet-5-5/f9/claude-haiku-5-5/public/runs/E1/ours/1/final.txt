@@ -1,0 +1,69 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "bus factor analysis for this repo: which parts depend on one contributor, and who"}
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" 2>&1 | head -150
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by dir --merge-identities 2>&1 | head -200
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --files --merge-identities 2>&1 | head -120; echo ---; node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --group-by dir --suggest-codeowners --merge-identities 2>&1 | grep -iE 'codeowner|owner|^/|^\*' | head -40
+FINAL ANSWER:
+## Bus factor: Troy Goode is the single point of failure for `lib/` and `test/`
+
+**Scope:** whole repo, 18 files, 1,662 non-blank lines (1,995 with blank lines). Surviving lines at HEAD, `git blame -w -M -C` (default copy detection, not `deep`).
+
+**Bus factor (line-based: fewest authors whose surviving lines reach 50%):**
+- Repo-wide: **2**. Troy Goode and Douglas Christopher Wilson together hold 69.6% of non-blank lines (70.1% with blank lines). To reach 80%: 5 authors.
+- Troy Goode is the top author, so the top-two pair includes one person whose identity is uncertain (see below).
+
+**Authors by surviving lines (top rows; tail: 53 more authors hold 7.6% together, largest Ollie Buck 0.8%):**
+
+| Author | Lines (non-blank) | Share | With blank lines | Commits share |
+|---|---|---|---|---|
+| Troy Goode `<<email redacted>>` | 605 | 36.4% | 762 (38.4%) | 93 (29.5%) |
+| Douglas Christopher Wilson | 551 | 33.2% | 629 (31.7%) | 143 (45.4%) |
+| Íñigo Marquínez Prado | 80 | 4.8% | 95 (4.8%) | 2 (0.6%) |
+| Jon Church | 59 | 3.5% | 72 (3.6%) | 3 (1.0%) |
+| Sebastian Beltran | 57 | 3.4% | 67 (3.4%) | 2 (0.6%) |
+| Ulises Gascón | 46 | 2.8% | 52 (2.6%) | 3 (1.0%) |
+| Troy Goode `<troy@laptop.example>` | 44 | 2.6% | 48 (2.4%) | 2 (0.6%) |
+| Ignacio Mangas | 38 | 2.3% | 44 (2.2%) | 2 (0.6%) |
+| Alejandro Caravaca Puchades (incl. `alex94puchades`, same address) | 30 | 1.8% | 34 (1.7%) | 5 (1.6%) |
+| Linus Unnebäck | 26 | 1.6% | 26 (1.3%) | 1 (0.3%) |
+
+**Identity hint (strong):** Troy Goode appears under two addresses. Merged, the figure is **649 lines (39.0%)**, which I'd lead with. The unmerged figures are 605 (36.4%) and 44 (2.6%). This is a guess from names and addresses, not confirmed. The merge would make Troy the top author by a clearer margin. Douglas stays second either way. I did not write a `.mailmap` since you asked for analysis only.
+
+Other identity note: `alex94puchades` and `Alejandro Caravaca Puchades` share one address (`<email redacted>`). Both are counted under that address, 30 lines total.
+
+**Where the dependency sits (directory view, merged identities, guess):**
+
+| Path | Bus factor | Who holds it |
+|---|---|---|
+| `lib/` (1 file, `index.js`, 214 lines) | **1** | Troy Goode 67.3% (next: Douglas 9.3%) |
+| `test/` (7 files, 820 lines) | **1** | Troy Goode 51.2%, Douglas 42.0% |
+| `.github/` (305 lines) | 2 | Douglas 30.2%, Íñigo Marquínez Prado 26.2% |
+| root files (323 lines) | 2 | Douglas 29.4%, Troy 26.3% |
+
+No directory has a bus factor above 2. `lib/` is the most exposed: one file, one person with two-thirds of it.
+
+**Per file (`--files`), concentration:**
+- Single owner (100%): `test/vary.js` (Troy), `.github/workflows/codeql.yml` (Sebastian Beltran), `.github/dependabot.yml` (Ulises Gascón).
+- One owner above 80%: 10 of 18 files. Notable: `lib/index.js` (Troy 67.3%), `test/example-app.js` (Troy 80%), `test/error-response.js` (Troy 82.7%), `.github/workflows/scorecard.yml` (Íñigo 98.4%), `HISTORY.md` (Douglas 80.5%), `LICENSE` (Douglas 94.4%).
+- No owner above 50% (3 files): `test/test.js` (Douglas 49.8%, Troy 41.3%), `README.md` (Troy 33.5%, Jon Church 27.8%), `package.json` (Douglas exactly 50.0%).
+
+**Suggested CODEOWNERS (printed, not written):** `/lib/` and `/test/` → Troy Goode's gmail address. Nothing else qualifies: every other directory has no single owner above 50%. Root files are skipped because a pattern would match every directory.
+
+**Gaps and caveats:**
+- **Last commit dates:** Troy's gmail address last committed **2019-05-27**. The laptop address last committed **2026-04-10**. If these are one person, they are active now. Still, the code in `lib/` and `test/` has not been touched by anyone else in recent years. Last-commit dates for the merged person are not printed by the tool, so I can't say from the output whether the code is actively maintained.
+- **Reformat commit ignored:** `62628c0` "style: reformat js with 4-space indent and double quotes" (Fiona Formatter, 2026-04-12, 291 lines). It is left out of the table. Without the correction, Troy 30.7%, Douglas 22.6%, Fiona 17.5%. Bus factor still 2 (Troy + Douglas 53.3%).
+- **Mechanical rewrites:** 136 commits holding surviving lines were examined, one set aside (`62628c0`). Five more look mechanical and were **not** set aside: `739dc11` "docs: reformat license" (Douglas, 17 lines), `fcd2b56` "issue #42: switch to ESLint" (Troy, 11), `00d6eec` (Douglas, 9), `344ce1e` (Douglas, 1), `9c2b59d` (Douglas, 1). Under 40 lines total, so the rankings are not affected.
+- **Bots excluded:** `dependabot[bot]`, 10 lines, 11 commits.
+- **Placeholder identities:** none reported.
+- **Files dropped:** none reported. All 18 files sampled.
+- **Inconsistency in the tool output:** the bus-factor line says "of 1,985 lines with blank lines" while the header says 1,995. I did not resolve this. The non-blank figure (1,662) is unaffected.
+- **Scope is small:** 18 files, 315 commits. Line shares on one file move a lot with a single commit.
+- **Not measured:** review work, design docs, pairing, or who understands the code. Survival is not knowledge.
+
+**Bottom line:** Repo-wide, two people hold the code: Troy Goode (39% merged) and Douglas Christopher Wilson (33%). The real single-person risk is `lib/` and `test/`, both majority-Troy. If you want, I can write the `.mailmap` proposal for the Troy identities (guess until you confirm) or run `--history lib/index.js` to see the file's history.
+META cost=0.008561950000000002 ms=31564 turns=6

@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; ls scripts; cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-bf-2/repo && ls lib && git log --oneline | wc -l
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-bf-2/repo --dry-run --no-github 2>&1 | head -60
+cd <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/T2-bf-2/repo && git log --format='%an <%ae>' --since='12 months ago' -- lib | sort | uniq -c | sort -rn; echo ---; git log --format='%an <%ae>' -- lib | sort | uniq -c | sort -rn | head; git log -1 --format=%ci; git log --reverse --format=%ci | head -1; wc -l lib/index.js
+ - Bash: git log --format='%h %ad %an <%ae> %s' --date=short -- lib | head -12; git log --format='%ad' --date=short --author=<email redacted> -- lib | head -1; git log -1 --format=%ad --date=short --author=alex94; git log -1 --format=%ad --date=short --author=doug; git log --shortstat --format='%h' -3 -- lib | head -12; git log --since='12 months ago' --format='%h %ae' | head
+FINAL ANSWER:
+**Bus factor of `lib/`: 1 at best, and arguably 0.** `lib/` is a single file, `lib/index.js` (238 lines).
+
+**Who has touched it in the last 12 months (2 commits, both in April 2026):**
+- `Fiona Formatter` made a whole-file reformat (214 lines changed, indentation and quotes only). That is not knowledge of the logic.
+- `Troy Goode <troy@laptop.example>` made a 12-line annotation commit. This is probably the original author (33 commits as `<email redacted>`, last one 2016-08). I matched them by name only, so that is unverified. If it is the same person, the answer is 1. If it is not, no active person has made a substantive change.
+
+**Who wrote the logic, and when they last touched it:**
+- Troy Goode: 34 commits, most of the original code.
+- Douglas Christopher Wilson: 4 commits, last in 2017-10 (Vary headers, `methods` fix).
+- Alejandro Caravaca Puchades: 5 commits, last in 2015-05.
+- Everyone else has 1–3 commits each, all from 2021 or earlier.
+
+The last real behaviour change was in 2018 (`maxAge` 0 fix). The last logic-adjacent change was lint cleanup in 2021.
+
+**What this means:**
+- One person (Troy) is the only possible active knowledge holder. If they leave, `lib/` is orphaned: the remaining authors are gone, and the only recent committer is a formatter.
+- A `git shortlog` would show Troy as a confident top committer, which hides this.
+
+**Caveats:**
+- Commit volume is a proxy for knowledge. A reviewer who never commits would not show up here.
+- The history is imported: the root commit (2013) bulk-added 8 files. Ownership reflects work since the import, not who first wrote the code.
+- The generated CODEOWNERS has no `lib/` rule, so it falls under the repo-wide fallback. That fallback names `fiona@formatter.example` first, which would route review of this code to the person who only ran a formatter.
+
+I ran the busfactor script as a dry run with `--no-github`, so nothing was written to the repo. I can generate the CODEOWNERS and `ownership.json` files if you want them.
+META cost=0.07677600000000001 ms=22616 turns=7

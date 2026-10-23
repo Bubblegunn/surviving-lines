@@ -1,0 +1,48 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -20; echo ---; git log --follow --format='%ad %an %s' --date=short -- lib/index.js | tail -5; echo ---; git log --follow --format='%ad %an %s' --date=short -- lib/index.js | head -8; echo ---; wc -l lib/index.js
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git log --follow --oneline -- lib/index.js | wc -l; git log --follow --format='%ad' --date=short -- lib/index.js | awk '{print substr($1,1,4)}' | sort | uniq -c | tr '\n' ' '
+FINAL ANSWER:
+`lib/index.js` has 62 commits, from the first commit on 2013-01-30 to the latest on 2026-04-12. It is 238 lines now. I counted commits with `git log --follow`. I counted surviving lines with `git blame -w -M -C`, ignoring the 2026 reformat commit `62628c0` so that commit doesn't take credit for lines it only restyled.
+
+**Who shaped it**
+- **Troy Goode** wrote it. He made 29 of the commits, 24 of them in 2013 (the file was created in January that year). His early commits:
+  - the first commit
+  - case-insensitive header lookup
+  - `origin: false` disabling CORS
+  - lint cleanup
+  - pausing and resuming the request for async middleware (2013-02-07)
+  - the latest substantive change, "lib: annotate handlers" (2026-04-10)
+- **Douglas Christopher Wilson** was the main maintainer in the middle years (2017). He made 4 commits, including the `<email redacted>` upgrade, lint fixes and a Safari workaround for the default preflight response.
+- **Alejandro Caravaca Puchades** made 4 commits under that name and 1 more as `alex94puchades`.
+- **Simon Mansfield** made 3 commits. `jordandenison` made 2.
+- **Others** made one commit each: Typicode, Tomek Kopczuk, Tom Arad, Shane Tomlinson, Saad Tazi, Raymond Feng, Mathias Buus, LuisEGR, Igor Soarez, Hannah Wolfe, Eric di Domenico, Eran Tiktin and max.laverse. Tom Arad fixed `maxAge: 0` in 2018, and LuisEGR removed unused parameters in 2021.
+- **Fiona Formatter** made the 2026 style commit (4-space indent, double quotes). It touched most lines but changed none of the logic.
+
+**Whose code is still there today** (surviving lines, ignoring the reformat)
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 (+4 as `alex94puchades`) |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy Goode wrote about two thirds of the current file, and the 2013 structure is still intact. Wilson is the next largest contributor, and the rest is small patches from many people.
+
+**Caveats**
+- Blame assigns a line to whoever last changed it. Lines that were reformatted or lightly edited may count toward a later author even if the original idea was someone else's.
+- Alejandro appears under two identities, and I listed them separately. Combined, that is 16 lines.
+- The `--follow` history has gaps in my output. For example, Chima Alaebo and Benjamin Eidelman appear in the log tail but not in the top commit counts, because I only listed the top 20 authors.
+META cost=0.061216400000000004 ms=17503 turns=5

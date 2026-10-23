@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -100 && echo --- && ls -la | grep -i mailmap; git log --all --format='%an <%ae>' | sort | uniq -c | sort -rn | wc -l
+ - Bash: echo "== by email" && git log --all --format='%ae' | sort | uniq -c | sort -rn | head -5 && echo "== by name, multi-email" && git log --all --format='%an|%ae' | sort -u | cut -d'|' -f1 | sort | uniq -d && echo "== Troy/Alejandro/Efe commits" && git log --all --format='%h %an <%ae> %ad' --date=short -- . | grep -iE 'troy|alex|puchades|efe|dogukan' | head -20
+ - Write: {"file_path": "<home>/claude-kredi-runs/2026-10-23/r11/f9/claude-haiku-5-5/P/runs/T3-base-1/repo/.mailmap", "content": "Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> <<email redacted>>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n"}
+ - Bash: git shortlog -sne --all | head -5 && echo --- && git shortlog -sne --all | grep -iE 'troy|alejandro caravaca|puchades' && git status --short
+FINAL ANSWER:
+Yes, two people were split across identities. I fixed it with a new `.mailmap` file. I did not rewrite history.
+
+- **Troy Goode:** `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). Now counted as 122.
+- **Alejandro Caravaca Puchades:** same email `<email redacted>` under two names, "Alejandro Caravaca Puchades" (4) and "alex94puchades" (1). Now counted as 5.
+
+I left `Efe <<email redacted>>` alone. The repo has no link between that address and your `<email redacted>`, so I didn't merge it.
+
+Verified with `git shortlog -sne --all`, which applies the mailmap.
+
+**New top author: Douglas Christopher Wilson, 143 commits.** Troy Goode is second at 122. Douglas stays on top because the merge doesn't change his count.
+
+The `.mailmap` is untracked and uncommitted. Say if you want it committed, and I'll use the repo's commit format with the Co-Authored-By line.
+META cost=0.00544754 ms=16726 turns=5

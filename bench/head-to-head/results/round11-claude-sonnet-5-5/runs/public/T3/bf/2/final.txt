@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; echo ---; git shortlog -sne --all | wc -l; ls -a | grep -i mailmap; git log --all --format='%an|%ae|%cn|%ce' | sort -u | wc -l
+ - Bash: git shortlog -sne --all | tail -16; echo --- names w/ multiple emails; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{n[tolower($1)]++; e[tolower($1)]=e[tolower($1)]" "$2} END{for(k in n) if(n[k]>1) print k, e[k]}'; echo --- emails w/ multiple names; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{n[tolower($2)]++; a[tolower($2)]=a[tolower($2)]"|"$1} END{for(k in n) if(n[k]>1) print k, a[k]}'; echo --- committers; git log --all --format='%cn|%ce' | sort -u | grep -v -i github
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sne --all | grep -ci -E 'troy|puchades'; git status --short
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** used two emails, `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** used one email under two names, "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit).
+
+I added a `.mailmap` file at the repo root that maps each person to a single identity. It's untracked, so I haven't committed it. I didn't rewrite any history. `git shortlog`, `git log --use-mailmap` and GitHub's tools read the file, so counts now merge. Troy Goode now shows 122 commits and Alejandro 5.
+
+The top author is still **Douglas Christopher Wilson** (143 commits). Troy Goode is second at 122. Merging didn't change the order, because even with the merge Troy is 21 commits behind.
+
+I didn't merge any other names. No other name or email in the history appears under two identities.
+META cost=0.053928500000000004 ms=15577 turns=4

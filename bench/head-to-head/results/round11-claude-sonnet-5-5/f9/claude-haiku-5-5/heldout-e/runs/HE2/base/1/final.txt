@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | grep -v '^vendor/' | grep -E '\.go$' | wc -l && git ls-files | grep -c '^vendor/' ; git ls-files | grep -v '^vendor/' | grep -E '\.go$' | xargs -I{} git blame --line-porcelain -w -- {} 2>/dev/null | grep -E '^author ' | sort | uniq -c | sort -rn | head -20
+ - Bash: git log --format='%an' | sort | uniq -c | sort -rn | head; echo ---; git log --format='%an <%ae>' | sort -u | wc -l; echo ---; git ls-files | grep -v '^vendor/' | wc -l; cat .git-blame-ignore-revs 2>/dev/null | head -5
+ - Bash: git ls-files | grep -E '\.go$'; echo ---; git ls-files | grep '^vendor/'; echo ---; for f in $(git ls-files | grep -E '\.go$'); do echo "$f: $(git blame --line-porcelain -w -- "$f" | grep -E '^author ' | sort | uniq -c | sort -rn | head -3 | tr -s ' ' | tr '\n' ';')"; done; echo ---; git blame --line-porcelain -w -- $(git ls-files | grep -E '\.go$') | grep -E '^author ' | wc -l
+ - Bash: for f in $(git ls-files | grep -E '\.go$' | grep -v '^vendor/'); do git blame --line-porcelain -w -- "$f"; done | grep -E '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn > /tmp/own.txt; cat /tmp/own.txt; awk '{s+=$1} END {print "total", s}' /tmp/own.txt; echo ---; git blame --line-porcelain -w -- vendor/github.com/mattn/go-isatty/isatty_tcgets.go | grep -c '^author '; echo ---; git log --format='%an' -- $(git ls-files | grep -E '\.go$' | grep -v '^vendor/') | sort | uniq -c | sort -rn | head -5; echo; git log --format='%an' -- . | sort -u | wc -l
+ - Bash: for f in $(git ls-files | grep -E '\.go$' | grep -v '^vendor/'); do git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain -w -- "$f"; done | grep -E '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -6; echo; git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain -w -- $(git ls-files | grep -E '\.go$' | grep -v '^vendor/') | grep -E '^author ' | wc -l; git log --format=%an | wc -l; git log --format=%an | grep -v dependabot | wc -l
+ - Bash: for f in $(git ls-files | grep -E '\.go$' | grep -v '^vendor/'); do git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain -w -- "$f"; done | grep -E '^author ' | wc -l; git log --format=%an | sort | uniq -c | sort -rn | awk '{s+=$1} END {print s}'
+FINAL ANSWER:
+**Short answer:** Fatih Arslan owns about half the live code. The next person, Linda_pp, owns under 9%.
+
+Live code here is 6 non-vendor Go files, 1,657 surviving lines (`git blame`, whitespace ignored, honoring `.git-blame-ignore-revs`):
+
+| Rank | Author | Live lines | Share |
+|---|---|---|---|
+| 1 | Fatih Arslan | 823 | 49.7% |
+| 2 | Linda_pp | 144 | 8.7% |
+| 3 | Lena Hoffmann | 103 | 6.2% |
+| 4 | Matthew Hall | 98 | 5.9% |
+| 5 | Raj Patel | 97 | 5.9% |
+| 6 | Cameron Moore | 50 | 3.0% |
+
+Fatih's lines sit mostly in `color.go`, `color_test.go`, and `doc.go`, the core of the library. Fatih also made 201 of 300 commits (about 67%). 38 of the 300 are dependabot.
+
+Caveats:
+- Without the blame-ignore file, Fatih is 48.2% and Raj is second at 9.8%. The ranking after Fatih shifts, but the picture doesn't.
+- Blame counts surviving lines, not who understands the code. The codebase is small, so one person's share swings a lot.
+- The one vendored file (`vendor/.../isatty_tcgets.go`) is upstream code, so I excluded it. It is not a measure of the maintainers.
+
+For bus-factor purposes, a single maintainer holds about half the code and most of the history. Given the small size, a few people reading through the core files would cover most of the risk.
+META cost=0.00724826 ms=30463 turns=7

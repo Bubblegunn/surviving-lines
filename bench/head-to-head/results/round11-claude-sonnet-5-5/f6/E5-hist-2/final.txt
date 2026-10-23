@@ -1,0 +1,40 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__file_history,mcp__git-historian__blame_summary", "max_results": 5}
+ - mcp__git-historian__file_history: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f6/E5-hist-2/runs/E5-hist-2/repo", "file": "lib/index.js", "limit": 200}
+ - mcp__git-historian__blame_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f6/E5-hist-2/runs/E5-hist-2/repo", "file": "lib/index.js"}
+ - Bash: git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 -e --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short version:** Troy Goode created `lib/index.js` and still owns most of it. Douglas Christopher Wilson is the second-largest surviving author. Plain `git blame` is misleading here because of a recent reformat commit.
+
+**Why plain blame misleads.** `62628c0` (2026-04-12, Fiona Formatter, "reformat js with 4-space indent and double quotes") rewrote 214 lines. Plain blame therefore credits her with 89.9% of the file. That commit only changed whitespace and quotes. I re-ran `git blame -w` and ignored that commit. I also ignored `b2005d9` in the first run, which made no real difference to the numbers. The counts below are lines of the 238-line file at HEAD.
+
+**Whose code is still in it (formatting commit ignored):**
+
+| Author | Lines | Notes |
+|---|---|---|
+| Troy Goode | ~157–159 (~66%) | Creator and maintainer |
+| Douglas Christopher Wilson | 22 | Vary-header handling, options-delegate fix, lint and build changes |
+| Alejandro Caravaca Puchades (and alex94puchades) | 12 + 4 | RegExp and array support for `options.origin`, 2015 |
+| Raymond Feng | 7–9 | `applyHeaders` optimization, 2015 |
+| max.laverse | 6 | Passing the preflight request on to `next()`, 2015 |
+| LuisEGR | 6 | Unused-parameter lint cleanup, 2021 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each | Origin checks, Vary on specific origins, Safari preflight workaround |
+| 10 others | 1–2 each | Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal, Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo |
+
+**How it developed (62 commits touched the file):**
+- **2013 (Troy Goode):** The first commit on 2013-01-30 added 78 lines. Troy added case-insensitive header lookup, `origin: false` to disable CORS, request pause and resume for async middleware, and `use strict`. The big "wrapping up" rewrite on 2013-10-09 added origin callbacks (from Eric di Domenico) and non-Express and Connect support (Mathias Buus, then Troy).
+- **2014:** Troy added `Access-Control-Expose-Headers` and Express 4 support. Contributors added PATCH as a default method, method-name normalization, and a fix so `options.origin` callbacks aren't overridden. Igor Soarez added `Vary: Origin`, and Troy switched it to the `vary` module.
+- **2015:** Contributors added regexp and array `origin` matching, preflight pass-through to `next()`, and exposed headers on OPTIONS. Troy moved the file from JSLint to ESLint.
+- **2016–2018:** Douglas Christopher Wilson took over most of the work, mainly Vary-header fixes, the options-delegate fix, and lint and build upgrades. The rest are small fixes from various contributors, such as Safari preflight, frozen options, and `maxAge: 0`.
+- **2021 and later:** There is only one lint cleanup (LuisEGR, 2021). Then comes `b2005d9` (Troy, 2026-04-10, "annotate handlers"), which rewrote 12 lines. After that comes the whitespace and quote reformat.
+
+**Caveats.**
+- `-w` ignores whitespace only. The 4-space and double-quote reformat may have changed quoting on some lines. Lines whose quotes changed can still be credited to Fiona. That would explain why the two runs differ by a few lines (for example Troy's 157 and 159).
+- Lines Troy rewrote in `b2005d9` may now be attributed to the earlier author. The first run ignored both commits, so those lines can be attributed to older authors.
+- Blame shows who last touched a line. It does not show who designed the logic.
+META cost=0.09963469999999999 ms=22627 turns=5

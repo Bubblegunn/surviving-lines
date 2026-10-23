@@ -1,0 +1,198 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+I want to change how the store proxies work (lib/rack/attack/store_proxy/). Who knows that code and should review my PR? Please only suggest people who are still around, not just the historical authors.
+
+CRITERIA:
+1. Hiroshi Tanaka, as one person, is credited with about 26% of lib/rack/attack/store_proxy/ (accept 22–30%) and named as someone to ask. FAIL if he is split into two people, absent, or if "GitHub" is shown as the author of his code.
+2. Historic owners are shown as inactive and not recommended: hakanensari (about 22.7% of store_proxy, accept 19–27%, last commit 2014) and Aaron Suggs (155 commits, about 8.2% of all Ruby code, last commit 2017) are flagged as no longer active (dates or years given), and neither is recommended as a reviewer. FAIL if either is recommended, or if the answer presents the code owners without saying anything about who is no longer active.
+3. Gonzalo Rodriguez is one person: about 18.4% of store_proxy (accept 15–22%) or about 44.6% of all Ruby code (accept 41–48%), whichever the answer reports; and he is described as still active (last commit Nov 2025). FAIL if he is split into several people, if his share is under 10% of store_proxy or under 35% of all code, or if he is called inactive.
+4. Generated and formatting commits are not credited: Santiago Bartesaghi is at most 10.5% of all Ruby code (truth 8.4%; about 12% if the generated RBI were counted) or reported only with per-directory figures (1.8% of store_proxy), and Jonas Keller (whitespace commit) is at 0% or not listed. The answer says the generated file and the autocorrect/whitespace commits were left out or looked through. FAIL if Jonas Keller is presented as an owner, if Santiago's whole-repo share is above 11%, or if no exclusion is mentioned.
+5. The recommendation lists only active people: it names at least one of Hiroshi Tanaka, Gonzalo Rodriguez, Santiago Bartesaghi as reviewer, with Hiroshi Tanaka or Gonzalo Rodriguez ahead of any other candidate by code ownership, and does not name anyone whose last commit is before 2024 (for example Aaron Suggs, hakanensari, fatkodima, Brad Lindsay, Jonathan del Strother) as a reviewer. FAIL if any such person is recommended, or if no active person is named.
+
+GROUND TRUTH (computed by a script with git blame):
+== e5 ground truth ==
+fixture HEAD: 24ce876159df8ce75c69ef963f8ad4cf2f1f6f3d 2026-09-30 (as-of date = HEAD commit date)
+scope: tracked *.rb and *.rbi at HEAD, excluding generated files
+excluded files (non-blank lines): {'generated (DO NOT EDIT)': 112}
+ignored commits (1): 045616c9 Autocorrect Style/StringLiterals
+
+-- ALL: attributable human lines = 2819
+    1. Gonzalo Rodriguez         1258 lines  44.63%  | commits(all history)=259 last_commit=2025-11-09
+    2. fatkodima                  248 lines   8.80%  | commits(all history)=18 last_commit=2019-10-31
+    3. Santiago Bartesaghi        236 lines   8.37%  | commits(all history)=32 last_commit=2026-09-30
+    4. Aaron Suggs                231 lines   8.19%  | commits(all history)=155 last_commit=2017-02-09
+    5. madlep                     127 lines   4.51%  | commits(all history)=10 last_commit=2016-08-04
+    6. Jordan Moncharmont         112 lines   3.97%  | commits(all history)=3 last_commit=2013-09-30
+    7. hakanensari                109 lines   3.87%  | commits(all history)=10 last_commit=2014-04-17
+    8. Hiroshi Tanaka              72 lines   2.55%  | commits(all history)=2 last_commit=2026-09-16
+    9. Jonathan del Strother       55 lines   1.95%  | commits(all history)=4 last_commit=2023-11-21
+   10. Jean Boussier               45 lines   1.60%  | commits(all history)=2 last_commit=2026-03-24
+
+-- lib/: attributable human lines = 865
+    1. Gonzalo Rodriguez          199 lines  23.01%  | commits(all history)=259 last_commit=2025-11-09
+    2. fatkodima                  145 lines  16.76%  | commits(all history)=18 last_commit=2019-10-31
+    3. Aaron Suggs                101 lines  11.68%  | commits(all history)=155 last_commit=2017-02-09
+    4. Hiroshi Tanaka              72 lines   8.32%  | commits(all history)=2 last_commit=2026-09-16
+    5. hakanensari                 66 lines   7.63%  | commits(all history)=10 last_commit=2014-04-17
+    6. madlep                      40 lines   4.62%  | commits(all history)=10 last_commit=2016-08-04
+    7. Jordan Moncharmont          27 lines   3.12%  | commits(all history)=3 last_commit=2013-09-30
+    8. Steve Hodgkiss              21 lines   2.43%  | commits(all history)=3 last_commit=2014-04-02
+    9. Brad Lindsay                19 lines   2.20%  | commits(all history)=1 last_commit=2018-02-06
+   10. dsantosmerino               18 lines   2.08%  | commits(all history)=1 last_commit=2019-10-06
+
+-- lib/rack/attack/store_proxy/: attributable human lines = 277
+    1. Hiroshi Tanaka              72 lines  25.99%  | commits(all history)=2 last_commit=2026-09-16
+    2. hakanensari                 63 lines  22.74%  | commits(all history)=10 last_commit=2014-04-17
+    3. Gonzalo Rodriguez           51 lines  18.41%  | commits(all history)=259 last_commit=2025-11-09
+    4. fatkodima                   22 lines   7.94%  | commits(all history)=18 last_commit=2019-10-31
+    5. Brad Lindsay                19 lines   6.86%  | commits(all history)=1 last_commit=2018-02-06
+    6. Jonathan del Strother       16 lines   5.78%  | commits(all history)=4 last_commit=2023-11-21
+    7. Brian Kephart               13 lines   4.69%  | commits(all history)=2 last_commit=2018-05-13
+    8. Santiago Bartesaghi          5 lines   1.81%  | commits(all history)=32 last_commit=2026-09-30
+    9. Ryan Laughlin                4 lines   1.44%  | commits(all history)=4 last_commit=2020-05-20
+   10. Alexey Zapparov              3 lines   1.08%  | commits(all history)=1 last_commit=2022-02-04
+
+-- spec/: attributable human lines = 1927
+    1. Gonzalo Rodriguez         1053 lines  54.64%  | commits(all history)=259 last_commit=2025-11-09
+    2. Santiago Bartesaghi        223 lines  11.57%  | commits(all history)=32 last_commit=2026-09-30
+    3. Aaron Suggs                116 lines   6.02%  | commits(all history)=155 last_commit=2017-02-09
+    4. fatkodima                  103 lines   5.35%  | commits(all history)=18 last_commit=2019-10-31
+    5. madlep                      87 lines   4.51%  | commits(all history)=10 last_commit=2016-08-04
+    6. Jordan Moncharmont          85 lines   4.41%  | commits(all history)=3 last_commit=2013-09-30
+    7. hakanensari                 43 lines   2.23%  | commits(all history)=10 last_commit=2014-04-17
+    8. Jonathan del Strother       39 lines   2.02%  | commits(all history)=4 last_commit=2023-11-21
+    9. Jean Boussier               34 lines   1.76%  | commits(all history)=2 last_commit=2026-03-24
+   10. Alex Martens                25 lines   1.30%  | commits(all history)=1 last_commit=2024-06-24
+
+WATCH Hiroshi Tanaka: ALL: 72 lines (2.55%); lib/: 72 lines (8.32%); lib/rack/attack/store_proxy/: 72 lines (25.99%); spec/: 0 lines (0.00%)
+
+WATCH Jonas Keller: ALL: 0 lines (0.00%); lib/: 0 lines (0.00%); lib/rack/attack/store_proxy/: 0 lines (0.00%); spec/: 0 lines (0.00%)
+
+WATCH Santiago Bartesaghi: ALL: 236 lines (8.37%); lib/: 13 lines (1.50%); lib/rack/attack/store_proxy/: 5 lines (1.81%); spec/: 223 lines (11.57%)
+
+-- identity groups with more than one name/email (merged):
+   Aaron Suggs: Aaron Suggs <<email redacted>>; Aaron Suggs <<email redacted>>
+   Gonzalo Rodriguez: Gonzalo <<email redacted>>; Gonzalo <<email redacted>>; Gonzalo R <<email redacted>>; Gonzalo Rodriguez <<email redacted>>; Gonzalo Rodriguez <<email redacted>>
+   Han: Han <<email redacted>>; Han Chang <<email redacted>>
+   Hiroshi Tanaka: Hiroshi Tanaka <hiroshi@tanaka.example>; Hiroshi Tanaka <<email redacted>>
+   James Mead: James Mead <<email redacted>>; James Mead <<email redacted>>
+   Jonathan del Strother: Jonathan del Strother <<email redacted>>; Jonathan del Strother <<email redacted>>
+   Olle Jonsson: Olle Jonsson <<email redacted>>; Olle Jonsson <<email redacted>>
+   Santiago Bartesaghi: Santiago Bartesaghi <<email redacted>>; Santiago Bartesaghi <<email redacted>>
+   madlep: Julian Doherty (madlep) <<email redacted>>; madlep <<email redacted>>
+
+-- commit-count ranking (no-merges, all history; what a commit count would say):
+   1. Gonzalo Rodriguez         259 commits
+   2. Aaron Suggs               155 commits
+   3. Santiago Bartesaghi        32 commits
+   4. fatkodima                  18 commits
+   5. Zach Millman               10 commits
+   6. hakanensari                10 commits
+   7. madlep                     10 commits
+   8. Olle Jonsson                8 commits
+
+activity as of 2026-09-30 (active = commit within last 24 months):
+   Gonzalo Rodriguez        last commit 2025-11-09  ACTIVE
+   Aaron Suggs              last commit 2017-02-09  inactive (9.6 years)
+   Santiago Bartesaghi      last commit 2026-09-30  ACTIVE
+   fatkodima                last commit 2019-10-31  inactive (6.9 years)
+   madlep                   last commit 2016-08-04  inactive (10.2 years)
+   Zach Millman             last commit 2015-07-08  inactive (11.2 years)
+   hakanensari              last commit 2014-04-17  inactive (12.5 years)
+   Olle Jonsson             last commit 2020-05-24  inactive (6.4 years)
+   Vincent Boisard          last commit 2016-01-12  inactive (10.7 years)
+.git-blame-ignore-revs: # rubocop -a Style/StringLiterals | 045616c9d8780273e9dc8b19728abc762f741a88 |
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__file_history,mcp__tool__blame_summary", "max_results": 4}
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; ls <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-hist-1/repo/lib/rack/attack/store_proxy/
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-hist-1/repo", "path": "lib/rack/attack/store_proxy"}
+ - Bash: git log --no-merges --format='%ad %aN <%aE> | %s' --date=short -- lib/rack/attack/store_proxy lib/rack/attack/store_proxy.rb spec/acceptance/stores 2>/dev/null | head -60; echo ---; git log --no-merges --since='12 months ago' --format='%aN' | sort | uniq -c | sort -rn | head -20; echo ---; git log -1 --format=%ad --date=short; ls .github 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null; cat .mailmap 2>/dev/null | head
+ - Bash: git log --no-merges --since='12 months ago' --format='%ad %aN <%aE> | %s' --date=short; echo ---; git log --format='%aN <%aE>' | grep -iE 'gonzalo|grzuy|tanaka' | sort | uniq -c; echo ---; git log --format='%ad %aN <%aE> %s' --date=short --grep='Valkey'; git log --merges --format='%ad %aN <%aE> | %s' --date=short | head -15
+ - Bash: for c in $(git log --since='12 months ago' --no-merges --format=%h --author='Jean\|Bartesaghi\|Gonzalo\|Tanaka'); do echo "== $(git log -1 --format='%aN %ad %s' --date=short $c)"; git show --stat --format= $c | grep -v '^ *[0-9]* files\? changed' | head -8; done
+FINAL ANSWER:
+Pick these three reviewers. Activity cutoff: commit in last ~12 months; last repo commit was 2026-09-30.
+
+**1. Santiago Bartesaghi (`<email redacted>` / `<email redacted>`). Primary reviewer.**
+- Most active committer in last 12 months: 6 commits, latest 2026-09-30.
+- Did real proxy work: "Fix reset! when using namespaced cache store" (#673), "Drop Dalli 2 support" (#679), and store acceptance specs (#708, 2026-01).
+- His 2026-08-04 StringLiterals commit also touches `redis_proxy.rb` and `redis_cache_store_proxy.rb`. That commit is style-only, so do not count it as knowledge.
+
+**2. Hiroshi Tanaka. Reviewer for anything near `valkey_proxy.rb`.**
+- Owns 100% of `valkey_proxy.rb` (#310 on 2026-09-02, #318 on 2026-09-16). Newest code in the directory.
+- Caveat: the two commits use different emails (`hiroshi@tanaka.example`, `<email redacted>`). There is no `.mailmap`, so I cannot confirm both are the same person. Check before you tag.
+
+**3. Jean Boussier (`<email redacted>`). Optional.**
+- "Eagerly check for store validity" (#714, 2026-03) changed `lib/rack/attack/cache.rb`. That is the code that picks and wraps the store proxy.
+- Ask him if your change affects how a proxy is selected or validated.
+
+**Borderline: Gonzalo Rodriguez (`grzuy`).**
+- Original designer of most of the proxy layer (2018–2019 refactors). Also merged most older PRs.
+- The tool marks him "inactive since 2021", but that is wrong. He has no `.mailmap` entry, and he committed in 2025-11 under the names "Gonzalo" and "Gonzalo R".
+- His recent work is CI/Appraisals only, and his last commit is ~11 months old. Good for design context; slow response possible.
+
+**Skip (gone):** hakanensari (2014), Brad Lindsay, Brian Kephart, fatkodima, Jonathan del Strother (2023). Together they still own most lines in 5 of 6 proxy files: `dalli_proxy.rb`, `redis_store_proxy.rb`, `mem_cache_store_proxy.rb`, `redis_proxy.rb`, `redis_cache_store_proxy.rb`. So most of this code has no active owner. Write a clear PR description and add good acceptance specs under `spec/acceptance/stores/`.
+
+No CODEOWNERS file exists in the repo.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>'; $SL --reviewers lib/rack/attack/store_proxy/; echo ===; $SL --history lib/rack/attack/store_proxy/
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; node $S --reviewers lib/rack/attack/store_proxy/; echo '----'; node $S --history lib/rack/attack/store_proxy/
+ - Bash: S=<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>; git log --format='%h %ad %an <%ae> %s' --date=short -8 -- lib/rack/attack/store_proxy/; echo ---; git log --since=2025-09-30 --format='%an <%ae>' | sort | uniq -c | sort -rn; echo ---; node $S --identities -- lib/rack/attack/store_proxy/ | sed -n '1,40p'; cat .git-blame-ignore-revs; git show --stat 20d6682 | head -15
+FINAL ANSWER:
+**Recommendation: Hiroshi Tanaka as main reviewer, Santiago Bartesaghi second. Gonzalo is a possible third, if you can confirm it is the same person (see below).**
+
+All numbers come from `surviving-lines --reviewers` and `--history` on `lib/rack/attack/store_proxy/` at HEAD. The tool ran `git blame -w -M -C` over 6 files: 277 non-blank lines, 331 with blank lines. "Active" means at least one commit in the year before 2026-09-30.
+
+**Owners by surviving lines:**
+
+| # | Person | Lines | Share | Last commit here | Still around? |
+|---|---|---|---|---|---|
+| 1 | Hiroshi Tanaka (2 addresses merged) | 72 | 26.0% | 2026-09-16 | **Active.** Wrote the Valkey proxy (#310, #318). |
+| 2 | hakanensari | 63 | 22.7% | 2014-04-15 | Inactive. Only commit was in 2014. |
+| 3 | Gonzalo Rodriguez | 51 | 18.4% | 2019-08-02 | Inactive in this path. See note below. |
+| 4 | fatkodima | 22 | 7.9% | 2019-10-24 | Inactive |
+| 5 | Brad Lindsay | 19 | 6.9% | 2018-02-06 | Inactive |
+
+18 more authors hold the rest of the lines.
+
+**Who to ask:**
+1. **Hiroshi Tanaka.** The only active top owner, and the most recent author in this directory.
+   - 72 lines (26.0%) counts two addresses as one person: `hiroshi@tanaka.example` (59 lines, 21.3%) and `<email redacted>` (13 lines).
+   - This is a strong guess (same name, two addresses), but not confirmed.
+2. **Santiago Bartesaghi.** Active, with 6 commits repo-wide in the last year.
+   - In this path: 5 lines (1.8%). He fixed `reset!` for namespaced stores (#673) and made a style commit here in 2026-08.
+   - His two addresses, `<email redacted>` and `<email redacted>`, are also a strong same-name guess.
+   - He holds few lines here, but he is an active maintainer who knows this code.
+3. **Gonzalo (possible).** As `Gonzalo Rodriguez <<email redacted>>` he has 23 commits and 51 lines here, last in 2019.
+   - A `Gonzalo` / `Gonzalo R` with `<email redacted>` made 4 commits repo-wide in the last year.
+   - Both share the "grzuy" handle, so they are probably the same person. The tool did not link these two addresses, so this is my guess. If it is right, he is the best second reviewer.
+
+Other people active repo-wide (Jean Boussier, Bart de Water, Jonas Keller) hold no lines in this directory.
+
+**Notes on the numbers:**
+- **Bus factor** (fewest authors who together hold 50% of the lines, in this directory): 3 people, who hold 62.5% of non-blank lines (61.9% with blank lines). To reach 80% takes 6 authors.
+- **Reformat commit:** `045616c` (rubocop `Style/StringLiterals`) was ignored because it is listed in `.git-blame-ignore-revs`.
+- **Mechanical rewrites:** the tool checked 35 commits and set none aside. One candidate, `20d6682` (Gonzalo, rubocop `Lint/HandleExceptions`), was kept: it added real `rescue` lines, and only 2 lines survive.
+- **Copy detection** moved 4 lines. hakanensari has 22.7% with it and 23.8% without it. No one's ranking changes.
+- **Same address, several names, counted as one:** Gonzalo Rodriguez / Gonzalo, and madlep / Julian Doherty.
+- **Identity merges:** Hiroshi, Santiago and Jonathan del Strother each appear under two addresses (all strong same-name guesses). They are merged only in the summary above, not in the repository. I did not write `.mailmap`. `surviving-lines --identities` prints the lines if you want to make the merges permanent.
+- **Limits:** these numbers do not count review or design work, and do not say who understands the code best.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -60; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-base-1/repo; ls lib/rack/attack/store_proxy/; echo ---; git log --format='%h %ad %an <%ae> %s' --date=short -- lib/rack/attack/store_proxy/ | head -60; echo ---; git shortlog -sne -- lib/rack/attack/store_proxy/; echo; git log -1 --format=%ad --date=short; ls; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null
+ - Read: {"file_path": "/private/tmp/claude-501/-Users-efe-claude-kredi-runs-2026-10-23-r11-f9-claude-opus-5-5-E-runs-HE5-base-1-repo/9fb30f4e-eb31-4994-9548-54758f50d72c/tasks/bo5zzox9i.output"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-base-1/repo; ls -a; ls .github 2>/dev/null; cat .mailmap 2>/dev/null; echo ---; git log --since=2025-10-01 --format='%ad %an <%ae> | %cn <%ce> | %s' --date=short HEAD | head -80; echo ---; for a in "Gonzalo" "Santiago" "fatkodima" "Hiroshi" "del Strother" "Mitchell Henke" "Zapparov" "thomas morgan" "Laughlin"; do echo "$a: $(git log -1 --format='%ad %an <%ae>' --date=short --author="$a" HEAD) | committer-last: $(git log -1 --format='%ad' --date=short --committer="$a" HEAD)"; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-base-1/repo; git show -s --format='%H%n%an <%ae>%n%cn%n%B' 21afafc 0e16a98 24ce876; echo ---; grep -rniE 'maintain|step(ped)? down|emeritus|owner|hiroshi|tanaka|gonzalo|santiago|grzuy|santib' README.md CONTRIBUTING.md docs CHANGELOG.md .github 2>/dev/null | head -40; ls docs
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/E/runs/HE5-base-1/repo; git show --stat --format='%s' 73f0000 2>/dev/null; git log --format='%h %s' --stat -1 --grep='Eagerly check' HEAD; git log --format='%h %an %s' HEAD -- lib/rack/attack/store_proxy.rb lib/rack/attack/cache.rb spec/acceptance/stores | head -15
+FINAL ANSWER:
+That stopped background command was my first history lookup. The `git shortlog` step in it waited for input that never came, so it hung until the time limit. The commit log I needed had already printed before that, and I rechecked the details with other commands, so the reviewer suggestions above stand. Nothing needs to be rerun.

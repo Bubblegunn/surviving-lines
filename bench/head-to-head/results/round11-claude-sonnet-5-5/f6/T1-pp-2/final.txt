@@ -1,0 +1,48 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' | wc -l && git rev-list --count HEAD && git show --stat --oneline 62628c0 | tail -3
+ - Bash: run() { for f in $(git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn; }; echo "== ignoring reformat commit =="; run | head -15; echo "== total lines =="; run | awk '{s+=$1} END{print s}'; echo "== src only (lib/ + index.js) =="; for f in $(git ls-files lib index.js); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -10; echo "== naive blame (no ignore) =="; for f in $(git ls-files lib index.js); do git blame --line-p
+FINAL ANSWER:
+Troy Goode owns the most code that is still here. Douglas Christopher Wilson is second. I attributed each current line to the commit that last meaningfully changed it, which is a different measure from commit counts.
+
+**Method:** I ran `git blame -w -M -C` on all tracked files except the lockfile and images. That ignores whitespace changes and follows lines that were moved or copied between files. I also excluded commit `62628c0`, the style reformat. It touched about 1,000 lines in 4 files, and plain blame credits those lines to "Fiona Formatter" instead of the people who wrote them. Without the exclusion, Fiona Formatter would show as the top owner of `lib/` and `index.js`.
+
+**Whole repo (1,995 surviving lines):**
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+
+Every other contributor has 17 lines or fewer.
+
+**Source only (`lib/` and `index.js`):**
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+
+Everyone else has 7 lines or fewer. Troy owns most of the library code, and Douglas owns most of the rest of the repo.
+
+**Caveats:**
+- `-w` and `-M -C` still miss some cases. Lines that were rewritten, as opposed to moved, go to whoever rewrote them, even if the logic is the same.
+- Blame shows who last changed a line, not who designed it. If someone reworked a line without changing its meaning, they get the credit.
+- I did not merge duplicate identities. "Alejandro Caravaca Puchades" and "alex94puchades" look like the same person, so their combined total is 16 source lines. Other contributors may also appear under more than one name or email.
+- The 1,995-line total includes the test files, which Douglas probably dominates. Check this with a per-directory split if it matters.
+
+I can break the totals down per file or merge identities with a `.mailmap` if you want.
+META cost=0.0882347 ms=23462 turns=4

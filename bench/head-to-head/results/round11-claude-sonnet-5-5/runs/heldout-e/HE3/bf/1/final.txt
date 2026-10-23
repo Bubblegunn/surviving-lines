@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs <home>/claude-kredi-runs/2026-10-23/r11/out-E/runs/HE3-bf-1/repo --dry-run --no-github
+ - Bash: git log --format='%an <%ae>' -- src | sort | uniq -c | sort -rn | head; git log -1 --format=%cd; git rev-list --count HEAD; git log --reverse --format='%ad' | head -1
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head; echo ---; git ls-files src | wc -l; git log --since='12 months ago' --format='%an' -- src | sort | uniq -c | sort -rn; echo ---; git log --format='%h %ad %an %s' --date=short -8 -- src
+FINAL ANSWER:
+**Who wrote it:** Andrew Gallant (<email redacted>). `git blame` (ignoring whitespace, following moves and copies) credits him with about 2,550 of the roughly 3,000 current lines under `src/`. The next authors are Sebastian Thiel (74 lines), Ashley (68) and Aron Griffis (59). By commit count he also leads, with 57 of the 80 or so commits that touched `src/`.
+
+**Who to ask to review:**
+- **Andrew Gallant** is the best reviewer for the code itself. He last touched `src/` on 2026-01-14, so he is still within the 12-month active window. The caveat is that he hasn't committed in about two months.
+- **Sam Whitfield** (<email redacted>) is the recent maintainer. He has the last three commits on `src/` (license headers, moving `Ancestor` into its own module, renaming `src/tests` to `src/testsuite`). Those were mostly mechanical, so he knows the layout better than the logic. The ownership tool names him and Andrew as the fallback owners for the whole repo.
+- **Mei Tanaka** (`dent: add describe_file_type`, 2026-02-03) and **Tobias Brandt** (`util: add same_device helper`, 2026-01-12) are good extra reviewers if your PR touches the `dent` or `util` code.
+
+**Caveats:**
+- Git history starts in 2015 with one bulk commit of 8 files. That means the history was imported, so blame shows who has worked on the code since the import, not necessarily who first wrote it.
+- The ownership tool found no sub-directory with its own owner. I ran it with `--dry-run` and `--no-github`, so no `CODEOWNERS` file was written and emails weren't mapped to GitHub handles. Check the handles before you request reviews.
+- Commit and blame counts only estimate who knows the code. Someone who reviews but never commits won't show up here.
+
+If you tell me which directories under `src/` your PR touches, I can narrow this to those paths.
+META cost=0.0639858 ms=23624 turns=6

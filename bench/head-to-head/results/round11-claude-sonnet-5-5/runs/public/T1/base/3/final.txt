@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files | grep -Ev '(package-lock\.json|\.min\.|\.(png|jpg|gif|ico|svg)$)' | while read -r f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | wc -l; git rev-list --count HEAD
+ - Bash: git ls-files | grep -Ev '(package-lock\.json|\.min\.|\.(png|jpg|gif|ico|svg)$)' | while read -r f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -12; echo ---; git ls-files | while read -r f; do echo "$(wc -l < "$f") $f"; done | sort -rn | head -20
+FINAL ANSWER:
+Ownership below counts surviving lines through `git blame`, not commits. I used `-w -M -C` so whitespace changes and moved or copied lines don't count as new authorship. I also ignored the latest commit (`62628c0`, the 4-space/double-quote reformat). Without that, "Fiona Formatter" would show 291 lines, but that commit only restyled other people's code.
+
+Top authors by lines still present in `HEAD`:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+| Eric di Domenico | 16 |
+| Alberto Leal | 15 |
+
+- **Two people own most of the code.** Troy Goode and Douglas Christopher Wilson together hold the large majority of surviving lines.
+- **Troy Goode's lines are mostly tests and the README.** The big files are `test/test.js` (731 lines), `README.md` (277 lines) and `lib/index.js` (238 lines).
+- **Ownership is spread thin after those two.** Everyone below them holds under 100 lines.
+- **Limits of the count.** I excluded lockfiles, images and minified files. I also didn't merge author names that might be the same person under different emails. `git blame` shows who last changed a line, so a heavily edited line goes to whoever edited it last, not to whoever first wrote the idea.
+
+I can break this down per file or per directory (`lib/` vs `test/`), or merge duplicate identities with a `.mailmap`. Say which you want.
+META cost=0.0565474 ms=17746 turns=4

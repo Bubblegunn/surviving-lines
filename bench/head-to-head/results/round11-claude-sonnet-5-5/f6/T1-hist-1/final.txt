@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 4}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f6/T1-hist-1/runs/T1-hist-1/repo", "max_files": 1000, "top": 30}
+ - mcp__git-historian__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-23/r11/f6/T1-hist-1/runs/T1-hist-1/repo"}
+ - Bash: git show --stat --format='%h %an <%ae> %ad%n%s' 62628c0 | head -15; echo ---; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12
+FINAL ANSWER:
+Plain `git blame` credits the wrong person. Most of the code belongs to Troy Goode and Douglas Christopher Wilson.
+
+**The misleading result:** plain blame says "Fiona Formatter" owns 50.9% of the lines (1016 of about 1997). That comes from one commit, `62628c0` (2026-04-12), which only changed indentation and quotes in `lib/index.js` and the three test files `test/test.js`, `test/example-app.js` and `test/error-response.js`. It changed 1016 lines and wrote none of the logic.
+
+**Real ownership at HEAD:** I re-ran blame ignoring that commit and ignoring whitespace changes. Lines moved between files still count for their original author.
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 810 | ~41% | 2026-04-10 |
+| Douglas Christopher Wilson | 629 | ~31% | 2021-09-07 |
+| Íñigo Marquínez Prado | 95 | ~5% | 2024-05-14 |
+| Jon Church | 72 | ~4% | 2026-01-16 |
+| Sebastian Beltran | 67 | ~3% | 2025-07-23 |
+| Ulises Gascón | 52 | ~3% | 2026-01-22 |
+| Ignacio Mangas | 44 | ~2% | 2025-12-01 |
+
+The share is my rounding from about 1997 total lines. I only printed the top 12 authors, so the long tail is not shown.
+
+- **By file:** Troy wrote most of `lib/index.js` and the tests. Douglas wrote most of the repo-setup files: `LICENSE`, `.eslintrc.yml`, `.gitignore`, `HISTORY.md` and about half of `package.json`. The CI and security workflows belong to Íñigo, Sebastian, Ulises and Ignacio.
+- **Commit count:** the commit totals (Douglas 143, Troy 95) show the same two names, but they rank Douglas first. Surviving code puts Troy first.
+- **Inactivity:** every author is inactive under the default "no commit in 6 months" rule, which is a cutoff of 2026-04-23. The last commit in the repo is 2026-04-12, so the whole repo is flagged. That flag says nothing about this repo specifically. The newest commit is more than 6 months old at today's date, 2026-10-23.
+
+I did not check whether the 4-space style from the reformat is intended to stay.
+META cost=0.1186172 ms=17424 turns=6

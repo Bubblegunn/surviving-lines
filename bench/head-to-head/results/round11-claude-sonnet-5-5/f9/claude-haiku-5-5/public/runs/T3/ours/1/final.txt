@@ -1,0 +1,25 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --identities; echo "---"; ls -la .mailmap 2>/dev/null; echo "---"; git shortlog -sne HEAD | head -20
+ - Bash: cat <home>/.agents/skills/surviving-lines/SKILL.md 2>/dev/null || find / -path '*surviving-lines*' -name 'SKILL.md' 2>/dev/null | head -3
+ - Bash: cat > .mailmap <<'EOF'
+# Proposed identity merges, guesses from names and addresses. Confirm before relying on them.
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne HEAD | head -5; echo "--- SL ---"; timeout 100 node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --identities 2>&1 | head -30
+ - Bash: node "<home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/surviving-lines.js" --identities 2>&1 | head -30; echo "--- shortlog ---"; git shortlog -sne HEAD | head -4; git status --short
+FINAL ANSWER:
+Yes, two people each showed up under two identities. I merged both in a new `.mailmap` at the repo root. It's uncommitted.
+
+- **Troy Goode:** `troy@laptop.example` (2 commits) is folded into `<email redacted>`. The name match is strong, but it's still a guess from the name and address.
+- **Alejandro Caravaca Puchades:** `alex94puchades` (1 commit) is folded into the same address under the full name. This one is weaker, also a guess. Confirm both before you commit the file.
+
+The `.mailmap` has a comment marking both lines as proposals. After the merge, `surviving-lines --identities` reports no split identities.
+
+**Top author by commit count is now Douglas Christopher Wilson** (`<email redacted>`) with 143 commits. Troy Goode is second with 122. I didn't measure surviving lines per author for Douglas, so I can't say whether he also leads on lines. Earlier, Troy had 554 surviving lines across both addresses, so he may be the top author by that measure.
+META cost=0.00524639 ms=136012 turns=5

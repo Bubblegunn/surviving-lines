@@ -1,0 +1,63 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git ls-files '*.py' | xargs wc -l && git shortlog -sne HEAD && cat .git/info/attributes .gitattributes .git-blame-ignore-revs .mailmap 2>/dev/null
+ - Bash: IGN="--ignore-rev abe2ea7 --ignore-rev 0e8fe2e"; for f in $(git ls-files '*.py'); do git blame -w -M -C $IGN --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn | sed "s|^|$f |"; done | awk '{print}' | head -80; echo ---TOTAL; for f in $(git ls-files '*.py'); do git blame -w -M -C $IGN --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -15; echo ---RECORDS; git blame -w -M -C $IGN --line-porcelain HEAD -- records.py | grep '^author-mail\|^author-time' | paste - - | awk '{print $2, $4}' | sort | awk '{c[$1]++; if($2>m[$1])m[$1]=$2} END{for(k in c) print c[k],k, strftime("%Y-%m-%d",m[k])}' | sort -rn
+ - Bash: B="git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain HEAD --"; echo ---PY-TOTAL; for f in $(git ls-files '*.py'); do $B $f | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -15; echo ---PER-FILE; for f in $(git ls-files '*.py'); do echo "# $f"; $B $f | grep '^author-mail ' | sort | uniq -c | sort -rn | head -4; done; echo ---RECORDS-last-touch; $B records.py | grep '^author-mail \|^author-time ' | paste - - | awk '{c[$2]++; if($4>m[$2])m[$2]=$4} END{for(k in c) print c[k],k, strftime("%Y-%m-%d",m[k])}' | sort -rn
+ - Bash: B(){ git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain HEAD -- "$1"; }; echo ---PY-TOTAL; for f in $(git ls-files '*.py'); do B $f | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -15; echo ---PER-FILE; for f in $(git ls-files '*.py'); do echo "# $f"; B $f | grep '^author-mail ' | sort | uniq -c | sort -rn | head -4; done; echo ---RECORDS-last-touch; B records.py | grep '^author-mail \|^author-time ' | paste - - | awk '{c[$2]++; if($4>m[$2])m[$2]=$4} END{for(k in c) print c[k],k, strftime("%Y-%m-%d",m[k])}' | sort -rn
+ - Bash: B(){ git blame -w -M -C --ignore-rev abe2ea7 --ignore-rev 0e8fe2e --line-porcelain HEAD -- "$1"; }; echo ---RECORDS; B records.py | grep '^author \|^author-time ' | paste - - | python3 -I -c "
+import sys,datetime,collections
+c=collections.Counter();m={}
+for l in sys.stdin:
+    p=l.rstrip('\n').split('\t'); a=p[0][7:]; t=int(p[1].split()[1]); c[a]+=1; m[a]=max(m.get(a,0),t)
+for a,n in c.most_common(): print(n,a,datetime.date.fromtimestamp(m[a]))
+"; echo ---MARCUS/DANA/PRIYA/TOMAS-commits; git log --format='%h %ad %an | %s' --date=short --author='Marcus' --author='Priya' --author='Dana' --author='dana' --author='Tomás' ; echo ---RECENT; git log -15 --format='%h %ad %an | %s' --date=short --sta
+ - Bash: grep -rnE 'LEGACY_SKIP|_coerce_row|_describe|_normalise|_normalize|chunk' --include=*.py . ; echo ---; git blame -w --ignore-rev abe2ea7 --ignore-rev 0e8fe2e -L '/LEGACY_SKIP/,+9' records.py | cut -c1-110; git log -3 --format='%h %an %ad %s' --date=short -- tests/ | head
+ - Bash: grep -rnE 'LEGACY_SKIP|_coerce_row|_describe|normalis|normaliz|chunk' --include='*.py' . ; echo ---; git blame -w --ignore-rev abe2ea7 --ignore-rev 0e8fe2e records.py | grep -nE 'Marcus|Dana|dana|Tom.s' | cut -c1-120
+FINAL ANSWER:
+**Short answer:** the code that does the work today is mostly Kenneth Reitz's. The 2026 contributors added code that nothing in the repo calls. For questions about `records.py`, Dana Okafor is the most recent person to have worked in it.
+
+I used `git blame -w -M -C` and skipped the two formatting commits (`abe2ea7` black, `0e8fe2e` pre-commit bot). Otherwise they would take credit for lines they only reflowed.
+
+**Surviving Python lines (all `.py` files)**
+- Kenneth Reitz: about 435. This is the 422 lines under his main email plus 13 under his MacBook email.
+- Jan Vlcinsky: 119. Mostly tests and fixtures.
+- Greg Troszak: 89
+- Chad Whitacre: 85
+- Harold Cooper: 51
+- Joakim Uddholm: 45
+- Dana Okafor: 38 (about 40 in `records.py`)
+
+**`records.py` (622 lines)**
+- Kenneth Reitz: 318. Last touched 2024-03-30.
+- Greg Troszak: 58. Last touched 2017.
+- Chad Whitacre: 39. Last touched 2016.
+- Jan Vlcinsky: 30. Last touched 2018.
+- Dana Okafor: 40 (28 under one identity, 12 under another). Last touched 2026-05.
+- Tomás Ibarra: 12
+- Marcus Lindqvist: 8
+
+**Whose code is not alive**
+- **Marcus Lindqvist** has 25 commits but only 8 surviving lines. Of those commits, 24 were "tweak legacy exporter" edits to an example file that was later deleted. The 8 lines left are `LEGACY_SKIP` at `records.py:15`. Nothing references it.
+- **Dana Okafor and Tomás Ibarra** wrote the helpers at `records.py:457-506`.
+  - `_normalize_keys` and `_chunked` have tests but no caller in the library.
+  - `_coerce_row` and `_describe` have no caller and no tests.
+  - These are private names, so something outside this repo could use them. I only checked inside it.
+- **Priya Raman** only did formatting and CI config. No logic.
+- **Joseph Gardi** added one line and then removed one in 2026-02, so nothing survives in `records.py`.
+
+**Who to ask**
+- **Core behaviour** (the `Database`, `Record` and `RecordCollection` classes, and transactions): Kenneth Reitz is the only real owner. He was last active in 2024. Greg Troszak, Chad Whitacre and Jan Vlcinsky wrote the rest, but all of them have been inactive since 2018 or earlier.
+- **Recent changes and why the 2026 helpers exist:** Dana Okafor. The commits use two identities, `<email redacted>` and `dokafor@fastmail.example`. They are probably the same person, but I can't confirm that from the log. Next is Tomás Ibarra for `_coerce_row`, then Marcus Lindqvist for `LEGACY_SKIP`.
+- Priya Raman is probably the right person for CI and formatting, because they added the black and pre-commit setup.
+
+**Caveats**
+- Blame shows who wrote lines, not who understands them or is still reachable.
+- The `example.*` email domains suggest some of these identities are placeholders.
+
+Next, I could check whether `LEGACY_SKIP` and the four unused helpers can be deleted.
+META cost=0.1343287 ms=43745 turns=9

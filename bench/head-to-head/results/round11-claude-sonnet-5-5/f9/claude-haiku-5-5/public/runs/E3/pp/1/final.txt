@@ -1,0 +1,23 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | wc -l && git ls-files | sed -n 's/.*\.\([^./]*\)$/\1/p' | sort | uniq -c | sort -rn | head -30
+ - Bash: for f in $(git ls-files); do case "$f" in *.*) ext="${f##*.}";; *) ext="(none)";; esac; git blame --line-porcelain -- "$f" 2>/dev/null | sed -n 's/^author //p' | sed "s/^/$ext\t/"; done | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{c=$1; $1=""; print c"\t"$0}'
+ - Bash: git ls-files | grep -v '\.' ; echo ---; git show -s --format='%H %an %s' 62628c0; echo ---; for f in $(git ls-files | grep '\.js$'); do git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -8
+FINAL ANSWER:
+Per extension, by surviving lines from `git blame` on HEAD (18 tracked files):
+
+| Extension | Top owner | Lines | Share of ext | Notes |
+|---|---|---|---|---|
+| `.js` (1,202) | Fiona Formatter | 1,016 | 85% | Almost all from one reformat commit (`62628c0`, "style: reformat js…"). Ignoring that commit with `--ignore-rev`, Troy Goode leads with 520 lines, then Douglas Christopher Wilson with 339. |
+| `.md` (341) | Troy Goode | 104 | 30% | Jon Church (72) and Douglas Christopher Wilson (67) are next. |
+| `.yml` (383) | Douglas Christopher Wilson | 117 | 31% | Íñigo Marquínez Prado is close (94). |
+| `.json` (43) | Douglas Christopher Wilson | 20 | 47% | Troy Goode has 12. |
+| `.gitignore` (5) | Douglas Christopher Wilson | 4 | 80% | |
+| no extension (`LICENSE`, 22) | Douglas Christopher Wilson | 17 | 77% | Troy Goode has 5. |
+
+The `.js` result depends on how you count. Raw blame credits the formatter commit's author. Excluding that commit, Troy Goode owns the most surviving JS lines.
+META cost=0.005182190000000001 ms=16939 turns=4

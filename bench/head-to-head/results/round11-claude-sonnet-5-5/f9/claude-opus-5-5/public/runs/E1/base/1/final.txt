@@ -1,0 +1,56 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat <home>/.claude/skills/caveman/SKILL.md | head -40; cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-base-1/repo; git log --oneline | wc -l; git ls-files | grep -v -E '^(\.github|node_modules)' ; git shortlog -sne --all | head -20; git log -5 --stat --format='%h %an <%ae> %ad %s' | head -60
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-base-1/repo; cat .mailmap 2>/dev/null; git show b2005d9 | head -40; git show 62628c0 -w --stat | tail -3
+for f in $(git ls-files | grep -v node_modules); do echo "== $f"; echo "-- raw:"; git blame --line-porcelain HEAD -- "$f" | grep '^author-mail' | sort | uniq -c | sort -rn | head -4; echo "-- ignoring reformat (-w, --ignore-rev):"; git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author-mail' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: cd <home>/claude-kredi-runs/2026-10-23/r11/f9/claude-opus-5-5/P/runs/E1-base-1/repo; for a in <email redacted> <email redacted> troy@laptop.example <email redacted> <email redacted> <email redacted>; do echo "$a: $(git log --author=$a --format=%ad --date=short | tail -1) .. $(git log --author=$a --format=%ad --date=short | head -1) n=$(git log --author=$a --oneline | wc -l)"; done
+echo; git log --since=2024-10-23 --format='%an' -- lib test | sort | uniq -c | sort -rn
+echo; git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head
+echo; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain HEAD -- lib/index.js | grep '^author '
+FINAL ANSWER:
+Bus factor is **1** for the core library. That person is **Troy Goode** (<email redacted>), the original author.
+
+## Method
+- Ran `git blame` on every tracked file at HEAD.
+- Merged identities by name where the evidence supports it.
+- Ignored two commits that distort blame:
+  - `62628c0` "style: reformat…" by Fiona Formatter. It touches 1,016 lines and changes formatting only (with `-w`, the diff is quote/indent only). Raw blame credits her with 214 of 238 lines in `lib/index.js` and 686 lines in `test/test.js`. She did not write that logic.
+  - `b2005d9` "lib: annotate handlers" by Troy Goode <troy@laptop.example>. It only appends `// checked` comments to 12 lines.
+- Checked commit history and recency too, not only line counts.
+
+## Results
+
+| Area | Main owner (adjusted blame) | Risk |
+|---|---|---|
+| `lib/index.js` (the entire runtime) | Troy Goode: 157/238 lines (66%). Next is Douglas Wilson with 22 (9%). 30 of the file's commits are Troy's; nobody else has more than 4. | **High, bus factor 1** |
+| `test/error-response.js`, `test/example-app.js`, `test/issue-2.js` | Troy Goode: 57/66, 67/81, 40/48 lines. Rest is Douglas Wilson. | High |
+| `test/vary.js` | Only author: troy@laptop.example (36/36 lines, 2026-04-10) | High, see caveat |
+| `test/test.js` | Douglas Wilson 365, Troy Goode 253, others under 30 each | Medium: two people |
+| `README.md` | Troy 116, Jon Church 72, others | Low-medium |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, `HISTORY.md`, most of `package.json` | Douglas Christopher Wilson | Medium (small files) |
+| `.github/workflows/codeql.yml` | Sebastian Beltran: 63/66 | Single owner, low impact |
+| `.github/workflows/scorecard.yml` | Íñigo Marquínez Prado: 69/73 | Single owner, low impact |
+| `.github/dependabot.yml` | Ulises Gascón: 15/15 | Single owner, low impact |
+| `.github/workflows/ci.yml` | Spread across 4 people | Low |
+
+## Why the risk is worse than the line counts show
+- Both main authors have stopped committing:
+  - Troy Goode (gmail) last committed on 2019-05-27.
+  - Douglas Wilson last committed on 2021-09-07.
+- Today, nobody active has deep knowledge of `lib/index.js`. Recent contributors from 2025 to 2026 (Ulises Gascón, Jon Church, Sebastian Beltran, dependabot) only touched CI, docs and dependencies.
+- In practice, the core library's bus factor is closer to **0**: its only real expert is inactive.
+
+## Caveats
+- **`troy@laptop.example` is not verified as the same Troy Goode.** The name matches, but the domain is a placeholder, and the identity's only 2 commits are from April 2026, 7 years after the gmail identity's last commit. There is no `.mailmap` to confirm it. If it is a different person, `test/vary.js` belongs to an unknown single contributor.
+- Blame measures who last wrote each line, not who understands it. The commit history supports the same conclusion here.
+- Only local git history was used. Code reviews, issues and maintainer roles on GitHub were not checked.
+
+## Recommendations
+- Add a `.git-blame-ignore-revs` file listing `62628c0` so that GitHub and local blame stop crediting the formatter.
+- Add a `.mailmap` once the `troy@laptop.example` identity is confirmed.
+- Get a second active maintainer to review and own `lib/index.js`, especially the origin logic (`isOriginAllowed`, `configureOrigin`).
+META cost=0.21844919999999998 ms=32726 turns=4

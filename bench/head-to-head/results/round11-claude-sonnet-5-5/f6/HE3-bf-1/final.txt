@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ 2>&1; git log --oneline | wc -l; git log --format='%ad' --date=short | sed -n '1p;$p'; git ls-files src | wc -l
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -60; git ls-files src; git log --format='%h %ad %an <%ae> %s' --date=short -n 12 -- src
+ - Bash: for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr; echo ---TOTAL; for f in $(git ls-files src); do git blame -w -M -C -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -nr; git show --stat --format='%h %an %ad %s' $(git rev-list --max-parents=0 HEAD) | head -15
+FINAL ANSWER:
+**Who wrote the code in `src/`**
+
+By `git blame` (`-w -M -C -C`, current lines in `src/` only), Andrew Gallant wrote about 2,550 of roughly 3,100 lines, which is about 82%. Per file:
+
+| File | Main author | Other authors |
+|---|---|---|
+| `lib.rs` | Gallant, 743 lines | About 30 others, none above 45 lines (Aron Griffis, mcharsley, Ashley, Martin Sehnoutka) |
+| `testsuite/recursive.rs` | Gallant, 1008 lines | Sebastian Thiel 53, Lukas Kalbertodt 20, Marvin Löbel 11 |
+| `testsuite/util.rs` | Gallant, 252 lines | Sam Whitfield 5 |
+| `dent.rs` | Gallant, 291 lines | Yufeng Wang 21, Ashley 15, Mei Tanaka 14 |
+| `error.rs` | Gallant, 169 lines | Garrett Berg 34, Niv Kaminer 30 |
+| `ancestor.rs` | Gallant, 42 lines | Sam Whitfield 4 |
+| `util.rs` | Gallant, 42 lines | Aron Griffis 9, Sam Whitfield 5 |
+
+Sam Whitfield's 42 surviving lines are mostly mechanical. His three recent commits add license headers, move `Ancestor` into its own module, and rename `src/tests` to `src/testsuite`. They don't make him the author of the logic.
+
+**Who should review**
+
+- **Andrew Gallant** (`<email redacted>`) is the best reviewer. He wrote most of every file, and he committed as recently as 2026-01-14. His email is also in the busfactor fallback owner list.
+- **Sam Whitfield** (`<email redacted>`) is a good second reviewer. He is the most recent committer (2026-03-23) and did the module split and the rename. If your PR touches `ancestor.rs` or the test layout, he knows that structure best.
+- **Mei Tanaka** (`<email redacted>`) is the right extra reviewer if you touch `dent.rs`. She added `describe_file_type` there in 2026-02.
+- **Tobias Brandt** added `same_device` in `util.rs` in 2026-01, but it was reverted and then reapplied under Gallant's name. No surviving lines are his, so I wouldn't use him as a code owner. He may still know the context for a `util.rs` change.
+
+**Caveats**
+
+- The busfactor script's output was thin. It produced only the fallback rule `* <email redacted> <email redacted>`, with no per-path rules.
+- It also labelled the history "imported from a bulk commit". I don't think that's right. The root commit (`688f267`, 2015) holds only 8 non-source files (`Cargo.toml`, licenses, `README`, and so on) and nothing under `src/`. Blame shows the `src/` code was written incrementally. The script's flag is probably a false positive on a small repo.
+- I ran the script with `--dry-run --no-github`, so nothing was written to the repo. Email-to-GitHub-handle mapping was skipped, so you'll need to map handles yourself when you request reviews.
+- Blame shows who last changed each line, not who understands it. Check with Gallant or Whitfield before treating either as the owner.
+META cost=0.1159962 ms=33981 turns=7

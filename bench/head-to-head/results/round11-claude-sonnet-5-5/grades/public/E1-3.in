@@ -1,0 +1,485 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false) and give a one-line reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "pass": true, "reason": "..."}], "B": [{"n": 1, "pass": true, "reason": "..."}], "C": [{"n": 1, "pass": true, "reason": "..."}], "D": [{"n": 1, "pass": true, "reason": "..."}], "E": [{"n": 1, "pass": true, "reason": "..."}], "F": [{"n": 1, "pass": true, "reason": "..."}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5).
+
+TASK PROMPT:
+Run a bus factor analysis of this project. Which parts of the codebase depend on a single contributor, and who is that person?
+
+CRITERIA:
+1. Names Troy Goode as the single contributor that lib/ depends on, with a share between 60% and 72% or between 150 and 170 lines.
+2. Reports the result per directory or module (at least lib/ and test/), not only one number for the whole repository.
+3. Does not name the formatter (Fiona Formatter) or a bot as an owner of lib/ or test/.
+4. States the definition and the unit of the bus factor it reports (lines or commits, and the threshold or rule).
+5. Does not rank dependabot as a person who holds knowledge of the code.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts|mjs|cjs)$' | head -50; echo; git log -1 --format=%cd; git rev-list --count HEAD
+ - Bash: for f in $(git ls-files | grep -vE '^(node_modules|\.git/)'); do t=$(git log --all --no-merges --pretty=format:"%an" -- "$f" | sort | uniq -c | sort -rn); n=$(echo "$t" | wc -l); top=$(echo "$t" | head -1 | sed 's/^ *//'); tot=$(echo "$t" | awk '{s+=$1}END{print s}'); echo "$f | contributors=$n | total=$tot | top=$top"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" | sort | uniq -c; echo; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a last: $(git log --all --author="$a" -1 --format=%cd)"; done; grep -rl "lib/index\|require(\"../lib\|require('../lib" test | wc -l
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-22
+
+I ran git commands directly, without the contributor-analyzer agent, because the repo has only 18 tracked files.
+
+### Project-level bus factor: 2
+
+If **Douglas Christopher Wilson** and **Troy Goode** left, more than 50% of the commit history would have no knowledgeable maintainer. Together they have 238 of the 354 commits. The repo has 354 commits; the 238 comes from the non-merge counts. Wilson has 143 and Goode has 95. This is a commit-count measure only. I did not measure surviving lines.
+
+### Overview
+
+There is one source file, `lib/index.js`. The 18 tracked files break down as follows.
+
+| Metric | Value |
+|---|---|
+| Tracked files analyzed (all types) | 18 |
+| Bus factor 1 (one contributor ever) | 5 (28%) |
+| Bus factor 2 | 3 (17%) |
+| Bus factor 3 or more | 10 (55%) |
+| Critical single-owner files | 0 |
+
+The five single-contributor files are:
+- `.eslintrc.yml` (Wilson)
+- `test/.eslintrc.yml` (Wilson)
+- `test/support/env.js` (Wilson)
+- `test/vary.js` (Goode)
+- `.github/dependabot.yml` (Ulises Gascón)
+
+All five are config or small test files. None of them is critical.
+
+### Critical risk areas
+
+No file is both single-owner and widely depended on.
+
+| File | Main contributor | Share | Contributors | Risk |
+|---|---|---|---|---|
+| `lib/index.js` (the whole library) | Troy Goode | 29 of 62 commits (47%) | 25 | LOW |
+| `package.json` | Douglas Christopher Wilson | 68 of 113 commits (60%) | 9 | MEDIUM |
+| `.github/workflows/ci.yml` | Douglas Christopher Wilson | 10 of 16 commits (62%) | 5 | MEDIUM |
+| `.github/workflows/scorecard.yml` | dependabot[bot] | 7 of 9 commits | 3 | LOW (bot) |
+
+### Knowledge distribution by module
+
+| Module | Contributors | Main owner | Ownership | Bus factor |
+|---|---|---|---|---|
+| `lib/` | 25 | Troy Goode | 47% | 3 or more |
+| `test/` | 4 | Troy Goode / Douglas Christopher Wilson | about 50% each | 2 |
+| `.github/` | 5 or more, including bots | Douglas Christopher Wilson / dependabot[bot] | 50–60% | 2 |
+| Root config (`package.json`, eslint) | 9 | Douglas Christopher Wilson | 60% | 2 |
+
+### Knowledge heat map
+
+```
+.
+├── lib/        [█████░░░░░] 🟢 25 contributors (Goode 47%)
+├── test/       [█████░░░░░] 🟡 Bus factor 2 (Goode / Wilson)
+├── .github/    [██████░░░░] 🟡 Wilson 62% on ci.yml, the rest is mostly bots
+└── package.json[██████░░░░] 🟡 Wilson 60%
+```
+
+### Owner activity
+
+- The latest commit in the repo is dated 2026-04-12. No one has committed in the last 90 days, and about 6 months have passed since that date.
+- **Troy Goode**'s last commit was on 2026-04-10, so they are the more recent of the two main owners.
+- **Douglas Christopher Wilson**'s last commit was on 2021-09-07, so they are inactive for about 5 years. Wilson is the main owner of `package.json`, CI and the eslint config.
+- Recent activity is mostly dependabot (11 commits).
+
+### Caveats
+
+- The tool counts commits, not lines. The latest commits are a mass reformat (`62628c0` re-indented the JS to 4 spaces) and bot bumps. These can skew commit shares and the apparent ownership.
+- The history looks like a fork of the `express-*` family (the README fix is `app.del()` to `app.delete()`), so the long history comes from imported upstream commits.
+
+### Recommendations
+
+1. **Immediate**: Nobody currently depends on a single person for `lib/index.js`, so no urgent action is needed. Check that someone other than Wilson can edit the CI workflow and `package.json` (publish and scripts).
+2. **Short-term**: Document the release and CI process, because Wilson is the main owner and inactive. Have a second maintainer review changes to `.github/workflows/ci.yml`.
+3. **Ongoing**: The library has no maintainer activity in the last 6 months. Confirm who currently owns it, since the real risk is inactivity and not concentration. Run `git blame -w --ignore-rev 62628c0 lib/index.js` to see who owns the surviving lines.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Read: {"file_path": "<home>/.agents/skills/caveman/SKILL.md"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; echo ---; git ls-files | grep -v -E '^(node_modules|\.git/)' | head -100; echo; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; done; echo; echo "--- last commit per author"; git log --all --no-merges --pretty=format:"%an|%cs" | awk -F'|' '!s[$1]++' | head -8; echo "--- lines by blame lib/index.js"; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5
+ - Bash: git log --all --no-merges --pretty=format:"%an|%cs" | awk -F'|' '!s[$1]++' | grep -E "Douglas|Troy"; git log --all --no-merges --author="Fiona" --stat --format="%h %cs %s" | head -20; echo; git log --all --no-merges --format=%an --since=2025-10-22 | sort | uniq -c | sort -rn; echo; echo "blame excluding reformat:"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -4; wc -l lib/index.js; git log --all --no-merges --format=%an --since=2025-10-22 -- lib/index.js | sort | uniq -c
+FINAL ANSWER:
+**Bus factor: 2.** Two people, Troy Goode and Douglas Christopher Wilson, account for about 238 of the 280 non-bot commits (about 85%). They are not equally at risk, though. Troy Goode is the person to worry about.
+
+Scope: this is a small repo with 18 tracked files, so I checked every file. Counts are commits from `git log --all --no-merges`.
+
+**Contributors**
+- Douglas Christopher Wilson has 143 commits. His last commit was 2021-09-07, so he is inactive.
+- Troy Goode has 95 commits. His last commit was 2026-04-10, so he is active.
+- Everyone else has 4 or fewer commits each. This includes `dependabot[bot]` with 11.
+- The "Fiona Formatter" commit `62628c0` rewrote 1,016 lines in 4 files. It only reformatted code (4-space indent, double quotes), so I ignored it. Plain `git blame` credits that author with 214 of `lib/index.js`'s 238 lines. With `--ignore-rev 62628c0`, Troy Goode owns 159 lines and Douglas Wilson 22.
+
+**Single-contributor risk**
+
+Single owner means one author in the file's history, or one clearly dominant author.
+
+| File | Owner | Concentration | Risk |
+|---|---|---|---|
+| `lib/index.js` (the entire library) | Troy Goode | 159 of 238 lines (67%) after ignoring the reformat. The next authors have 22 and 12 lines. | **Critical**. It's the only source file, and everything depends on it. The owner is active, so the risk is dependence, not abandonment. |
+| `test/vary.js` | Troy Goode | 1 commit, 1 author | Medium |
+| `test/issue-2.js` | Troy Goode | 10 of 12 commits (83%) | Medium |
+| `test/example-app.js` | Troy Goode | 10 of 12 commits ignoring the reformat (83%) | Medium |
+| `package.json` | Wilson (68) and Goode (37) | Two main owners | Medium. Wilson is inactive, so Goode is effectively the only current maintainer. |
+| `README.md` | Troy Goode | 29 of 38 commits (76%) | Low to medium |
+
+**Single owner, but low risk** (config files, 1 commit each, trivial to maintain):
+- `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js` are all Wilson's.
+- `.github/dependabot.yml` is Ulises Gascón's.
+
+**Well distributed**
+- `.github/workflows/ci.yml` has Wilson (10), Gascón (2) and Mangas (2).
+- `.github/workflows/codeql.yml` and `scorecard.yml` are mostly dependabot, with a few human commits.
+- `test/test.js` has 3 contributors but is mostly Wilson's, and he is inactive.
+
+**By area**
+
+| Area | Primary owner | Bus factor |
+|---|---|---|
+| `lib/` | Troy Goode | 1 |
+| `test/` | Wilson (`test.js`) and Goode (the other files) | 2, but the `test.js` owner is inactive |
+| `.github/` (CI) | Wilson, Gascón and Mangas | 3 |
+| Docs and root files | Goode and Wilson | 2 |
+
+**Recent activity (last 12 months):** Troy Goode made 2 commits to `lib/index.js`. The other 10 or so recent commits came from dependabot, Jon Church, Ignacio Mangas, Vansh Sharma, Ulises Gascón and Phillip Barta, and touched docs, CI or dependencies. Only Troy Goode is still changing the library code.
+
+**Recommendations**
+1. Have a second person review changes to `lib/index.js` and learn how the library works. Gascón and Church are recent contributors and good candidates.
+2. Add a short architecture note to the README or a new `CONTRIBUTING.md`. Wilson's knowledge of `test/test.js` and `package.json` (publish, scripts) is undocumented and he is inactive.
+3. Add `.git-blame-ignore-revs` containing `62628c0`, so blame shows real authors instead of the formatter.
+4. Give at least one other person publish and merge rights, so releases don't depend on Goode alone.
+
+**Limits of this analysis**
+- Commit counts don't measure how well someone understands the code.
+- Git author names may be aliases, and some contributors may appear under more than one name.
+- The "importance" cross-check is trivial here, because `lib/index.js` is the only source file.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - Bash: git shortlog -sne --all | head -20; echo ---; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c; echo ---; git log --format='%an' | wc -l
+ - Bash: git ls-files | while read f; do echo "== $f ($(git log --follow --format=%H -- "$f" | wc -l) commits)"; git log --follow --format='%aN' -- "$f" | sort | uniq -c | sort -rn | head -3; done 2>/dev/null; echo; echo LINES; for f in $(git ls-files lib test '*.js' '*.md'); do [ -f $f ] && echo "$f $(git blame -w --line-porcelain -- $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done; git log --since='2 years ago' --format='%aN' | sort | uniq -c | sort -rn | head -5
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson" "Fiona Formatter"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done; git log -3 --format='%h %aN %ad %s' --date=short -- lib/index.js
+FINAL ANSWER:
+**Bus factor: 1 for the core code. The person is Troy Goode.**
+
+Method: `git shortlog`, per-file `git log --follow` counts, and `git blame -w` line ownership. There are 354 commits.
+
+**Contributors**
+- Douglas Christopher Wilson: 143 commits, 2017-03 to 2021-09. Inactive for over 5 years.
+- Troy Goode: 120 commits, 2013-01 to 2026-04. Still active.
+- Everyone else: 11 or fewer commits each. Most are dependabot or one-off fixes.
+
+**Files that depend on Troy Goode**
+
+| File | Troy's share | Notes |
+|---|---|---|
+| `lib/index.js` (the whole library) | 138 of about 170 current lines, and 29 of 62 commits | Dominant author. Most of the rest is a formatter bot. |
+| `test/vary.js` | 100% | Only author. |
+| `test/issue-2.js` | 40 of 48 lines | Doug wrote the other 8. |
+| `test/error-response.js` | 40 of 62 lines | |
+| `test/example-app.js` | 43 of 76 lines | |
+| `test/test.js` | 220 of about 430 lines | Shared with Doug at 208 lines. Doug is inactive, so only Troy remains. |
+| `README.md` | 116 of about 190 lines | Jon Church wrote 72 lines. |
+
+**Files that depend on Douglas Christopher Wilson (inactive, so this is knowledge already lost)**
+- `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`: sole author.
+- `HISTORY.md`: 50 of about 56 lines.
+- `.github/workflows/ci.yml`: 10 of 16 commits.
+- `package.json`: 68 of 113 commits. This is the release and publish configuration. Troy has 37 commits there, so the knowledge is partly covered.
+
+**Not single-contributor**
+- `.github/workflows/codeql.yml` and `scorecard.yml` are mostly dependabot commits.
+- `.github/dependabot.yml` was written by Ulises Gascón.
+
+**Caveats**
+- "Fiona Formatter" authored the 2026-04-12 reformat commit (`62628c0`). That is a style change, not knowledge ownership. `git blame -w` only partly filters it out.
+- Troy appears under two author identities, so the real count may be slightly higher.
+- Git history shows who wrote the code. It does not show who reviews it or holds npm publish rights.
+
+**Recommendations**
+1. Have a second person review and co-own `lib/index.js` and `test/test.js`.
+2. Confirm who has npm publish and GitHub admin access. Doug's `package.json` and CI knowledge may no longer be held by anyone.
+3. Give Ulises Gascón, Jon Church, or Sebastian Beltran ownership of the CI and release files. They have recent commits.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool>'; $SL; echo ======; $SL --merge-identities --group-by dir; echo ======; $SL --merge-identities --files | head -60
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool> "$@"; }; sl; echo ======; sl --merge-identities --group-by dir; echo ======; sl --merge-identities --files | head -60
+ - Bash: sl(){ node <home>/claude-kredi-runs/2026-10-23/r11/ours-src/bin/<tool> "$@"; }; sl --merge-identities --group-by dir; echo '======'; sl --merge-identities --files | head -60; echo '======'; sl --merge-identities | head -20
+FINAL ANSWER:
+**Bus factor: 2 on the whole repo. The main single-person dependency is `lib/index.js`, which is mostly Troy Goode's.**
+
+Scope: HEAD, 18 files, 1,662 non-blank lines (1,995 with blank lines). Counts come from surviving lines (`git blame -w -M -C`), not commits. The bus factor is the smallest number of authors whose surviving lines reach 50%.
+
+## Whole repo
+
+| Person | Lines | Share | Commits |
+|---|---|---|---|
+| Troy Goode (2 addresses, merged) | 649 | 39.0% | 95 |
+| Douglas Christopher Wilson | 551 | 33.2% | 143 |
+| Íñigo Marquínez Prado | 80 | 4.8% | 2 |
+| Jon Church | 59 | 3.5% | 3 |
+| Sebastian Beltran | 57 | 3.4% | 2 |
+| Ulises Gascón | 46 | 2.8% | 3 |
+| Ignacio Mangas | 38 | 2.3% | 2 |
+| Alejandro Caravaca Puchades | 30 | 1.8% | 5 |
+| Linus Unnebäck | 26 | 1.6% | 1 |
+| Ollie Buck | 14 | 0.8% | 1 |
+
+52 more authors hold 6.7% together. The largest of them is Eric di Domenico at 0.7%.
+
+- **Bus factor 2:** Troy Goode and Wilson together hold 72.2% of the non-blank lines (72.5% with blank lines). Reaching 80% takes 4 authors.
+- **Troy Goode merge is a guess:** I counted `<email redacted>` (605 lines, 93 commits) and `troy@laptop.example` (44 lines, 2 commits) as one person because the name matches. The tool rates this strong evidence, but only you can confirm it. Unmerged, Troy is at 605 lines (36.4%). Nothing was written to `.mailmap`.
+- **One address, two names:** Alejandro Caravaca Puchades also appears as `alex94puchades`, and the tool counts them as one person. Most of the 30 lines are under his full name, but in `lib/` the `alex94puchades` row shows 14 lines.
+
+## Single-contributor areas
+
+**By directory** (Troy merged, bus factor within that directory):
+
+| Directory | Bus factor | Who |
+|---|---|---|
+| `lib/` (1 file) | **1** | Troy Goode holds 144 of 214 lines (67.3%) |
+| `test/` (7 files) | **1** | Troy Goode holds 420 of 820 lines (51.2%), Wilson 42.0% |
+| `.github/` | 2 | Wilson 30.2% and Íñigo Marquínez Prado 26.2% |
+| root files | 2 | Wilson 29.4% and Troy 26.3% |
+
+**By file**, where one person holds at least 80%:
+- **Troy Goode:**
+  - `test/vary.js`: 100%
+  - `test/error-response.js`: 82.7%
+  - `test/example-app.js`: 80.0%
+  - `test/issue-2.js`: 80.0%
+- **Wilson:**
+  - `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`: 100%
+  - `LICENSE`: 94.4%
+  - `HISTORY.md`: 80.5%
+  - `.gitignore`: 80.0%
+- **Others:**
+  - `.github/workflows/codeql.yml`: Sebastian Beltran, 100%
+  - `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado, 98.4%
+  - `.github/dependabot.yml`: Ulises Gascón, 100%
+
+Three files have no owner above 50%: `README.md` (Troy 33.5%, Jon Church 27.8%), `test/test.js` and `.github/workflows/ci.yml`. `package.json` is split 50/30/10, with Wilson at exactly 50%.
+
+## Reading the risk
+
+- **Troy Goode** holds the core library, `lib/index.js` (about two-thirds of it), and most of the test suite. Their last commit is 2026-04-10, on the laptop address. The gmail address's last commit is 2019-05-27.
+- **Wilson** holds the most commits (45.4%) and shares ownership of most areas. Their last commit is 2021-09-07, so the second half of the bus factor has been inactive for years.
+- **Íñigo Marquínez Prado, Sebastian Beltran and Ulises Gascón** each hold a CI or repo-config file. All three are small files.
+
+## What was left out or adjusted
+
+- **Reformat commit set aside:** `62628c0` "style: reformat js with 4-space indent and double quotes" by Fiona Formatter (2026-04-12). It changed whitespace and quotes only, and the tool left it out of the tables. Counting it would give Fiona Formatter 291 lines (17.5%), Wilson 376 (22.6%) and Troy (merged) 554 (33.3%). The bus factor would still be 2, with Troy and Wilson at 56.0%.
+- **Bots excluded:** `dependabot[bot]` (10 lines, 11 commits). Its lines are not credited to anyone.
+- **Mechanical rewrites checked:** I set aside `62628c0` and kept five that look mechanical:
+  - `739dc11` "docs: reformat license" (Wilson, 17 lines)
+  - `fcd2b56` "issue #42: (WIP) switch to ESLint; clean up" (Troy, 11 lines)
+  - `00d6eec` "build: use yaml eslint configuration" (Wilson, 9 lines)
+  - `344ce1e` (Wilson, 1 line)
+  - `9c2b59d` (Wilson, 1 line)
+
+  The five kept commits hold about 39 surviving lines in total, so they do not change the picture.
+- **Copy detection:** `-C` (the default). The tool flagged no person whose share moved by more than 2 points.
+- **Not counted:** 10 of 1,672 non-blank lines could not be attributed.
+- **Limits of line counts:** They show whose code survives. They don't show who understands it, review work, or design done outside the code. Code deleted on purpose counts for nobody.
+
+If you want, I can write the two `.mailmap` lines (Troy Goode's laptop address, and `alex94puchades`). I can also run `--suggest-codeowners`.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> && node scripts/<plugin> <home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-bf-3/repo --dry-run --no-github 2>&1 | head -100
+ - Bash: git log --no-merges --format='%ad %ae' --date=short | awk '{print substr($1,1,4), $2}' | sort | uniq -c | sort -k2,2r -k1,1nr | head -30; echo ---; git ls-files | wc -l; git rev-list --max-parents=0 HEAD | xargs -I{} sh -c 'git show --stat --format="%h %ad %ae" --date=short {} | tail -3'; git rev-list --count HEAD; git log -1 --format=%ad --date=short; echo ---; git shortlog -sne --no-merges --since=2025-04-12 | head; for d in lib test .github; do echo "== $d"; git shortlog -sne --no-merges --since=2025-04-12 -- $d | head -4; done
+ - Bash: git ls-files; for p in lib test .github README.md Readme.md package.json; do echo "== $p"; git log --no-merges --format='%ae' --after=2025-04-12 -- $p | sort | uniq -c | sort -nr | head -4; echo " all-time:"; git log --no-merges --format='%ae' -- $p | sort | uniq -c | sort -nr | head -3; done; git log --format='%h %ad %ae %s' --date=short -8
+ - Bash: for e in <email redacted> <email redacted> <email redacted>; do echo $e $(git log --author=$e --format=%ad --date=short -1) $(git log --author=$e --oneline | wc -l); done; git log --format='%ad %ae %s' --date=short -3 -- lib test | cat
+FINAL ANSWER:
+I'm finishing the bus factor analysis now. I ran the busfactor script as a dry run with `--no-github`. I then checked the details with `git log`. The dry run writes nothing, so there is no `ownership.json`. I had no per-zone active-share numbers and used commit counts instead.
+
+**Orphaned or nearly orphaned: `lib/` and `test/`**
+- `lib/index.js` is the whole library, and `test/` holds its tests. Nearly all of the history comes from two people who have left.
+  - `<email redacted>` has 120 commits and last committed on 2019-05-27. They have 32 commits in `lib/` and 31 in `test/`.
+  - `<email redacted>` has 143 commits and last committed on 2021-09-07. They have 23 commits in `test/` and 68 in `package.json`.
+  - `<email redacted>` has 5 commits in `lib/`, the last in 2015.
+- The only commits to `lib/` and `test/` in the last year are three from April 2026:
+  - `troy@laptop.example` made 2 commits.
+  - `fiona@formatter.example` made 1 commit, a style reformat.
+- Those two emails look like placeholder addresses. I can't tell whether `troy@laptop.example` is the same person as `<email redacted>`, so I did not merge them. If it is, `lib/` is bus factor 1. If it isn't, nobody active understands the code.
+
+**Bus factor above 1, but only for maintenance work**
+- `.github/` is spread across `<email redacted>`, `<email redacted>`, `<email redacted>` and dependabot. Dependabot is a bot, not a person.
+- `package.json` is shared by the same people plus `<email redacted>`.
+- `README.md` has a few recent contributors: `<email redacted>` (3 commits), `<email redacted>`, `<email redacted>` and `<email redacted>`.
+
+**The generated CODEOWNERS**
+- The fallback owners are `fiona@formatter.example`, `<email redacted>` and `<email redacted>`.
+- It has one specific rule, for `/.github/`.
+- `lib/` and `test/` fall under the fallback, so `<email redacted>` and `<email redacted>` would review code they have barely touched.
+
+**Caveats**
+- The 2013 root commit has 8 of the 18 tracked files, so the script flags the history as imported. Its ownership numbers cover only work since that import. The 2013 root commit could also simply be the real first commit.
+- I ran with `--no-github`, so emails were not mapped to accounts. Any person with two emails is counted as two people. That makes the real risk worse than these numbers show.
+- Commit volume only approximates who understands the code.
+
+**Next steps (your call)**
+- Tell me who owns `troy@laptop.example` and `fiona@formatter.example`. I can then re-run and write `.github/CODEOWNERS` and `.github/ownership.json`.
+- I can also build the HTML report. I haven't done that yet.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Read: {"file_path": "<home>/.claude/skills/caveman/SKILL.md"}
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__repo_summary", "max_results": 3}
+ - mcp__tool__repo_summary: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-3/repo"}
+ - mcp__tool__bus_factor: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-3/repo"}
+ - mcp__tool__knowledge_risk: {"repo_path": "<home>/claude-kredi-runs/2026-10-22/r8/out-P/runs/E1-hist-3/repo"}
+ - Bash: git show -s --format='%h %an <%ae> %ad' 62628c0 && for f in lib/index.js test/test.js test/example-app.js test/error-response.js; do echo "== $f"; git blame --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+Short answer: no part of the codebase depends on a single contributor. Two people hold most of the knowledge, and both are now inactive.
+
+**Overall**
+- The repo has 326 non-merge commits from 64 authors, spanning 2013-01-30 to 2026-04-12.
+- The bus factor is 2. Douglas Christopher Wilson (143 commits, 43.9%) and Troy Goode (95 commits, 29.1%) together cover more than 50% of commits. dependabot is next at 11 commits, and no one else has more than 4.
+- The tool's silo rule flags a directory when one author made more than 80% of its commits. No directory is flagged:
+
+| Directory | Commits | Authors | Top author | Top author's share |
+|---|---|---|---|---|
+| root | 233 | 42 | Wilson | 51% |
+| `lib` | 66 | 25 | Goode | 50% |
+| `test` | 72 | 18 | Goode | 44% |
+| `.github` | 27 | 7 | Wilson | 37% |
+
+**Single-owner files**
+
+These are the files where line ownership is concentrated in one person. Ownership here is the share of lines at HEAD, from `git blame`.
+- Wilson owns `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js`, which are tiny config files. He is also the main owner of `HISTORY.md` (78%), `LICENSE` (77%), `.gitignore` (80%), `package.json` (48%) and `.github/workflows/ci.yml` (49%). His last commit was 2021-09-07.
+- Goode owns `test/vary.js` (100%), `test/issue-2.js` (83%) and `README.md` (38%). His last commit was 2026-04-10.
+- Some CI files have a single owner who is no longer active:
+  - `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado (93%), last commit 2024-05-14.
+  - `.github/workflows/codeql.yml`: Sebastian Beltran (95%), last commit 2025-07-23.
+  - `.github/dependabot.yml`: Ulises Gascón (100%), last commit 2026-01-22.
+
+**Two caveats on the tool's output**
+- The "Fiona Formatter" figure is misleading. The tool reports her as owning 50.9% of lines, including `lib/index.js` (90%) and `test/test.js` (94%). All of that comes from the style commit `62628c0` (4-space indent and double quotes), which rewrote whitespace. Ignoring that commit with `git blame --ignore-rev`, the real `lib/index.js` owners are Goode (109 lines), Fiona Formatter (57), Wilson (36) and Raymond Feng (8). For `test/test.js` they are Wilson (270), Goode (213) and Fiona Formatter (178). `test/example-app.js` and `test/error-response.js` are mostly Goode's work (66 of 81 and 56 of 66 lines). I did not re-run the rest of the files this way.
+- The tool reports all 18 files as orphaned, but I don't trust that count. It treats "inactive" as no commit since 2026-04-22, six months before today (2026-10-22), and the repo's last commit was 2026-04-12. So every author counts as inactive, including Goode. That says the repo has had no commits for six months. It does not show that any particular person has left.
+
+**Recommendation**
+- The core logic in `lib/index.js` is shared mainly by Goode and Wilson. If either leaves, the other is the only person with deep history there.
+- The highest-risk files are the CI and security workflows (`scorecard.yml`, `codeql.yml`, `dependabot.yml`). Each was written by one person who is no longer committing.
+- If you want, I can run `knowledge_risk` or `blame_summary` on `lib/` alone with the style commit excluded.
