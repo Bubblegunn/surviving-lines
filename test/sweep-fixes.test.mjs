@@ -138,19 +138,6 @@ test("S2: a file with a NUL byte beyond git's probe is left out and reported as 
   );
 });
 
-test("S2: well-known binary document extensions are left out even without a NUL in the file", async () => {
-  await withRepo(
-    (dir) => {
-      commitAsIdentity(dir, ANN, DATE, "files", { "plain.txt": lines("p", 8), "doc.PDF": "text only\n", "art.ai": "text only\n", "page.html.br": "text only\n" });
-    },
-    async (dir) => {
-      const r = await analyse(parseArgs(["--cwd", dir]));
-      assert.equal(r.sample.filesTotal, 1);
-      assert.equal(r.dropped.classes.binary.files, 3);
-    },
-  );
-});
-
 test("S3: copy detection is on at the files x commits limit and off one above it, and off above 2000 files", () => {
   const { copyDetectionDefault, COPY_DETECTION_MAX_WORK } = mod;
   assert.equal(COPY_DETECTION_MAX_WORK, 2_000_000);

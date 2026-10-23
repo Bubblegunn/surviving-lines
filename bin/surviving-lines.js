@@ -723,8 +723,9 @@ async function listTextFiles(o) {
  * @param {Options} o
  * @returns {Promise<Set<string>>}
  */
-async function listNonRegularPaths(o) {
-  const out = await git(["ls-tree", "-r", "-z", o.ref], o.cwd);
+export async function listNonRegularPaths(o) {
+  // --full-tree: without it git lists only the working directory's subtree, with paths relative to it.
+  const out = await git(["ls-tree", "--full-tree", "-r", "-z", o.ref], o.cwd);
   /** @type {Set<string>} */
   const paths = new Set();
   // -z output: "mode type sha\tpath\0".
@@ -757,17 +758,19 @@ const DROP_CLASSES = ["lockfile", "generated", "vendored", "binary"];
 
 /**
  * Extensions of document and image formats that are binary but that git's own probe (a NUL in the first 8000 bytes)
- * can miss. Only a fallback for when `git grep -P` cannot look inside the files; compared in lower case.
+ * can miss. Used only when the NUL scan (readNulFiles) could not run, as a coarser stand-in for it; compared in lower
+ * case. When the scan ran, a file with one of these extensions and no NUL byte is text and is counted.
  */
 const BINARY_EXTENSION = /\.(?:ai|eps|psd|pdf|br)$/i;
 
 /**
  * The paths at the ref whose content holds a NUL byte, which no text file does. `git diff --numstat` calls a file binary
  * only when a NUL sits in its first 8000 bytes, so a file with its first NUL later is listed as text and its bytes are
- * counted as lines. One `git grep` over the tree; empty when this git has no Perl-compatible regular expressions, in
- * which case only the extension list applies.
+ * counted as lines. One `git grep` over the tree. `git grep` exits with 1 when nothing matches, which is an empty
+ * result; any other failure (this git has no Perl-compatible regular expressions, for one) means the scan could not
+ * run, and the caller falls back to BINARY_EXTENSION.
  * @param {Options} o
- * @returns {Promise<Set<string>>}
+ * @returns {Promise<{ files: Set<string>, available: boolean }>}
  */
 async function readNulFiles(o) {
   const tree = (await git(["rev-parse", "--verify", `${o.ref}^{tree}`], o.cwd)).trim();
@@ -776,11 +779,12 @@ async function readNulFiles(o) {
   let out;
   try {
     out = await git(["grep", "-l", "-a", "-z", "-P", "\\x00", tree, "--", ...o.paths], o.cwd);
-  } catch {
-    return found;
+  } catch (err) {
+    if (/** @type {{ code?: unknown }} */ (err).code === 1) return { files: found, available: true };
+    return { files: found, available: false };
   }
   for (const rec of out.split("\0")) if (rec.startsWith(`${tree}:`)) found.add(rec.slice(tree.length + 1));
-  return found;
+  return { files: found, available: true };
 }
 
 /**
@@ -904,7 +908,8 @@ export async function dropGenerated(o, files, everyFile) {
   if (o.keepGenerated) return { kept: files, dropped };
   const attrs = await readLinguistAttributes(o, everyFile);
   const markers = await readGeneratedMarkers(o);
-  const nulFiles = await readNulFiles(o);
+  const nul = await readNulFiles(o);
+  if (!nul.available && !o.quiet) (o.stderr ?? process.stderr).write("surviving-lines: NUL scan skipped: git grep -P unavailable (binary files are recognised by extension only)\n");
   /** @type {Map<string, { path: string, class: string, files: number, lines: number }>} */
   const byRoot = new Map();
   for (const f of files) {
@@ -916,7 +921,7 @@ export async function dropGenerated(o, files, everyFile) {
     else if (attr.generated === true) hit = { kind: "generated", root: f.path };
     else if (byPath && !(byPath.kind === "vendored" ? attr.vendored === false : attr.generated === false)) hit = byPath;
     else if (markers.has(f.path) && attr.generated !== false) hit = { kind: "generated", root: f.path };
-    else if (nulFiles.has(f.path) || BINARY_EXTENSION.test(f.path)) hit = { kind: "binary", root: f.path };
+    else if (nul.files.has(f.path) || (!nul.available && BINARY_EXTENSION.test(f.path))) hit = { kind: "binary", root: f.path };
     if (!hit) {
       kept.push(f);
       continue;
