@@ -1112,3 +1112,14 @@ Written and committed before the public set has a single graded cell. Nothing in
 **Budget.** The dollar caps above were written for the promotional credit and do not bind subscription calls. Each call's `total_cost_usd` is still logged as the CLI's list-price estimate under the source `subscription` (`cost.py` reads the wrapper's ledger as a third source), and the evidence folder reports it apart from the dollars billed to the keys. F9: its budget gates were written in dollars. The owner decides F9 after F6; until then it is reported as not done.
 
 **Result wording.** In place of "the SDK path": "runs and held-out e grading on the Agent SDK path, public grading and F6 on the Claude Code CLI path (subscription)".
+
+
+## Round 11 F9 decision (owner, 2026-10-23, before any F9 run)
+
+Written and committed before the first F9 call. The F6 re-runs (28 cells, subscription path) are complete and their re-grading was running when this section was written; F9 is independent of F6 and starts after it. Nothing in the protocol changes except what this section names.
+
+**Owner decision (2026-10-23, in chat).** F9 is run, on the subscription path (`~/claude-kredi-runs/sub-shim/claude`, the same wrapper as the public grading and F6), as the F9 paragraph of the frozen protocol says: `claude-haiku-5-5` first, then `claude-opus-5-5`; one run per task (run number 1); arms `ours`, `base` and the best rival of that task, chosen by this round's Sonnet mean in that set (ties in the order `pp`, `ppi`, `hist`, `bf`); both sets (11 public tasks and the 5 held-out e tasks, 16 tasks, 48 runs per model); graded per task with the same method (`gate-grade.py`, three calls, majority, the same re-ask passes and reverse pass). `ours` is the round 10 product (`git archive` of `1670228`), unchanged.
+
+**Best rival per task** (fixed from the Sonnet means in `out-E` and `out-P` before any F9 call): HE1 pp, HE2 bf, HE3 pp, HE4 ppi, HE5 hist, T1 bf, T2 ppi, T3 pp, T4 ppi, T1i bf, T4i ppi, E1 pp, E2k hist, E3 pp, E4h bf, E5 bf.
+
+**What changes.** The dollar gates of the F9 paragraph (Haiku only at a logged total of at most 17.5 USD, Opus only at most 7.0 USD) were written for the promotional credit and do not apply on the subscription. Rule B per model is reported, and I1-style totals per model are reported descriptively (one run per task, so no bootstrap interval and no claim of being first). A model step cut by a usage limit is reported as not completed and not claimed. Result wording: "F9, one run per task on the Claude Code CLI path (subscription)".
