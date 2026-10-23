@@ -42,7 +42,7 @@ The bus factor is the smallest number of authors whose surviving lines together 
 
 ## How do I leave out dependabot and other bots?
 
-Bots are left out of both shares by default: a name that ends in `[bot]`, a name whose last word is "bot" (`Release Bot`, `vue-bot`, `ZodBot`), a lower-case name such as `jekyllbot` that is also the address's local part, an address whose local part is 8 or more letters and ends in `bot`, a name ending in `-Service` (`Copybara-Service`), a GitHub app address, and the Renovate, GitLab and Gitea bot addresses. A person called `Bot Hawkins`, `Botticelli`, `Talbot` or `Elbot` stays a person. The second line of the output says how many identities, lines and commits were removed. `--include-bots` counts them again.
+Bots are left out of both shares by default: a name that ends in `[bot]`, a name whose last word is "bot" (`Release Bot`, `vue-bot`, `ZodBot`), a lower-case name such as `jekyllbot` that is also the address's local part, a one-word name whose address local part is 10 or more letters and ends in `bot`, a name ending in `-Service` (`Copybara-Service`), a GitHub app address, and the Renovate, GitLab and Gitea bot addresses. A person called `Bot Hawkins`, `Jan Bot <jan@example.nl>`, `Tim Talbot`, `Botticelli`, `Talbot` or `Elbot` stays a person. The second line of the output says how many identities, lines and commits were removed. `--include-bots` counts them again.
 
 ## Can it tell me how much of the code an AI wrote?
 
