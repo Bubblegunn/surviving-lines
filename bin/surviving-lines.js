@@ -2105,6 +2105,66 @@ export function scopeNotes(r, opts = {}) {
   return out;
 }
 
+/** G7: a person is listed in the per-file block from this many lines of the scope, or from FILE_OWNERS_MIN_SHARE of it, whichever is smaller. */
+const FILE_OWNERS_MIN_LINES = 10;
+const FILE_OWNERS_MIN_SHARE = 0.03;
+/** G7: a file counts as one person's file in the block when they hold at least this share of it. */
+const FILE_OWNED_MIN_SHARE = 0.5;
+/** G7: a single-owner file has one person at this share or more, and at least this many lines. */
+const SINGLE_OWNER_MIN_SHARE = 0.9;
+const SINGLE_OWNER_MIN_LINES = 20;
+/** G7: the block names this many files per person, this many single-owner files and this many people. */
+const FILE_OWNERS_FILES_PER_PERSON = 5;
+const SINGLE_OWNER_SHOWN = 8;
+const FILE_OWNERS_PEOPLE_SHOWN = 8;
+
+/**
+ * G7: the files of a path view by owner. Every file with at least one non-blank surviving line has an owner (the person
+ * with the most lines in it, as the --files view says). The block keeps (a) each person who holds at least
+ * min(10 lines, 3% of the scope), with the files where they own at least half of the file, and (b) the files one
+ * person wrote almost alone: at least 90% of at least 20 lines. Names and merges are the ones the table uses.
+ * @param {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} perFile the counts per file of the run's blame pass
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Map<string, string>} nameOf
+ */
+export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
+  const files = [...perFile]
+    .map(([path, counts]) => ({ path, ...ownersOfFile(counts, includeBots, canonicalOf, nameOf) }))
+    .filter((f) => f.lines > 0);
+  const scopeLines = files.reduce((sum, f) => sum + f.lines, 0);
+  /** @type {Map<string, { author: string, lines: number, files: { path: string, lines: number, share: number }[] }>} */
+  const byPerson = new Map();
+  for (const f of files) {
+    for (const [i, ow] of f.owners.entries()) {
+      const key = foldIdentity(ow.name);
+      const p = byPerson.get(key) ?? { author: ow.name, lines: 0, files: [] };
+      p.lines += ow.lines;
+      if (i === 0 && ow.share >= FILE_OWNED_MIN_SHARE) p.files.push({ path: f.path, lines: f.lines, share: ow.share });
+      byPerson.set(key, p);
+    }
+  }
+  const floor = Math.min(FILE_OWNERS_MIN_LINES, FILE_OWNERS_MIN_SHARE * scopeLines);
+  const listed = [...byPerson.values()]
+    .filter((p) => p.lines >= floor)
+    .sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+  const people = listed.map((p) => {
+    const sorted = [...p.files].sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
+    return { author: p.author, lines: p.lines, files: sorted.slice(0, FILE_OWNERS_FILES_PER_PERSON), moreFiles: Math.max(0, sorted.length - FILE_OWNERS_FILES_PER_PERSON) };
+  });
+  const single = files
+    .filter((f) => f.lines >= SINGLE_OWNER_MIN_LINES && (f.owners[0]?.share ?? 0) >= SINGLE_OWNER_MIN_SHARE)
+    .sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
+  return {
+    scopeLines,
+    people,
+    singleOwnerFiles: {
+      files: single.slice(0, SINGLE_OWNER_SHOWN).map((f) => ({ path: f.path, author: f.owners[0].name, lines: f.lines, share: f.owners[0].share })),
+      more: Math.max(0, single.length - SINGLE_OWNER_SHOWN),
+    },
+  };
+}
+
 /**
  * The --reviewers view: the authors of one path, most surviving lines first, each with the newest non-merge commit
  * that touched the path and whether it is recent. The as-of date is the author date of the ref commit, so the same
@@ -2986,11 +3046,13 @@ export async function analyse(o) {
   // One log call at the path serves both path views; --reviewers and --history cannot be asked for together.
   const pathView = o.reviewers ?? o.history;
   const pathCommits = pathView === undefined ? [] : await readPathCommits(o, pathView);
-  const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers) };
-  const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history) };
   // R10-3 and R10-2 read the run's own blame counts, with the names and merges the table uses.
   const nameOf = new Map([...authors].map(([mail, a]) => [mail, a.name]));
   const ownerMerge = o.mergeIdentities ? canonicalOf : new Map();
+  // G7: the per-file owners of the path views, from the blame counts of the run.
+  const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
+  const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
+  const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history), fileOwners };
   const skipShas = new Set([...ignoredByUser, ...(applied ? suspects.map((x) => x.sha) : []), ...strongRewrites.map((c) => c.sha)]);
   const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
@@ -3580,9 +3642,38 @@ export function renderReviewers(r, top) {
     const more = idle.length - named.length;
     lines.push(`not active in the year before ${v.asOf}: ${named.join(", ")}${more ? `, and ${more} more` : ""}`);
   }
+  const owned = fileOwnersLines(v.path, v.fileOwners);
+  if (owned.length) lines.push("", ...owned);
   const notes = scopeNotes(r, { view: v });
   if (notes.length) lines.push("", ...notes);
   return lines.join("\n");
+}
+
+/**
+ * G7: the "files in <path> by owner" block of the path views, about twenty lines at most; empty when the path holds no
+ * non-blank surviving line or no person reaches the floor.
+ * @param {string} path
+ * @param {ReturnType<typeof fileOwnersOf> | null | undefined} fo
+ * @returns {string[]}
+ */
+function fileOwnersLines(path, fo) {
+  if (!fo || fo.scopeLines === 0 || fo.people.length === 0) return [];
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const out = [`files in ${path} by owner (${n(fo.scopeLines)} non-blank surviving lines in the files below it; an owner is the person with the most lines of a file):`];
+  for (const p of fo.people.slice(0, FILE_OWNERS_PEOPLE_SHOWN)) {
+    const named = p.files.map((f) => `${f.path} (${n(f.lines)} lines, ${pct(f.share)})`);
+    out.push(
+      p.files.length
+        ? `  ${p.author} (${n(p.lines)} lines): owns ${named.join(", ")}${p.moreFiles ? `, and ${n(p.moreFiles)} more` : ""}`
+        : `  ${p.author} (${n(p.lines)} lines): no file where they hold half or more`,
+    );
+  }
+  if (fo.people.length > FILE_OWNERS_PEOPLE_SHOWN) out.push(`  and ${fo.people.length - FILE_OWNERS_PEOPLE_SHOWN} more people`);
+  const one = fo.singleOwnerFiles;
+  if (one.files.length) {
+    out.push(`files only one person has written (${pct(SINGLE_OWNER_MIN_SHARE)} or more of at least ${SINGLE_OWNER_MIN_LINES} lines): ${one.files.map((f) => `${f.path} (${f.author}, ${n(f.lines)} lines, ${pct(f.share)})`).join(", ")}${one.more ? `, and ${n(one.more)} more` : ""}`);
+  }
+  return out;
 }
 
 /**
@@ -3651,6 +3742,8 @@ export function renderHistory(r, top) {
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
+  const owned = fileOwnersLines(h.path, h.fileOwners);
+  if (owned.length) lines.push("", ...owned);
   const notes = scopeNotes(r, { view: h });
   if (notes.length) lines.push("", ...notes);
   if (h.setAside.length) {

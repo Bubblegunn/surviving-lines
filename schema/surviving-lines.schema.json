@@ -658,6 +658,39 @@
             "largest": { "type": "array", "maxItems": 3, "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer", "minimum": 1 } } }, "description": "The three origin paths with the most lines." }
           }
         },
+        "fileOwners": {
+          "type": ["object", "null"],
+          "description": "The files of the path by owner (an owner is the person with the most non-blank surviving lines of a file). Null unless a path view was asked for.",
+          "additionalProperties": false,
+          "required": ["scopeLines", "people", "singleOwnerFiles"],
+          "properties": {
+            "scopeLines": { "type": "integer", "minimum": 0, "description": "Non-blank surviving lines of the files under the path." },
+            "people": {
+              "type": "array",
+              "description": "Each person holding at least min(10 lines, 3% of scopeLines) under the path, most lines first, with the files where they are the top owner with at least half of the file (largest first, at most five).",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["author", "lines", "files", "moreFiles"],
+                "properties": {
+                  "author": { "type": "string" },
+                  "lines": { "type": "integer", "minimum": 0, "description": "The person's non-blank surviving lines under the path." },
+                  "files": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines", "share"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer", "minimum": 1, "description": "Non-blank surviving lines of the file." }, "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "The person's share of the file." } } } },
+                  "moreFiles": { "type": "integer", "minimum": 0, "description": "Further files where the person is the top owner with at least half, not listed." }
+                }
+              }
+            },
+            "singleOwnerFiles": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["files", "more"],
+              "properties": {
+                "files": { "type": "array", "description": "Files where one person holds at least 90% of at least 20 lines, largest first, at most eight.", "items": { "type": "object", "additionalProperties": false, "required": ["path", "author", "lines", "share"], "properties": { "path": { "type": "string" }, "author": { "type": "string" }, "lines": { "type": "integer", "minimum": 20 }, "share": { "type": "number", "minimum": 0.9, "maximum": 1 } } } },
+                "more": { "type": "integer", "minimum": 0, "description": "Further single-owner files, not listed." }
+              }
+            }
+          }
+        },
         "path": { "type": "string", "description": "The path as given on the command line." },
         "asOf": { "type": "string", "description": "Author date of the ref commit, YYYY-MM-DD. The clock is never read." },
         "inactiveAfterDays": { "type": "integer", "minimum": 0, "description": "An author whose last commit at the path is more than this many days before asOf is not active." },
@@ -737,6 +770,39 @@
             "of": { "type": "integer", "minimum": 1, "description": "Blamed lines under the path." },
             "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "lines divided by of." },
             "largest": { "type": "array", "maxItems": 3, "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer", "minimum": 1 } } }, "description": "The three origin paths with the most lines." }
+          }
+        },
+        "fileOwners": {
+          "type": ["object", "null"],
+          "description": "The files of the path by owner (an owner is the person with the most non-blank surviving lines of a file). Null unless a path view was asked for.",
+          "additionalProperties": false,
+          "required": ["scopeLines", "people", "singleOwnerFiles"],
+          "properties": {
+            "scopeLines": { "type": "integer", "minimum": 0, "description": "Non-blank surviving lines of the files under the path." },
+            "people": {
+              "type": "array",
+              "description": "Each person holding at least min(10 lines, 3% of scopeLines) under the path, most lines first, with the files where they are the top owner with at least half of the file (largest first, at most five).",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["author", "lines", "files", "moreFiles"],
+                "properties": {
+                  "author": { "type": "string" },
+                  "lines": { "type": "integer", "minimum": 0, "description": "The person's non-blank surviving lines under the path." },
+                  "files": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines", "share"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer", "minimum": 1, "description": "Non-blank surviving lines of the file." }, "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "The person's share of the file." } } } },
+                  "moreFiles": { "type": "integer", "minimum": 0, "description": "Further files where the person is the top owner with at least half, not listed." }
+                }
+              }
+            },
+            "singleOwnerFiles": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["files", "more"],
+              "properties": {
+                "files": { "type": "array", "description": "Files where one person holds at least 90% of at least 20 lines, largest first, at most eight.", "items": { "type": "object", "additionalProperties": false, "required": ["path", "author", "lines", "share"], "properties": { "path": { "type": "string" }, "author": { "type": "string" }, "lines": { "type": "integer", "minimum": 20 }, "share": { "type": "number", "minimum": 0.9, "maximum": 1 } } } },
+                "more": { "type": "integer", "minimum": 0, "description": "Further single-owner files, not listed." }
+              }
+            }
           }
         },
         "path": { "type": "string", "description": "The path as given on the command line." },
