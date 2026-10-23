@@ -347,27 +347,43 @@ const BOT_MAIL_PATTERNS = [/^(?:\d+)?[^@]+\[bot\]@users\.noreply\.github\.com$/i
   /^(?:hosted|noreply|no-reply|bot|translations?)@(?:hosted\.)?weblate\.org$/i, /^(?:noreply|no-reply|support|bot|translations?)@(?:crowdin|transifex|lokalise)\.(?:com|co)$/i, /^(?:github-actions|action)@github\.com$/i];
 
 /**
- * True for an identity that is a bot by name or by address:
- * - a name that ends in "[bot]";
- * - a name whose last word is "bot" ("Release Bot", "vue-bot", "bot") or that ends in a capital "Bot" after a
- *   lower-case letter or digit ("ZodBot");
- * - a lower-case name of 7 or more letters that ends in "bot" and is also the address's local part ("jekyllbot",
- *   `jekyllbot@example.org`);
- * - an address whose local part is 8 or more letters and ends in "bot" (`frankensteinbot@example.org`);
- * - a name that ends in "-Service", or in " Service" with the word "copybara" in it ("Copybara-Service");
- * - one of BOT_MAIL_PATTERNS.
- * Nothing cleverer: a person called "Bot Hawkins", "Botticelli", "Talbot", "Abbot Smith", "Elbot" or "Robotnik" is a person.
+ * True for an identity that is a bot by name or by address. The address alone almost never decides: a person-shaped
+ * address such as `timtalbot@example.org` or `priyabot@example.org` is not a bot. The rules, in order:
+ * - a name that ends in "[bot]", or an address in BOT_MAIL_PATTERNS;
+ * - a name made of a single word that ends in "Bot" after a lower-case letter or digit ("ZodBot");
+ * - a lower-case name of 7 or more letters that ends in "bot" and is also the address's local part ("jekyllbot");
+ * - the name "bot", or a name of two or more words whose last word is "bot" ("Release Bot", "vue-bot") when the
+ *   address does not look like a person's: the local part is `bot`, `noreply`, `no-reply`, `ci`, `release`,
+ *   `automation` or `actions`, or has "bot" as a whole segment between "-", "_" or "+" ("release-bot"), or is the
+ *   name without its separators, or neither starts with the first word of the name nor has a "." in it. So
+ *   `Jan Bot <jan@example.nl>` and `Ion Bot <ion.bot@example.ro>` stay people;
+ * - a single-word name with an address whose local part is 10 or more letters and ends in "bot"
+ *   (`ReadmeCritic <frankensteinbot@example.org>`). Shorter ones, and any name of two or more words, stay people
+ *   because `priyabot@` cannot be told from a bot by its shape;
+ * - a name that ends in "-Service", or in " Service" with the word "copybara" in it.
+ * When a rule cannot separate a case safely, the identity is a person.
  * @param {string} name
  * @param {string} mail
  */
 export function isBotIdentity(name, mail) {
   const n = name.trim();
   if (/\[bot\]$/i.test(n) || BOT_MAIL_PATTERNS.some((re) => re.test(mail))) return true;
-  if (/(?:^|[\s_-])bot$/i.test(n) || /[a-z0-9]Bot$/.test(n)) return true;
   // The part of the address before "@", without the numeric id GitHub puts before a "+".
-  const local = (mail.split("@")[0] ?? "").replace(/^\d+\+/, "");
-  if (/^[a-z]{4,}bot$/.test(n) && n === local.toLowerCase()) return true;
-  if (/^[a-z]{5,}bot$/i.test(local)) return true;
+  const local = (mail.split("@")[0] ?? "").replace(/^\d+\+/, "").toLowerCase();
+  const oneWord = !/[\s_-]/.test(n);
+  if (oneWord && /[a-z0-9]Bot$/.test(n)) return true;
+  if (/^[a-z]{4,}bot$/.test(n) && n === local) return true;
+  if (/^bot$/i.test(n)) return true;
+  const words = n.split(/[\s_-]+/).filter(Boolean);
+  if (words.length >= 2 && /^bot$/i.test(words[words.length - 1] ?? "")) {
+    const first = (words[0] ?? "").toLowerCase();
+    const botLocal = ["bot", "noreply", "no-reply", "ci", "release", "automation", "actions"].includes(local)
+      || local.split(/[-_+]/).includes("bot")
+      || local === n.toLowerCase().replace(/[\s_-]+/g, "");
+    const personLocal = local.startsWith(first) || local.includes(".");
+    if (botLocal || !personLocal) return true;
+  }
+  if (oneWord && /^[a-z]{7,}bot$/.test(local)) return true;
   return /-Service$/i.test(n) || (/ Service$/i.test(n) && /copybara/i.test(n));
 }
 

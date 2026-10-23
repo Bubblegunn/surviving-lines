@@ -98,3 +98,29 @@ test("the JSON carries the bots section and matches the published schema; the CL
     removeRepo(dir);
   }
 });
+
+test("isBotIdentity keeps people whose names or person-shaped addresses end in bot", () => {
+  const people = [
+    ["Tim Talbot", "timtalbot@example.com"],
+    ["Jean Chabot", "jeanchabot@example.com"],
+    ["Gerard Gabbot", "gerardgabbot@example.com"],
+    ["Pierre Guibot", "pierreguibot@example.com"],
+    ["Priya", "priyabot@example.com"],
+    ["Jan Bot", "jan@example.nl"],
+    ["Ion Bot", "ion.bot@example.ro"],
+    ["Ion Bot", "ion@example.ro"],
+  ];
+  for (const [name, mail] of people) assert.equal(isBotIdentity(name, mail), false, `${name} <${mail}>`);
+});
+
+test("isBotIdentity still finds bots by name shape and by bot-like address", () => {
+  const bots = [
+    ["jekyllbot", "jekyllbot@example.com"],
+    ["vue-bot", "bot@example.org"],
+    ["Release Bot", "release-bot@example.org"],
+    ["StepSecurity Bot", "bot@example.io"],
+    ["ReadmeCritic", "frankensteinbot@example.com"],
+    ["Copybara-Service", "copybara-worker@example.com"],
+  ];
+  for (const [name, mail] of bots) assert.equal(isBotIdentity(name, mail), true, `${name} <${mail}>`);
+});
