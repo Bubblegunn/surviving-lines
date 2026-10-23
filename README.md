@@ -393,6 +393,12 @@ The bus factor is the smallest number of authors whose surviving lines together 
 bus factor 2: Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 56.5% of 1,985 surviving lines
 ```
 
+When blank lines were dropped from the counted lines (the header says `non-blank; N with blank lines`), the author table gets two more columns, `with blank` and `share`, the `bus factor` line states both bases (`... of 2,941 non-blank lines (76.9% of 3,322 lines with blank lines)`, and `counting blank lines: bus factor N` when it differs), and `--json` gives `linesWithBlank`, `shareWithBlank` and `busFactor.withBlank`. Rows stay ordered by non-blank lines.
+
+`--files [n]` prints one row per file, largest first (25 rows by default): lines, top owner and share, the next two owners, then `files: K; one owner above 80% in M; no owner above 50% in P`. It cannot be combined with `--group-by`, `--csv`, `--markdown`, `--identities`, `--reviewers`, `--history` or `--co-authors share`.
+
+A commit that rewrote at least 20 lines of a file and changed nothing `git blame -w` can see (line endings, indentation) owns no line, so no table shows it. Every view names up to five of them in a `whitespace-only commits` line, with the author, the file and who holds the file now. It changes no number.
+
 It follows the lines, not the commit counts. It measures how concentrated the code that is left is, not who understands it.
 
 ## What the new lines look like

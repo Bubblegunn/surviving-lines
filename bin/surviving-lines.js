@@ -82,6 +82,8 @@ Measure who wrote the code that is still alive in a git ref.
   --jobs <n>           parallel blame processes (default: 4)
   --top <k>            rows to print (default: every author with at least 1% of the lines, 10 to 25 rows,
                        then one line for the rest, and a last-commit column)
+  --files [n]          one row per file, largest first, n rows (default 25): lines, top owner and share, next two owners,
+                       then a summary line. Not with --group-by, --csv, --markdown, --identities, --reviewers, --history
   --reviewers <path>   list who should review a file or directory: lines, commits, last commit, and whether active
   --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -114,7 +116,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -144,6 +146,7 @@ export function parseArgs(argv) {
     else if (a === "--co-authors") { const mode = next(); if (mode !== "none" && mode !== "share") throw new Error("--co-authors must be none or share"); o.coAuthors = mode; }
     else if (a === "--ai-breakdown") o.aiBreakdown = true;
     else if (a === "--group-by") { o.groupBy = next(); parseGroupBy(o.groupBy); }
+    else if (a === "--files") { o.files = 25; if (/^\d+$/.test(argv[i + 1] ?? "")) { o.files = Number(argv[++i]); if (o.files < 1) throw new Error("--files must be an integer >= 1"); } }
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
     else if (a === "--suggest-codeowners") o.suggestCodeowners = true;
@@ -183,6 +186,10 @@ export function parseArgs(argv) {
   // -- would narrow the run to files that may not include the path, and the view would describe the wrong set.
   if (pathView !== undefined && o.paths.length) throw new Error(`${pathViewFlag} takes its path as its own value; it cannot be combined with pathspecs after --`);
   if (pathView !== undefined) o.paths = [pathView];
+  if (o.files !== undefined) {
+    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.coAuthors === "share" ? "--co-authors share" : null;
+    if (clash) throw new Error(`--files prints its own view; it cannot be combined with ${clash}`);
+  }
   if (o.suggestCodeowners && grouping?.kind !== "dir") throw new Error("--suggest-codeowners needs --group-by dir or dir:<n>");
   if (grouping && (o.csv || o.markdown || o.identities)) throw new Error("--group-by prints the table or --json; it cannot be combined with --csv, --markdown or --identities");
   if (o.suggestCodeowners && o.json) throw new Error("--suggest-codeowners prints text; it cannot be combined with --json");
@@ -504,6 +511,13 @@ export function countBlameOrigins(porcelain, path) {
 }
 
 /**
+ * R10-5: three more settings, so a user's own configuration cannot change what blame and log print: `core.quotepath=off`
+ * (paths print as they are, not as octal escapes), `log.showSignature=false` (no signature text inside log output) and
+ * `color.ui=never` (no colour codes). They are plain configuration names and change no number.
+ */
+const GIT_SETTINGS = ["-c", "core.precomposeunicode=false", "-c", "core.quotepath=off", "-c", "log.showSignature=false", "-c", "color.ui=never"];
+
+/**
  * Settings pinned on every call so the same repository answers the same way on any machine.
  *
  * `core.precomposeunicode` is true in every repository git creates on macOS, and it rewrites
@@ -515,12 +529,12 @@ export function countBlameOrigins(porcelain, path) {
  * send identical to the path git stored. ASCII repositories are unaffected either way.
  * @param {string[]} args
  * @param {string} cwd
- * @param {{ input?: string, binary?: boolean }} [opts] text for stdin; binary returns the bytes as a latin1 string
+ * @param {{ input?: string, binary?: boolean, timeout?: number }} [opts] text for stdin; binary returns the bytes as a latin1 string; timeout in milliseconds kills the call
  */
 async function git(args, cwd, opts = {}) {
-  const full = ["-c", "core.precomposeunicode=false", ...args];
+  const full = [...GIT_SETTINGS, ...args];
   if (opts.input === undefined && !opts.binary) {
-    const { stdout } = await execFileP("git", full, { cwd, maxBuffer: 1024 * 1024 * 512, encoding: "utf8" });
+    const { stdout } = await execFileP("git", full, { cwd, maxBuffer: 1024 * 1024 * 512, encoding: "utf8", ...(opts.timeout ? { timeout: opts.timeout } : {}) });
     return stdout;
   }
   // Objects read through `cat-file --batch` are raw bytes. They come back as a latin1 string, one character per byte,
@@ -845,7 +859,7 @@ export function droppedLine(r) {
  */
 function gitWithInput(args, input, cwd) {
   return new Promise((resolveOut, reject) => {
-    const child = spawn("git", ["-c", "core.precomposeunicode=false", ...args], { cwd });
+    const child = spawn("git", [...GIT_SETTINGS, ...args], { cwd });
     let out = "";
     let err = "";
     child.stdout.setEncoding("utf8");
@@ -1033,7 +1047,7 @@ async function resolveUserRevs(o, versionOutput) {
  * @param {{ write(text: string): unknown } | null} progress where progress lines go, or null for none
  */
 async function blamePass(o, sampled, blameArgs, grouping, progress) {
-  /** @type {Map<string, { name: string, lines: number, commits: number }>} */
+  /** @type {Map<string, { name: string, lines: number, commits: number, withBlank?: number }>} */
   const authors = new Map();
   let attributed = 0;
   /** @type {Map<string, { files: number, authors: Map<string, { name: string, lines: number }> }>} */
@@ -1053,6 +1067,14 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
   /** The counts per file of a pass without -C, for the comparison with copiedFiles. */
   /** @type {Map<string, Map<string, { name: string, lines: number }>>} */
   const fileCounts = new Map();
+  /** R10-1: every blame line per address, blank lines included. */
+  /** @type {Map<string, number>} */
+  const withBlankOf = new Map();
+  /** R10-2: the counts per file of this pass, whatever the copy flags; perFileRaw counts the blank lines too (R10-3). */
+  /** @type {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} */
+  const perFile = new Map();
+  /** @type {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} */
+  const perFileRaw = new Map();
   /** The index of the file that gave each address its name: blames finish in any order, so the name is the first file's. */
   /** @type {Map<string, { idx: number, rank: number }>} */
   const nameFrom = new Map();
@@ -1065,6 +1087,10 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
       // R9-13: the size with its blank lines, stated beside the non-blank size.
       file.withBlank = (raw.match(/^filename /gm) ?? []).length;
       const counts = countBlameLines(out);
+      perFile.set(file.path, counts);
+      const rawCounts = out.length === raw.length ? counts : countBlameLines(raw);
+      perFileRaw.set(file.path, rawCounts);
+      for (const [mail, { lines }] of rawCounts) withBlankOf.set(mail, (withBlankOf.get(mail) ?? 0) + lines);
       // The file's size as the table counts it: without its blank lines.
       file.lines = (out.match(/^filename /gm) ?? []).length;
       if (!followsCopies) fileCounts.set(file.path, counts);
@@ -1115,7 +1141,8 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(o.jobs, sampled.length || 1) }, worker));
-  return { authors, attributed, groupAcc, blamedByCommit, origins, copiedFiles, fileCounts };
+  for (const [mail, a] of authors) a.withBlank = withBlankOf.get(mail) ?? a.lines;
+  return { authors, attributed, groupAcc, blamedByCommit, origins, copiedFiles, fileCounts, perFile, perFileRaw };
 }
 
 /**
@@ -1696,6 +1723,7 @@ export function scopeNotes(r, opts = {}) {
   add(left.length ? left.join("\n").split("\n") : null);
   add(reformatBlock(r));
   add(mechanicalLine(r));
+  add(whitespaceOnlyLine(r));
   add(copyEffectLine(r));
   add(deepCopyLine(r));
   add(sameAddressLine(r));
@@ -1873,7 +1901,7 @@ const byCommitsThenLines = (x, y) => y.commits - x.commits || y.lines - x.lines 
  * --merge-identities: the rows of one list with each person's addresses folded into the canonical address that
  * linkIdentities chose. Lines and commits add up; an address outside every group is left as it is. A row that holds
  * more than one address carries `addresses`, the number it holds in this list, so a renderer can say so.
- * @template {{ author: string, mail: string, lines: number, commits?: number }} T
+ * @template {{ author: string, mail: string, lines: number, commits?: number, linesWithBlank?: number }} T
  * @param {T[]} list
  * @param {Map<string, { author: string, mail: string }>} canonicalOf the canonical identity of each address in a group
  * @returns {(T & { addresses?: number })[]}
@@ -1886,6 +1914,7 @@ export function foldAddresses(list, canonicalOf) {
     const found = out.get(canon.mail);
     if (found) {
       found.row.lines += row.lines;
+      if (row.linesWithBlank !== undefined) found.row.linesWithBlank = (found.row.linesWithBlank ?? 0) + row.linesWithBlank;
       if (row.commits !== undefined) found.row.commits = (found.row.commits ?? 0) + row.commits;
       found.held++;
     } else {
@@ -2001,6 +2030,225 @@ function identityLine(r) {
   const first = r.identityMerge?.applied ? identityMergeLine(r.identityMerge) : identityHintLine(r.identityHints);
   const second = samePersonLine(r.possibleSamePerson);
   return first && second ? `${first}\n${second}` : first ?? second;
+}
+
+/**
+ * R10-2 and R10-3: one file's owners, from its blame counts. Bots are left out the way the table leaves them out, and an
+ * address that --merge-identities joined counts as one person. Lines are on the table's basis (blank lines not counted).
+ * @param {Map<string, { name: string, lines: number, fullName?: string }>} counts
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf empty unless the identities are merged
+ * @param {Map<string, string>} nameOf the name the table shows for an address
+ * @returns {{ lines: number, owners: { name: string, lines: number, share: number }[] }}
+ */
+export function ownersOfFile(counts, includeBots, canonicalOf, nameOf) {
+  /** @type {Map<string, { name: string, lines: number }>} */
+  const people = new Map();
+  let total = 0;
+  for (const [mail, c] of counts) {
+    const name = nameOf.get(mail) ?? c.fullName ?? c.name;
+    if (!includeBots && isBotIdentity(name, mail)) continue;
+    const canon = canonicalOf.get(mail);
+    const key = canon?.mail ?? mail;
+    const p = people.get(key) ?? { name: canon?.author ?? name, lines: 0 };
+    p.lines += c.lines;
+    total += c.lines;
+    people.set(key, p);
+  }
+  const owners = [...people.entries()]
+    .sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0]))
+    .map(([, p]) => ({ name: p.name, lines: p.lines, share: total ? p.lines / total : 0 }));
+  return { lines: total, owners };
+}
+
+/** R10-3: a commit qualifies when a file it changed shows at least this many added plus deleted lines. */
+const WHITESPACE_ONLY_MIN_LINES = 20;
+/** R10-3: the check stops after this long. */
+const WHITESPACE_ONLY_TIMEOUT_MS = 20000;
+/** R10-3: this many commits are named, and the files of these are blamed. */
+const WHITESPACE_ONLY_SHOWN = 5;
+
+/**
+ * The files of each commit in `git log --numstat` output written with the format `%x01%H%x1f%aE%x1f%aN%x1f%s`.
+ * @param {string} out
+ * @returns {Map<string, { mail: string, name: string, subject: string, files: Map<string, { add: number, del: number }> }>}
+ */
+function parseNumstatLog(out) {
+  /** @type {Map<string, { mail: string, name: string, subject: string, files: Map<string, { add: number, del: number }> }>} */
+  const commits = new Map();
+  for (const chunk of out.split("\x01")) {
+    if (!chunk) continue;
+    const eol = chunk.indexOf("\n");
+    const [sha, mail, name, ...subject] = (eol < 0 ? chunk : chunk.slice(0, eol)).split("\x1f");
+    if (!sha || mail === undefined) continue;
+    /** @type {Map<string, { add: number, del: number }>} */
+    const files = new Map();
+    for (const line of eol < 0 ? [] : chunk.slice(eol + 1).split("\n")) {
+      const m = /^(\d+)\t(\d+)\t(.+)$/.exec(line);
+      if (m) files.set(unquoteGitPath(m[3]), { add: Number(m[1]), del: Number(m[2]) });
+    }
+    commits.set(sha, { mail: mail.toLowerCase(), name, subject: subject.join("\x1f"), files });
+  }
+  return commits;
+}
+
+/**
+ * R10-3: commits that rewrote at least 20 lines of a file still present and changed nothing `git blame -w` can see in
+ * it (a line-ending change, indentation, wrapping). Such a commit holds no line in the table, whoever made it. The test
+ * is the numbers of `git log --numstat` against the same log with `-w`: an entry in the first and none in the second.
+ * Merges, bots and the commits in `skip` (set aside already) are not listed. It never changes a number.
+ * @param {Options} o
+ * @param {Set<string>} present the paths of the files in scope at the ref
+ * @param {Set<string>} skip full ids of commits that were set aside or ignored
+ * @param {{ blameArgs: string[], perFile: Map<string, Map<string, { name: string, lines: number, fullName?: string }>>, nameOf: Map<string, string>, canonicalOf: Map<string, { author: string, mail: string }> }} ctx how to find who holds a file now
+ * @param {{ timeoutMs?: number }} [opts]
+ * @returns {Promise<{ skipped: boolean, commits: { sha: string, shortSha: string, subject: string, author: string, lines: number, files: { path: string, lines: number, topOwner: string | null, topShare: number | null, topOwnerLines: number | null, fileLines: number | null }[] }[] }>}
+ */
+export async function findWhitespaceOnlyCommits(o, present, skip, ctx, opts = {}) {
+  const timeout = opts.timeoutMs ?? WHITESPACE_ONLY_TIMEOUT_MS;
+  const started = Date.now();
+  const format = "--format=%x01%H%x1f%aE%x1f%aN%x1f%s";
+  /** @param {boolean} ignoreSpace */
+  const log = (ignoreSpace) => git(["log", "--no-merges", "--no-renames", "--numstat", format, ...(ignoreSpace ? ["-w"] : []), o.ref, "--", ...o.paths], o.cwd, { timeout });
+  let plain;
+  let spaced;
+  try {
+    [plain, spaced] = (await Promise.all([log(false), log(true)])).map(parseNumstatLog);
+  } catch (err) {
+    const e = /** @type {{ killed?: boolean, signal?: string, code?: string }} */ (err);
+    if (e && (e.killed || e.signal || e.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER")) return { skipped: true, commits: [] };
+    throw err;
+  }
+  /** @type {{ sha: string, mail: string, name: string, subject: string, files: { path: string, lines: number }[], lines: number }[]} */
+  const found = [];
+  for (const [sha, c] of plain) {
+    if (skip.has(sha) || isBotIdentity(c.name, c.mail)) continue;
+    const seen = spaced.get(sha)?.files;
+    /** @type {{ path: string, lines: number }[]} */
+    const files = [];
+    for (const [path, st] of c.files) {
+      if (!present.has(path) || st.add + st.del < WHITESPACE_ONLY_MIN_LINES) continue;
+      const w = seen?.get(path);
+      if (w && w.add + w.del > 0) continue;
+      files.push({ path, lines: Math.max(st.add, st.del) });
+    }
+    const lines = files.reduce((sum, f) => sum + f.lines, 0);
+    if (files.length && lines >= WHITESPACE_ONLY_MIN_LINES) found.push({ sha, mail: c.mail, name: c.name, subject: c.subject, files: files.sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path)), lines });
+  }
+  found.sort((x, y) => y.lines - x.lines || x.sha.localeCompare(y.sha));
+  const mapped = await mapIdentities(o.cwd, found.map((c) => ({ name: c.name, mail: c.mail })));
+  const out = found.map((c, i) => ({
+    sha: c.sha,
+    shortSha: c.sha.slice(0, 7),
+    subject: c.subject,
+    author: mapped[i].name,
+    lines: c.lines,
+    files: c.files.map((f) => ({ path: f.path, lines: f.lines, topOwner: /** @type {string | null} */ (null), topShare: /** @type {number | null} */ (null), topOwnerLines: /** @type {number | null} */ (null), fileLines: /** @type {number | null} */ (null) })),
+  }));
+  // Who holds the largest file of each named commit now: the run's own blame of that file, at most five files, every line
+  // counted (blank lines too), the way the commit's own line count is.
+  /** @type {Map<string, ReturnType<typeof ownersOfFile>>} */
+  const owned = new Map();
+  for (const c of out.slice(0, WHITESPACE_ONLY_SHOWN)) {
+    const f = c.files[0];
+    let who = owned.get(f.path);
+    if (!who) {
+      let counts = ctx.perFile.get(f.path);
+      if (!counts) {
+        const left = timeout - (Date.now() - started);
+        if (left <= 0) return { skipped: true, commits: [] };
+        try {
+          counts = countBlameLines(await git([...ctx.blameArgs, o.ref, "--", f.path], o.cwd, { timeout: left }));
+        } catch (err) {
+          const e = /** @type {{ killed?: boolean, signal?: string }} */ (err);
+          if (e && (e.killed || e.signal)) return { skipped: true, commits: [] };
+          throw err;
+        }
+      }
+      who = ownersOfFile(counts, o.includeBots, ctx.canonicalOf, ctx.nameOf);
+      owned.set(f.path, who);
+    }
+    const top = who.owners[0];
+    if (top) Object.assign(f, { topOwner: top.name, topShare: top.share, topOwnerLines: top.lines, fileLines: who.lines });
+  }
+  return { skipped: false, commits: out };
+}
+
+/**
+ * R10-3: the scope note for whitespace-only commits, or null when there are none.
+ * @param {{ whitespaceOnlyCommits?: Awaited<ReturnType<typeof findWhitespaceOnlyCommits>>["commits"], whitespaceOnlySkipped?: boolean }} r
+ * @returns {string | null}
+ */
+export function whitespaceOnlyLine(r) {
+  if (r.whitespaceOnlySkipped) return "whitespace-only check skipped (history too large)";
+  const list = r.whitespaceOnlyCommits ?? [];
+  if (!list.length) return null;
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const shown = list.slice(0, WHITESPACE_ONLY_SHOWN).map((c) => {
+    const f = c.files[0];
+    const now = f.topOwner !== null && f.topShare !== null ? ` (now: ${f.topOwner} ${pct(f.topShare)}, ${n(f.topOwnerLines ?? 0)} of ${n(f.fileLines ?? 0)} lines)` : "";
+    // With several files the total is not the first file's count: name the file count, then the largest file with its own owner figure.
+    const where = c.files.length > 1 ? `${c.files.length} files, largest ${f.path}` : `${f.path}`;
+    return `${c.shortSha} "${c.subject}" by ${c.author}, ${n(c.lines)} line${c.lines === 1 ? "" : "s"} in ${where}${now}`;
+  });
+  const rest = list.length - shown.length;
+  return `whitespace-only commits (git blame -w gives them no lines): ${shown.join("; ")}${rest > 0 ? `; ${rest} more` : ""}`;
+}
+
+/**
+ * R10-2: the rows of the --files view and its summary, on the table's basis.
+ * @param {number} limit
+ * @param {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} perFile
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Map<string, string>} nameOf
+ */
+export function filesView(limit, perFile, includeBots, canonicalOf, nameOf) {
+  const all = [...perFile]
+    .map(([path, counts]) => ({ path, ...ownersOfFile(counts, includeBots, canonicalOf, nameOf) }))
+    .filter((f) => f.lines > 0)
+    .sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
+  const files = all.slice(0, limit).map((f) => ({ path: f.path, lines: f.lines, owners: f.owners.slice(0, 3) }));
+  const summary = {
+    total: all.length,
+    shown: files.length,
+    oneOwnerAbove80Percent: all.filter((f) => (f.owners[0]?.share ?? 0) > 0.8).length,
+    noOwnerAbove50Percent: all.filter((f) => (f.owners[0]?.share ?? 0) <= 0.5).length,
+  };
+  return { files, summary };
+}
+
+/**
+ * The --files view: one row per file, largest first.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderFiles(r) {
+  const out = [];
+  out.push(headerLine(r));
+  const w = r.commitWindow;
+  out.push(`git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded`);
+  out.push("");
+  const files = r.files ?? [];
+  const sum = r.filesSummary;
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const owner = (/** @type {{ name: string, share: number } | undefined} */ x) => (x ? `${x.name} ${pct(x.share)}` : "");
+  const pathW = Math.max(4, ...files.map((f) => displayWidth(f.path)));
+  const ownerW = Math.max(9, ...files.map((f) => displayWidth(f.owners[0]?.name ?? "")));
+  const head = `${padEndDisplay("file", pathW)}  ${"lines".padStart(7)}  ${padEndDisplay("top owner", ownerW)}  ${"share".padStart(6)}  next two owners`;
+  out.push(head);
+  out.push("-".repeat(displayWidth(head)));
+  for (const f of files) {
+    const [top, ...next] = f.owners;
+    out.push(`${padEndDisplay(f.path, pathW)}  ${n(f.lines).padStart(7)}  ${padEndDisplay(top?.name ?? "", ownerW)}  ${(top ? pct(top.share) : "").padStart(6)}  ${next.slice(0, 2).map(owner).join(", ")}`.trimEnd());
+  }
+  if (sum && sum.total > sum.shown) out.push(`… ${n(sum.total - sum.shown)} more file${sum.total - sum.shown === 1 ? "" : "s"}`);
+  if (sum) out.push(`files: ${n(sum.total)}; one owner above 80% in ${n(sum.oneOwnerAbove80Percent)}; no owner above 50% in ${n(sum.noOwnerAbove50Percent)}`);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("");
+  out.push("What this cannot show: quality of the lines, review work, design done in documents,");
+  out.push("or code that was deleted on purpose. Share of surviving lines is about survivorship, not merit.");
+  return out.join("\n");
 }
 
 /**
@@ -2252,6 +2500,11 @@ export async function analyse(o) {
   }
   /** @param {{ lines: number, commits: number, mail: string }} x @param {{ lines: number, commits: number, mail: string }} y */
   const compareDefault = (x, y) => y.lines - x.lines || y.commits - x.commits || x.mail.localeCompare(y.mail);
+  // R10-1: the same lines counted with their blank lines. Under --co-authors share the split is not a plain line count,
+  // so both bases are the same number there.
+  const withBlankOfRow = (/** @type {{ lines: number, withBlank?: number }} */ a) => (o.coAuthors === "share" ? a.lines : a.withBlank ?? a.lines);
+  let attributedWithBlank = 0;
+  for (const a of authors.values()) attributedWithBlank += withBlankOfRow(a);
   let rows = [...authors.entries()].map(([mail, a]) => ({
     author: a.name,
     mail,
@@ -2259,6 +2512,8 @@ export async function analyse(o) {
     lineShare: attributed ? a.lines / attributed : 0,
     commits: a.commits,
     commitShare: commits ? a.commits / commits : 0,
+    linesWithBlank: withBlankOfRow(a),
+    shareWithBlank: attributedWithBlank ? withBlankOfRow(a) / attributedWithBlank : 0,
   }));
 
   /** @param {typeof rows} list */
@@ -2310,13 +2565,16 @@ export async function analyse(o) {
   /** @type {Map<string, string[]> | null} */
   const membersOf = o.mergeIdentities ? new Map(mergeable.map((g) => [g.canonical.mail, g.members.map((m) => m.mail)])) : null;
   if (o.mergeIdentities) {
-    rows = foldAddresses(rows, canonicalOf).map((a) => ({ ...a, lineShare: attributed ? a.lines / attributed : 0, commitShare: commits ? a.commits / commits : 0 }));
+    rows = foldAddresses(rows, canonicalOf).map((a) => ({ ...a, lineShare: attributed ? a.lines / attributed : 0, commitShare: commits ? a.commits / commits : 0, shareWithBlank: attributedWithBlank ? a.linesWithBlank / attributedWithBlank : 0 }));
     sortRows(rows);
   }
 
   // The bus factor reads lines, most first. The rows may be sorted by commits or by the gap, so it takes its own copy.
   const byLines = [...rows].sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
   const runBusFactor = busFactor(byLines, o.busFactorThreshold);
+  // R10-1: the same figure with blank lines counted, most such lines first.
+  const byLinesWithBlank = rows.map((x) => ({ author: x.author, mail: x.mail, lines: x.linesWithBlank })).sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
+  const runBusFactorWithBlank = busFactor(byLinesWithBlank, o.busFactorThreshold);
   let groups = grouping ? buildGroups(groupAcc, o.includeBots, o.busFactorThreshold) : null;
   if (groups && o.mergeIdentities) groups = groups.map((g) => ({ ...g, ...mergedLines(g.authors, g.lines, canonicalOf, o.busFactorThreshold) }));
   if (uncorrected && o.mergeIdentities) uncorrected = { ...uncorrected, ...mergedLines(uncorrected.authors, uncorrected.linesAttributed, canonicalOf, o.busFactorThreshold) };
@@ -2325,6 +2583,12 @@ export async function analyse(o) {
   const pathCommits = pathView === undefined ? [] : await readPathCommits(o, pathView);
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers) };
   const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history) };
+  // R10-3 and R10-2 read the run's own blame counts, with the names and merges the table uses.
+  const nameOf = new Map([...authors].map(([mail, a]) => [mail, a.name]));
+  const ownerMerge = o.mergeIdentities ? canonicalOf : new Map();
+  const skipShas = new Set([...ignoredByUser, ...(applied ? suspects.map((x) => x.sha) : []), ...strongRewrites.map((c) => c.sha)]);
+  const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
+  const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
   const lastCommits = await readLastCommits(o, rows, membersOf);
   return {
@@ -2341,7 +2605,11 @@ export async function analyse(o) {
     blame: { flags: shownFlags, copyDetection, copyEffect: copyShift ? copyEffectOf(o, copyShift, rows, attributed, o.mergeIdentities ? canonicalOf : new Map(), copyDetection.flags ?? "") : null, ignoreRevsFile: ignoreRevs ? ignoreRevs.display : null, ignoreRevs: userRevs, autoIgnoredRevs: [...(applied ? suspects.map((s) => s.sha) : []), ...strongRewrites.map((c) => c.sha)] },
     reformat: { detection: detect, applied, suspects, uncorrected },
     mechanicalCheck,
-    busFactor: runBusFactor && { thresholdPercent: o.busFactorThreshold, ...runBusFactor, authorsFor80Percent: busFactor(byLines, 80)?.value ?? null },
+    whitespaceOnlyCommits: whitespace.commits,
+    whitespaceOnlySkipped: whitespace.skipped,
+    files: filesResult && filesResult.files,
+    filesSummary: filesResult && filesResult.summary,
+    busFactor: runBusFactor && { thresholdPercent: o.busFactorThreshold, ...runBusFactor, authorsFor80Percent: busFactor(byLines, 80)?.value ?? null, withBlank: runBusFactorWithBlank && { thresholdPercent: o.busFactorThreshold, ...runBusFactorWithBlank, authorsFor80Percent: busFactor(byLinesWithBlank, 80)?.value ?? null } },
     identityHints: identityHintSummary(linked),
     possibleSamePerson: samePersonSummary(suggested),
     // Written whether or not the merge ran, so a consumer can tell a plain table from a merged one without a missing-key check.
@@ -2594,15 +2862,37 @@ function busFactorWords(bf, noun, names = bf.authors) {
 }
 
 /**
+ * R10-1: true when some author's lines differ with and without blank lines, that is when a blank line was dropped from
+ * the counted lines. Then the two bases are printed side by side.
+ * @param {{ lines: number, linesWithBlank?: number }[]} rows
+ */
+function hasBlankBasis(rows) {
+  return rows.some((a) => a.linesWithBlank !== undefined && a.linesWithBlank !== a.lines);
+}
+
+/**
  * The line that states a bus factor, or null when there is none.
- * @param {{ value: number, authors: string[], covered: number, total: number, authorsFor80Percent?: number | null } | null | undefined} bf
- * @param {{ author: string, mail: string, lines: number }[]} [rows] the rows the bus factor was computed from; with them a shared name shows its address
+ * @param {{ value: number, authors: string[], covered: number, total: number, authorsFor80Percent?: number | null, withBlank?: { value: number, total: number, authorsFor80Percent?: number | null } | null } | null | undefined} bf
+ * @param {{ author: string, mail: string, lines: number, linesWithBlank?: number }[]} [rows] the rows the bus factor was computed from; with them a shared name shows its address
  * @returns {string | null}
  */
 export function busFactorLine(bf, rows) {
   if (!bf) return null;
   const n = "authorsFor80Percent" in bf ? bf.authorsFor80Percent : null;
   const reach = typeof n === "number" ? ` · to reach 80%: ${n} author${n === 1 ? "" : "s"}` : "";
+  const wb = "withBlank" in bf ? bf.withBlank : null;
+  if (wb && rows && hasBlankBasis(rows)) {
+    // R10-1: both bases. The people named are the same on both; their share is read on each basis.
+    const names = labelledBusNames(bf, rows);
+    const top = [...rows].sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail)).slice(0, bf.value);
+    const held = top.reduce((sum, a) => sum + (a.linesWithBlank ?? a.lines), 0);
+    const nl = (/** @type {number} */ x) => x.toLocaleString("en-US");
+    const both = `${busFactorWords(bf, "non-blank lines", names)} (${pct(wb.total ? held / wb.total : 0)} of ${nl(wb.total)} lines with blank lines)`;
+    const m = wb.authorsFor80Percent;
+    const reach80Differs = typeof n === "number" && typeof m === "number" && m !== n;
+    const counting = wb.value !== bf.value || reach80Differs ? ` · counting blank lines: bus factor ${wb.value}${reach80Differs ? `, to reach 80%: ${m} author${m === 1 ? "" : "s"}` : ""}` : "";
+    return `bus factor ${bf.value}: ${both}${reach}${counting}`;
+  }
   return `bus factor ${bf.value}: ${busFactorWords(bf, "surviving lines", labelledBusNames(bf, rows))}${reach}`;
 }
 
@@ -2743,11 +3033,12 @@ export function renderTable(r, top) {
   const rows = r.authors.slice(0, shown);
   const nameW = Math.max(6, ...rows.map((a) => displayWidth(label(a))));
   const lastOf = (/** @type {{ mail: string }} */ a) => (r.lastCommits?.[a.mail] ?? "").padEnd(10);
-  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"share".padStart(6)}${byDefault ? "  last commit" : ""}`;
+  const both = hasBlankBasis(r.authors);
+  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}  ${"commits".padStart(7)}  ${"share".padStart(6)}${byDefault ? "  last commit" : ""}`;
   lines.push(head);
   lines.push("-".repeat(displayWidth(head)));
   for (const a of rows) {
-    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}${byDefault ? `  ${lastOf(a)}`.trimEnd() : ""}`);
+    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${pct(a.commitShare).padStart(6)}${byDefault ? `  ${lastOf(a)}`.trimEnd() : ""}`);
   }
   const tail = r.authors.slice(shown);
   if (tail.length && byDefault) {
@@ -2970,8 +3261,9 @@ export function renderCodeowners(r) {
  */
 export function renderCsv(r) {
   const q = (/** @type {string} */ v) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  const rows = ["author,mail,lines,line_share,commits,commit_share"];
-  for (const a of r.authors) rows.push([q(a.author), q(a.mail), a.lines, a.lineShare.toFixed(4), a.commits, a.commitShare.toFixed(4)].join(","));
+  const both = hasBlankBasis(r.authors);
+  const rows = [`author,mail,lines,line_share,commits,commit_share${both ? ",lines_with_blank,line_share_with_blank" : ""}`];
+  for (const a of r.authors) rows.push([q(a.author), q(a.mail), a.lines, a.lineShare.toFixed(4), a.commits, a.commitShare.toFixed(4), ...(both ? [a.linesWithBlank ?? a.lines, (a.shareWithBlank ?? a.lineShare).toFixed(4)] : [])].join(","));
   return rows.join("\n");
 }
 
@@ -2999,12 +3291,13 @@ export function renderMarkdown(r, top) {
   };
   const rows = r.authors.slice(0, top);
 
-  lines.push("| author | lines | line share | commits | commit share |");
-  lines.push("| --- | ---: | ---: | ---: | ---: |");
+  const both = hasBlankBasis(r.authors);
+  lines.push(`| author | lines | line share |${both ? " with blank | share with blank |" : ""} commits | commit share |`);
+  lines.push(`| --- | ---: | ---: |${both ? " ---: | ---: |" : ""} ---: | ---: |`);
 
   for (const a of rows) {
     lines.push(
-      `| ${label(a)} | ${a.lines.toLocaleString("en-US")} | ${pct(a.lineShare)} | ${a.commits.toLocaleString("en-US")} | ${pct(a.commitShare)} |`
+      `| ${label(a)} | ${a.lines.toLocaleString("en-US")} | ${pct(a.lineShare)} |${both ? ` ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US")} | ${pct(a.shareWithBlank ?? a.lineShare)} |` : ""} ${a.commits.toLocaleString("en-US")} | ${pct(a.commitShare)} |`
     );
   }
 
@@ -3796,6 +4089,8 @@ async function main() {
       const notes = scopeNotes(r, { identityHints: false });
       if (notes.length) output += `\n\n${notes.join("\n")}`;
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
+    } else if (r.files) {
+      output = renderFiles(r);
     } else if (r.reviewers) {
       // Five rows unless --top was given: the owners of one path are a short list.
       output = renderReviewers(r, o.topGiven ? o.top : 5);

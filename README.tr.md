@@ -317,6 +317,14 @@ reformat commit ignored (looks like whitespace and quote changes only): 1 commit
 
 `--keep-reformat` ile biçimlendirme commit'i sayılara katılır, blok bunu söyler ve kimlik ipucunun son cümlesi şöyle olur: `... If they are one person, Troy Goode holds 715 lines (36.0%).`
 
+## Boş satırlar, dosya görünümü, yalnızca boşluk değiştiren commit
+
+Sayılan satırlardan boş satırlar çıkarıldığında (başlıkta `non-blank; N with blank lines` yazar) yazar tablosuna `with blank` ve `share` sütunları eklenir, `bus factor` satırı iki tabanı da yazar ve fark varsa `counting blank lines: bus factor N` ekler. `--json` çıktısında `linesWithBlank`, `shareWithBlank` ve `busFactor.withBlank` bulunur. Satır sırası boş olmayan satırlara göredir.
+
+`--files [n]` her dosya için bir satır basar, en büyük önce (varsayılan 25): satır sayısı, ilk sahip ve payı, sonraki iki sahip, sonra `files: K; one owner above 80% in M; no owner above 50% in P`. `--group-by`, `--csv`, `--markdown`, `--identities`, `--reviewers`, `--history` ve `--co-authors share` ile birlikte kullanılamaz.
+
+Bir dosyanın en az 20 satırını yeniden yazıp `git blame -w` ile görünen hiçbir şeyi değiştirmeyen commit (satır sonu, girinti) hiçbir satıra sahip olmaz, bu yüzden tablolarda görünmez. Her görünüm bunlardan en fazla beşini `whitespace-only commits` satırında yazar: yazar, dosya ve dosyanın şimdiki sahibi. Hiçbir sayıyı değiştirmez.
+
 ## Kim tek kişi
 
 Bir kişi dizüstünden ve iş makinesinden ayrı adreslerle commit attığında, buradaki bütün sayılar

@@ -5,7 +5,7 @@
   "description": "schemaVersion changes when a key is removed, renamed or changes type. Adding a key does not change it.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "mechanicalCheck", "mailmap", "reviewers", "history", "authors"],
+  "required": ["schemaVersion", "tool", "ref", "sort", "shallow", "sample", "commitWindow", "bots", "grouping", "coAuthors", "aiAssisted", "dropped", "blame", "reformat", "busFactor", "identityHints", "possibleSamePerson", "identityMerge", "mechanicalCheck", "whitespaceOnlyCommits", "whitespaceOnlySkipped", "files", "filesSummary", "mailmap", "reviewers", "history", "authors"],
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "tool": {
@@ -238,7 +238,96 @@
         "authors": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "The names of the first value authors, most lines first." },
         "covered": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of the lines counted that those authors hold, as a fraction." },
         "total": { "type": "number", "minimum": 0, "description": "The lines counted: an integer unless --co-authors share is used." },
-        "authorsFor80Percent": { "type": ["integer", "null"], "minimum": 1, "description": "The fewest authors whose lines reach 80% of the lines counted, a second concentration figure next to value. Not configurable." }
+        "authorsFor80Percent": { "type": ["integer", "null"], "minimum": 1, "description": "The fewest authors whose lines reach 80% of the lines counted, a second concentration figure next to value. Not configurable." },
+        "withBlank": {
+          "type": ["object", "null"],
+          "description": "The same figure with blank lines counted (every line git blame gives). Equal to the figure above when no blank line was dropped. Null when no lines were counted.",
+          "additionalProperties": false,
+          "required": ["thresholdPercent", "value", "authors", "covered", "total", "authorsFor80Percent"],
+          "properties": {
+            "thresholdPercent": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+            "value": { "type": "integer", "minimum": 1 },
+            "authors": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+            "covered": { "type": "number", "minimum": 0, "maximum": 1 },
+            "total": { "type": "number", "minimum": 0 },
+            "authorsFor80Percent": { "type": ["integer", "null"], "minimum": 1 }
+          }
+        }
+      }
+    },
+    "whitespaceOnlyCommits": {
+      "type": "array",
+      "description": "Commits that rewrote at least 20 lines of a file still present and changed nothing git blame -w can see in it, so they hold no line in any table. Not merges, not bots, not set-aside commits. Largest first. Empty when none, or when the check was skipped.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sha", "shortSha", "subject", "author", "lines", "files"],
+        "properties": {
+          "sha": { "type": "string" },
+          "shortSha": { "type": "string" },
+          "subject": { "type": "string" },
+          "author": { "type": "string", "description": "As .mailmap resolves it." },
+          "lines": { "type": "integer", "minimum": 20, "description": "Lines rewritten in the qualifying files, blank lines included (the larger of added and deleted per file)." },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The qualifying files, largest first. Who holds the file now is read for the largest file of each of the first five commits; null elsewhere.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "lines", "topOwner", "topShare", "topOwnerLines", "fileLines"],
+              "properties": {
+                "path": { "type": "string" },
+                "lines": { "type": "integer", "minimum": 1 },
+                "topOwner": { "type": ["string", "null"] },
+                "topShare": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+                "topOwnerLines": { "type": ["integer", "null"], "minimum": 0 },
+                "fileLines": { "type": ["integer", "null"], "minimum": 0, "description": "Lines of the file now, blank lines included." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "whitespaceOnlySkipped": { "type": "boolean", "description": "True when the whitespace-only check ran into its 20 second limit and was skipped." },
+    "files": {
+      "type": ["array", "null"],
+      "description": "With --files: one row per file, largest first, on the non-blank basis (bots left out, identities merged when --merge-identities). Null otherwise.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "lines", "owners"],
+        "properties": {
+          "path": { "type": "string" },
+          "lines": { "type": "integer", "minimum": 1 },
+          "owners": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "lines", "share"],
+              "properties": {
+                "name": { "type": "string" },
+                "lines": { "type": "integer", "minimum": 1 },
+                "share": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "filesSummary": {
+      "type": ["object", "null"],
+      "description": "With --files: the count behind the rows. Null otherwise.",
+      "additionalProperties": false,
+      "required": ["total", "shown", "oneOwnerAbove80Percent", "noOwnerAbove50Percent"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "shown": { "type": "integer", "minimum": 0 },
+        "oneOwnerAbove80Percent": { "type": "integer", "minimum": 0 },
+        "noOwnerAbove50Percent": { "type": "integer", "minimum": 0 }
       }
     },
     "mechanicalCheck": {
@@ -682,7 +771,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["author", "mail", "lines", "lineShare", "commits", "commitShare"],
+        "required": ["author", "mail", "lines", "lineShare", "commits", "commitShare", "linesWithBlank", "shareWithBlank"],
         "properties": {
           "author": { "type": "string" },
           "mail": { "type": "string", "description": "Lowercased, as .mailmap resolved it." },
@@ -690,6 +779,8 @@
           "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
           "commits": { "type": "number", "minimum": 0, "description": "An integer unless --co-authors share is used." },
           "commitShare": { "type": "number", "minimum": 0, "maximum": 1 },
+          "linesWithBlank": { "type": "number", "minimum": 0, "description": "The lines with blank lines counted. Equal to lines when no blank line was dropped, and under --co-authors share." },
+          "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of linesWithBlank over the total with blank lines." },
           "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person in this list: how many." }
         }
       }

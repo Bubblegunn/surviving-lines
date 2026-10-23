@@ -52,6 +52,9 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 - Order people by surviving lines. Activity is information only.
 - When the question names files and also asks about the package, the repository or a directory ("in the package", "in the repo", "under lib/"), also run the tool on that wider scope and give its shares. Per-file tables alone do not answer it.
 - When the header says `(non-blank; N with blank lines)`, the shares count non-blank lines. When you state the size of the code, give both numbers (for example "2,941 non-blank lines, 3,322 with blank lines").
+- When the table has `with blank` and `share` columns, two bases are printed: give both for each person you name and for the total, and give the bus factor on both bases when the `bus factor` line adds `counting blank lines`.
+- For a concentration or ownership question about a directory or package, run `--files` once and give the rows where no owner holds half or one owner holds everything, next to the table shares.
+- When the output has a `whitespace-only commits` line, name each commit with its author and file, say that author holds no line of it, and give the figure for who holds the file now.
 - When the output has a `placeholder identities` line, say that those lines (give the count and the share) cannot be attributed to a person, and never name those identities as someone to ask.
 - Name the bots the `bots excluded` line lists and say their lines are not credited. When the `mechanical rewrites checked` line says `rewrites looked through`, say those commits were looked through and their lines went back to the earlier authors.
 - When the output has a `one address, several names, counted as one` line, name those people and their names in the answer. Never write "no duplicates" or "no one appears twice" while that line is printed.
