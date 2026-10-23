@@ -1,8 +1,9 @@
 #!/bin/sh
 # surviving-lines UserPromptSubmit hint. Reads the hook input JSON on stdin. When the prompt is about
 # authors, ownership or duplicate identities in git, it prints one JSON line that points the agent at
-# the tool and lists suspected same-person groups from names and addresses. Read-only git, no network,
-# no writes (not even temp files), exit 0 always. Silent otherwise.
+# the tool, lists suspected same-person groups from names and addresses and, when node and the plugin's own bin file
+# exist, adds the tool's pre-computed whole-repository brief. Read-only git, no network, no writes (not even temp
+# files), exit 0 always. Silent otherwise.
 input=$(cat)
 flat=$(printf '%s' "$input" | tr '\n\r' '  ' 2>/dev/null)
 prompt=$(printf '%s' "$flat" | sed -E -n 's/.*"prompt"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p')
@@ -69,11 +70,12 @@ else
   cmd='surviving-lines'
 fi
 
-intro="This request is about who wrote or owns code in git (authors, ownership, or duplicate identities). Use the surviving-lines skill. SL = $cmd is the command: run SL instead of counting by hand. Answer rules: the skill section Rules for every ownership answer. Strong: lead merged; weak: unmerged."
-closing_groups="These groups are guesses from names and addresses, not proof. If the user asked you to fix the duplicates, write the suggested lines to .mailmap under a comment line that marks them as proposals to confirm, re-run SL, and say in your answer that they are guesses until confirmed. SL --identities prints the lines; SL --merge-identities merges in memory only."
+intro="This request is about who wrote or owns code in git. Use the surviving-lines skill; SL = $cmd is the command: run SL instead of counting by hand. Every count, share, bus factor, activity and ownership claim comes from SL, not git blame or shortlog; a number SL does not print is your own: say so and name the command. Quote both line counts. Identity merges are proposals unless asked to apply them."
+closing_groups="These groups are guesses. If asked to fix the duplicates, write the suggested lines to .mailmap under a proposal comment, re-run SL, and say they are unconfirmed guesses. SL --identities prints the lines; SL --merge-identities merges in memory only."
 closing_none="No same-person groups were suspected from names and addresses; that does not prove there are none. Run SL --identities to check."
 
-# The group text gets whatever room the fixed sentences leave, so the context stays within 1,200 characters.
+# The group text gets whatever room the fixed sentences leave, so the context stays within 1,200 characters
+# (the brief, when there is one, comes on top of that).
 budget=$((1190 - ${#intro} - ${#closing_groups} - 69))
 [ "$budget" -gt 0 ] || budget=0
 
@@ -191,7 +193,21 @@ groups=$(printf '%s\n' "$out" | cut -f3-)
 case $ng in ''|*[!0-9]*) ng=0 ;; esac
 case $shown in ''|*[!0-9]*) shown=0 ;; esac
 
+# The pre-computed brief. It runs only when node and the plugin's own bin file exist; the tool stops itself after
+# 20 seconds and then prints nothing, and any failure leaves the text empty, which behaves exactly as before.
+# Output is read through a pipe (no temp file), cut to 3,500 characters, and made safe for JSON: bytes outside
+# printable ASCII become "?", quotes and backslashes become apostrophes, line breaks become the two characters
+# \n. The 1,200-character budget above is for the group text only; the brief comes on top of it.
+brief=
+if [ -n "$root" ] && [ -f "$root/bin/surviving-lines.js" ] && command -v node >/dev/null 2>&1; then
+  brief=$(node "$root/bin/surviving-lines.js" --cwd "$cwd" --brief --quiet --time-budget 20 2>/dev/null </dev/null | LC_ALL=C tr '"\\' "'" 2>/dev/null | LC_ALL=C sed 's/[^ -~]/?/g' 2>/dev/null | head -c 3500 2>/dev/null | awk '{ printf "%s%s", sep, $0; sep = "\\n" }' 2>/dev/null)
+fi
+sha7=$(git -C "$cwd" rev-parse --short=7 HEAD 2>/dev/null | tr -d '\000-\037"\\ ' 2>/dev/null)
+
 ctx="$intro"
+if [ -n "$brief" ] && [ -n "$sha7" ]; then
+  ctx="$ctx Pre-computed ownership brief for this repository at $sha7 (whole repository, computed by SL just now; these numbers are authoritative, do not recount with git blame): $brief"
+fi
 if [ "$ng" -gt 0 ]; then
   ctx="$ctx Suspected same-person groups ($ng found, $shown shown; from names and addresses only)"
   if [ "$shown" -gt 0 ]; then ctx="$ctx: $groups."; else ctx="$ctx."; fi

@@ -42,6 +42,8 @@ Run it from the repository root, or pass `--cwd <dir>`. Start with `<sl>` and re
 
 ## Rules for every ownership answer
 
+- Counts, shares, bus factor, activity and ownership claims come from SL output. Do not compute them with `git blame` or `git shortlog` by hand. If you need a number SL does not print, say it comes from your own computation and name the command you ran. Quote both line counts (non-blank, and counting blank lines). Identity merges are proposals unless the user asked you to apply them.
+- When the prompt note carries a `Pre-computed ownership brief` (the output of `<sl> --brief`, computed by the tool for that commit), its numbers are the tool's: quote them and do not recount. They cover the whole repository. For a named directory or language, re-run with `<sl> --brief -- <dir>` or `<sl> --brief --include '<glob>'`.
 - For each person you name, give the share in percent next to the line count, as the output prints them.
 - State what the output says was left out and why: dropped files (lockfiles, generated files, vendored code, binary files), bots excluded, and the reformat commits ignored, by their short ids.
 - State the identities merged by `.mailmap`, naming the file and the lines they add. These are already in the numbers.
@@ -78,6 +80,7 @@ To name a second reviewer, do not read the `active only` line alone. Recommend t
 
 ## Other options
 
+- `--brief` prints at most 40 lines about the whole repository (owners with both line counts, bus factors, activity, orphans, what was left out, identity proposals, top directories, single-owner files); `--json` gives a small object; `--time-budget <seconds>` prints nothing when the run is slower. It combines with `--include`, `--exclude`, `-- <paths>`, `--since`, `--merge-identities` and `--active-days`, not with the other views.
 - `--sort gap` puts first the authors whose line share and commit share differ most.
 - `--group-by dir`, `dir:2` or `ext` gives one block per directory or file type. `--suggest-codeowners` with `--group-by dir` prints CODEOWNERS lines for the user to review.
 - `--since 2025-01-01 --until 2025-12-31` limits the commit share to a window. The line share is always for the ref.

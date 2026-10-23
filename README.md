@@ -78,7 +78,7 @@ The plugin adds one skill. When you ask the agent the question this tool answers
 
 The plugin also adds a prompt hint. When a prompt is about duplicate identities or code ownership, a hook reads the prompt and the working directory and adds a short note for the agent. The note says to use the skill and the tool instead of counting by hand. When the repository has suspected same-person groups, the note lists up to four of them, each with the rule that suggested it (one name on two addresses, one address under two names, one name before the `@` on two domains, or a GitHub noreply login equal to another name or address name) and each address's commit count. The note always says the groups are guesses until you confirm them, and when you ask for the duplicates to be fixed it tells the agent to write them to `.mailmap` under a comment line that marks them as proposals.
 
-The hook runs only read-only git commands (`rev-parse`, `rev-list --count` and `shortlog -sne --no-merges`). It writes nothing and makes no network calls. It stays silent outside a git repository, when git is missing, and above 20,000 commits; `SURVIVING_LINES_HINT_CAP` changes that cap and is mainly for tests. The note adds at most 1,200 characters. It works only in the Claude Code plugin, not in the npm command.
+The hook runs only read-only git commands (`rev-parse`, `rev-list --count` and `shortlog -sne --no-merges`) and, when node and the plugin's own `bin/surviving-lines.js` exist, the tool's `--brief` view (see below), which itself only reads. It writes nothing and makes no network calls. It stays silent outside a git repository, when git is missing, and above 20,000 commits; `SURVIVING_LINES_HINT_CAP` changes that cap and is mainly for tests. The note itself adds at most 1,200 characters; the brief comes on top of that. It works only in the Claude Code plugin, not in the npm command.
 
 Measured on a generated repository of 10,000 commits by 60 authors, a prompt that matches took about 149 ms and one that does not took about 22 ms (on a busy machine, so read these as orders of magnitude). None of 20 unrelated test prompts triggered it. Of 10 borderline prompts, 5 triggered, for example a general question about what `git blame` does, because the hook cannot tell a general question from a request about your repository.
 
@@ -252,6 +252,8 @@ line of the table prints.
 --active-days <n>    an author is active with a commit in the n days before the ref's commit date (default: 365)
 --orphans            list up to 30 orphaned files: top owner inactive and nobody active holds 20% of the file
 --without <author>[,<author>...]  what if these people left (name or address; repeatable; own view, --json only)
+--brief              one compact plain-text view of the whole repository (at most 40 lines, about 3,000 characters; own view, --json only)
+--time-budget <s>    with --brief: after s seconds print nothing and exit 0
 --reviewers <path>   list who should review a file or directory
 --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -409,6 +411,14 @@ Under the table (and under `--files`, `--reviewers` and `--history`) one line sa
 A file is orphaned when its top owner is inactive and no active author holds at least 20% of its non-blank lines. `--files` and `--reviewers <dir>` print one line (`orphaned (top owner inactive, nobody active holds 20%+): 12 files, 8.4% of the lines; largest: ...`, five paths at most); `--orphans` lists up to 30 files with the owner, the lines and the owner's last commit. JSON: `orphans`.
 
 `--without Ada,Bob` answers "what if they left" on the lines: the lines they hold, the files whose top owner is one of them, the files where they together hold half or more and the best remaining author holds under 10% (nobody left would know those), the bus factor before and after (the second counted on the lines the remaining authors hold), and who would inherit most. A name or an address matches after `.mailmap` and `--merge-identities`; an unknown author is an error that lists the closest names. It prints its own view and can be combined with `--json` only (key `without`). It counts lines, not understanding.
+
+## Pre-computed brief
+
+`surviving-lines --brief` prints one compact plain-text view of the whole repository: at most 40 lines and about 3,000 characters, built from the same analysis as every other view (nothing is counted a second time with other rules). It has the ref, the commit id and the date; the six people with the most lines, each with both line counts (non-blank, and counting blank lines) and their shares, and their commits; the bus factor on both bases and for the people who still commit; the activity line; the orphaned-file summary; what was left out (bots, lockfiles, generated, vendored and binary files, set-aside reformat and boilerplate commits with their short ids and subjects); the same-person guesses, marked as proposals that were not applied; the five largest first-level directories with their top owner; up to five files that one person wrote almost alone; and the notes about commits committed by someone else and re-applied credit. The last line is the quote rule: quote both line counts; identity merges are proposals; for a named directory or language re-run with `-- <dir>` or `--include`.
+
+It works with `--include`, `--exclude`, paths after `--`, `--since`, `--merge-identities` and `--active-days`. With `--json` it prints a small object (the `brief` definition in the schema). `--time-budget <seconds>` stops the run after that time, prints nothing and exits 0, so a script or hook can bound it. It cannot be combined with the other views (`--files`, `--reviewers`, `--group-by` and so on).
+
+In the Claude Code plugin the prompt hint runs `--brief --quiet --time-budget 20` for an ownership question and puts the result in the agent's context, labelled as computed by the tool for that commit, so the agent quotes the tool's numbers instead of recounting with `git blame`. On a repository the tool cannot finish in 20 seconds, or when node is missing, the hint is the same as without it. The hook timeout is 30 seconds.
 
 ## Bus factor
 

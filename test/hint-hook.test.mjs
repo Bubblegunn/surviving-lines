@@ -44,7 +44,7 @@ function context(result) {
 
 /** The closing sentence when groups were found. @param {string} ctx */
 function assertClosing(ctx) {
-  assert.match(ctx, /These groups are guesses from names and addresses, not proof\. If the user asked you to fix the duplicates, write the suggested lines to \.mailmap under a comment line that marks them as proposals to confirm, re-run SL, and say in your answer that they are guesses until confirmed\. SL --identities prints the lines; SL --merge-identities merges in memory only\.$/);
+  assert.match(ctx, /These groups are guesses\. If asked to fix the duplicates, write the suggested lines to \.mailmap under a proposal comment, re-run SL, and say they are unconfirmed guesses\. SL --identities prints the lines; SL --merge-identities merges in memory only\.$/);
   assert.match(ctx, /SL = node "[^"]+\/bin\/surviving-lines\.js" is the command/);
 }
 
@@ -52,6 +52,14 @@ function assertClosing(ctx) {
 function assertNoGroupClosing(ctx) {
   assert.match(ctx, /No same-person groups were suspected from names and addresses; that does not prove there are none\. Run SL --identities to check\.$/);
   assert.doesNotMatch(ctx, /These groups are guesses/);
+}
+
+/**
+ * The context without the pre-computed brief (the brief comes on top of the 1,200-character budget of the rest).
+ * @param {string} ctx
+ */
+function withoutBrief(ctx) {
+  return ctx.replace(/ Pre-computed ownership brief for this repository at [0-9a-f]+ \(whole repository[^)]*\): [\s\S]*? or --include(?= (Suspected|No same-person))/, "");
 }
 
 /** @param {number} i @returns {string} a fixed ISO date, one minute after the previous commit */
@@ -379,7 +387,7 @@ test("a non-ASCII author name is printed as ASCII, so the JSON stays valid and n
   ]);
   try {
     const ctx = context(hook(PROMPT, dir));
-    assert.match(ctx, /^[\x20-\x7e]+$/, "the context must be printable ASCII");
+    assert.match(ctx, /^[\x20-\x7e\n]+$/, "the context must be printable ASCII, with line breaks only inside the brief");
     assert.match(ctx, /\[R1 same name\] Zo\?+ M\?+ller \(/);
     assert.match(ctx, /\(zoe@one\.example\)/);
   } finally {
@@ -429,7 +437,7 @@ test("fifty suspected groups still fit in 1,200 characters, with five shown and 
   const dir = repoWith(commits);
   try {
     const ctx = context(hook(PROMPT, dir));
-    assert.ok(ctx.length <= 1200, `context is ${ctx.length} characters`);
+    assert.ok(withoutBrief(ctx).length <= 1200, `context is ${withoutBrief(ctx).length} characters`);
     assert.match(ctx, /\(50 found, \d+ shown; from names and addresses only\)/);
     const shown = ctx.split("[R1 same name]").length - 1;
     assert.ok(shown >= 4 && shown <= 5, `shown ${shown}`);
@@ -443,6 +451,7 @@ test("hooks.json registers the script on UserPromptSubmit through the plugin roo
   const config = JSON.parse(readFileSync(join(ROOT, "hooks", "hooks.json"), "utf8"));
   const command = config.hooks.UserPromptSubmit[0].hooks[0].command;
   assert.equal(command, '"${CLAUDE_PLUGIN_ROOT}/hooks/surviving-lines-hint.sh"');
+  assert.equal(config.hooks.UserPromptSubmit[0].hooks[0].timeout, 30, "the brief may run for 20 seconds, so the hook needs room");
   assert.equal(Object.keys(config.hooks).join(), "UserPromptSubmit");
 });
 
@@ -457,7 +466,7 @@ test("long names and addresses: the budget keeps six suspected groups under 1,20
   const dir = repoWith(commits);
   try {
     const ctx = context(hook(PROMPT, dir));
-    assert.ok(ctx.length <= 1200, `context is ${ctx.length} characters`);
+    assert.ok(withoutBrief(ctx).length <= 1200, `context is ${withoutBrief(ctx).length} characters`);
     assert.match(ctx, /\(6 found, [1-5] shown; from names and addresses only\)/);
     assertClosing(ctx);
   } finally {

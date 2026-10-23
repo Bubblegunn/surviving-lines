@@ -310,8 +310,10 @@ test("R8-1 to R8-5: the skill carries the new rules and the hook carries at most
   assert.match(skill, /Do not attach a line total to the committer's name/);
   assert.match(skill, /When the headline names a person with a strong identity suggestion, lead with the merged figure/);
   assert.match(skill, /`weak addition`/);
-  // The hook keeps its one pointer line to the skill section that holds these rules, and adds nothing to its 1,200 character budget.
-  assert.match(hook, /Answer rules: the skill section Rules for every ownership answer\./);
+  // The hook points at the skill and carries the steering sentences itself (round 13, B2), within its 1,200 character budget.
+  // It no longer names the skill section: the sentences below replaced the pointer line to keep room for the group text.
+  assert.match(hook, /Use the surviving-lines skill; SL = \$cmd is the command: run SL instead of counting by hand\./);
+  assert.match(hook, /Every count, share, bus factor, activity and ownership claim comes from SL, not git blame or shortlog; a number SL does not print is your own: say so and name the command\. Quote both line counts\. Identity merges are proposals unless asked to apply them\./);
 });
 
 /** Ada writes a block under one address; the same name from a second address moves it in a commit that also changes the source file. */

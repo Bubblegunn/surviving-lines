@@ -280,7 +280,9 @@ test("R9-5: the hint matches natural ownership wording, stays within 1,200 chara
         assert.equal(result.status, 0, result.stderr);
         assert.notEqual(result.stdout, "", `no hint for: ${prompt}`);
         const ctx = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
-        assert.ok(ctx.length <= 1200, `context is ${ctx.length} characters`);
+        // Round 13: the pre-computed brief comes on top of the 1,200 characters of the note itself.
+        const note = ctx.replace(/ Pre-computed ownership brief for this repository at [0-9a-f]+ \(whole repository[^)]*\): [\s\S]*? or --include(?= (Suspected|No same-person))/, "");
+        assert.ok(note.length <= 1200, `context is ${note.length} characters`);
       }
       for (const prompt of ["write a function that reverses a string", "which colour looks better on the button", "keep the cache still in memory", "rename this variable to something clearer"]) {
         assert.equal(hook(prompt, dir).stdout, "", `hint for: ${prompt}`);
