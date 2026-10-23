@@ -111,6 +111,9 @@ Measure who wrote the code that is still alive in a git ref.
                        --orphans, and the orphaned line of --files and --reviewers
   --orphans            list up to 30 orphaned files (top owner inactive, nobody active holds 20% of the file) with owner, lines
                        and the owner's last commit; not with --history, --group-by, --csv, --markdown, --identities
+  --without <author>[,<author>...]  what if these people left: lines they hold, files they own, files nobody remaining would
+                       know, bus factor before and after, who inherits most. An author is a name or an address (after .mailmap
+                       and --merge-identities). Repeatable; prints its own view, with --json only
   --reviewers <path>   list who should review a file or directory: lines, commits, last commit, and whether active
   --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -143,7 +146,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, activeDays: number, orphans: boolean, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, activeDays: number, orphans: boolean, without: string[], reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -151,7 +154,7 @@ groupBy?: string, files?: number, activeDays: number, orphans: boolean, reviewer
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -176,6 +179,7 @@ export function parseArgs(argv) {
     else if (a === "--files") { o.files = 25; if (/^\d+$/.test(argv[i + 1] ?? "")) { o.files = Number(argv[++i]); if (o.files < 1) throw new Error("--files must be an integer >= 1"); } }
     else if (a === "--active-days") { o.activeDays = Number(next()); if (!Number.isInteger(o.activeDays) || o.activeDays < 1) throw new Error("--active-days must be an integer >= 1"); }
     else if (a === "--orphans") o.orphans = true;
+    else if (a === "--without") o.without.push(next());
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
     else if (a === "--suggest-codeowners") o.suggestCodeowners = true;
@@ -219,6 +223,10 @@ export function parseArgs(argv) {
   if (o.files !== undefined) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.coAuthors === "share" ? "--co-authors share" : null;
     if (clash) throw new Error(`--files prints its own view; it cannot be combined with ${clash}`);
+  }
+  if (o.without.length) {
+    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
+    if (clash) throw new Error(`--without prints its own view; it can be combined with --json only, not with ${clash}`);
   }
   if (o.orphans) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.history !== undefined ? "--history" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
@@ -2214,6 +2222,17 @@ const ORPHAN_ACTIVE_MIN_SHARE = 0.2;
 const ORPHAN_NAMED = 5;
 /** G11b: --orphans lists this many files (the JSON carries the same list). */
 const ORPHAN_LISTED = 30;
+/** G11c: a file is "known by nobody" when the leavers hold at least this share of it ... */
+const WITHOUT_LOST_MIN_SHARE = 0.5;
+/** G11c: ... and the best remaining author holds less than this share. */
+const WITHOUT_NEXT_MAX_SHARE = 0.1;
+/** G11c: a file counts as the leavers' own for the "who inherits" ranking when they hold at least this share of it. */
+const WITHOUT_INHERIT_MIN_SHARE = 0.2;
+/** G11c: at most this many paths per listing. */
+const WITHOUT_SHOWN = 8;
+/** G11c: this many heirs are named. */
+const WITHOUT_HEIRS = 3;
+
 /**
  * G11: one entry per person (rows with the same folded name are one person, as the owner lists treat them) with the
  * newest commit anywhere in the repository and whether that commit is inside the window. The window is counted back
@@ -2362,6 +2381,167 @@ export function orphanListLines(orphans) {
   for (const f of orphans.items) out.push(`${padEndDisplay(f.path, pathW)}  ${padEndDisplay(f.owner, ownerW)}  ${n(f.lines).padStart(7)} lines  last commit ${f.ownerLastCommit ?? "none found"}`);
   if (orphans.files > orphans.items.length) out.push(`… ${n(orphans.files - orphans.items.length)} more`);
   return out;
+}
+
+/** @param {string} a @param {string} b the edit distance between two short strings */
+function editDistance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) row.push(Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)));
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/**
+ * G11c: turn the --without values into the set of leaving people. A value matches a person by name (folded, as the
+ * owner lists fold it) or by address (any address of a merged row); a value that is not one name or address is also
+ * read as a comma-separated list. The values are matched against the table's rows, so .mailmap and
+ * --merge-identities have been applied. A value that matches nobody is an error that names the closest names.
+ * @param {string[]} values
+ * @param {{ author: string, mail: string, lines: number }[]} rows
+ * @param {Map<string, string[]> | null} membersOf
+ * @returns {Set<string>} folded names
+ */
+export function resolveLeavers(values, rows, membersOf) {
+  const live = rows.filter((a) => a.lines > 0);
+  const addressesOf = (/** @type {{ mail: string }} */ a) => (membersOf?.get(a.mail) ?? [a.mail]).map((m) => m.toLowerCase());
+  const match = (/** @type {string} */ q) => {
+    const name = foldIdentity(q);
+    const mail = q.trim().toLowerCase();
+    return live.filter((a) => foldIdentity(a.author) === name || addressesOf(a).includes(mail));
+  };
+  /** @type {Set<string>} */
+  const out = new Set();
+  /** @type {string[]} */
+  const missing = [];
+  for (const value of values) {
+    const whole = match(value);
+    const queries = whole.length ? [value] : value.split(",").map((s) => s.trim()).filter(Boolean);
+    for (const q of queries) {
+      const hit = whole.length ? whole : match(q);
+      if (!hit.length) missing.push(q);
+      for (const a of hit) out.add(foldIdentity(a.author));
+    }
+  }
+  if (missing.length) {
+    const closest = (/** @type {string} */ q) => {
+      const key = foldIdentity(q);
+      return [...new Map(live.map((a) => [foldIdentity(a.author), a])).values()]
+        .map((a) => {
+          const n = foldIdentity(a.author);
+          const local = a.mail.split("@")[0].toLowerCase();
+          const d = Math.min(editDistance(key, n), editDistance(key, local), n.includes(key) || key.includes(n) ? 0 : Infinity);
+          return { a, d };
+        })
+        .sort((x, y) => x.d - y.d || x.a.author.localeCompare(y.a.author))
+        .slice(0, 5)
+        .map((x) => `${x.a.author} <${x.a.mail}>`);
+    };
+    const lines = missing.map((q) => `--without: no author named or addressed "${q}" holds a surviving line here. Closest: ${closest(q).join("; ") || "none"}`);
+    throw new Error(`${lines.join("\n")}\n(only authors with at least one surviving line are listed; names are matched after .mailmap${membersOf ? " and the identity merge" : ""})`);
+  }
+  return out;
+}
+
+/**
+ * G11c: what the code looks like if the leavers had never written a line. This counts lines, not understanding.
+ * @param {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} perFile
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Map<string, string>} nameOf
+ * @param {{ author: string, mail: string, lines: number }[]} rows the table's rows
+ * @param {Set<string>} leavers folded names, from resolveLeavers
+ * @param {number} thresholdPercent the bus factor threshold
+ */
+export function withoutOf(perFile, includeBots, canonicalOf, nameOf, rows, leavers, thresholdPercent) {
+  const live = rows.filter((a) => a.lines > 0);
+  const isLeaver = (/** @type {string} */ author) => leavers.has(foldIdentity(author));
+  const totalLines = live.reduce((s, a) => s + a.lines, 0);
+  const leaverRows = live.filter((a) => isLeaver(a.author));
+  const leaverLines = leaverRows.reduce((s, a) => s + a.lines, 0);
+  const byLines = (/** @type {typeof live} */ list) => [...list].sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
+  const before = busFactor(byLines(live), thresholdPercent);
+  const after = busFactor(byLines(live.filter((a) => !isLeaver(a.author))), thresholdPercent);
+  /** @type {Map<string, { author: string, lines: number, files: number }>} */
+  const heirs = new Map();
+  /** @type {{ path: string, lines: number, owner: string, leaverShare: number }[]} */
+  const topOwned = [];
+  /** @type {{ path: string, lines: number, leaverShare: number, nextAuthor: string | null, nextShare: number }[]} */
+  const lost = [];
+  let files = 0;
+  for (const [path, counts] of perFile) {
+    const f = foldedOwners(counts, includeBots, canonicalOf, nameOf);
+    if (f.lines <= 0 || !f.owners.length) continue;
+    files++;
+    const gone = f.owners.filter((ow) => leavers.has(ow.key));
+    const goneLines = gone.reduce((s, ow) => s + ow.lines, 0);
+    if (!goneLines) continue;
+    const kept = f.owners.filter((ow) => !leavers.has(ow.key));
+    const leaverShare = goneLines / f.lines;
+    if (leavers.has(f.owners[0].key)) topOwned.push({ path, lines: f.lines, owner: f.owners[0].name, leaverShare });
+    const next = kept[0] ?? null;
+    const nextShare = next ? next.lines / f.lines : 0;
+    if (leaverShare >= WITHOUT_LOST_MIN_SHARE && nextShare < WITHOUT_NEXT_MAX_SHARE) lost.push({ path, lines: f.lines, leaverShare, nextAuthor: next?.name ?? null, nextShare });
+    if (leaverShare >= WITHOUT_INHERIT_MIN_SHARE) {
+      for (const ow of kept) {
+        const h = heirs.get(ow.key) ?? { author: ow.name, lines: 0, files: 0 };
+        h.lines += ow.lines;
+        h.files++;
+        heirs.set(ow.key, h);
+      }
+    }
+  }
+  const bySize = (/** @type {{ path: string, lines: number }} */ x, /** @type {{ path: string, lines: number }} */ y) => y.lines - x.lines || x.path.localeCompare(y.path);
+  topOwned.sort(bySize);
+  lost.sort(bySize);
+  const section = (/** @type {{ path: string, lines: number }[]} */ list) => ({ files: list.length, lines: list.reduce((s, f) => s + f.lines, 0) });
+  return {
+    leavers: [...new Map(leaverRows.map((a) => [foldIdentity(a.author), a])).values()]
+      .map((a) => ({ author: a.author, lines: leaverRows.filter((x) => foldIdentity(x.author) === foldIdentity(a.author)).reduce((s, x) => s + x.lines, 0) }))
+      .sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author)),
+    totalLines,
+    leaverLines,
+    leaverShare: totalLines ? leaverLines / totalLines : 0,
+    scopeFiles: files,
+    topOwnerFiles: { ...section(topOwned), items: topOwned.slice(0, WITHOUT_SHOWN) },
+    unknownFiles: { ...section(lost), minLeaverShare: WITHOUT_LOST_MIN_SHARE, maxNextShare: WITHOUT_NEXT_MAX_SHARE, items: lost.slice(0, WITHOUT_SHOWN) },
+    busFactor: { thresholdPercent, before: before?.value ?? null, after: after?.value ?? null },
+    heirs: [...heirs.values()].sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author)).slice(0, WITHOUT_HEIRS),
+  };
+}
+
+/**
+ * The --without view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderWithout(r) {
+  const w = r.without;
+  if (!w) throw new Error("renderWithout needs a result from --without");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const files = (/** @type {{ files: number }} */ s) => `${n(s.files)} file${s.files === 1 ? "" : "s"}`;
+  const out = [headerLine(r), ""];
+  out.push(`what if ${listNames(w.leavers.map((l) => l.author))} left  (surviving lines on the table's basis, blank lines not counted; a what-if on lines, not on understanding)`);
+  out.push(`lines held by the leavers: ${n(w.leaverLines)} of ${n(w.totalLines)} (${pct(w.leaverShare)})`);
+  const list = (/** @type {{ path: string, lines: number }[]} */ items, /** @type {number} */ total, /** @type {(f: any) => string} */ fmt) => {
+    const named = items.map(fmt).join(", ");
+    return `${named}${total > items.length ? `, and ${n(total - items.length)} more` : ""}`;
+  };
+  const top = w.topOwnerFiles;
+  out.push(top.files ? `files whose top owner is a leaver: ${files(top)} of ${n(w.scopeFiles)}, ${n(top.lines)} lines; largest: ${list(top.items, top.files, (f) => `${f.path} (${f.owner}, ${n(f.lines)} lines)`)}` : "files whose top owner is a leaver: none");
+  const lost = w.unknownFiles;
+  const rule = `leavers together hold ${Math.round(lost.minLeaverShare * 100)}%+ and the best remaining author under ${Math.round(lost.maxNextShare * 100)}%`;
+  out.push(lost.files ? `files nobody remaining would know (${rule}): ${files(lost)}, ${n(lost.lines)} lines; largest: ${list(lost.items, lost.files, (f) => `${f.path} (${n(f.lines)} lines, ${pct(f.leaverShare)} by leavers, best remaining ${f.nextAuthor ? `${f.nextAuthor} ${pct(f.nextShare)}` : "none"})`)}` : `files nobody remaining would know (${rule}): none`);
+  const bf = w.busFactor;
+  out.push(`bus factor (${bf.thresholdPercent}% of the lines): ${bf.before ?? "none"} now, ${bf.after ?? "none"} without them (the second figure is counted on the lines the remaining authors hold)`);
+  out.push(w.heirs.length ? `most likely to inherit (lines held in files where the leavers hold ${Math.round(WITHOUT_INHERIT_MIN_SHARE * 100)}%+): ${w.heirs.map((h) => `${h.author} (${n(h.lines)} lines in ${files(h)})`).join(", ")}` : "most likely to inherit: nobody holds lines in those files");
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("");
+  out.push("What this cannot show: who understands the code, review work, or design done in documents.");
+  out.push("It removes the leavers' lines from the count; it does not say the remaining authors can maintain what is left.");
+  return out.join("\n");
 }
 
 /** G12: a commit is named when at least this many of its lines survive in the scope and its committer is someone else than its author. */
@@ -3490,6 +3670,7 @@ export async function analyse(o) {
   const people = peopleActivity(rows, lastCommits, asOfDay, o.activeDays);
   const activity = activityOf(people, asOfDay, o.activeDays);
   const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
+  const withoutResult = o.without.length ? withoutOf(main.perFile, o.includeBots, ownerMerge, nameOf, rows, resolveLeavers(o.without, rows, membersOf), o.busFactorThreshold) : null;
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits, lastCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
@@ -3532,6 +3713,7 @@ export async function analyse(o) {
     lastCommits,
     activity,
     orphans: orphanScope && { requested: o.orphans, ...orphanScope },
+    without: withoutResult,
     committedByOthers: committedElsewhere,
     reappliedCredit: reapplied,
     reviewers,
@@ -5150,6 +5332,8 @@ async function main() {
       const notes = scopeNotes(r, { identityHints: false });
       if (notes.length) output += `\n\n${notes.join("\n")}`;
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
+    } else if (r.without) {
+      output = renderWithout(r);
     } else if (r.files) {
       output = renderFiles(r);
     } else if (r.reviewers) {

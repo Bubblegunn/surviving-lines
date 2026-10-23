@@ -570,6 +570,99 @@
         }
       }
     },
+    "without": {
+      "type": ["object", "null"],
+      "description": "The --without what-if: the run with the named people's lines taken out. Null unless --without was given. It counts lines, not understanding.",
+      "additionalProperties": false,
+      "required": ["leavers", "totalLines", "leaverLines", "leaverShare", "scopeFiles", "topOwnerFiles", "unknownFiles", "busFactor", "heirs"],
+      "properties": {
+        "leavers": {
+          "type": "array",
+          "description": "The people matched by the --without values, most lines first.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "lines"],
+            "properties": { "author": { "type": "string" }, "lines": { "type": "number" } }
+          }
+        },
+        "totalLines": { "type": "number" },
+        "leaverLines": { "type": "number" },
+        "leaverShare": { "type": "number", "minimum": 0, "maximum": 1 },
+        "scopeFiles": { "type": "integer", "minimum": 0 },
+        "topOwnerFiles": {
+          "type": "object",
+          "description": "Files whose top owner is a leaver.",
+          "additionalProperties": false,
+          "required": ["files", "lines", "items"],
+          "properties": {
+            "files": { "type": "integer", "minimum": 0 },
+            "lines": { "type": "number" },
+            "items": {
+              "type": "array",
+              "description": "The eight largest.",
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "lines", "owner", "leaverShare"],
+                "properties": { "path": { "type": "string" }, "lines": { "type": "number" }, "owner": { "type": "string" }, "leaverShare": { "type": "number", "minimum": 0, "maximum": 1 } }
+              }
+            }
+          }
+        },
+        "unknownFiles": {
+          "type": "object",
+          "description": "Files where the leavers together hold at least minLeaverShare and the best remaining author holds under maxNextShare.",
+          "additionalProperties": false,
+          "required": ["files", "lines", "minLeaverShare", "maxNextShare", "items"],
+          "properties": {
+            "files": { "type": "integer", "minimum": 0 },
+            "lines": { "type": "number" },
+            "minLeaverShare": { "type": "number" },
+            "maxNextShare": { "type": "number" },
+            "items": {
+              "type": "array",
+              "description": "The eight largest.",
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["path", "lines", "leaverShare", "nextAuthor", "nextShare"],
+                "properties": {
+                  "path": { "type": "string" },
+                  "lines": { "type": "number" },
+                  "leaverShare": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "nextAuthor": { "type": ["string", "null"], "description": "The best remaining author of the file, or null when nobody remains." },
+                  "nextShare": { "type": "number", "minimum": 0, "maximum": 1 }
+                }
+              }
+            }
+          }
+        },
+        "busFactor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["thresholdPercent", "before", "after"],
+          "properties": {
+            "thresholdPercent": { "type": "number" },
+            "before": { "type": ["integer", "null"] },
+            "after": { "type": ["integer", "null"], "description": "Counted on the lines the remaining authors hold." }
+          }
+        },
+        "heirs": {
+          "type": "array",
+          "description": "The remaining people with the most lines in files where the leavers hold at least 20%.",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "lines", "files"],
+            "properties": { "author": { "type": "string" }, "lines": { "type": "number" }, "files": { "type": "integer", "minimum": 1 } }
+          }
+        }
+      }
+    },
     "reappliedCredit": {
       "type": "object",
       "description": "Blamed commits that re-apply a reverted change (a revert of a revert) or are `git cherry-pick -x` copies of another author's commit, and still hold surviving lines. Their lines are credited to the author of the original commit. Absent from the counts when --no-reapply-credit is given.",

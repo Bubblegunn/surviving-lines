@@ -251,6 +251,7 @@ line of the table prints.
 --bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach (default: 50)
 --active-days <n>    an author is active with a commit in the n days before the ref's commit date (default: 365)
 --orphans            list up to 30 orphaned files: top owner inactive and nobody active holds 20% of the file
+--without <author>[,<author>...]  what if these people left (name or address; repeatable; own view, --json only)
 --reviewers <path>   list who should review a file or directory
 --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -404,6 +405,10 @@ What the check does not recognise:
 ## Who is still active, and what if someone leaves
 
 Under the table (and under `--files`, `--reviewers` and `--history`) one line says how much of the code belongs to people who have stopped committing: `as of 2026-03-10: 2 of 3 authors committed in the last 365 days and hold 40.0% of the non-blank lines; 60.0% of the lines belong to people with no commit in that time`. The window is counted back from the date of the ref's commit, not from today, so the same repository gives the same answer on any day. A commit anywhere in the repository counts, under the name and address `.mailmap` gives it; bots are left out. `--active-days <n>` changes the window. The line is not printed when everyone is active. JSON: `activity`.
+
+A file is orphaned when its top owner is inactive and no active author holds at least 20% of its non-blank lines. `--files` and `--reviewers <dir>` print one line (`orphaned (top owner inactive, nobody active holds 20%+): 12 files, 8.4% of the lines; largest: ...`, five paths at most); `--orphans` lists up to 30 files with the owner, the lines and the owner's last commit. JSON: `orphans`.
+
+`--without Ada,Bob` answers "what if they left" on the lines: the lines they hold, the files whose top owner is one of them, the files where they together hold half or more and the best remaining author holds under 10% (nobody left would know those), the bus factor before and after (the second counted on the lines the remaining authors hold), and who would inherit most. A name or an address matches after `.mailmap` and `--merge-identities`; an unknown author is an error that lists the closest names. It prints its own view and can be combined with `--json` only (key `without`). It counts lines, not understanding.
 
 ## Bus factor
 

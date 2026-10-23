@@ -46,6 +46,10 @@ Run `npx surviving-lines --merge-identities`. It counts the addresses that the i
 
 The line `as of <date>: k of n authors committed in the last 365 days and hold x% of the non-blank lines; y% of the lines belong to people with no commit in that time` is printed under the table, `--files`, `--reviewers` and `--history` whenever someone has stopped committing. The window ends at the date of the ref's commit, so the answer does not change from day to day; `--active-days <n>` changes its length. `--files` and `--reviewers <dir>` also print an `orphaned` line: files whose top owner is inactive and where no active author holds 20% of the lines. `--orphans` lists them. An orphaned file is a risk to look at, not a verdict: the owner may have moved to other work and still answer questions.
 
+## What happens to the code if someone leaves?
+
+`surviving-lines --without "Ada Quill,Bob Hale"` removes those people's lines from the count and prints what is left: the lines they hold, the files they own, the files that nobody remaining knows (the leavers hold half or more and the best remaining author under 10%), the bus factor before and after, and who would inherit most. Names and addresses are matched after `.mailmap`. It measures lines, not understanding, and a person can know code they never committed.
+
 ## What does bus factor mean here?
 
 The bus factor is the smallest number of authors whose surviving lines together reach 50% of the lines counted, so a bus factor of 1 means one person holds at least half of the code that is left. `--bus-factor-threshold <n>` changes the 50%. It measures how concentrated the surviving code is, not who understands it. It counts lines, not commits, and it counts each address separately until a `.mailmap` joins them.
