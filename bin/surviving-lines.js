@@ -3019,6 +3019,29 @@ function hasBlankBasis(rows) {
 }
 
 /**
+ * True for a row that exists only because of blank lines: no counted line and no commit in the window. Such a row means
+ * something only next to the with-blank column; a list that does not print that column leaves it out.
+ * @param {{ lines: number, commits?: number, linesWithBlank?: number }} a
+ */
+function isBlankOnlyRow(a) {
+  return a.lines === 0 && (a.commits ?? 0) === 0 && (a.linesWithBlank ?? 0) > 0;
+}
+
+/**
+ * The rows of a list view and whether it prints the with-blank column. The column is printed when one of the first
+ * `top` rows differs with and without blank lines. Without it, blank-only rows are dropped from the list, so they are
+ * neither listed nor counted among the "more" authors.
+ * @template {{ lines: number, commits?: number, linesWithBlank?: number }} T
+ * @param {T[]} authors
+ * @param {number} top
+ * @returns {{ pool: T[], both: boolean }}
+ */
+function listRows(authors, top) {
+  if (hasBlankBasis(authors.slice(0, top))) return { pool: authors, both: true };
+  return { pool: authors.filter((a) => !isBlankOnlyRow(a)), both: false };
+}
+
+/**
  * The line that states a bus factor, or null when there is none.
  * @param {{ value: number, authors: string[], covered: number, total: number, authorsFor80Percent?: number | null, withBlank?: { value: number, total: number, authorsFor80Percent?: number | null } | null } | null | undefined} bf
  * @param {{ author: string, mail: string, lines: number, linesWithBlank?: number }[]} [rows] the rows the bus factor was computed from; with them a shared name shows its address
@@ -3212,7 +3235,7 @@ export function renderTable(r, top) {
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
   const byDefault = top === null;
-  const shown = byDefault ? Math.min(DEFAULT_MAX_ROWS, Math.max(DEFAULT_MIN_ROWS, r.authors.filter((a) => a.lineShare >= DEFAULT_ROW_SHARE).length)) : top;
+  const shown = byDefault ? Math.min(DEFAULT_MAX_ROWS, Math.max(DEFAULT_MIN_ROWS, r.authors.filter((a) => a.lineShare >= DEFAULT_ROW_SHARE || (hasBlankBasis(r.authors) && (a.shareWithBlank ?? 0) >= DEFAULT_ROW_SHARE)).length)) : top;
   const rows = r.authors.slice(0, shown);
   const nameW = Math.max(6, ...rows.map((a) => displayWidth(label(a))));
   const lastOf = (/** @type {{ mail: string }} */ a) => (r.lastCommits?.[a.mail] ?? "").padEnd(10);
@@ -3258,16 +3281,16 @@ export function renderReviewers(r, top) {
   const nameCount = new Map();
   for (const a of v.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
-  const shown = v.authors.slice(0, top);
+  const { pool, both } = listRows(v.authors, top);
+  const shown = pool.slice(0, top);
   const nameW = Math.max(6, ...shown.map((a) => displayWidth(label(a))));
-  const both = hasBlankBasis(shown);
   const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}  ${"commits".padStart(7)}  ${"last commit".padEnd(11)}  activity`;
   lines.push(head);
   lines.push("-".repeat(displayWidth(head)));
   for (const a of shown) {
     lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${(a.lastCommit ?? "-").padEnd(11)}  ${a.active ? "active" : "inactive"}`);
   }
-  if (v.authors.length > top) lines.push(`… ${v.authors.length - top} more author${v.authors.length - top === 1 ? "" : "s"}`);
+  if (pool.length > top) lines.push(`… ${pool.length - top} more author${pool.length - top === 1 ? "" : "s"}`);
   const topLine = topAuthorLine(r);
   if (topLine) lines.push(topLine);
   lines.push(`rows are ordered by surviving lines; the last commit date and the active marker (a commit in the ${v.inactiveAfterDays} days before ${v.asOf}) are information and do not change the order.`);
@@ -3389,15 +3412,15 @@ export function renderGroups(r, top) {
   let groupThreshold = null;
   for (const g of r.grouping?.groups ?? []) {
     lines.push("");
-    const both = hasBlankBasis(g.authors);
+    const { pool, both } = listRows(g.authors, top);
     lines.push(`${g.key}  ·  ${g.filesSampled} file${g.filesSampled === 1 ? "" : "s"} sampled  ·  ${g.lines.toLocaleString("en-US")} lines${both && g.linesWithBlank !== undefined ? `, ${g.linesWithBlank.toLocaleString("en-US")} counting blank lines` : ""}`);
-    const rows = g.authors.slice(0, top);
+    const rows = pool.slice(0, top);
     const nameW = Math.max(6, ...rows.map((a) => displayWidth(label(a))));
     const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}`;
     lines.push(head);
     lines.push("-".repeat(displayWidth(head)));
     for (const a of rows) lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}`);
-    if (g.authors.length > top) lines.push(`… ${g.authors.length - top} more author${g.authors.length - top === 1 ? "" : "s"}`);
+    if (pool.length > top) lines.push(`… ${pool.length - top} more author${pool.length - top === 1 ? "" : "s"}`);
     const groupLine = busFactorLine(g.busFactor, g.authors);
     if (groupLine) {
       lines.push("", groupLine);
@@ -3433,7 +3456,7 @@ export function renderCodeowners(r) {
       out.push("# (files at the repository root) skipped: a CODEOWNERS pattern for them would also match every directory");
       continue;
     }
-    const top = g.authors[0];
+    const top = g.authors.find((a) => a.lines > 0);
     const basis = `${g.filesSampled} sampled file${g.filesSampled === 1 ? "" : "s"}`;
     if (!top) {
       out.push(`# /${g.key}/ no surviving lines in ${basis}`);
