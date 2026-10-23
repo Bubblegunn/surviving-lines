@@ -60,7 +60,7 @@ test("an author whose last commit at the path is more than a year before the ref
     const text = renderReviewers(r, 5);
     assert.ok(text.includes("not active in the year before 2026-04-12: Charlie"), text);
     assert.ok(!text.includes("prefer the active"), text);
-    assert.match(text, /^Charlie +40 +54\.1% +1 +2024-01-05 +inactive$/m);
+    assert.match(text, /^Charlie +40 +54\.1% +1 +2024-01-05 +\d{4}-\d\d-\d\d +inactive$/m);
   });
 });
 

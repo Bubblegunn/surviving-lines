@@ -1923,9 +1923,22 @@ async function refDay(o) {
 }
 
 /**
+ * G13: whether a path is a single file (a blob) at the ref. A directory, or a path that is not in the ref, is not.
+ * @param {Options} o
+ * @param {string} path
+ */
+async function isFileAtRef(o, path) {
+  try {
+    return (await git(["cat-file", "-t", `${o.ref}:${path.replace(/^\.\//, "")}`], o.cwd)).trim() === "blob";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The commits that touch a path at the ref, from ONE git log call, for the path views. Each has its id, its author
  * address (.mailmap applied and lowercased, the key the commit counts use) and its author date as YYYY-MM-DD.
- * Merges are left out, as the commit counts leave them out.
+ * Merges are left out, as the commit counts leave them out. A path that is a file is followed across renames.
  * @param {Options} o
  * @param {string} path
  * @returns {Promise<{ sha: string, mail: string, day: string }[]>}
@@ -1933,7 +1946,9 @@ async function refDay(o) {
 async function readPathCommits(o, path) {
   /** @type {{ sha: string, mail: string, day: string }[]} */
   const commits = [];
-  for (const line of (await git(["log", "--no-merges", "--format=%H%x09%aE%x09%aI", o.ref, "--", path], o.cwd)).split("\n")) {
+  // G13: a single file is followed across renames, so a rename does not cut its history. A directory is read as it is.
+  const follow = await isFileAtRef(o, path);
+  for (const line of (await git(["log", "--no-merges", ...(follow ? ["--follow"] : []), "--format=%H%x09%aE%x09%aI", o.ref, "--", path], o.cwd)).split("\n")) {
     if (!line) continue;
     const [sha, mail, date] = line.split("\t");
     commits.push({ sha, mail: mail.toLowerCase(), day: date.slice(0, 10) });
@@ -2179,8 +2194,9 @@ export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
  * @param {boolean} applied whether the rows have the suspected reformat commits left out
  * @param {Map<string, string[]> | null} membersOf under --merge-identities, each merged row's canonical address to every address it holds
  * @param {{ mail: string, day: string }[]} pathCommits the commits at the path, from readPathCommits
+ * @param {Record<string, string>} [lastCommits] each row's newest commit anywhere in the repository, from readLastCommits (G13)
  */
-async function reviewersView(o, path, rows, applied, membersOf, pathCommits) {
+async function reviewersView(o, path, rows, applied, membersOf, pathCommits, lastCommits = {}) {
   // A merged row stands for several addresses: its newest commit is the newest of them, and its mails list all of them.
   const memberMails = (/** @type {string} */ mail) => membersOf?.get(mail) ?? [mail];
   const asOf = await refDay(o);
@@ -2200,7 +2216,7 @@ async function reviewersView(o, path, rows, applied, membersOf, pathCommits) {
       const daysSince = lastCommit === null ? Infinity : (Date.parse(asOf) - Date.parse(lastCommit)) / 86400000;
       // asOf is the ref's own author date. An ancestor normally has an earlier or equal author date, so a last commit
       // after asOf only appears with clock skew or a hand-set date. It is counted as active, not rejected.
-      return { author: a.author, mail: a.mail, lines: a.lines, lineShare: a.lineShare, linesWithBlank: a.linesWithBlank ?? a.lines, shareWithBlank: a.shareWithBlank ?? a.lineShare, commits: a.commits, lastCommit, active: daysSince <= INACTIVE_AFTER_DAYS, ...(a.addresses ? { addresses: a.addresses } : {}) };
+      return { author: a.author, mail: a.mail, lines: a.lines, lineShare: a.lineShare, linesWithBlank: a.linesWithBlank ?? a.lines, shareWithBlank: a.shareWithBlank ?? a.lineShare, commits: a.commits, lastCommit, lastAnywhere: lastCommits[a.mail] ?? null, active: daysSince <= INACTIVE_AFTER_DAYS, ...(a.addresses ? { addresses: a.addresses } : {}) };
     });
   const lastOf = new Map(authors.map((a) => [a.mail, a]));
   /** @type {Map<string, { author: string, mails: string[], lines: number, lineShare: number, linesWithBlank: number, shareWithBlank: number, lastCommit: string | null, active: boolean }>} */
@@ -2858,6 +2874,9 @@ export async function analyse(o) {
   const groupAcc = main.groupAcc;
 
   const logArgs = ["log", "--no-merges", "--format=%aE%x09%aN", o.ref];
+  // G13: the commit counts of a single-file path view follow the file across renames, as the dates of the view do.
+  const pathViewTarget = o.reviewers ?? o.history;
+  if (pathViewTarget !== undefined && (await isFileAtRef(o, pathViewTarget))) logArgs.splice(2, 0, "--follow");
   if (o.since) logArgs.push(`--since=${o.since}`);
   if (o.until) logArgs.push(`--until=${o.until}`);
   logArgs.push("--", ...o.paths);
@@ -3049,15 +3068,15 @@ export async function analyse(o) {
   // R10-3 and R10-2 read the run's own blame counts, with the names and merges the table uses.
   const nameOf = new Map([...authors].map(([mail, a]) => [mail, a.name]));
   const ownerMerge = o.mergeIdentities ? canonicalOf : new Map();
+  const lastCommits = await readLastCommits(o, rows, membersOf);
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
-  const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
+  const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits, lastCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
   const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history), fileOwners };
   const skipShas = new Set([...ignoredByUser, ...(applied ? suspects.map((x) => x.sha) : []), ...strongRewrites.map((c) => c.sha)]);
   const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
-  const lastCommits = await readLastCommits(o, rows, membersOf);
   return {
     ref: o.ref,
     sort: o.sort,
@@ -3613,16 +3632,16 @@ export function renderReviewers(r, top) {
   const { pool, both } = listRows(v.authors, top);
   const shown = pool.slice(0, top);
   const nameW = Math.max(6, ...shown.map((a) => displayWidth(label(a))));
-  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}  ${"commits".padStart(7)}  ${"last commit".padEnd(11)}  activity`;
+  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}  ${"commits".padStart(7)}  ${"last commit".padEnd(11)}  ${"last anywhere".padEnd(13)}  activity`;
   lines.push(head);
   lines.push("-".repeat(displayWidth(head)));
   for (const a of shown) {
-    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${(a.lastCommit ?? "-").padEnd(11)}  ${a.active ? "active" : "inactive"}`);
+    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${(a.lastCommit ?? "-").padEnd(11)}  ${(a.lastAnywhere ?? "-").padEnd(13)}  ${a.active ? "active" : "inactive"}`);
   }
   if (pool.length > top) lines.push(`… ${pool.length - top} more author${pool.length - top === 1 ? "" : "s"}`);
   const topLine = topAuthorLine(r);
   if (topLine) lines.push(topLine);
-  lines.push(`rows are ordered by surviving lines; the last commit date and the active marker (a commit in the ${v.inactiveAfterDays} days before ${v.asOf}) are information and do not change the order.`);
+  lines.push(`rows are ordered by surviving lines; the last commit date (at this path) and the active marker (a commit at this path in the ${v.inactiveAfterDays} days before ${v.asOf}) are information and do not change the order. "last anywhere" is the newest commit in the whole repository: a person with an old date at the path and a recent one there has left the path, not the project.`);
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus, "");

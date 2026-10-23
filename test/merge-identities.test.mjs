@@ -95,7 +95,7 @@ test("the reviewers view merges a person's addresses, takes the newest commit of
     assert.equal(ada.addresses, 2);
     assert.equal(ada.lastCommit, "2026-01-11", "the laptop address committed a day after the desktop one");
     assert.deepEqual(reviewers.suggested[0].mails, ["ada@example.com", "ada@laptop.example.org"]);
-    assert.match(renderReviewers(r, 5), /^Ada \(2 addresses\) +20 +55\.6% +2 +2026-01-11 +active$/m);
+    assert.match(renderReviewers(r, 5), /^Ada \(2 addresses\) +20 +55\.6% +2 +2026-01-11 +2026-01-11 +active$/m);
   });
 });
 

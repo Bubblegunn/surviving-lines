@@ -57,7 +57,7 @@ test("G1: --reviewers has the with-blank columns, the top sentence and the blank
   await withRepo(async (dir) => {
     const r = await analyse(parseArgs(["--cwd", dir, "--reviewers", "src"]));
     const text = renderReviewers(r, 5);
-    assert.match(text, /author\s+lines\s+share\s+with blank\s+share\s+commits\s+last commit\s+activity/);
+    assert.match(text, /author\s+lines\s+share\s+with blank\s+share\s+commits\s+last commit\s+last anywhere\s+activity/);
     assert.match(text, /^Cy\s+5\s+31\.3%\s+35\s+72\.9%\s+1\s+/m);
     const lines = text.split("\n");
     assert.equal(lines[lines.findIndex((l) => l.startsWith("Cy ")) + 1], TOP);
