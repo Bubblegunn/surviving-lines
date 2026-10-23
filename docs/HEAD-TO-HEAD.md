@@ -1168,3 +1168,19 @@ Written and committed on 2026-10-23 before the first scored run of this round. N
 **Safety.** Rival arms run only from `git archive` copies. `guard.sh` hashes the `hooks` object of `~/.claude/settings.json` and the `mcpServers` object of `~/.claude.json` before and after every competitor run; a change stops the round. Vaara is never run. No checkout, restore, stash, reset or clean in a working tree; the held-out branch was created with git plumbing from a staging folder.
 
 **Result wording.** The single result sentence names, for each of I1 and I2 and each set, the number of tasks, the rivals, the models, the date, the path (Claude Code CLI 2.1.308 on the owner's subscription login) and the list-price total, and states that no cell was reused.
+
+## Round 12 stopped: isolation breach (2026-10-23, 19:50)
+
+Written after the round 12 driver was stopped. Round 12 (protocol frozen in `c0e37a5`) produced no valid measurement and no claim is made from it. Nothing in the frozen protocol above is changed.
+
+**What happened.** Every run cell of round 12 was started with its working directory under `/Users/efe/claude-kredi-runs/2026-10-23/r12/`. Claude Code reads `<ancestor>/.claude/CLAUDE.md` as project instructions for every ancestor of the working directory, so each run cell loaded the owner's global `/Users/efe/.claude/CLAUDE.md` (a commit-message format rule, a terse "caveman" answer style and a command-output filter) even though the wrapper's isolated `HOME` kept the owner's settings, skills and plugins out. The cells then read the owner's caveman skill file. This was found by another controller (`ISOLATION-WARNING-from-product-engineer.md`) and confirmed on the public cell `T4i-ours-1`. It affects every arm of every set equally in kind, but not in size: the answer style and the extra reading change what each arm writes and costs, so the cells are not clean runs of the arms.
+
+**Which cells.** All run cells of round 12: HELD-OUT f, 90 of 90 cells (runs 1 to 3, six arms, five tasks), and PUBLIC, 85 finished cells of 189 (T1, T1i, T2, T4, T4i complete for runs 1 to 3, T3 partly, E1 to E5 partly) when the driver was stopped at 19:50. The grader calls ran under a temporary directory outside `/Users/efe` and are not affected. The wrapper now refuses any call whose working directory is below `/Users/efe`.
+
+**What is recorded.** HELD-OUT f was graded with the frozen five-call method (no `err` criterion, no reverse pass). Totals of 25: base 16.00, ppi 15.00, ours 14.00, pp 14.00, hist 11.33, bf 11.33. This result is recorded as it came out but it is **not a valid measurement of any arm**, neither for nor against the product, and I1 is not evaluated on it. Public grading, F6 and F9 were not run. The public cells that finished were not graded.
+
+**Held-out status.** The set f was written for this round, its totals were seen by the controller, and its cells were run: **f is no longer held-out** and cannot be used as a held-out set again. Its fixtures, tasks and truth files stay on the local branch `heldout-2026-10-f` (`f1199be`, not pushed).
+
+**Other events of the round.** A session limit stopped the driver at 11:59 during run 3 of f: the 30 cells of that run number were set aside unused (`set-aside/F`, never graded) and re-run after the reset; a restart at 14:31 did not start; a restart at 19:31 stopped wrongly because the driver read the old limit messages of the set-aside cells and was fixed by moving them away. Cost of the contaminated runs and the f grading is logged in the wrapper's ledger (list price).
+
+**Evidence kept.** The raw round folder `~/claude-kredi-runs/2026-10-23/r12/` (run logs, grader replies, drive log) is kept unchanged and is not published as an evidence folder, because no result is claimed. The next surviving-lines round starts with clean isolation: all work directories under `/private/tmp`, no `CLAUDE.md` in any ancestor.
