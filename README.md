@@ -250,6 +250,7 @@ line of the table prints.
 --merge-identities   count the suggested same-person addresses as one, in memory (nothing written)
 --bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach (default: 50)
 --active-days <n>    an author is active with a commit in the n days before the ref's commit date (default: 365)
+--orphans            list up to 30 orphaned files: top owner inactive and nobody active holds 20% of the file
 --reviewers <path>   list who should review a file or directory
 --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -400,7 +401,9 @@ What the check does not recognise:
 - A commit that adds, deletes or renames files, or changes more than 1000 files, is not judged.
 - It is a heuristic. A listed commit is a suspect, not proof; read it with `git show <id>` before ignoring it.
 
-## Who is still active
+## Who is still active, and what if someone leaves
+
+Under the table (and under `--files`, `--reviewers` and `--history`) one line says how much of the code belongs to people who have stopped committing: `as of 2026-03-10: 2 of 3 authors committed in the last 365 days and hold 40.0% of the non-blank lines; 60.0% of the lines belong to people with no commit in that time`. The window is counted back from the date of the ref's commit, not from today, so the same repository gives the same answer on any day. A commit anywhere in the repository counts, under the name and address `.mailmap` gives it; bots are left out. `--active-days <n>` changes the window. The line is not printed when everyone is active. JSON: `activity`.
 
 ## Bus factor
 

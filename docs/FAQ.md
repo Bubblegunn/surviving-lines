@@ -42,9 +42,9 @@ Run `npx surviving-lines --merge-identities`. It counts the addresses that the i
 
 `npx surviving-lines --reviewers <path>` lists the authors of one file or directory, most surviving lines first, with their lines and commits under that path, the date of their newest commit there, and whether they were active in the year before the ref's date. The `suggested` line names up to three of them, active ones first. It is a starting point. Who wrote the code that is left is not always who should review the next change to it. Under the table a `top:` line gives the top author with the non-blank and the blank-inclusive count; the same line is printed by the default view and by `--history`.
 
-## Who is still active?
+## Who is still active, and which code has nobody left?
 
-The line `as of <date>: k of n authors committed in the last 365 days and hold x% of the non-blank lines; y% of the lines belong to people with no commit in that time` is printed under the table, `--files`, `--reviewers` and `--history` whenever someone has stopped committing. The window ends at the date of the ref's commit, so the answer does not change from day to day; `--active-days <n>` changes its length.
+The line `as of <date>: k of n authors committed in the last 365 days and hold x% of the non-blank lines; y% of the lines belong to people with no commit in that time` is printed under the table, `--files`, `--reviewers` and `--history` whenever someone has stopped committing. The window ends at the date of the ref's commit, so the answer does not change from day to day; `--active-days <n>` changes its length. `--files` and `--reviewers <dir>` also print an `orphaned` line: files whose top owner is inactive and where no active author holds 20% of the lines. `--orphans` lists them. An orphaned file is a risk to look at, not a verdict: the owner may have moved to other work and still answer questions.
 
 ## What does bus factor mean here?
 

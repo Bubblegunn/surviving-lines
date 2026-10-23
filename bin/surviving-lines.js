@@ -107,7 +107,10 @@ Measure who wrote the code that is still alive in a git ref.
   --files [n]          one row per file, largest first, n rows (default 25): lines, top owner and share, next two owners,
                        then a summary line. Not with --group-by, --csv, --markdown, --identities, --reviewers, --history
   --active-days <n>    an author is active with a commit in the n days before the ref's commit date (default: 365). Used by the line
-                       under the table (as of <date>: k of n authors committed ...; nothing is printed when everyone is active)
+                       under the table (as of <date>: k of n authors committed ...; nothing is printed when everyone is active),
+                       --orphans, and the orphaned line of --files and --reviewers
+  --orphans            list up to 30 orphaned files (top owner inactive, nobody active holds 20% of the file) with owner, lines
+                       and the owner's last commit; not with --history, --group-by, --csv, --markdown, --identities
   --reviewers <path>   list who should review a file or directory: lines, commits, last commit, and whether active
   --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -140,7 +143,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, activeDays: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, activeDays: number, orphans: boolean, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -148,7 +151,7 @@ groupBy?: string, files?: number, activeDays: number, reviewers?: string, histor
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, activeDays: ACTIVE_DAYS_DEFAULT, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -172,6 +175,7 @@ export function parseArgs(argv) {
     else if (a === "--group-by") { o.groupBy = next(); parseGroupBy(o.groupBy); }
     else if (a === "--files") { o.files = 25; if (/^\d+$/.test(argv[i + 1] ?? "")) { o.files = Number(argv[++i]); if (o.files < 1) throw new Error("--files must be an integer >= 1"); } }
     else if (a === "--active-days") { o.activeDays = Number(next()); if (!Number.isInteger(o.activeDays) || o.activeDays < 1) throw new Error("--active-days must be an integer >= 1"); }
+    else if (a === "--orphans") o.orphans = true;
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
     else if (a === "--suggest-codeowners") o.suggestCodeowners = true;
@@ -215,6 +219,10 @@ export function parseArgs(argv) {
   if (o.files !== undefined) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.coAuthors === "share" ? "--co-authors share" : null;
     if (clash) throw new Error(`--files prints its own view; it cannot be combined with ${clash}`);
+  }
+  if (o.orphans) {
+    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.history !== undefined ? "--history" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
+    if (clash) throw new Error(`--orphans lists files under the table, --files or --reviewers; it cannot be combined with ${clash}`);
   }
   if (o.suggestCodeowners && grouping?.kind !== "dir") throw new Error("--suggest-codeowners needs --group-by dir or dir:<n>");
   if (grouping && (o.csv || o.markdown || o.identities)) throw new Error("--group-by prints the table or --json; it cannot be combined with --csv, --markdown or --identities");
@@ -2200,6 +2208,12 @@ export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
 
 /** G11: the default activity window, in days before the ref's commit date (--active-days). */
 const ACTIVE_DAYS_DEFAULT = 365;
+/** G11b: a file is orphaned only when no active author holds at least this share of its non-blank lines. */
+const ORPHAN_ACTIVE_MIN_SHARE = 0.2;
+/** G11b: this many orphaned files are named in the one-line summary. */
+const ORPHAN_NAMED = 5;
+/** G11b: --orphans lists this many files (the JSON carries the same list). */
+const ORPHAN_LISTED = 30;
 /**
  * G11: one entry per person (rows with the same folded name are one person, as the owner lists treat them) with the
  * newest commit anywhere in the repository and whether that commit is inside the window. The window is counted back
@@ -2262,6 +2276,92 @@ export function activityOf(people, asOf, activeDays) {
 export function activityLine(a) {
   if (!a || a.activeAuthors >= a.authors) return null;
   return `as of ${a.asOf}: ${a.activeAuthors} of ${a.authors} author${a.authors === 1 ? "" : "s"} committed in the last ${a.activeDays} days and hold ${pct(a.activeShare)} of the non-blank lines; ${pct(a.inactiveShare)} of the lines belong to people with no commit in that time`;
+}
+
+/**
+ * The owners of one file with the people folded: two addresses under one name are one person, as in fileOwnersOf.
+ * @param {Map<string, { name: string, lines: number, fullName?: string }>} counts
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Map<string, string>} nameOf
+ */
+function foldedOwners(counts, includeBots, canonicalOf, nameOf) {
+  const f = ownersOfFile(counts, includeBots, canonicalOf, nameOf);
+  /** @type {Map<string, { name: string, lines: number }>} */
+  const byPerson = new Map();
+  for (const ow of f.owners) {
+    const key = foldIdentity(ow.name);
+    const p = byPerson.get(key) ?? { name: ow.name, lines: 0 };
+    p.lines += ow.lines;
+    byPerson.set(key, p);
+  }
+  const owners = [...byPerson].map(([key, p]) => ({ key, ...p })).sort((x, y) => y.lines - x.lines || x.name.localeCompare(y.name));
+  return { lines: f.lines, owners };
+}
+
+/**
+ * G11b: files whose top owner is not active and where no active author holds at least 20% of the lines. Lines are
+ * the non-blank lines of the run. The idea of an orphan share comes from the same question in other tools; the rule
+ * here is this tool's own.
+ * @param {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} perFile
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Map<string, string>} nameOf
+ * @param {Map<string, { author: string, lines: number, lastCommit: string | null, active: boolean }>} people
+ */
+export function orphansOf(perFile, includeBots, canonicalOf, nameOf, people) {
+  let scopeLines = 0;
+  /** @type {{ path: string, owner: string, lines: number, ownerShare: number, ownerLastCommit: string | null }[]} */
+  const found = [];
+  for (const [path, counts] of perFile) {
+    const f = foldedOwners(counts, includeBots, canonicalOf, nameOf);
+    if (f.lines <= 0 || !f.owners.length) continue;
+    scopeLines += f.lines;
+    const top = f.owners[0];
+    if (people.get(top.key)?.active) continue;
+    if (f.owners.some((ow) => people.get(ow.key)?.active && ow.lines / f.lines >= ORPHAN_ACTIVE_MIN_SHARE)) continue;
+    found.push({ path, owner: top.name, lines: f.lines, ownerShare: top.lines / f.lines, ownerLastCommit: people.get(top.key)?.lastCommit ?? null });
+  }
+  found.sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
+  const lines = found.reduce((s, f) => s + f.lines, 0);
+  return {
+    scopeLines,
+    scopeFiles: perFile.size,
+    files: found.length,
+    lines,
+    lineShare: scopeLines ? lines / scopeLines : 0,
+    minActiveShare: ORPHAN_ACTIVE_MIN_SHARE,
+    items: found.slice(0, ORPHAN_LISTED),
+  };
+}
+
+/**
+ * The one-line orphan summary of --files and --reviewers.
+ * @param {ReturnType<typeof orphansOf> | null | undefined} orphans
+ */
+export function orphansLine(orphans) {
+  if (!orphans) return null;
+  const head = `orphaned (top owner inactive, nobody active holds ${Math.round(orphans.minActiveShare * 100)}%+)`;
+  if (!orphans.files) return `${head}: none`;
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const named = orphans.items.slice(0, ORPHAN_NAMED).map((f) => `${f.path} (${f.owner}, ${n(f.lines)} lines)`);
+  return `${head}: ${n(orphans.files)} file${orphans.files === 1 ? "" : "s"}, ${pct(orphans.lineShare)} of the lines; largest: ${named.join(", ")}`;
+}
+
+/**
+ * The --orphans listing: up to 30 files with owner, lines and the owner's last commit.
+ * @param {ReturnType<typeof orphansOf> | null | undefined} orphans
+ * @returns {string[]}
+ */
+export function orphanListLines(orphans) {
+  if (!orphans || !orphans.files) return [];
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const out = [`orphaned files, largest first (${n(Math.min(orphans.files, orphans.items.length))} of ${n(orphans.files)}); "last commit" is the owner's newest commit anywhere in the repository`];
+  const pathW = Math.max(4, ...orphans.items.map((f) => displayWidth(f.path)));
+  const ownerW = Math.max(5, ...orphans.items.map((f) => displayWidth(f.owner)));
+  for (const f of orphans.items) out.push(`${padEndDisplay(f.path, pathW)}  ${padEndDisplay(f.owner, ownerW)}  ${n(f.lines).padStart(7)} lines  last commit ${f.ownerLastCommit ?? "none found"}`);
+  if (orphans.files > orphans.items.length) out.push(`… ${n(orphans.files - orphans.items.length)} more`);
+  return out;
 }
 
 /** G12: a commit is named when at least this many of its lines survive in the scope and its committer is someone else than its author. */
@@ -3023,6 +3123,9 @@ export function renderFiles(r) {
   if (sum) out.push(`files: ${n(sum.total)}; one owner above 80% in ${n(sum.oneOwnerAbove80Percent)}; no owner above 50% in ${n(sum.noOwnerAbove50Percent)}`);
   const activeLine = activityLine(r.activity);
   if (activeLine) out.push(activeLine);
+  const orphanLine = orphansLine(r.orphans);
+  if (orphanLine) out.push(orphanLine);
+  if (r.orphans?.requested) out.push("", ...orphanListLines(r.orphans));
   const notes = scopeNotes(r);
   if (notes.length) out.push("", ...notes);
   out.push("");
@@ -3386,6 +3489,7 @@ export async function analyse(o) {
   const asOfDay = await refDay(o);
   const people = peopleActivity(rows, lastCommits, asOfDay, o.activeDays);
   const activity = activityOf(people, asOfDay, o.activeDays);
+  const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits, lastCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
@@ -3427,6 +3531,7 @@ export async function analyse(o) {
     sameAddress,
     lastCommits,
     activity,
+    orphans: orphanScope && { requested: o.orphans, ...orphanScope },
     committedByOthers: committedElsewhere,
     reappliedCredit: reapplied,
     reviewers,
@@ -3932,6 +4037,7 @@ export function renderTable(r, top) {
   if (activeLine) lines.push(activeLine);
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
+  if (r.orphans?.requested) lines.push("", orphansLine(r.orphans) ?? "", ...orphanListLines(r.orphans));
   const notes = scopeNotes(r);
   if (notes.length) lines.push("", ...notes);
   lines.push("");
@@ -3988,6 +4094,9 @@ export function renderReviewers(r, top) {
   }
   const activeLine = activityLine(r.activity);
   if (activeLine) lines.push(activeLine);
+  const orphanLine = orphansLine(r.orphans);
+  if (orphanLine) lines.push(orphanLine);
+  if (r.orphans?.requested) lines.push("", ...orphanListLines(r.orphans));
   const owned = fileOwnersLines(v.path, v.fileOwners);
   if (owned.length) lines.push("", ...owned);
   const notes = scopeNotes(r, { view: v });

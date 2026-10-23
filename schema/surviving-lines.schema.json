@@ -538,6 +538,38 @@
         }
       }
     },
+    "orphans": {
+      "type": ["object", "null"],
+      "description": "Files whose top owner is inactive (see activity) and where no active author holds at least minActiveShare of the file's non-blank lines. Null under --co-authors share. The scope is the files of the run (the path under --reviewers).",
+      "additionalProperties": false,
+      "required": ["requested", "scopeLines", "scopeFiles", "files", "lines", "lineShare", "minActiveShare", "items"],
+      "properties": {
+        "requested": { "type": "boolean", "description": "True when --orphans was given: the text view then lists the items." },
+        "scopeLines": { "type": "number", "description": "Non-blank lines in the files counted." },
+        "scopeFiles": { "type": "integer", "minimum": 0 },
+        "files": { "type": "integer", "minimum": 0, "description": "How many files are orphaned." },
+        "lines": { "type": "number", "description": "Non-blank lines in the orphaned files." },
+        "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+        "minActiveShare": { "type": "number", "description": "0.2: an active author holding at least this share of a file keeps it from being orphaned." },
+        "items": {
+          "type": "array",
+          "description": "The thirty largest orphaned files.",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "owner", "lines", "ownerShare", "ownerLastCommit"],
+            "properties": {
+              "path": { "type": "string" },
+              "owner": { "type": "string", "description": "The top owner of the file." },
+              "lines": { "type": "number" },
+              "ownerShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "ownerLastCommit": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
     "reappliedCredit": {
       "type": "object",
       "description": "Blamed commits that re-apply a reverted change (a revert of a revert) or are `git cherry-pick -x` copies of another author's commit, and still hold surviving lines. Their lines are credited to the author of the original commit. Absent from the counts when --no-reapply-credit is given.",
