@@ -1123,3 +1123,14 @@ Written and committed before the first F9 call. The F6 re-runs (28 cells, subscr
 **Best rival per task** (fixed from the Sonnet means in `out-E` and `out-P` before any F9 call): HE1 pp, HE2 bf, HE3 pp, HE4 ppi, HE5 hist, T1 bf, T2 ppi, T3 pp, T4 ppi, T1i bf, T4i ppi, E1 pp, E2k hist, E3 pp, E4h bf, E5 bf.
 
 **What changes.** The dollar gates of the F9 paragraph (Haiku only at a logged total of at most 17.5 USD, Opus only at most 7.0 USD) were written for the promotional credit and do not apply on the subscription. Rule B per model is reported, and I1-style totals per model are reported descriptively (one run per task, so no bootstrap interval and no claim of being first). A model step cut by a usage limit is reported as not completed and not claimed. Result wording: "F9, one run per task on the Claude Code CLI path (subscription)".
+
+
+## Round 11 F6b: grader reproducibility audit (registered 2026-10-23 after F6 failed, before any F6b call)
+
+Written and committed before the first F6b call. The F6 result stays reported as failed (7 of 26 comparable cells differ by more than one point, 2 cells not comparable); it is not re-scored and nothing below replaces it. F6 re-ran the agent and graded the new answer alone, so its disagreement mixes agent variance and grader variance. F6b separates them. No new claim is made from F6b.
+
+**F6b-1 (grader).** The same 28 sampled cells (`f6-sample.json`, `random.Random(20261023)`), the ORIGINAL answers of this round (no agent re-run), graded again by fresh grader sessions with the unchanged grader prompt form. The grading unit is the original one: all arms of the cell's task and run number are graded together, answers labelled in the same shuffled order (`random.Random("<task>-<n>-gate")`), so the comparison is like for like (20 grading units cover the 28 cells). Three calls per unit, the same majority rule (two valid votes), the same re-ask passes (at most three further), `claude-sonnet-5-5`, subscription CLI path, parallelism 3. Reported: per-criterion agreement with the original verdicts on the 28 sampled cells, and every cell whose score differs by more than one point. A criterion that stays `err` in either grading counts as a disagreement and as not passed in the cell score; the reverse-order pass is not run. **Pass condition, fixed now:** no sampled cell differs by more than one point and the criterion agreement is at least 90%. The result is reported whatever it is.
+
+**F6b-2 (runs, descriptive only, no new calls).** For each of the 26 comparable F6 re-runs, whether the re-run score lies within the minimum and maximum of that cell's three original runs (for a reused rival cell, its three round 8 runs); the count is reported. It carries no pass condition.
+
+**Not done.** No recomputation of I1 or I2 with the F6 cells included or excluded; no other claim is added.
