@@ -190,3 +190,58 @@ test("S3: a history too long for the file count turns -C off and prints the note
     },
   );
 });
+
+test("S4: isBotIdentity recognises the bot names and addresses of the sweep", () => {
+  const { isBotIdentity } = mod;
+  const bots = [
+    ["jekyllbot", "jekyllbot@example.org"],
+    ["vue-bot", "bot@example.org"],
+    ["vue-bot", "someone@example.org"],
+    ["StepSecurity Bot", "int-bot@example.org"],
+    ["StepSecurity Bot", "x@example.org"],
+    ["Release Bot", "release@example.org"],
+    ["ZodBot", "zod@example.org"],
+    ["bot", "x@example.org"],
+    ["Copybara-Service", "copybara-worker@example.org"],
+    ["Acme Copybara Service", "worker@example.org"],
+    ["Some-Service", "svc@example.org"],
+    ["Frankenstein", "frankensteinbot@example.org"],
+    ["Frankenstein", "42+frankensteinbot@users.noreply.example.org"],
+    ["dependabot[bot]", "x@example.org"],
+  ];
+  for (const [name, mail] of bots) assert.equal(isBotIdentity(name, mail), true, `${name} <${mail}>`);
+});
+
+test("S4: isBotIdentity keeps people whose names or addresses only look like a bot", () => {
+  const { isBotIdentity } = mod;
+  const people = [
+    ["Bot Hawkins", "bot.hawkins@example.org"],
+    ["Botticelli", "botticelli@example.org"],
+    ["Talbot", "talbot@example.org"],
+    ["Abbot Smith", "abbot@example.org"],
+    ["Elbot", "elbot@example.org"],
+    ["Robotnik", "robotnik@example.org"],
+    ["Jane Service", "jane@example.org"],
+    ["Ann Abbot", "ann.abbot@example.org"],
+    ["Ann", "talbot@example.org"],
+    ["Ann", "abbot@example.org"],
+    ["Ann", "dabbot@example.org"],
+    ["jekyllbot2", "jekyllbot2@example.org"],
+    ["jekyllbot", "other@example.org"],
+  ];
+  for (const [name, mail] of people) assert.equal(isBotIdentity(name, mail), false, `${name} <${mail}>`);
+});
+
+test("S4: a widened bot name is excluded from the shares and counted in the exclusion line", async () => {
+  await withRepo(
+    (dir) => {
+      commitAsIdentity(dir, ANN, DATE, "a", { "a.js": lines("a", 5) });
+      commitAsIdentity(dir, ["Release Bot", "rel@example.org"], DATE, "b", { "b.js": lines("b", 4) });
+    },
+    async (dir) => {
+      const r = await analyse(parseArgs(["--cwd", dir]));
+      assert.deepEqual(r.authors.map((a) => a.author), ["Ann"]);
+      assert.equal(r.bots.excluded.length, 1);
+    },
+  );
+});

@@ -347,13 +347,28 @@ const BOT_MAIL_PATTERNS = [/^(?:\d+)?[^@]+\[bot\]@users\.noreply\.github\.com$/i
   /^(?:hosted|noreply|no-reply|bot|translations?)@(?:hosted\.)?weblate\.org$/i, /^(?:noreply|no-reply|support|bot|translations?)@(?:crowdin|transifex|lokalise)\.(?:com|co)$/i, /^(?:github-actions|action)@github\.com$/i];
 
 /**
- * True for an identity that is a bot by name or by address: a name that ends in "[bot]", or one
- * of BOT_MAIL_PATTERNS. Nothing cleverer: a person called "Bot Hawkins" or "Botticelli" is a person.
+ * True for an identity that is a bot by name or by address:
+ * - a name that ends in "[bot]";
+ * - a name whose last word is "bot" ("Release Bot", "vue-bot", "bot") or that ends in a capital "Bot" after a
+ *   lower-case letter or digit ("ZodBot");
+ * - a lower-case name of 7 or more letters that ends in "bot" and is also the address's local part ("jekyllbot",
+ *   `jekyllbot@example.org`);
+ * - an address whose local part is 8 or more letters and ends in "bot" (`frankensteinbot@example.org`);
+ * - a name that ends in "-Service", or in " Service" with the word "copybara" in it ("Copybara-Service");
+ * - one of BOT_MAIL_PATTERNS.
+ * Nothing cleverer: a person called "Bot Hawkins", "Botticelli", "Talbot", "Abbot Smith", "Elbot" or "Robotnik" is a person.
  * @param {string} name
  * @param {string} mail
  */
 export function isBotIdentity(name, mail) {
-  return /\[bot\]$/i.test(name.trim()) || BOT_MAIL_PATTERNS.some((re) => re.test(mail));
+  const n = name.trim();
+  if (/\[bot\]$/i.test(n) || BOT_MAIL_PATTERNS.some((re) => re.test(mail))) return true;
+  if (/(?:^|[\s_-])bot$/i.test(n) || /[a-z0-9]Bot$/.test(n)) return true;
+  // The part of the address before "@", without the numeric id GitHub puts before a "+".
+  const local = (mail.split("@")[0] ?? "").replace(/^\d+\+/, "");
+  if (/^[a-z]{4,}bot$/.test(n) && n === local.toLowerCase()) return true;
+  if (/^[a-z]{5,}bot$/i.test(local)) return true;
+  return /-Service$/i.test(n) || (/ Service$/i.test(n) && /copybara/i.test(n));
 }
 
 /**
