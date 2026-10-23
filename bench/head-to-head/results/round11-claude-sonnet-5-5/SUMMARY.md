@@ -315,7 +315,7 @@ Held-out e: three votes equal on 81.8% of criteria; public: 94.6%. The public ra
 
 ## Payer
 
-Held-out e runs (90) and public ours runs (33): API organization key named key_2, Agent SDK path. Held-out e grading: key_2 (43 calls) and test_key (6 calls). Public grading (105 calls), F6 (154 calls), F6b-1, F9 (201 calls): the owner's Claude Code subscription; the dollar figures shown for them are the CLI's list-price estimate, not billed to a key. Keys are never written in this folder.
+Held-out e runs (90) and public ours runs (33): API organization key named key_2, Agent SDK path. Held-out e grading: key_2 (43 calls) and test_key (6 calls). Public grading (105 calls), F6 (154 calls), F6b-1 (64 calls), F9 (201 calls): the owner's Claude Code subscription; the dollar figures shown for them are the CLI's list-price estimate, not billed to a key. Keys are never written in this folder.
 
 ## Versions
 
