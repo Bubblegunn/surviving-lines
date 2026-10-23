@@ -20,6 +20,8 @@ The person committed from two email addresses, and git counts each address as an
 
 ## How do I stop a reformatting commit from taking over the lines it touched?
 
+A commit that only adds the same licence, copyright, SPDX or banner lines to three or more existing files is set aside the same way, with the reason `boilerplate` on the `mechanical rewrites checked` line; its lines are left out of the numbers. `--keep-reformat` counts it.
+
 surviving-lines already leaves a detected formatter commit out of the numbers. A commit whose changes are only whitespace or quote changes is not counted in the table, and the block under the table names it and gives the figures without the correction. To keep the commit out of blame for good, list it in a `.git-blame-ignore-revs` file at the repository root. surviving-lines reads that file by default and passes it to `git blame --ignore-revs-file`. With the file, the commit is not detected as a suspect, so no block is printed. `--ignore-revs-file <file>` names another file and `--no-ignore-revs` turns it off. It needs git 2.23 or newer, and the file is read from the working tree, not from the ref being analysed.
 
 ## Why is a commit named under the table as a reformat commit ignored?

@@ -491,6 +491,29 @@ export function dropBlankBlameLines(porcelain) {
 }
 
 /**
+ * Remove the entries of lines that the given commits hold from `git blame --line-porcelain` output. A boilerplate
+ * commit (the same header added to several files) adds lines that no earlier commit can take back, so ignoring the
+ * commit leaves them on it; they are left out of the count instead. Each entry starts with the commit id.
+ * @param {string} porcelain
+ * @param {Set<string>} shas full commit ids
+ * @returns {string}
+ */
+export function dropBlameLinesOf(porcelain, shas) {
+  if (!shas.size) return porcelain;
+  const lines = porcelain.split("\n");
+  /** @type {string[]} */
+  const kept = [];
+  let start = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith("\t")) continue;
+    if (!shas.has(lines[start].split(" ")[0])) for (let j = start; j <= i; j++) kept.push(lines[j]);
+    start = i + 1;
+  }
+  for (let j = start; j < lines.length; j++) kept.push(lines[j]);
+  return kept.join("\n");
+}
+
+/**
  * Parse `git blame --line-porcelain` output into a map of author-mail -> line count.
  * With --line-porcelain every line repeats its commit headers, so a simple scan works.
  * @param {string} porcelain
@@ -1247,8 +1270,9 @@ async function resolveUserRevs(o, versionOutput) {
  * @param {string[]} blameArgs
  * @param {{ kind: "dir", depth: number } | { kind: "ext" } | null} grouping
  * @param {{ write(text: string): unknown } | null} progress where progress lines go, or null for none
+ * @param {Set<string>} [leaveOut] commits whose lines are left out of every count (boilerplate commits)
  */
-async function blamePass(o, sampled, blameArgs, grouping, progress) {
+async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = new Set()) {
   /** @type {Map<string, { name: string, lines: number, commits: number, withBlank?: number }>} */
   const authors = new Map();
   let attributed = 0;
@@ -1284,7 +1308,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
     while (cursor < sampled.length) {
       const idx = cursor++;
       const file = sampled[idx];
-      const raw = await git([...blameArgs, o.ref, "--", file.path], o.cwd);
+      const raw = dropBlameLinesOf(await git([...blameArgs, o.ref, "--", file.path], o.cwd), leaveOut);
       const out = dropBlankBlameLines(raw);
       // R9-13: the size with its blank lines, stated beside the non-blank size.
       file.withBlank = (raw.match(/^filename /gm) ?? []).length;
@@ -1368,11 +1392,12 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
  * @param {{ path: string, lines: number }[]} sampled
  * @param {Map<string, Map<string, { name: string, lines: number }>>} copiedFiles the files the -C pass credited to another path, with its counts
  * @param {string[]} blameArgs the arguments of the pass that gave copiedFiles
+ * @param {Set<string>} [leaveOut] the commits that pass left out
  * @returns {Promise<{ files: number, delta: Map<string, { name: string, lines: number }> } | null>} lines with copy detection minus lines without, per address
  */
-async function copyShiftOf(o, sampled, copiedFiles, blameArgs) {
+async function copyShiftOf(o, sampled, copiedFiles, blameArgs, leaveOut = new Set()) {
   if (!copiedFiles.size) return null;
-  const plain = await blamePass(o, sampled.filter((f) => copiedFiles.has(f.path)), blameArgs.filter((a) => a !== "-C"), null, null);
+  const plain = await blamePass(o, sampled.filter((f) => copiedFiles.has(f.path)), blameArgs.filter((a) => a !== "-C"), null, null, leaveOut);
   /** @type {Map<string, { name: string, lines: number }>} */
   const delta = new Map();
   const add = (/** @type {string} */ mail, /** @type {string} */ name, /** @type {number} */ lines) => {
@@ -1752,6 +1777,59 @@ const MECHANICAL_TOOL_SUBJECT = /\b(?:fmt|gofmt|rustfmt|clang-format|scalafmt|au
 const MECHANICAL_EXTRA_SUBJECT = /\b(?:mix\s+format|dart\s+format|(?:cargo|go|terraform|ruff|biome|deno|dotnet|swift)\s+(?:fmt|format)|stylua|yapf|ktlint|spotless|swift-?format|php-cs-fixer|rubocop\s+(?:-a\b|-A\b|--auto-?correct)|blacken(?:ed)?|auto-?format\w*|auto-?fix\w*|lint\s+--fix|(?:apply|applied|applying)\s+(?:the\s+)?(?:code\s+)?format(?:ting|ter)?|(?:format|formatting)\s+(?:code|fixes|only|changes|source|files?|sources)|code\s+format(?:ting)?|fix(?:ed|es|ing)?\s+(?:code\s+)?(?:style|formatting|whitespace|indent(?:ation)?)|(?:style|whitespace)\s+(?:fix|fixes|only|cleanup|clean-up)|line[_\s-]length|(?:single|double)[-\s]quotes?|quote\s+style)\b|^(?:\w+(?:\([^)]*\))?!?:\s*)?(?:format|formatting|fmt|lint|linting|black|reformat|style)\s*(?:[.!]|$)/i;
 const MECHANICAL_SUBJECT = new RegExp(`${MECHANICAL_TOOL_SUBJECT.source}|${MECHANICAL_EXTRA_SUBJECT.source}`, "i");
 
+/** A boilerplate commit is read from its patch only when no file gains more than this many lines. */
+const BOILERPLATE_MAX_ADDED_PER_FILE = 200;
+/** A boilerplate commit touches at least this many files, and the same added text stands in at least this many of them. */
+const BOILERPLATE_MIN_FILES = 3;
+/** An added line that is licence, copyright or banner text. */
+const BOILERPLATE_LINE = /copyright|licen[sc]e|SPDX-License-Identifier|all rights reserved|permission is hereby granted|apache license|mit license|gnu general public/i;
+
+/**
+ * Whether a commit only adds the same boilerplate to several existing files, from its patch (`git log -p -U0`).
+ * Every file must be a change to an existing file that deletes nothing but blank lines and adds something. Then either
+ * the same added non-blank lines stand in at least three files and every other file adds licence text only, or every
+ * file adds licence, copyright, SPDX or banner text only. A commit that adds files is never boilerplate: a new file's
+ * header is part of the file.
+ * @param {string} patch the patch text of one commit
+ * @returns {boolean}
+ */
+export function isBoilerplatePatch(patch) {
+  /** @type {{ created: boolean, removed: boolean, delText: boolean, added: string[] }[]} */
+  const files = [];
+  let inHunk = false;
+  for (const line of patch.split("\n")) {
+    if (line.startsWith("diff --git ")) {
+      files.push({ created: false, removed: false, delText: false, added: [] });
+      inHunk = false;
+      continue;
+    }
+    const f = files[files.length - 1];
+    if (!f) continue;
+    if (!inHunk) {
+      if (line.startsWith("@@")) inHunk = true;
+      else if (line.startsWith("new file mode")) f.created = true;
+      else if (line.startsWith("deleted file mode")) f.removed = true;
+      else if (line.startsWith("Binary files") || line.startsWith("GIT binary patch")) f.removed = true;
+      continue;
+    }
+    if (line.startsWith("@@")) continue;
+    if (line.startsWith("+") && line.slice(1).trim() !== "") f.added.push(line.slice(1).trimEnd());
+    else if (line.startsWith("-") && line.slice(1).trim() !== "") f.delText = true;
+  }
+  if (files.length < BOILERPLATE_MIN_FILES) return false;
+  if (files.some((f) => f.created || f.removed || f.delText || !f.added.length)) return false;
+  const licence = files.map((f) => f.added.every((l) => BOILERPLATE_LINE.test(l)));
+  if (licence.every(Boolean)) return true;
+  /** @type {Map<string, number>} */
+  const bySignature = new Map();
+  for (const f of files) {
+    const sig = f.added.join("\n");
+    bySignature.set(sig, (bySignature.get(sig) ?? 0) + 1);
+  }
+  const [top, count] = [...bySignature].sort((x, y) => y[1] - x[1])[0];
+  return count >= BOILERPLATE_MIN_FILES && files.every((f, i) => f.added.join("\n") === top || licence[i]);
+}
+
 /**
  * The mechanical-rewrite check (R8-2): every commit that holds surviving lines is read once. A commit looks mechanical
  * when it touches at least 10 files with equal insertions and deletions in each, at most 3 lines per file, or when its
@@ -1763,7 +1841,7 @@ const MECHANICAL_SUBJECT = new RegExp(`${MECHANICAL_TOOL_SUBJECT.source}|${MECHA
  * @param {number} [ignoredByUser] the revisions the user ignored (--ignore-rev, an ignore-revs file); they hold no blamed line, so they are only counted
  * @param {GitRun} [run]
  * @param {{ sha: string, shortSha: string, subject: string, author: string, mail: string, survivingLines: number, filesChanged: number }[]} [proved] commits whose content proof passed and that were not set aside; they are listed with reason "content"
- * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" | "content", both?: boolean }[], setAsideCommits?: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" | "content" }[] } | null>}
+ * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" | "content" | "boilerplate", both?: boolean }[], setAsideCommits?: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" | "content" | "boilerplate" }[] } | null>}
  */
 export async function findMechanicalCandidates(o, blamedByCommit, setAside, ignoredByUser = 0, run = (args, opts) => git(args, o.cwd, opts), proved = []) {
   const total = blamedByCommit.size;
@@ -1776,7 +1854,7 @@ export async function findMechanicalCandidates(o, blamedByCommit, setAside, igno
   } catch {
     return null;
   }
-  /** @type {Map<string, { subject: string, files: number, small: boolean }>} */
+  /** @type {Map<string, { subject: string, files: number, small: boolean, plausible: boolean }>} */
   const facts = new Map();
   for (const chunk of out.split("\x1e")) {
     if (!chunk) continue;
@@ -1784,19 +1862,41 @@ export async function findMechanicalCandidates(o, blamedByCommit, setAside, igno
     const [sha, ...subject] = head.split("\x1f");
     let files = 0;
     let small = true;
+    let plausible = true;
     for (const line of rest) {
       const m = /^(\d+|-)\t(\d+|-)\t/.exec(line);
       if (!m) continue;
       files++;
       if (m[1] === "-" || m[1] !== m[2] || Number(m[1]) < 1 || Number(m[1]) > MECHANICAL_MAX_LINES_PER_FILE) small = false;
+      if (m[1] === "-" || Number(m[1]) < 1 || Number(m[1]) > BOILERPLATE_MAX_ADDED_PER_FILE) plausible = false;
     }
-    facts.set(sha, { subject: subject.join("\x1f"), files, small });
+    facts.set(sha, { subject: subject.join("\x1f"), files, small, plausible: plausible && files >= BOILERPLATE_MIN_FILES });
+  }
+  // Boilerplate: the patch is read only for commits that add a modest number of lines to at least three files.
+  /** @type {Set<string>} */
+  const boilerplate = new Set();
+  const toRead = [...facts].filter(([, f]) => f.plausible).map(([sha]) => sha);
+  if (toRead.length) {
+    try {
+      const patches = await run(["log", "--no-walk=unsorted", "-p", "-U0", "--no-renames", "--no-color", "--format=%x1e%H", "--stdin"], { input: `${toRead.join("\n")}\n` });
+      for (const chunk of patches.split("\x1e")) {
+        const nl = chunk.indexOf("\n");
+        if (nl > 0 && isBoilerplatePatch(chunk.slice(nl + 1))) boilerplate.add(chunk.slice(0, nl));
+      }
+    } catch {
+      // A patch that cannot be read leaves the commit as it was: not boilerplate.
+    }
   }
   /** @type {NonNullable<Awaited<ReturnType<typeof findMechanicalCandidates>>>["candidates"]} */
   const candidates = [];
   for (const [sha, b] of list) {
     const f = facts.get(sha);
     if (!f || setAside.has(sha)) continue;
+    if (boilerplate.has(sha)) {
+      // The same lines added to several existing files and nothing deleted: set aside like a reformat (internal flag `both`).
+      candidates.push({ sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, survivingLines: b.lines, filesChanged: f.files, reason: "boilerplate", both: true });
+      continue;
+    }
     const byFiles = f.files >= MECHANICAL_MIN_FILES && f.small;
     const bySubject = MECHANICAL_SUBJECT.test(f.subject);
     if (!byFiles && !bySubject) continue;
@@ -2673,11 +2773,12 @@ export async function analyse(o) {
   // formatter, lint fix or codemod named in the subject) is set aside the way a reformat is: its lines go back to the
   // people who wrote them before it. A commit with only one sign stays a named candidate that is not set aside.
   const strongRewrites = mechanicalCheck && detect && !o.keepReformat && o.coAuthors !== "share" && supportsIgnoreRevs(versionOutput) ? mechanicalCheck.candidates.filter((c) => c.both) : [];
+  const leaveOut = new Set(strongRewrites.filter((c) => c.reason === "boilerplate").map((c) => c.sha));
   if (applied || strongRewrites.length) {
     const ignored = [...(applied ? suspects.map((x) => ({ sha: x.sha, shortSha: x.shortSha })) : []), ...strongRewrites];
     for (const s of ignored) shownFlags.push("--ignore-rev", s.shortSha, "(auto)");
     mainArgs = [...blameArgs, ...ignored.flatMap((s) => ["--ignore-rev", s.sha])];
-    main = await blamePass(o, sampled, mainArgs, grouping, null);
+    main = await blamePass(o, sampled, mainArgs, grouping, null, leaveOut);
     if (applied) uncorrected = linesSummary(o, first.authors);
   }
   if (mechanicalCheck) {
@@ -2690,7 +2791,7 @@ export async function analyse(o) {
   }
   // Where copy detection credited lines to another path, the same files are blamed again without it, so the notes can
   // name who gained or lost. Only those files are blamed twice. Under --co-authors share the split is not a line count.
-  const copyShift = copyOn && o.coAuthors !== "share" ? await copyShiftOf(o, sampled, main.copiedFiles, mainArgs) : null;
+  const copyShift = copyOn && o.coAuthors !== "share" ? await copyShiftOf(o, sampled, main.copiedFiles, mainArgs, leaveOut) : null;
   const authors = main.authors;
   let attributed = main.attributed;
   const blamedByCommit = main.blamedByCommit;
@@ -3130,8 +3231,8 @@ export function mechanicalLine(r) {
   const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
   const scope = m.truncated ? `the ${n(m.examined)} largest of ${n(m.total)} commits` : `${n(m.examined)} commit${m.examined === 1 ? "" : "s"}`;
   const head = `mechanical rewrites checked: examined ${scope} holding surviving lines${m.truncated ? " (the rest were not examined)" : ""}, set aside ${n(m.setAside)}${m.ignoredByUser ? `, ignored by you ${n(m.ignoredByUser)}` : ""}`;
-  const one = (/** @type {{ shortSha: string, subject: string, author: string, survivingLines: number }} */ c) => `${c.shortSha} "${c.subject}" by ${c.author}, ${n(c.survivingLines)} surviving line${c.survivingLines === 1 ? "" : "s"}`;
-  const looked = m.setAsideCommits?.length ? `; rewrites looked through (the same small change in many files and a tool named in the subject; their lines go back to the people who wrote them before): ${m.setAsideCommits.slice(0, 5).map(one).join("; ")}` : "";
+  const one = (/** @type {{ shortSha: string, subject: string, author: string, survivingLines: number, reason?: string }} */ c) => `${c.shortSha} "${c.subject}" by ${c.author}, ${n(c.survivingLines)} surviving line${c.survivingLines === 1 ? "" : "s"}${c.reason === "boilerplate" ? ", boilerplate, its lines left out" : ""}`;
+  const looked = m.setAsideCommits?.length ? `; rewrites looked through (the same small change in many files and a tool named in the subject, or the same lines added to several existing files with nothing deleted, "boilerplate", whose lines are left out; the other lines go back to the people who wrote them before): ${m.setAsideCommits.slice(0, 5).map(one).join("; ")}` : "";
   if (!m.candidates.length) return `${head}${looked}; no other commit looks mechanical (at least ${MECHANICAL_MIN_FILES} files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).`;
   const shown = m.candidates.slice(0, 5).map(one);
   const rest = m.candidates.length - shown.length;

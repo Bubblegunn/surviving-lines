@@ -381,6 +381,8 @@ The detection is a suspicion, not a proof. Read the commit with `git show <id>` 
 
 `--no-detect-reformat` turns the detection off. It needs git 2.23 or newer, like the ignore file.
 
+Boilerplate commits are set aside the same way and are named on the `mechanical rewrites checked` line with the reason `boilerplate`. A commit counts as boilerplate when it touches at least three existing files, deletes nothing but blank lines, and either adds the same lines to at least three files (the others adding licence text only) or adds only licence, copyright, SPDX or banner text. A commit that adds new files is never boilerplate, because a new file's header is part of the file. Its lines are left out of the numbers, since no earlier author wrote them. `--keep-reformat` counts it again.
+
 What the check does not recognise:
 
 - It looks at whitespace changes and, in JavaScript, TypeScript, Python, JSON, CSS, SCSS, Vue and Svelte files (extensions js, jsx, mjs, cjs, ts, tsx, py, json, css, scss, vue, svelte), at single quotes turned into double quotes. In other files only whitespace is folded, because a quote change can change a program there (a shell script, for one).
