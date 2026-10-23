@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Round 13 (G14): a re-applied change is credited to its original author. A commit that reverts a revert (an even chain of `This reverts commit <id>` messages, two or more, ending at a commit that is not a revert) or a commit with a `(cherry picked from commit <id>)` trailer whose source is in the repository and has another author has its surviving lines counted under the original author, in every view and in the JSON. Every view prints up to five `re-applied work credited to the original author: ...` lines and a count of the rest; JSON: new top-level key `reappliedCredit`, schema updated. An unresolved chain changes nothing. `--no-reapply-credit` turns it off.
+
 - Round 13 (G7): `--reviewers <dir>` and `--history <dir>` print a `files in <dir> by owner` block under the table: each person with at least 10 lines or 3% of the scope (the smaller counts them in) and the files where they hold half or more of the file (five per person, then `and N more`), and a `files only one person has written` line (90% of at least 20 lines, eight at most). JSON: new key `fileOwners` on `reviewers` and `history`; schema updated. SKILL.md tells the model to name a second reviewer with the files that person owns and not to derive it from the `active only` line alone.
 
 - Round 13 (G13): `--reviewers <file>` and `--history <file>` follow the file across renames. The reviewers table gets a `last anywhere` column (newest commit in the whole repository; JSON `lastAnywhere` on each reviewers author) next to the path-scoped `last commit`. Existing tests that matched the old header were updated.

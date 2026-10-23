@@ -244,6 +244,9 @@ line of the table prints.
                      commits and, unless --keep-reformat, leaves them out of the numbers
 --keep-reformat      count the suspected reformat commits in the numbers, as before the correction; the block
                      still lists them. Not applied under --co-authors share
+--no-reapply-credit  do not credit a re-applied change to its original author (on by default): a commit that
+                     reverts a revert, or a copy made by someone else with a "cherry picked from" trailer, has its
+                     lines credited to the author of the original commit when that commit is in the repository
 --merge-identities   count the suggested same-person addresses as one, in memory (nothing written)
 --bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach (default: 50)
 --reviewers <path>   list who should review a file or directory
@@ -384,6 +387,8 @@ The detection is a suspicion, not a proof. Read the commit with `git show <id>` 
 - Adding the commit's id to `.git-blame-ignore-revs` at the repository root, which is read by default, or passing `--ignore-rev <rev>` for one run (repeatable; git 2.23 or newer), ignores it in blame. The detection then finds no suspect, and no block is printed.
 
 `--no-detect-reformat` turns the detection off. It needs git 2.23 or newer, like the ignore file.
+
+A maintainer sometimes reverts a contributor's change and later re-applies it, or re-commits it with a `(cherry picked from commit <id>)` trailer. Blame then names the maintainer. surviving-lines follows the `This reverts commit <id>` lines: a commit that reverts a revert brings back the change of the original commit, so its surviving lines are credited to the original author, in the table, the JSON and every other view, and a `re-applied work credited to the original author:` line under the table names up to five such commits. Nothing changes when the original commit is not in the repository or has the same author. `--no-reapply-credit` turns this off.
 
 Boilerplate commits are set aside the same way and are named on the `mechanical rewrites checked` line with the reason `boilerplate`. A commit counts as boilerplate when it touches at least three existing files, deletes nothing but blank lines, and either adds the same lines to at least three files (the others adding licence text only) or adds only licence, copyright, SPDX or banner text. A commit that adds new files is never boilerplate, because a new file's header is part of the file. Its lines are left out of the numbers, since no earlier author wrote them. `--keep-reformat` counts it again.
 

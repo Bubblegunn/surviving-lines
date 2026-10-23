@@ -97,6 +97,9 @@ Measure who wrote the code that is still alive in a git ref.
                        commits and, unless --keep-reformat, leaves them out of the numbers; it does not prove them
   --keep-reformat      count the suspected reformat commits in the numbers, as before the correction; the block
                        still lists them. Not applied under --co-authors share
+  --no-reapply-credit  do not credit a re-applied change to its original author (on by default): a commit that reverts a
+                       revert, or a copy made by someone else with a "cherry picked from" trailer, has its lines credited
+                       to the author of the original commit when that commit is in the repository
   --bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach, above 0 and at most 100 (default: 50)
   --jobs <n>           parallel blame processes (default: 4)
   --top <k>            rows to print (default: every author with at least 1% of the lines, 10 to 25 rows,
@@ -135,7 +138,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -143,7 +146,7 @@ groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -175,6 +178,7 @@ export function parseArgs(argv) {
     else if (a === "--ignore-rev") o.ignoreRevs.push(next());
     else if (a === "--no-detect-reformat") o.detectReformat = false;
     else if (a === "--keep-reformat") o.keepReformat = true;
+    else if (a === "--no-reapply-credit") o.reapplyCredit = false;
     else if (a === "--bus-factor-threshold") { o.busFactorThreshold = Number(next()); if (!(o.busFactorThreshold > 0 && o.busFactorThreshold <= 100)) throw new Error("--bus-factor-threshold must be a number above 0 and at most 100"); }
     else if (a === "--jobs") { o.jobs = Number(next()); if (!Number.isInteger(o.jobs) || o.jobs < 1) throw new Error("--jobs must be an integer >= 1"); }
     else if (a === "--top") { o.top = Number(next()); if (!Number.isInteger(o.top) || o.top < 1) throw new Error("--top must be an integer >= 1"); o.topGiven = true; }
@@ -1278,8 +1282,9 @@ async function resolveUserRevs(o, versionOutput) {
  * @param {{ kind: "dir", depth: number } | { kind: "ext" } | null} grouping
  * @param {{ write(text: string): unknown } | null} progress where progress lines go, or null for none
  * @param {Set<string>} [leaveOut] commits whose lines are left out of every count (boilerplate commits)
+ * @param {ReapplyCredit | null} [credit] when given, the lines of a re-applied commit are credited to the original author
  */
-async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = new Set()) {
+async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = new Set(), credit = null) {
   /** @type {Map<string, { name: string, lines: number, commits: number, withBlank?: number }>} */
   const authors = new Map();
   let attributed = 0;
@@ -1315,7 +1320,8 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
     while (cursor < sampled.length) {
       const idx = cursor++;
       const file = sampled[idx];
-      const raw = dropBlameLinesOf(await git([...blameArgs, o.ref, "--", file.path], o.cwd), leaveOut);
+      let raw = dropBlameLinesOf(await git([...blameArgs, o.ref, "--", file.path], o.cwd), leaveOut);
+      if (credit) raw = await credit.rewrite(raw);
       const out = dropBlankBlameLines(raw);
       // R9-13: the size with its blank lines, stated beside the non-blank size.
       file.withBlank = (raw.match(/^filename /gm) ?? []).length;
@@ -1402,9 +1408,9 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
  * @param {Set<string>} [leaveOut] the commits that pass left out
  * @returns {Promise<{ files: number, delta: Map<string, { name: string, lines: number }> } | null>} lines with copy detection minus lines without, per address
  */
-async function copyShiftOf(o, sampled, copiedFiles, blameArgs, leaveOut = new Set()) {
+async function copyShiftOf(o, sampled, copiedFiles, blameArgs, leaveOut = new Set(), credit = null) {
   if (!copiedFiles.size) return null;
-  const plain = await blamePass(o, sampled.filter((f) => copiedFiles.has(f.path)), blameArgs.filter((a) => a !== "-C"), null, null, leaveOut);
+  const plain = await blamePass(o, sampled.filter((f) => copiedFiles.has(f.path)), blameArgs.filter((a) => a !== "-C"), null, null, leaveOut, credit);
   /** @type {Map<string, { name: string, lines: number }>} */
   const delta = new Map();
   const add = (/** @type {string} */ mail, /** @type {string} */ name, /** @type {number} */ lines) => {
@@ -2118,6 +2124,7 @@ export function scopeNotes(r, opts = {}) {
   add(left.length ? left.join("\n").split("\n") : null);
   add(reformatBlock(r));
   add(committedByOthersLines(r));
+  add(reappliedCreditLines(r));
   add(mechanicalLine(r));
   add(whitespaceOnlyLine(r));
   add(copyEffectLine(r));
@@ -2201,10 +2208,12 @@ const COMMITTED_BY_OTHERS_SHOWN = 5;
  * @param {Options} o
  * @param {Map<string, { name: string, mail: string, lines: number, committer?: string, committerMail?: string }>} blamedByCommit
  * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Set<string>} [skip] commits credited to an original author (G14); their author is not the person who wrote them, so the note does not apply
  */
-export async function committedByOthers(o, blamedByCommit, canonicalOf) {
+export async function committedByOthers(o, blamedByCommit, canonicalOf, skip = new Set()) {
   const idOf = (/** @type {string} */ mail) => canonicalOf.get(mail)?.mail ?? mail;
   const hits = [...blamedByCommit]
+    .filter(([sha]) => !skip.has(sha))
     .filter(([, b]) => b.lines >= COMMITTED_BY_OTHERS_MIN_LINES && b.committerMail !== undefined && b.committerMail !== "" && idOf(b.committerMail) !== idOf(b.mail) && foldIdentity(b.committer ?? "") !== foldIdentity(b.name))
     .filter(([, b]) => o.includeBots || !isBotIdentity(b.name, b.mail))
     .sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0]));
@@ -2224,6 +2233,190 @@ export async function committedByOthers(o, blamedByCommit, canonicalOf) {
   return {
     total: hits.length,
     commits: shown.map(([sha, b]) => ({ sha, shortSha: sha.slice(0, 7), subject: subjects.get(sha) ?? "", lines: b.lines, author: b.name, authorMail: b.mail, committer: b.committer ?? "", committerMail: b.committerMail ?? "" })),
+  };
+}
+
+/**
+ * G14: the unique commit id a revert message names (`This reverts commit <id>`), or null when there is none or the
+ * message names more than one.
+ * @param {string} body
+ * @returns {string | null}
+ */
+export function revertTargetOf(body) {
+  const ids = new Set([...body.matchAll(/This reverts commit ([0-9a-f]{7,64})\b/gi)].map((m) => m[1].toLowerCase()));
+  return ids.size === 1 ? [...ids][0] : null;
+}
+
+/**
+ * G14: the commit id of the `(cherry picked from commit <id>)` trailer that `git cherry-pick -x` writes, or null.
+ * @param {string} body
+ * @returns {string | null}
+ */
+export function cherryPickSourceOf(body) {
+  const m = /\(cherry picked from commit ([0-9a-f]{7,64})\)/i.exec(body);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/** @typedef {{ sha: string, name: string, mail: string, body: string }} CommitInfo */
+
+/**
+ * G14: the author (after .mailmap) and message of each given commit id, or null for an id that is not a commit in the
+ * repository. Two git calls for the whole list: `cat-file --batch-check` to see which exist, then one `log --stdin`.
+ * @param {string} cwd
+ * @param {string[]} refs
+ * @returns {Promise<Map<string, CommitInfo | null>>}
+ */
+async function readCommitInfos(cwd, refs) {
+  /** @type {Map<string, CommitInfo | null>} */
+  const out = new Map();
+  if (!refs.length) return out;
+  /** @type {string[]} */
+  let checked = [];
+  try {
+    checked = (await git(["cat-file", "--batch-check"], cwd, { input: refs.join("\n") + "\n" })).split("\n");
+  } catch {
+    // Nothing can be resolved; every id stays unresolved.
+  }
+  /** @type {[string, string][]} */
+  const existing = [];
+  refs.forEach((ref, i) => {
+    const m = /^([0-9a-f]{40}|[0-9a-f]{64}) commit /.exec(checked[i] ?? "");
+    if (m) existing.push([ref, m[1]]);
+    else out.set(ref, null);
+  });
+  if (!existing.length) return out;
+  /** @type {Map<string, CommitInfo>} */
+  const byOid = new Map();
+  try {
+    const log = await git(["log", "--no-walk=unsorted", "--stdin", "--format=%x01%H%x1f%aN%x1f%aE%x1f%B"], cwd, { input: [...new Set(existing.map(([, oid]) => oid))].join("\n") + "\n" });
+    for (const rec of log.split("\x01")) {
+      const parts = rec.split("\x1f");
+      if (parts.length < 4) continue;
+      byOid.set(parts[0], { sha: parts[0], name: parts[1], mail: parts[2].toLowerCase(), body: parts.slice(3).join("\x1f") });
+    }
+  } catch {
+    // The log failed: the ids stay unresolved.
+  }
+  for (const [ref, oid] of existing) out.set(ref, byOid.get(oid) ?? null);
+  return out;
+}
+
+/**
+ * G14: a blamed commit whose surviving lines belong to someone else: it re-applies a reverted change, or it is a
+ * `git cherry-pick -x` copy of a commit by another author.
+ * @typedef {{ name: string, mail: string, via: "revert" | "cherry-pick", reappliedBy: string, reappliedByMail: string, subject: string }} Reapplied
+ */
+
+/**
+ * G14: credit for re-applied work. A revert chain is followed through the `This reverts commit <id>` lines: a commit
+ * that reverts a revert (an even number of reverts, two or more, before a commit that is not a revert) brings back the
+ * change of that last commit, so its lines are the original author's. The same holds for a commit with a
+ * `(cherry picked from commit <id>)` trailer whose source is in the repository and has another author. A chain that
+ * cannot be followed to the end (a commit not in the repository, a loop) changes nothing.
+ * `rewrite` takes `git blame --line-porcelain` text and returns it with the author headers of such commits replaced by
+ * the original author's, so every count made from it agrees.
+ * @param {string} cwd
+ * @returns {ReapplyCredit}
+ */
+export function createReapplyCredit(cwd) {
+  /** @type {Map<string, CommitInfo | null>} */
+  const infos = new Map();
+  /** @type {Map<string, Reapplied | null>} */
+  const known = new Map();
+  /** @param {string[]} refs */
+  const load = async (refs) => {
+    const need = [...new Set(refs)].filter((r) => !infos.has(r));
+    if (!need.length) return;
+    for (const [ref, info] of await readCommitInfos(cwd, need)) infos.set(ref, info);
+  };
+  /** @param {string} sha @returns {Promise<Reapplied | null>} */
+  const resolveOne = async (sha) => {
+    const info = infos.get(sha);
+    if (!info) return null;
+    /** @type {CommitInfo | null} */
+    let origin = null;
+    /** @type {"revert" | "cherry-pick"} */
+    let via = "revert";
+    let cur = info;
+    let reverts = 0;
+    let broken = false;
+    const seen = new Set([info.sha]);
+    for (;;) {
+      const target = revertTargetOf(cur.body);
+      if (!target) break;
+      await load([target]);
+      const next = infos.get(target);
+      if (!next || seen.has(next.sha)) {
+        broken = true;
+        break;
+      }
+      seen.add(next.sha);
+      reverts++;
+      cur = next;
+    }
+    if (!broken && reverts >= 2 && reverts % 2 === 0) origin = cur;
+    if (!origin) {
+      const source = cherryPickSourceOf(info.body);
+      if (source) {
+        await load([source]);
+        origin = infos.get(source) ?? null;
+        via = "cherry-pick";
+      }
+    }
+    if (!origin || origin.mail === info.mail || foldIdentity(origin.name) === foldIdentity(info.name)) return null;
+    return { name: origin.name, mail: origin.mail, via, reappliedBy: info.name, reappliedByMail: info.mail, subject: info.body.split("\n")[0] };
+  };
+  return {
+    origins: known,
+    creditedShas: () => new Set([...known].filter(([, v]) => v).map(([sha]) => sha)),
+    async rewrite(porcelain) {
+      /** @type {Set<string>} */
+      const shas = new Set();
+      for (const m of porcelain.matchAll(/^([0-9a-f]{40}|[0-9a-f]{64}) \d+ \d+/gm)) shas.add(m[1]);
+      const todo = [...shas].filter((s) => !known.has(s));
+      if (todo.length) {
+        await load(todo);
+        for (const sha of todo) known.set(sha, await resolveOne(sha));
+      }
+      if (![...shas].some((s) => known.get(s))) return porcelain;
+      let sha = "";
+      return porcelain
+        .split("\n")
+        .map((line) => {
+          const header = /^([0-9a-f]{40}|[0-9a-f]{64}) \d+ \d+/.exec(line);
+          if (header) sha = header[1];
+          const credited = known.get(sha);
+          if (!credited) return line;
+          if (line.startsWith("author ")) return `author ${credited.name}`;
+          if (line.startsWith("author-mail ")) return `author-mail <${credited.mail}>`;
+          return line;
+        })
+        .join("\n");
+    },
+  };
+}
+
+/**
+ * @typedef {{ origins: Map<string, Reapplied | null>, creditedShas: () => Set<string>, rewrite: (porcelain: string) => Promise<string> }} ReapplyCredit
+ */
+
+/** G14: this many re-applied commits are named; the rest are counted. */
+const REAPPLIED_SHOWN = 5;
+
+/**
+ * G14: the re-applied commits that still hold lines in the scope, largest first.
+ * @param {ReapplyCredit | null} credit
+ * @param {Map<string, { lines: number }>} blamedByCommit
+ */
+export function reappliedCreditOf(credit, blamedByCommit) {
+  const hits = credit
+    ? [...credit.origins]
+        .flatMap(([sha, v]) => (v && (blamedByCommit.get(sha)?.lines ?? 0) > 0 ? [{ sha, v, lines: blamedByCommit.get(sha)?.lines ?? 0 }] : []))
+        .sort((x, y) => y.lines - x.lines || x.sha.localeCompare(y.sha))
+    : [];
+  return {
+    total: hits.length,
+    commits: hits.slice(0, REAPPLIED_SHOWN).map(({ sha, v, lines }) => ({ sha, shortSha: sha.slice(0, 7), subject: v.subject, lines, credited: v.name, creditedMail: v.mail, reappliedBy: v.reappliedBy, reappliedByMail: v.reappliedByMail, via: v.via })),
   };
 }
 
@@ -2612,7 +2805,7 @@ function parseNumstatLog(out) {
  * @param {Options} o
  * @param {Set<string>} present the paths of the files in scope at the ref
  * @param {Set<string>} skip full ids of commits that were set aside or ignored
- * @param {{ blameArgs: string[], perFile: Map<string, Map<string, { name: string, lines: number, fullName?: string }>>, nameOf: Map<string, string>, canonicalOf: Map<string, { author: string, mail: string }> }} ctx how to find who holds a file now
+ * @param {{ blameArgs: string[], credit?: ReapplyCredit | null, perFile: Map<string, Map<string, { name: string, lines: number, fullName?: string }>>, nameOf: Map<string, string>, canonicalOf: Map<string, { author: string, mail: string }> }} ctx how to find who holds a file now; `credit` rewrites a fresh blame the way the run did
  * @param {{ timeoutMs?: number }} [opts]
  * @returns {Promise<{ skipped: boolean, commits: { sha: string, shortSha: string, subject: string, author: string, lines: number, files: { path: string, lines: number, topOwner: string | null, topShare: number | null, topOwnerLines: number | null, fileLines: number | null }[] }[] }>}
  */
@@ -2670,7 +2863,8 @@ export async function findWhitespaceOnlyCommits(o, present, skip, ctx, opts = {}
         const left = timeout - (Date.now() - started);
         if (left <= 0) return { skipped: true, commits: [] };
         try {
-          counts = countBlameLines(await git([...ctx.blameArgs, o.ref, "--", f.path], o.cwd, { timeout: left }));
+          const fresh = await git([...ctx.blameArgs, o.ref, "--", f.path], o.cwd, { timeout: left });
+          counts = countBlameLines(ctx.credit ? await ctx.credit.rewrite(fresh) : fresh);
         } catch (err) {
           const e = /** @type {{ killed?: boolean, signal?: string }} */ (err);
           if (e && (e.killed || e.signal)) return { skipped: true, commits: [] };
@@ -2874,7 +3068,8 @@ export async function analyse(o) {
 
   const grouping = o.groupBy === undefined ? null : parseGroupBy(o.groupBy);
   const needTrailers = o.coAuthors === "share" || o.aiBreakdown;
-  const first = await blamePass(o, sampled, blameArgs, grouping, showProgress ? errStream : null);
+  const credit = o.reapplyCredit ? createReapplyCredit(o.cwd) : null;
+  const first = await blamePass(o, sampled, blameArgs, grouping, showProgress ? errStream : null, new Set(), credit);
   // The reformat candidates are judged against what the first pass attributed, before bots leave the totals.
   const blamedTotal = first.attributed;
 
@@ -2901,7 +3096,7 @@ export async function analyse(o) {
     const ignored = [...(applied ? suspects.map((x) => ({ sha: x.sha, shortSha: x.shortSha })) : []), ...strongRewrites];
     for (const s of ignored) shownFlags.push("--ignore-rev", s.shortSha, "(auto)");
     mainArgs = [...blameArgs, ...ignored.flatMap((s) => ["--ignore-rev", s.sha])];
-    main = await blamePass(o, sampled, mainArgs, grouping, null, leaveOut);
+    main = await blamePass(o, sampled, mainArgs, grouping, null, leaveOut, credit);
     if (applied) uncorrected = linesSummary(o, first.authors);
   }
   if (mechanicalCheck) {
@@ -2914,7 +3109,7 @@ export async function analyse(o) {
   }
   // Where copy detection credited lines to another path, the same files are blamed again without it, so the notes can
   // name who gained or lost. Only those files are blamed twice. Under --co-authors share the split is not a line count.
-  const copyShift = copyOn && o.coAuthors !== "share" ? await copyShiftOf(o, sampled, main.copiedFiles, mainArgs, leaveOut) : null;
+  const copyShift = copyOn && o.coAuthors !== "share" ? await copyShiftOf(o, sampled, main.copiedFiles, mainArgs, leaveOut, credit) : null;
   const authors = main.authors;
   let attributed = main.attributed;
   const blamedByCommit = main.blamedByCommit;
@@ -3121,11 +3316,12 @@ export async function analyse(o) {
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits, lastCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
   const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history), fileOwners };
   const skipShas = new Set([...ignoredByUser, ...(applied ? suspects.map((x) => x.sha) : []), ...strongRewrites.map((c) => c.sha)]);
-  const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
+  const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, credit, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
   // G12: the strong identity groups count as one person here whether or not --merge-identities merged them.
-  const committedElsewhere = await committedByOthers(o, blamedByCommit, canonicalOf);
+  const committedElsewhere = await committedByOthers(o, blamedByCommit, canonicalOf, credit ? credit.creditedShas() : new Set());
+  const reapplied = reappliedCreditOf(credit, blamedByCommit);
   return {
     ref: o.ref,
     sort: o.sort,
@@ -3156,6 +3352,7 @@ export async function analyse(o) {
     sameAddress,
     lastCommits,
     committedByOthers: committedElsewhere,
+    reappliedCredit: reapplied,
     reviewers,
     history,
     authors: rows,
@@ -3756,6 +3953,19 @@ export function committedByOthersLines(r) {
   if (!c || c.total === 0) return [];
   const out = c.commits.map((x) => `credited to the author: ${x.lines.toLocaleString("en-US")} lines of ${x.shortSha} "${x.subject}" are credited to ${x.author}, committed by ${x.committer}`);
   if (c.total > c.commits.length) out.push(`and ${c.total - c.commits.length} more commit${c.total - c.commits.length === 1 ? "" : "s"} committed by someone else`);
+  return out;
+}
+
+/**
+ * G14: one line per re-applied commit that still holds lines, up to five, then a count of the rest. Empty when there is none.
+ * @param {{ reappliedCredit?: ReturnType<typeof reappliedCreditOf> }} r
+ * @returns {string[]}
+ */
+export function reappliedCreditLines(r) {
+  const c = r.reappliedCredit;
+  if (!c || c.total === 0) return [];
+  const out = c.commits.map((x) => `re-applied work credited to the original author: ${x.lines.toLocaleString("en-US")} lines of ${x.shortSha} "${x.subject}" credited to ${x.credited} (re-applied by ${x.reappliedBy})`);
+  if (c.total > c.commits.length) out.push(`and ${c.total - c.commits.length} more re-applied commit${c.total - c.commits.length === 1 ? "" : "s"}`);
   return out;
 }
 
