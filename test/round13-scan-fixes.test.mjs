@@ -4,9 +4,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chmodSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { schemaErrors } from "../scripts/schema-check.mjs";
 import { createRepo, commitAsIdentity, git, lines, removeRepo } from "../scripts/fixtures.mjs";
 
 const { parseArgs, analyse, listNonRegularPaths } = await import("../bin/surviving-lines.js");
@@ -142,6 +144,25 @@ test("without the NUL scan every listed document extension is left out, in any l
       assert.equal(r.sample.filesTotal, 1);
       assert.equal(r.dropped.classes.binary.files, 5);
     });
+  } finally {
+    removeRepo(dir);
+  }
+});
+
+test("the schema accepts JSON from before the binary class existed, and the tool still writes the class", async () => {
+  const schema = JSON.parse(await readFile(join(import.meta.dirname, "..", "schema", "surviving-lines.schema.json"), "utf8"));
+  const dir = createRepo("sl-schema-binary-");
+  try {
+    commitAsIdentity(dir, ANN, DATE, "files", { "plain.txt": lines("p", 8) });
+    const run = spawnSync(process.execPath, [join(import.meta.dirname, "..", "bin", "surviving-lines.js"), "--cwd", dir, "--json", "-q"], { encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    const doc = JSON.parse(run.stdout);
+    assert.deepEqual(schemaErrors(schema, doc), []);
+    assert.deepEqual(doc.dropped.classes.binary, { files: 0, lines: 0 });
+    delete doc.dropped.classes.binary;
+    assert.deepEqual(schemaErrors(schema, doc), [], "older output without the binary class still validates");
+    delete doc.dropped.classes.lockfile;
+    assert.deepEqual(schemaErrors(schema, doc), ["$.dropped.classes: missing key lockfile"], "the other classes stay required");
   } finally {
     removeRepo(dir);
   }

@@ -2468,10 +2468,11 @@ export async function analyse(o) {
   // -C follows code moved out of a file changed in the same commit back to its first author; --copies deep (-C -C) also
   // looks in the files of the commit that created the file. Every blame then looks in more files, so above this many
   // files it is off unless asked for.
-  // The history is measured only when the file count alone does not decide it.
+  // The work is the files actually blamed (the sample) times the commits that touch the run's paths, inside --since when
+  // it is set. The history is measured only when the file count alone does not decide it.
   const forced = o.noCopies || o.copies;
-  const commitCount = !forced && all.length <= COPY_DETECTION_MAX_FILES ? Number((await git(["rev-list", "--count", o.ref], o.cwd)).trim()) : 0;
-  const copyOn = !o.noCopies && (o.copies || copyDetectionDefault(all.length, commitCount, o.copyWorkLimit));
+  const commitCount = !forced && sampled.length <= COPY_DETECTION_MAX_FILES ? Number((await git(["rev-list", "--count", ...(o.since ? ["--since", o.since] : []), o.ref, "--", ...o.paths], o.cwd)).trim()) : 0;
+  const copyOn = !o.noCopies && (o.copies || copyDetectionDefault(sampled.length, commitCount, o.copyWorkLimit));
   const workLimit = o.copyWorkLimit ?? COPY_DETECTION_MAX_WORK;
   const copyDetection = {
     on: copyOn,
@@ -2479,9 +2480,9 @@ export async function analyse(o) {
       ? null
       : o.noCopies
         ? "--no-copies"
-        : all.length > COPY_DETECTION_MAX_FILES
-          ? `${all.length} files in the ref, more than ${COPY_DETECTION_MAX_FILES}`
-          : `${all.length.toLocaleString("en-US")} files times ${commitCount.toLocaleString("en-US")} commits is more than ${workLimit.toLocaleString("en-US")}`,
+        : sampled.length > COPY_DETECTION_MAX_FILES
+          ? `${sampled.length.toLocaleString("en-US")} files to blame, more than ${COPY_DETECTION_MAX_FILES}`
+          : `${sampled.length.toLocaleString("en-US")} files times ${commitCount.toLocaleString("en-US")} commits is more than ${workLimit.toLocaleString("en-US")}`,
     flags: copyOn ? (o.copiesDeep ? "-C -C" : "-C") : null,
   };
   const blameArgs = ["blame", "--line-porcelain", "-w", "-M"];
@@ -2887,11 +2888,21 @@ export const SHALLOW_MARK = "shallow clone, history before the cut is blamed on 
 
 /**
  * The first line of the table and the Markdown output: what was sampled, and whether it can be trusted.
- * @param {Pick<Awaited<ReturnType<typeof analyse>>, "ref" | "sample"> & { shallow?: boolean }} r
+ * @param {Pick<Awaited<ReturnType<typeof analyse>>, "ref" | "sample"> & { shallow?: boolean, blame?: { copyDetection?: { on?: boolean, reason?: string | null } } }} r
  */
 function headerLine(r) {
   const s = r.sample;
-  return `ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed${s.linesWithBlank > s.linesInRef ? ` (non-blank; ${s.linesWithBlank.toLocaleString("en-US")} with blank lines)` : ""}${r.shallow ? `  ·  ${SHALLOW_MARK}` : ""}`;
+  return `ref ${r.ref}  ·  files ${s.filesSampled}/${s.filesTotal} sampled (1 in ${s.every}${s.seed ? `, seed "${s.seed}"` : ""})  ·  ${s.linesAttributed.toLocaleString("en-US")} of ${s.linesInRef.toLocaleString("en-US")} lines attributed${s.linesWithBlank > s.linesInRef ? ` (non-blank; ${s.linesWithBlank.toLocaleString("en-US")} with blank lines)` : ""}${r.shallow ? `  ·  ${SHALLOW_MARK}` : ""}${copyOffMark(r)}`;
+}
+
+/**
+ * The header's mention of copy detection when it switched itself off (too many files, or too many files times commits).
+ * Empty when it is on, or when the user turned it off with --no-copies. The fuller note stays with the scope notes.
+ * @param {{ blame?: { copyDetection?: { on?: boolean, reason?: string | null } } }} r
+ */
+function copyOffMark(r) {
+  const c = r.blame?.copyDetection;
+  return c && c.on === false && c.reason && c.reason !== "--no-copies" ? `  ·  copy detection off (${c.reason})` : "";
 }
 
 /**
