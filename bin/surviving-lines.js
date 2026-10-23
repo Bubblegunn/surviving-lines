@@ -652,16 +652,39 @@ async function emptyTreeId(cwd) {
 async function listTextFiles(o) {
   const emptyTree = await emptyTreeId(o.cwd);
   const out = await git(["diff", "--numstat", "-z", emptyTree, o.ref, "--", ...o.paths], o.cwd);
+  const notBlamable = await listNonRegularPaths(o);
   /** @type {{ path: string, lines: number }[]} */
   const files = [];
   // -z output: "added\tdeleted\tpath\0" for plain entries; renames cannot occur against the empty tree.
   for (const rec of out.split("\0")) {
     if (!rec) continue;
     const [added, , path] = rec.split("\t");
-    if (added === "-" || path === undefined) continue;
+    if (added === "-" || path === undefined || notBlamable.has(path)) continue;
     files.push({ path, lines: Number(added) });
   }
   return files;
+}
+
+/**
+ * The paths at the ref that are a git submodule (mode 160000) or a symbolic link (mode 120000), from one `git ls-tree`
+ * call. `git diff --numstat` lists both as one-line text files, but neither has lines of its own to blame: git blame
+ * stops with "no such path" on a submodule, and a symbolic link would count its target's name as one written line.
+ * Every file list of a run comes from listTextFiles, so leaving them out there keeps every later step away from them.
+ * @param {Options} o
+ * @returns {Promise<Set<string>>}
+ */
+async function listNonRegularPaths(o) {
+  const out = await git(["ls-tree", "-r", "-z", o.ref], o.cwd);
+  /** @type {Set<string>} */
+  const paths = new Set();
+  // -z output: "mode type sha\tpath\0".
+  for (const rec of out.split("\0")) {
+    const tab = rec.indexOf("\t");
+    if (tab < 0) continue;
+    const mode = rec.slice(0, rec.indexOf(" "));
+    if (mode === "160000" || mode === "120000") paths.add(rec.slice(tab + 1));
+  }
+  return paths;
 }
 
 /** File names of dependency lockfiles. A lockfile is written by a tool, so whoever committed it did not write its lines. */
