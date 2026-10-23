@@ -1347,8 +1347,13 @@ function copyEffectOf(o, shift, rows, attributed, canonicalOf, flags) {
   return people.length ? { flags, files: shift.files, lines: moved, people } : null;
 }
 
-/** Extensions of the languages where `'x'` and `"x"` are the same string, so a quote change is layout there. */
-const QUOTE_FOLD_EXTENSIONS = new Set(["js", "jsx", "mjs", "cjs", "ts", "tsx", "py", "json", "css", "scss", "vue", "svelte"]);
+/**
+ * Extensions of the languages where `'x'` and `"x"` are the same string, so a quote change is layout there. Lua and Dart
+ * are in because both quote styles give the same string, escapes and (in Dart) interpolation included. Ruby, PHP, Perl,
+ * Elixir, Julia and shell are not: there `'x'` and `"x"` differ in interpolation, in escapes or in type, so a quote
+ * change can be a real change. Swift, Go, Rust, Java, Kotlin and C# have one quote style for strings.
+ */
+const QUOTE_FOLD_EXTENSIONS = new Set(["js", "jsx", "mjs", "cjs", "ts", "tsx", "mts", "cts", "py", "json", "json5", "jsonc", "css", "scss", "sass", "less", "vue", "svelte", "lua", "dart"]);
 
 /**
  * The text with every whitespace character removed and, for the languages where it is safe, every single quote made
@@ -1385,6 +1390,20 @@ export function isFormatOnlyChange(before, after, path) {
 const REFORMAT_MIN_LINES = 20;
 /** ... or this share of the attributed lines. */
 const REFORMAT_SHARE = 0.05;
+/** In a run scoped to paths a commit holding at least this many surviving lines in scope is judged (the floor above does not apply). */
+const REFORMAT_SCOPED_MIN_LINES = 1;
+/** A commit whose proof covers at least this many changed lines is set aside even without a formatter in the subject. */
+const REFORMAT_PROOF_LINES = 50;
+/** A commit that touches at least this many files, all passing the proof, is set aside even without a formatter in the subject. */
+const REFORMAT_PROOF_FILES = 10;
+/**
+ * Files that configure a formatter, by base name. A commit that adds or edits one of them while every other file only
+ * changes in layout is still a reformat, so the proof leaves these files out. A commit that touches only these files
+ * is not a rewrite. pyproject.toml and the editor/linter configs are here because they hold the formatter's settings.
+ */
+export const FORMATTER_CONFIG_FILES = /^(?:\.?stylua\.toml|\.formatter\.exs|analysis_options\.yaml|\.?rustfmt\.toml|\.prettierrc(?:\.[\w]+)?|prettier\.config\.[\w]+|\.prettierignore|pyproject\.toml|\.clang-format|\.editorconfig|biome\.jsonc?|\.scalafmt\.conf|\.swiftformat|\.style\.yapf|\.isort\.cfg|dprint\.json|\.php-cs-fixer(?:\.dist)?\.php|\.ktlint|\.rubocop\.yml|\.gofmt|\.black|\.yapfignore)$/i;
+/** @param {string} path */
+const isFormatterConfig = (path) => FORMATTER_CONFIG_FILES.test(path.slice(path.lastIndexOf("/") + 1));
 /** At most this many candidates are examined, most surviving lines first. */
 const REFORMAT_MAX_CANDIDATES = 40;
 /** A commit that changes more files than this is not judged: it is too large to read as a reformat. */
@@ -1492,7 +1511,7 @@ async function readBlobs(run, wanted) {
 
 /**
  * The changed lines of a commit when it is a reformat, or null when it is not. A reformat modifies files only (no add,
- * delete or rename), changes at least one text file, and every text file differs from its parent only in layout or
+ * delete or rename, formatter configuration files excepted), changes at least one text file, and every text file differs from its parent only in layout or
  * quote style. Binary files cannot be compared, so a commit that changed only binary files is not a reformat. A file
  * whose line count git does not give is not judged, so the commit is not a reformat either.
  * @param {CommitFacts} f
@@ -1502,11 +1521,13 @@ async function readBlobs(run, wanted) {
 async function reformatLines(f, blob) {
   const files = f.files;
   if (files.length === 0 || files.length > REFORMAT_MAX_FILES) return null;
-  if (files.some((x) => x.status !== "M")) return null;
+  // A formatter configuration file may be added, edited or removed beside the reformat; it is not part of the proof.
+  const proved = files.filter((x) => !isFormatterConfig(x.path));
+  if (proved.length === 0 || proved.some((x) => x.status !== "M")) return null;
   let textFiles = 0;
   let changedLines = 0;
   let addedLines = 0;
-  for (const file of files) {
+  for (const file of proved) {
     const c = f.counts.get(file.path);
     if (!c) return null;
     if (c.binary) continue;
@@ -1526,7 +1547,12 @@ async function reformatLines(f, blob) {
  */
 
 /**
- * The commits the first blame pass gave lines to that are reformats: lines moved by layout or quote changes only.
+ * The commits the first blame pass gave lines to that are reformats: lines moved by layout or quote changes only. The
+ * content proof (see reformatLines) is the signal. A proved commit is set aside when its subject names a formatter, or it
+ * touches at least 10 files, or the proof covers at least 50 changed lines; otherwise it is only listed (see judgeReformats).
+ * A commit judged by its subject alone, without the proof, is never returned here.
+ * In a run scoped to paths every commit with at least one surviving line is judged; otherwise the commit needs 20
+ * surviving lines or 5% of the attributed lines.
  * Only blamed commits are candidates, so a commit the blame already skips (--ignore-rev or the ignore file) never
  * comes back. Detection is best effort: a git failure while judging one candidate means that candidate is not a
  * suspect, and the others are still judged. The run never stops for it.
@@ -1541,8 +1567,21 @@ async function reformatLines(f, blob) {
  * @returns {Promise<{ sha: string, shortSha: string, subject: string, author: string, mail: string, date: string, filesChanged: number, changedLines: number, survivingLines: number, files: string[] }[]>}
  */
 export async function findReformatSuspects(o, blamedByCommit, blamedTotal, run = (args, opts) => git(args, o.cwd, opts)) {
+  return (await judgeReformats(o, blamedByCommit, blamedTotal, run)).suspects;
+}
+
+/**
+ * Like findReformatSuspects, and also gives the commits that passed the content proof but were not set aside (no
+ * formatter in the subject, fewer than 10 files, fewer than 50 changed lines).
+ * @param {Options} o
+ * @param {Map<string, { name: string, mail: string, lines: number }>} blamedByCommit
+ * @param {number} blamedTotal
+ * @param {GitRun} [run]
+ */
+export async function judgeReformats(o, blamedByCommit, blamedTotal, run = (args, opts) => git(args, o.cwd, opts)) {
+  const scoped = (o.paths?.length ?? 0) > 0 || o.files !== undefined;
   const candidates = [...blamedByCommit]
-    .filter(([, b]) => b.lines >= REFORMAT_MIN_LINES || b.lines >= blamedTotal * REFORMAT_SHARE)
+    .filter(([, b]) => (scoped ? b.lines >= REFORMAT_SCOPED_MIN_LINES : b.lines >= REFORMAT_MIN_LINES || b.lines >= blamedTotal * REFORMAT_SHARE))
     .sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0]))
     .slice(0, REFORMAT_MAX_CANDIDATES);
   /** @type {Map<string, CommitFacts>} */
@@ -1567,8 +1606,10 @@ export async function findReformatSuspects(o, blamedByCommit, blamedTotal, run =
   for (const [sha] of candidates) {
     const f = facts.get(sha);
     // The same cheap rules reformatLines applies, so no blob is read for a commit that cannot be a reformat.
-    if (!f || f.parents.length !== 1 || f.files.length === 0 || f.files.length > REFORMAT_MAX_FILES || f.files.some((x) => x.status !== "M")) continue;
-    wanted.set(sha, f.files.filter((x) => f.counts.get(x.path)?.binary === false).flatMap((x) => [x.before, x.after]));
+    if (!f || f.parents.length !== 1 || f.files.length === 0 || f.files.length > REFORMAT_MAX_FILES) continue;
+    const proved = f.files.filter((x) => !isFormatterConfig(x.path));
+    if (proved.length === 0 || proved.some((x) => x.status !== "M")) continue;
+    wanted.set(sha, proved.filter((x) => f.counts.get(x.path)?.binary === false).flatMap((x) => [x.before, x.after]));
   }
   /** @type {Map<string, string>} */
   let blobs = new Map();
@@ -1582,6 +1623,7 @@ export async function findReformatSuspects(o, blamedByCommit, blamedTotal, run =
   /** @param {string} oid */
   const blob = async (oid) => blobs.get(oid) ?? (await run(["cat-file", "blob", oid]));
   const suspects = new Array(candidates.length).fill(null);
+  const listed = new Array(candidates.length).fill(null);
   let next = 0;
   const worker = async () => {
     while (next < candidates.length) {
@@ -1591,14 +1633,18 @@ export async function findReformatSuspects(o, blamedByCommit, blamedTotal, run =
       if (!f || f.parents.length !== 1 || tooLarge.has(sha)) continue;
       try {
         const found = await reformatLines(f, blob);
-        if (found) suspects[idx] = { sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, date: f.date, ...found, survivingLines: b.lines, files: f.files.map((x) => x.path) };
+        if (found) {
+          const suspect = { sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, date: f.date, ...found, survivingLines: b.lines, files: f.files.map((x) => x.path) };
+          const strong = MECHANICAL_SUBJECT.test(f.subject) || f.files.length >= REFORMAT_PROOF_FILES || found.changedLines >= REFORMAT_PROOF_LINES;
+          (strong ? suspects : listed)[idx] = suspect;
+        }
       } catch {
         // A git failure on one blob: this candidate is not a suspect.
       }
     }
   };
   await Promise.all(Array.from({ length: Math.min(Math.max(o.jobs, 1), candidates.length || 1) }, worker));
-  return suspects.filter(Boolean);
+  return { suspects: suspects.filter(Boolean), listed: listed.filter(Boolean) };
 }
 
 /** At most this many commits holding surviving lines are examined for the mechanical-rewrite check, most surviving lines first. */
@@ -1608,7 +1654,10 @@ const MECHANICAL_MIN_FILES = 10;
 /** ... when no file changed by more than this many inserted (and as many deleted) lines. */
 const MECHANICAL_MAX_LINES_PER_FILE = 3;
 /** Subjects that name a formatting tool, a lint fix, a codemod or a rename tool: tool names and explicit phrases only, not a bare "rename", "format" or "black". */
-const MECHANICAL_SUBJECT = /\b(?:fmt|gofmt|rustfmt|clang-format|scalafmt|autopep8|isort|prettier|black\s+formatt(?:ing|er|ed)|(?:run|ran|apply|applied|apply|using|with)\s+(?:the\s+)?(?:black|formatter)|format\s+(?:all|everything|the\s+(?:code|codebase|repo(?:sitory)?))|reformat(?:ting|ted)?|lint(?:ing)?\s+fix(?:es)?|fix(?:ed|es)?\s+lint|eslint(?:\s+--fix)?|codemods?|(?:rename|renaming)\s+tool|(?:mass|bulk)\s+rename|go\s+fix|gofix)\b|(?:^|\s)--fix\b/i;
+const MECHANICAL_TOOL_SUBJECT = /\b(?:fmt|gofmt|rustfmt|clang-format|scalafmt|autopep8|isort|prettier|black\s+formatt(?:ing|er|ed)|(?:run|ran|apply|applied|apply|using|with)\s+(?:the\s+)?(?:black|formatter)|format\s+(?:all|everything|the\s+(?:code|codebase|repo(?:sitory)?))|reformat(?:ting|ted)?|lint(?:ing)?\s+fix(?:es)?|fix(?:ed|es)?\s+lint|eslint(?:\s+--fix)?|codemods?|(?:rename|renaming)\s+tool|(?:mass|bulk)\s+rename|go\s+fix|gofix)\b|(?:^|\s)--fix\b/i;
+/** Phrases added to the tool vocabulary: more formatters, and plain wording such as "format code" or "fix style". Used to list a commit and, with the content proof, to set it aside. */
+const MECHANICAL_EXTRA_SUBJECT = /\b(?:mix\s+format|dart\s+format|(?:cargo|go|terraform|ruff|biome|deno|dotnet|swift)\s+(?:fmt|format)|stylua|yapf|ktlint|spotless|swift-?format|php-cs-fixer|rubocop\s+(?:-a\b|-A\b|--auto-?correct)|blacken(?:ed)?|auto-?format\w*|auto-?fix\w*|lint\s+--fix|(?:apply|applied|applying)\s+(?:the\s+)?(?:code\s+)?format(?:ting|ter)?|(?:format|formatting)\s+(?:code|fixes|only|changes|source|files?|sources)|code\s+format(?:ting)?|fix(?:ed|es|ing)?\s+(?:code\s+)?(?:style|formatting|whitespace|indent(?:ation)?)|(?:style|whitespace)\s+(?:fix|fixes|only|cleanup|clean-up)|line[_\s-]length|(?:single|double)[-\s]quotes?|quote\s+style)\b|^(?:\w+(?:\([^)]*\))?!?:\s*)?(?:format|formatting|fmt|lint|linting|black|reformat|style)\s*(?:[.!]|$)/i;
+const MECHANICAL_SUBJECT = new RegExp(`${MECHANICAL_TOOL_SUBJECT.source}|${MECHANICAL_EXTRA_SUBJECT.source}`, "i");
 
 /**
  * The mechanical-rewrite check (R8-2): every commit that holds surviving lines is read once. A commit looks mechanical
@@ -1620,9 +1669,10 @@ const MECHANICAL_SUBJECT = /\b(?:fmt|gofmt|rustfmt|clang-format|scalafmt|autopep
  * @param {Set<string>} setAside the commits the reformat rule set aside
  * @param {number} [ignoredByUser] the revisions the user ignored (--ignore-rev, an ignore-revs file); they hold no blamed line, so they are only counted
  * @param {GitRun} [run]
- * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject", both?: boolean }[], setAsideCommits?: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" }[] } | null>}
+ * @param {{ sha: string, shortSha: string, subject: string, author: string, mail: string, survivingLines: number, filesChanged: number }[]} [proved] commits whose content proof passed and that were not set aside; they are listed with reason "content"
+ * @returns {Promise<{ examined: number, total: number, truncated: boolean, setAside: number, ignoredByUser: number, candidates: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" | "content", both?: boolean }[], setAsideCommits?: { sha: string, shortSha: string, author: string, mail: string, subject: string, survivingLines: number, filesChanged: number, reason: "files" | "subject" | "content" }[] } | null>}
  */
-export async function findMechanicalCandidates(o, blamedByCommit, setAside, ignoredByUser = 0, run = (args, opts) => git(args, o.cwd, opts)) {
+export async function findMechanicalCandidates(o, blamedByCommit, setAside, ignoredByUser = 0, run = (args, opts) => git(args, o.cwd, opts), proved = []) {
   const total = blamedByCommit.size;
   const list = [...blamedByCommit].sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0])).slice(0, MECHANICAL_MAX_COMMITS);
   if (!list.length) return null;
@@ -1657,7 +1707,13 @@ export async function findMechanicalCandidates(o, blamedByCommit, setAside, igno
     const byFiles = f.files >= MECHANICAL_MIN_FILES && f.small;
     const bySubject = MECHANICAL_SUBJECT.test(f.subject);
     if (!byFiles && !bySubject) continue;
-    candidates.push({ sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, survivingLines: b.lines, filesChanged: f.files, reason: byFiles ? "files" : "subject", ...(byFiles && bySubject ? { both: true } : {}) });
+    // Only the original tool vocabulary plus the same small change in 10 files sets a commit aside without the content proof.
+    const both = byFiles && MECHANICAL_TOOL_SUBJECT.test(f.subject);
+    candidates.push({ sha, shortSha: sha.slice(0, 7), author: b.name, mail: b.mail, subject: f.subject, survivingLines: b.lines, filesChanged: f.files, reason: byFiles ? "files" : "subject", ...(both ? { both: true } : {}) });
+  }
+  for (const p of proved) {
+    if (setAside.has(p.sha) || candidates.some((c) => c.sha === p.sha)) continue;
+    candidates.push({ sha: p.sha, shortSha: p.shortSha, author: p.author, mail: p.mail, subject: p.subject, survivingLines: p.survivingLines, filesChanged: p.filesChanged, reason: "content" });
   }
   return { examined: list.length, total, truncated: total > list.length, setAside: setAside.size, ignoredByUser, candidates };
 }
@@ -2508,13 +2564,14 @@ export async function analyse(o) {
 
   // --identities lists addresses and never mentions a reformat, so it does not look for one.
   const detect = o.detectReformat && !o.identities && supportsIgnoreRevs(versionOutput);
-  const suspects = detect ? await findReformatSuspects(o, first.blamedByCommit, blamedTotal) : [];
+  const judged = detect ? await judgeReformats(o, first.blamedByCommit, blamedTotal) : { suspects: [], listed: [] };
+  const suspects = judged.suspects;
   // The correction: the main numbers are a second pass with the suspects ignored, so every output reads one result.
   // --keep-reformat keeps the first pass, and --co-authors share keeps it too: its split is not a plain line count.
   const applied = suspects.length > 0 && !o.keepReformat && o.coAuthors !== "share";
   const ignoredByUser = new Set(userRevs);
   if (ignoreRevs) for (const m of readFileSync(ignoreRevs.path, "utf8").matchAll(/^\s*([0-9a-f]{40}|[0-9a-f]{64})\b/gim)) ignoredByUser.add(m[1].toLowerCase());
-  const mechanicalCheck = await findMechanicalCandidates(o, first.blamedByCommit, new Set(applied ? suspects.map((x) => x.sha) : []), ignoredByUser.size);
+  const mechanicalCheck = await findMechanicalCandidates(o, first.blamedByCommit, new Set(applied ? suspects.map((x) => x.sha) : []), ignoredByUser.size, undefined, judged.listed);
   /** @type {ReturnType<typeof linesSummary> | null} */
   let uncorrected = null;
   let main = first;
