@@ -178,7 +178,7 @@ line of the table prints.
   Which revisions belong in the file is the repository's decision, not this tool's. The file is read from the working
   tree at the repository root, not from the ref being analysed. It needs git 2.23 or newer.
 - Bots are left out of both columns: a name ending in `[bot]` or with "bot" as its last word
-  (`Release Bot`, `vue-bot`, `ZodBot`, `jekyllbot`; not `Jan Bot <jan@example.nl>`), a name ending in `-Service`, a
+  (`Release Bot`, `vue-bot`, `ZodBot`, `jekyllbot`; a person named `Jan Bot` whose address starts with `jan` is not one), a name ending in `-Service`, a
   one-word name whose address local part ends in `bot` (10 or more letters), or a GitHub app, Renovate, GitLab or Gitea bot address. The second line of the output says how many identities, lines and commits that removed, so a
   busy bot cannot shrink every person's commit share without it showing. `--include-bots` counts them.
 - Binary files are skipped. Identities follow the repository's `.mailmap`; add one to
