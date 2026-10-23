@@ -173,7 +173,7 @@ test("the --reviewers view prints the bus factor of the path under its table", a
   });
 });
 
-const PLAIN_LINE = "  bus factor without the correction: 2 (Bob and Ada together hold 68.8% of 80 lines)";
+const PLAIN_LINE = "  bus factor without the correction: 2 (Bob and Ada together lead the plain count)";
 
 /** @param {(dir: string) => Promise<void>} fn */
 async function withReformatBus(fn) {
@@ -190,7 +190,7 @@ test("with a suspected reformat, the main bus factor is the corrected one, and t
     const text = renderTable(await analyse(parseArgs(["--cwd", dir])), 10);
     assert.ok(text.includes("bus factor 1: Ada alone holds 68.8% of 80 surviving lines"), text);
     assert.equal(count(text, PLAIN_LINE), 1, text);
-    assert.ok(text.indexOf(PLAIN_LINE) > text.indexOf("Without the correction:"), "it follows the without-the-correction line");
+    assert.ok(text.indexOf(PLAIN_LINE) > text.indexOf("Authors who gain lines from this:"), "it follows the comparison line");
   });
 });
 

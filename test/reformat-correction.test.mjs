@@ -54,9 +54,10 @@ test("by default the main rows leave the reformat commit out, and the block says
     assert.equal(r.reformat.uncorrected.busFactor.value, 1);
     const text = renderTable(r, 10);
     assert.ok(text.includes(APPLIED), text);
-    assert.ok(text.includes(`  ${s.shortSha} "style: switch app.js to double quotes" by Bob, 2026-02-01, 30 lines in the plain count`), text);
-    assert.ok(text.includes("  The table above does not count it. Without the correction: Ada 5 (14.3%), Bob 30 (85.7%). --keep-reformat counts it."), text);
-    assert.ok(text.includes("  bus factor without the correction: 1 (Bob alone holds 85.7% of 35 lines)"), text);
+    assert.ok(text.includes(`  commit ${s.shortSha} "style: switch app.js to double quotes" rewrote 30 lines in 1 file (formatting only)`), text);
+    assert.doesNotMatch(text, /Bob[^\n]*30 lines in the plain count|Bob 30 \(/, "no line total next to the committer's name");
+    assert.ok(text.includes(`  The table above does not count it. Authors who gain lines from this: Ada 35 (100.0%) with the correction, 5 (14.3%) without. --keep-reformat counts it; --ignore-rev ${s.shortSha} (or an entry in .git-blame-ignore-revs) sets it aside by hand.`), text);
+    assert.ok(text.includes("  bus factor without the correction: 1 (Bob alone leads the plain count)"), text);
     assert.doesNotMatch(text, /the numbers above include|reformat suspected/);
     assert.ok(text.indexOf(APPLIED) > text.indexOf("author "), "the block comes after the table");
     assert.ok(text.indexOf(APPLIED) < text.indexOf("What this cannot show"), "the block comes before the closing lines");
@@ -99,7 +100,7 @@ test("--group-by is corrected: Bob has no lines in the src block, and the block 
     assert.equal(r.reformat.applied, true);
     const text = renderGroups(r, 10);
     assert.equal(text.split(APPLIED).length - 1, 1, text);
-    assert.ok(text.includes("  The table above does not count it. Without the correction: "), text);
+    assert.ok(text.includes("  The table above does not count it. Authors who gain lines from this: "), text);
   });
 });
 
@@ -111,7 +112,7 @@ test("--csv is corrected, and the stderr note names the commit that was ignored"
     assert.ok(rows.some((row) => row.startsWith(`${PEOPLE.bob[0]},${mailOf("bob")},0,0.0000,`)), run.stdout);
     assert.ok(rows.some((row) => row.startsWith(`${PEOPLE.ada[0]},${mailOf("ada")},35,1.0000,`)), run.stdout);
     assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines: {1,3}.*\n)*$/);
-    assert.match(run.stderr, /surviving-lines:   [0-9a-f]{7} .*--keep-reformat counts it/s);
+    assert.match(run.stderr, /surviving-lines:   commit [0-9a-f]{7} .* rewrote 30 lines in 1 file \(formatting only\).*--keep-reformat counts it/s);
   });
 });
 

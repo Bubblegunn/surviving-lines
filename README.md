@@ -413,11 +413,15 @@ identity hint: 1 person may be counted twice (Troy Goode: troy@laptop.example, t
 
 bus factor 2: Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 70.1% of 1,985 surviving lines
 bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.
+```
 
+When the reformat commit is left out, a block names it and says what it rewrote. It prints no line total next to the name of the person who committed it, because those lines are not that person's code. It lists only the people who gain lines from the correction, with their figures with and without it. This is the block on a synthetic repository (`scripts/fixtures.mjs`, fixture `quotes`), where Bob changed every quote in Ada's file:
+
+```
 reformat commit ignored (looks like whitespace and quote changes only): 1 commit
-  62628c0 "style: reformat js with 4-space indent and double quotes" by Fiona Formatter, 2026-04-12, 291 lines in the plain count
-  The table above does not count it. Without the correction: Fiona Formatter 291 (14.7%), Douglas Christopher Wilson 454 (22.9%), Troy Goode <troy@work.example> 667 (33.6%), alex94puchades 31 (1.6%), Saad Tazi 7 (0.4%). --keep-reformat counts it.
-  bus factor without the correction: 2 (Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 56.5% of 1,985 lines)
+  commit a5a4525 "style: switch app.js to double quotes" rewrote 30 lines in 1 file (formatting only)
+  The table above does not count it. Authors who gain lines from this: Ada 35 (100.0%) with the correction, 5 (14.3%) without. --keep-reformat counts it; --ignore-rev a5a4525 (or an entry in .git-blame-ignore-revs) sets it aside by hand.
+  bus factor without the correction: 1 (Bob alone leads the plain count)
 ```
 
 With `--keep-reformat` the formatter's commit is counted, the block says so, and the identity hint's last sentence reads `... If they are one person, Troy Goode holds 715 lines (36.0%).`
@@ -509,11 +513,6 @@ identities merged in memory (nothing written): Troy Goode = troy@work.example 76
 
 bus factor 2: Troy Goode (2 addresses) and Douglas Christopher Wilson together hold 72.5% of 1,985 surviving lines
 bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.
-
-reformat commit ignored (looks like whitespace and quote changes only): 1 commit
-  62628c0 "style: reformat js with 4-space indent and double quotes" by Fiona Formatter, 2026-04-12, 291 lines in the plain count
-  The table above does not count it. Without the correction: Fiona Formatter 291 (14.7%), Douglas Christopher Wilson 454 (22.9%), Troy Goode (2 addresses) 715 (36.0%), alex94puchades 31 (1.6%), Saad Tazi 7 (0.4%). --keep-reformat counts it.
-  bus factor without the correction: 2 (Troy Goode (2 addresses) and Douglas Christopher Wilson together hold 58.9% of 1,985 lines)
 ```
 
 

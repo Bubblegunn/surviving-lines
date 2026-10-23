@@ -55,8 +55,9 @@ test("a quote-only reformat is flagged: the rows keep its author, the ignored vi
     ]);
     const text = renderTable(r, 10);
     assert.ok(text.includes(TITLE), text);
-    assert.ok(text.includes(`  ${s.shortSha} "style: switch app.js to double quotes" by Bob, 2026-02-01, 30 lines in the plain count`), text);
-    assert.ok(text.includes("  The table above does not count it. Without the correction: Ada 5 (14.3%), Bob 30 (85.7%). --keep-reformat counts it."), text);
+    assert.ok(text.includes(`  commit ${s.shortSha} "style: switch app.js to double quotes" rewrote 30 lines in 1 file (formatting only)`), text);
+    assert.doesNotMatch(text, /Bob[^\n]*30 lines in the plain count|Bob 30 \(/, "no line total next to the committer's name");
+    assert.ok(text.includes(`  The table above does not count it. Authors who gain lines from this: Ada 35 (100.0%) with the correction, 5 (14.3%) without. --keep-reformat counts it; --ignore-rev ${s.shortSha} (or an entry in .git-blame-ignore-revs) sets it aside by hand.`), text);
     assert.ok(text.indexOf(TITLE) > text.indexOf("author "), "the block comes after the table");
     assert.ok(text.indexOf(TITLE) < text.indexOf("What this cannot show"), "the block comes before the closing lines");
   });
@@ -177,7 +178,7 @@ test("--group-by prints only the header and the hint of the block, not the compa
     const r = await analyse(parseArgs(["--cwd", dir, "--group-by", "dir"]));
     const text = renderGroups(r, 10);
     assert.ok(text.includes(TITLE), text);
-    assert.ok(text.includes("  The table above does not count it. Without the correction: "), text);
+    assert.ok(text.includes("  The table above does not count it. Authors who gain lines from this: "), text);
     assert.doesNotMatch(text, /the numbers above include/);
     assert.equal(r.reformat.suspects.length, 1);
     assert.equal(r.reformat.applied, true);
@@ -192,7 +193,7 @@ test("--csv keeps stdout to the data and names the suspects on stderr", async ()
     assert.equal(run.status, 0, run.stderr);
     assert.doesNotMatch(run.stdout, /reformat/);
     assert.match(run.stderr, /^surviving-lines: reformat commit ignored \(looks like whitespace and quote changes only\): 1 commit\n(surviving-lines: {1,3}.*\n)*$/);
-    assert.match(run.stderr, /surviving-lines:   [0-9a-f]{7} .*--keep-reformat counts it/s);
+    assert.match(run.stderr, /surviving-lines:   commit [0-9a-f]{7} .* rewrote 30 lines in 1 file \(formatting only\).*--keep-reformat counts it/s);
   });
 });
 
@@ -227,7 +228,7 @@ test("two suspects at once: the header counts both and the hint names both full 
     assert.deepEqual(r.reformat.suspects.map((s) => s.sha).sort(), [bob, charlie].sort());
     const text = renderTable(r, 10);
     assert.ok(text.includes("reformat commits ignored (looks like whitespace and quote changes only): 2 commits"), text);
-    assert.ok(text.includes("  The table above does not count them. Without the correction: "), text);
+    assert.ok(text.includes("  The table above does not count them. Authors who gain lines from this: "), text);
     assert.equal(r.reformat.uncorrected.linesAttributed, 50);
     assert.equal(r.sample.linesAttributed, 50);
   } finally {
@@ -240,7 +241,7 @@ test("--markdown prints the same block under the table", async () => {
     const r = await analyse(parseArgs(["--cwd", dir]));
     const md = renderMarkdown(r, 10);
     assert.ok(md.includes(TITLE), md);
-    assert.ok(md.includes("  The table above does not count it. Without the correction: "), md);
+    assert.ok(md.includes("  The table above does not count it. Authors who gain lines from this: "), md);
     assert.ok(md.indexOf("| Bob |") < md.indexOf(TITLE), "the block comes after the table");
   });
 });

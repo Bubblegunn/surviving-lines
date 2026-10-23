@@ -207,8 +207,9 @@ test("two rows with one display name are told apart by address in the ignored li
     const laptop = PEOPLE.adaLaptop[1];
     // The corrected rows give the 25 lines back to the address that wrote them; the plain count gave them to the laptop.
     assert.ok(text.includes(`bus factor 1: Ada <${ada}> alone holds 100.0% of 35 surviving lines`), text);
-    assert.ok(text.includes(`Without the correction: Ada <${ada}> 10 (28.6%), Ada <${laptop}> 25 (71.4%).`), text);
-    assert.ok(text.includes(`bus factor without the correction: 1 (Ada <${laptop}> alone holds 71.4% of 35 lines)`), text);
+    assert.ok(text.includes(`Authors who gain lines from this: Ada <${ada}> 35 (100.0%) with the correction, 10 (28.6%) without.`), text);
+    assert.doesNotMatch(text, /Ada <[^>]*> 25 \(/, "no total next to the committer's address");
+    assert.ok(text.includes(`bus factor without the correction: 1 (Ada <${laptop}> alone leads the plain count)`), text);
   } finally {
     removeRepo(dir);
   }

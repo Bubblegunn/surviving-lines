@@ -1375,7 +1375,7 @@ const REFORMAT_MAX_TOTAL_BYTES = 200 * 1024 * 1024;
 
 /**
  * What one log call gives for a commit: parents, date, subject, and the changed files with their blob ids and counts.
- * @typedef {{ parents: string[], date: string, subject: string, files: { status: string, path: string, before: string, after: string }[], counts: Map<string, { binary: boolean, changed: number }> }} CommitFacts
+ * @typedef {{ parents: string[], date: string, subject: string, files: { status: string, path: string, before: string, after: string }[], counts: Map<string, { binary: boolean, changed: number, added?: number }> }} CommitFacts
  */
 
 /**
@@ -1410,7 +1410,7 @@ async function readCommitFacts(run, shas) {
       } else if (t) {
         const [added, deleted, ...rest] = t.split("\t");
         const binary = added === "-";
-        counts.set(rest.join("\t"), { binary, changed: binary ? 0 : Number(added) + Number(deleted) });
+        counts.set(rest.join("\t"), { binary, changed: binary ? 0 : Number(added) + Number(deleted), added: binary ? 0 : Number(added) });
       }
     }
     facts.set(sha, { parents: parents.split(" ").filter(Boolean), date, subject: subject.join("\x1f"), files, counts });
@@ -1476,7 +1476,7 @@ async function readBlobs(run, wanted) {
  * whose line count git does not give is not judged, so the commit is not a reformat either.
  * @param {CommitFacts} f
  * @param {(oid: string) => Promise<string | undefined>} blob the text of a blob id
- * @returns {Promise<{ filesChanged: number, changedLines: number } | null>}
+ * @returns {Promise<{ filesChanged: number, changedLines: number, addedLines: number } | null>}
  */
 async function reformatLines(f, blob) {
   const files = f.files;
@@ -1484,17 +1484,19 @@ async function reformatLines(f, blob) {
   if (files.some((x) => x.status !== "M")) return null;
   let textFiles = 0;
   let changedLines = 0;
+  let addedLines = 0;
   for (const file of files) {
     const c = f.counts.get(file.path);
     if (!c) return null;
     if (c.binary) continue;
     textFiles++;
     changedLines += c.changed;
+    addedLines += c.added ?? Math.ceil(c.changed / 2);
     const before = await blob(file.before);
     const after = await blob(file.after);
     if (before === undefined || after === undefined || !isFormatOnlyChange(before, after, file.path)) return null;
   }
-  return textFiles === 0 ? null : { filesChanged: files.length, changedLines };
+  return textFiles === 0 ? null : { filesChanged: files.length, changedLines, addedLines };
 }
 
 /**
@@ -3092,9 +3094,9 @@ export function reformatBlock(r) {
 }
 
 /**
- * The block for an applied correction: the suspects, the line count each had in the plain count, one line on what the
- * table would show without the correction (the authors whose count moves, largest move first, at most five), and the
- * bus factor of that plain count.
+ * The block for an applied correction: what each suspect commit rewrote (lines and files, with no total next to the
+ * committer's name), one line on the people who gain lines because the commit is left out (largest gain first, at most
+ * five, with their figures with and without the correction), how to reproduce it, and the bus factor of the plain count.
  * @param {Awaited<ReturnType<typeof analyse>>} r
  * @param {NonNullable<Awaited<ReturnType<typeof analyse>>["reformat"]["uncorrected"]>} counted
  * @param {Awaited<ReturnType<typeof analyse>>["reformat"]["suspects"]} suspects
@@ -3104,8 +3106,12 @@ export function reformatBlock(r) {
 function appliedBlock(r, counted, suspects, it) {
   const many = suspects.length > 1;
   const out = [`reformat commit${many ? "s" : ""} ignored (looks like whitespace and quote changes only): ${suspects.length} commit${many ? "s" : ""}`];
+  // The block describes what the commit rewrote. It prints no line total next to the committer's name: those lines are
+  // not that person's code, and a total beside the name reads as if they were.
   for (const s of suspects) {
-    out.push(`  ${s.shortSha} "${s.subject}" by ${s.author}, ${s.date}, ${s.survivingLines.toLocaleString("en-US")} lines in the plain count`);
+    const rewritten = s.addedLines ?? (typeof s.changedLines === "number" ? Math.ceil(s.changedLines / 2) : s.survivingLines);
+    const files = s.filesChanged ?? 0;
+    out.push(`  commit ${s.shortSha} "${s.subject}" rewrote ${rewritten.toLocaleString("en-US")} line${rewritten === 1 ? "" : "s"} in ${files.toLocaleString("en-US")} file${files === 1 ? "" : "s"} (formatting only)`);
   }
   // A name two addresses share shows its address, the same rule the table uses. The names are read from both lists,
   // so an address that only the plain count holds is labelled as the table would label it.
@@ -3121,18 +3127,31 @@ function appliedBlock(r, counted, suspects, it) {
     if ((addressesOf.get(mail) ?? 0) > 1) return `${name} (${addressesOf.get(mail)} addresses)`;
     return (mailsOf.get(name)?.size ?? 0) > 1 ? isolate(`${name} <${mail}>`) : name;
   };
-  const shown = new Map(r.authors.map((a) => [a.mail, a.lines]));
+  const shown = new Map(r.authors.map((a) => [a.mail, a]));
   const plain = new Map(counted.authors.map((a) => [a.mail, a]));
-  const moved = [...nameOf.keys()]
-    .map((mail) => ({ label: label(mail), lines: plain.get(mail)?.lines ?? 0, share: plain.get(mail)?.lineShare ?? 0, now: shown.get(mail) ?? 0 }))
-    .filter((m) => m.lines !== m.now)
-    .sort((x, y) => Math.abs(y.lines - y.now) - Math.abs(x.lines - x.now) || x.label.localeCompare(y.label))
+  // The comparison lists only the people who gain lines because the commit is left out, largest gain first, at most
+  // five. The people who committed the reformat are never listed: their drop is the point of the correction.
+  const committers = new Set(suspects.map((s) => s.mail));
+  const gained = [...nameOf.keys()]
+    .filter((mail) => !committers.has(mail))
+    .map((mail) => ({ label: label(mail), now: shown.get(mail)?.lines ?? 0, nowShare: shown.get(mail)?.lineShare ?? 0, before: plain.get(mail)?.lines ?? 0, beforeShare: plain.get(mail)?.lineShare ?? 0 }))
+    .filter((m) => m.now > m.before)
+    .sort((x, y) => y.now - y.before - (x.now - x.before) || x.label.localeCompare(y.label))
     .slice(0, 5);
-  const without = moved.length ? ` Without the correction: ${moved.map((m) => `${m.label} ${m.lines.toLocaleString("en-US")} (${pct(m.share)})`).join(", ")}.` : "";
-  out.push(`  The table above does not count ${it}.${without} --keep-reformat counts ${it}.`);
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const gains = gained.length ? ` Authors who gain lines from this: ${gained.map((m) => `${m.label} ${n(m.now)} (${pct(m.nowShare)}) with the correction, ${n(m.before)} (${pct(m.beforeShare)}) without`).join("; ")}.` : "";
+  const flags = many ? suspects.map((s) => `--ignore-rev ${s.sha}`).join(" ") : `--ignore-rev ${suspects[0].shortSha}`;
+  out.push(`  The table above does not count ${it}.${gains} --keep-reformat counts ${it}; ${flags} (or an entry in .git-blame-ignore-revs) sets ${it} aside by hand.`);
   // The bus factor of the plain count, named the way the table names its own.
   const plainBf = counted.busFactor;
-  if (plainBf) out.push(`  bus factor without the correction: ${plainBf.value} (${busFactorWords(plainBf, "lines", labelledBusNames(plainBf, counted.authors, r.authors))})`);
+  if (plainBf) {
+    // When the committer of a reformat is among the people named, the usual words would put a share of the lines next to
+    // that name. Then the names are given without a figure.
+    const committerNames = new Set(suspects.map((s) => s.author));
+    const names = labelledBusNames(plainBf, counted.authors, r.authors);
+    const words = plainBf.authors.some((name) => committerNames.has(name)) ? `${listNames(names)} ${plainBf.value === 1 ? "alone leads" : "together lead"} the plain count` : busFactorWords(plainBf, "lines", names);
+    out.push(`  bus factor without the correction: ${plainBf.value} (${words})`);
+  }
   return out;
 }
 

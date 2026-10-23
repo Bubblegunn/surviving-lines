@@ -163,7 +163,9 @@ test("the table and the suggestion both leave out the suspected formatter commit
     assert.deepEqual(r.reviewers?.suggested.map((p) => [p.author, p.lines]), [[PEOPLE.ada[0], 40], [PEOPLE.charlie[0], 3]]);
     const text = renderReviewers(r, 5);
     assert.ok(text.includes("suggested by surviving lines (with the suspected reformat commit ignored): Ada (40 lines, 93.0%, last commit 2026-03-01, active), Charlie (3 lines, 7.0%, last commit 2024-01-05, inactive)"), text);
-    assert.ok(text.includes(`${PEOPLE.bob[0]}`) && text.includes("69.8%"), text);
+    assert.ok(text.includes(`${PEOPLE.bob[0]}`), text);
+    assert.ok(text.includes("Authors who gain lines from this: Ada 40 (93.0%) with the correction, 10 (23.3%) without."), text);
+    assert.doesNotMatch(text, /69\.8%/, "no share of the plain count next to the committer's name");
     assert.equal(text.includes("top owner"), false);
   });
 });

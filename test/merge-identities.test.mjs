@@ -111,7 +111,7 @@ test("the reformat comparison lists the plain count merged too, and the block na
       ],
     );
     assert.deepEqual(r.reformat.uncorrected?.busFactor?.authors, ["Bob"]);
-    assert.ok(renderTable(r, 10).includes("Without the correction: Ada (2 addresses) 13 (39.4%), Bob 20 (60.6%)."), renderTable(r, 10));
+    assert.ok(renderTable(r, 10).includes("Authors who gain lines from this: Ada (2 addresses) 33 (100.0%) with the correction, 13 (39.4%) without."), renderTable(r, 10));
   });
 });
 
