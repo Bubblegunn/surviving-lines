@@ -31,6 +31,25 @@ export const SCHEMA_VERSION = 1;
 /** Above this many files to blame, copy detection (-C) is off by default: it makes each blame search the whole commit. */
 const COPY_DETECTION_MAX_FILES = 2000;
 
+/**
+ * Above this many files times commits reachable from the ref, copy detection (-C) is off by default. Blame with -C
+ * looks for each line in the other files of every commit that touched the file, so its time grows with both numbers;
+ * a repository under the file limit but with a long history can still take many minutes.
+ */
+export const COPY_DETECTION_MAX_WORK = 2_000_000;
+
+/**
+ * Whether copy detection is on when --copies and --no-copies were not given: the file count is at most
+ * COPY_DETECTION_MAX_FILES and files times commits is at most `limit`.
+ * @param {number} files files to blame
+ * @param {number} commits commits reachable from the ref
+ * @param {number} [limit]
+ * @returns {boolean}
+ */
+export function copyDetectionDefault(files, commits, limit = COPY_DETECTION_MAX_WORK) {
+  return files <= COPY_DETECTION_MAX_FILES && files * commits <= limit;
+}
+
 /** The package version, read from the package.json this file ships with. */
 function toolVersion() {
   return JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version;
@@ -55,8 +74,8 @@ Measure who wrote the code that is still alive in a git ref.
   --exclude <glob>     skip files matching the glob (repeatable)
   --since <date>       commit-share window start (passed to git log)
   --until <date>       commit-share window end
-  --copies [deep]      follow copies even above 2000 files to blame (default: git blame -w -M -C, which follows code
-                       moved out of a file changed in the same commit; copy detection is off above 2000 files).
+  --copies [deep]      follow copies even above 2000 files, or files times commits above 2,000,000 (default: git blame -w -M -C, which follows code
+                       moved out of a file changed in the same commit; copy detection is off above those limits).
                        "deep" uses -C -C, which also looks in files of the commit that created the file.
                        The word right after --copies is read as this value, so never put a path named "deep" there
                        (paths go after --)
@@ -116,7 +135,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -2378,10 +2397,20 @@ export async function analyse(o) {
   // -C follows code moved out of a file changed in the same commit back to its first author; --copies deep (-C -C) also
   // looks in the files of the commit that created the file. Every blame then looks in more files, so above this many
   // files it is off unless asked for.
-  const copyOn = !o.noCopies && (o.copies || all.length <= COPY_DETECTION_MAX_FILES);
+  // The history is measured only when the file count alone does not decide it.
+  const forced = o.noCopies || o.copies;
+  const commitCount = !forced && all.length <= COPY_DETECTION_MAX_FILES ? Number((await git(["rev-list", "--count", o.ref], o.cwd)).trim()) : 0;
+  const copyOn = !o.noCopies && (o.copies || copyDetectionDefault(all.length, commitCount, o.copyWorkLimit));
+  const workLimit = o.copyWorkLimit ?? COPY_DETECTION_MAX_WORK;
   const copyDetection = {
     on: copyOn,
-    reason: copyOn ? null : o.noCopies ? "--no-copies" : `${all.length} files in the ref, more than ${COPY_DETECTION_MAX_FILES}`,
+    reason: copyOn
+      ? null
+      : o.noCopies
+        ? "--no-copies"
+        : all.length > COPY_DETECTION_MAX_FILES
+          ? `${all.length} files in the ref, more than ${COPY_DETECTION_MAX_FILES}`
+          : `${all.length.toLocaleString("en-US")} files times ${commitCount.toLocaleString("en-US")} commits is more than ${workLimit.toLocaleString("en-US")}`,
     flags: copyOn ? (o.copiesDeep ? "-C -C" : "-C") : null,
   };
   const blameArgs = ["blame", "--line-porcelain", "-w", "-M"];

@@ -150,3 +150,43 @@ test("S2: well-known binary document extensions are left out even without a NUL 
     },
   );
 });
+
+test("S3: copy detection is on at the files x commits limit and off one above it, and off above 2000 files", () => {
+  const { copyDetectionDefault, COPY_DETECTION_MAX_WORK } = mod;
+  assert.equal(COPY_DETECTION_MAX_WORK, 2_000_000);
+  assert.equal(copyDetectionDefault(1000, 1999), true, "below");
+  assert.equal(copyDetectionDefault(1000, 2000), true, "at");
+  assert.equal(copyDetectionDefault(1000, 2001), false, "above");
+  assert.equal(copyDetectionDefault(2000, 1000), true, "at the file limit and the work limit");
+  assert.equal(copyDetectionDefault(2001, 1), false, "above the file limit with a short history");
+  assert.equal(copyDetectionDefault(3, 600_000), true);
+  assert.equal(copyDetectionDefault(3, 700_000), false);
+  assert.equal(copyDetectionDefault(5, 3, 15), true, "explicit limit, at");
+  assert.equal(copyDetectionDefault(5, 4, 15), false, "explicit limit, above");
+});
+
+test("S3: a history too long for the file count turns -C off and prints the note; --copies forces it on", async () => {
+  await withRepo(
+    (dir) => {
+      for (let i = 0; i < 4; i++) commitAsIdentity(dir, ANN, `2026-01-0${i + 1}T00:00:00Z`, `c${i}`, { "a.js": lines("a", 3 + i), "b.js": lines("b", 3 + i) });
+    },
+    async (dir) => {
+      // 2 files x 4 commits = 8; a limit of 7 puts this repository just above it.
+      const off = parseArgs(["--cwd", dir]);
+      off.copyWorkLimit = 7;
+      const r = await analyse(off);
+      assert.equal(r.blame.copyDetection.on, false);
+      assert.equal(r.blame.copyDetection.flags, null);
+      assert.match(r.blame.copyDetection.reason ?? "", /^2 files times 4 commits is more than 7$/);
+      assert.match(renderTable(r, 10), /^copy detection off: 2 files times 4 commits is more than 7, so code moved .*--copies turns it on/m);
+      const at = parseArgs(["--cwd", dir]);
+      at.copyWorkLimit = 8;
+      assert.equal((await analyse(at)).blame.copyDetection.on, true);
+      const forced = parseArgs(["--cwd", dir, "--copies"]);
+      forced.copyWorkLimit = 7;
+      assert.equal((await analyse(forced)).blame.copyDetection.on, true);
+      const none = parseArgs(["--cwd", dir, "--no-copies"]);
+      assert.equal((await analyse(none)).blame.copyDetection.reason, "--no-copies");
+    },
+  );
+});
