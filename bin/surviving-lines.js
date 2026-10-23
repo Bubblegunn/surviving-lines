@@ -21,6 +21,15 @@ import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
 
+/** The git processes that are running now, so a time budget can stop them instead of leaving them to finish alone. */
+const liveChildren = new Set();
+
+/** Stop every git process this run started. Used when --time-budget runs out. */
+export function stopGitProcesses() {
+  for (const child of liveChildren) child.kill();
+  liveChildren.clear();
+}
+
 /**
  * The version of the `--json` layout, described by schema/surviving-lines.schema.json. It changes
  * when a key is removed, renamed or changes type, so a consumer can refuse a layout it does not know
@@ -114,6 +123,10 @@ Measure who wrote the code that is still alive in a git ref.
   --without <author>[,<author>...]  what if these people left: lines they hold, files they own, files nobody remaining would
                        know, bus factor before and after, who inherits most. An author is a name or an address (after .mailmap
                        and --merge-identities). Repeatable; prints its own view, with --json only
+  --brief              one compact plain-text view of the whole repository (at most 40 lines, about 3,000 characters): owners with both
+                       line counts, bus factor, activity, orphans, what was left out, identity proposals, top directories, single-owner
+                       files. Built from the same analysis as the other views; with --json, a small object. Not with the other views
+  --time-budget <s>    with --brief: after s seconds print nothing and exit 0, so a hook can bound the run
   --reviewers <path>   list who should review a file or directory: lines, commits, last commit, and whether active
   --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -146,7 +159,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, activeDays: number, orphans: boolean, without: string[], reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -154,7 +167,7 @@ groupBy?: string, files?: number, activeDays: number, orphans: boolean, without:
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, brief: false, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -179,6 +192,8 @@ export function parseArgs(argv) {
     else if (a === "--files") { o.files = 25; if (/^\d+$/.test(argv[i + 1] ?? "")) { o.files = Number(argv[++i]); if (o.files < 1) throw new Error("--files must be an integer >= 1"); } }
     else if (a === "--active-days") { o.activeDays = Number(next()); if (!Number.isInteger(o.activeDays) || o.activeDays < 1) throw new Error("--active-days must be an integer >= 1"); }
     else if (a === "--orphans") o.orphans = true;
+    else if (a === "--brief") o.brief = true;
+    else if (a === "--time-budget") { o.timeBudget = Number(next()); if (!Number.isFinite(o.timeBudget) || o.timeBudget <= 0) throw new Error("--time-budget must be a number of seconds above 0"); }
     else if (a === "--without") o.without.push(next());
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
@@ -227,6 +242,11 @@ export function parseArgs(argv) {
   if (o.without.length) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
     if (clash) throw new Error(`--without prints its own view; it can be combined with --json only, not with ${clash}`);
+  }
+  if (o.timeBudget !== undefined && !o.brief) throw new Error("--time-budget works with --brief only");
+  if (o.brief) {
+    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
+    if (clash) throw new Error(`--brief prints its own view; it can be combined with --json only, not with ${clash}`);
   }
   if (o.orphans) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.history !== undefined ? "--history" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
@@ -637,13 +657,20 @@ const GIT_SETTINGS = ["-c", "core.precomposeunicode=false", "-c", "core.quotepat
 async function git(args, cwd, opts = {}) {
   const full = [...GIT_SETTINGS, ...args];
   if (opts.input === undefined && !opts.binary) {
-    const { stdout } = await execFileP("git", full, { cwd, maxBuffer: 1024 * 1024 * 512, encoding: "utf8", ...(opts.timeout ? { timeout: opts.timeout } : {}) });
-    return stdout;
+    const pending = execFileP("git", full, { cwd, maxBuffer: 1024 * 1024 * 512, encoding: "utf8", ...(opts.timeout ? { timeout: opts.timeout } : {}) });
+    liveChildren.add(pending.child);
+    try {
+      return (await pending).stdout;
+    } finally {
+      liveChildren.delete(pending.child);
+    }
   }
   // Objects read through `cat-file --batch` are raw bytes. They come back as a latin1 string, one character per byte,
   // so the sizes git prints are positions in it; each blob is decoded as UTF-8 afterwards.
   return new Promise((resolveRun, reject) => {
     const child = spawn("git", full, { cwd, stdio: ["pipe", "pipe", "pipe"] });
+    liveChildren.add(child);
+    child.on("close", () => liveChildren.delete(child));
     /** @type {Buffer[]} */
     const chunks = [];
     /** @type {Buffer[]} */
@@ -3420,7 +3447,8 @@ export async function analyse(o) {
     shownFlags.push("--ignore-rev", id.slice(0, 7));
   }
 
-  const grouping = o.groupBy === undefined ? null : parseGroupBy(o.groupBy);
+  // The brief reads the first-level directories, so it groups the way --group-by dir does, internally.
+  const grouping = o.groupBy === undefined ? (o.brief ? /** @type {{ kind: "dir", depth: number }} */ ({ kind: "dir", depth: 1 }) : null) : parseGroupBy(o.groupBy);
   const needTrailers = o.coAuthors === "share" || o.aiBreakdown;
   const credit = o.reapplyCredit ? createReapplyCredit(o.cwd) : null;
   const first = await blamePass(o, sampled, blameArgs, grouping, showProgress ? errStream : null, new Set(), credit);
@@ -3682,7 +3710,7 @@ export async function analyse(o) {
   // G12: the strong identity groups count as one person here whether or not --merge-identities merged them.
   const committedElsewhere = await committedByOthers(o, blamedByCommit, canonicalOf, credit ? credit.creditedShas() : new Set());
   const reapplied = reappliedCreditOf(credit, blamedByCommit);
-  return {
+  const result = {
     ref: o.ref,
     sort: o.sort,
     shallow,
@@ -3720,6 +3748,240 @@ export async function analyse(o) {
     history,
     authors: rows,
   };
+  if (!o.brief) return result;
+  // The brief reads the result above and three more facts: the commit id, the single-owner files and the bus factor of
+  // the people who still commit (counted on their lines, as --without counts the people who remain).
+  const activePeople = [...people.values()].filter((p) => p.active).map((p) => ({ author: p.author, mail: p.author, lines: p.lines })).sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+  const activeBf = busFactor(activePeople, o.busFactorThreshold);
+  const sha = (await git(["rev-parse", `${o.ref}^{commit}`], o.cwd)).trim();
+  const singleOwner = fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf).singleOwnerFiles;
+  const brief = briefOf(result, {
+    sha,
+    scope: { paths: o.paths, include: o.include, exclude: o.exclude, since: o.since ?? null, until: o.until ?? null },
+    singleOwner,
+    activeBusFactor: activeBf && { value: activeBf.value, authors: activeBf.authors, people: activePeople.length },
+  });
+  return { ...result, brief };
+}
+
+/** The brief (--brief): how many people, directories and files each list names at most. */
+const BRIEF_OWNERS = 6;
+const BRIEF_DIRECTORIES = 5;
+const BRIEF_SINGLE_OWNER = 5;
+const BRIEF_ORPHANS_NAMED = 3;
+const BRIEF_SET_ASIDE = 5;
+/** The brief stays within this many lines and about this many characters; lists shrink first when it does not. */
+export const BRIEF_MAX_LINES = 40;
+export const BRIEF_MAX_CHARS = 3000;
+/** The last line of the brief, word for word. */
+export const BRIEF_QUOTE_RULE = "quote rule: quote both line counts; identity merges above are proposals; for a named directory or language re-run with -- <dir> or --include";
+
+/**
+ * The facts of the brief, from the analysis result the other views use. Nothing is counted again here: every figure is
+ * one the result already holds, so the brief and the full views cannot disagree.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @param {{ sha: string, scope: { paths: string[], include: string[], exclude: string[], since: string | null, until: string | null }, singleOwner: ReturnType<typeof fileOwnersOf>["singleOwnerFiles"], activeBusFactor: { value: number, authors: string[], people: number } | null }} x
+ */
+export function briefOf(r, x) {
+  const live = [...r.authors].filter((a) => a.lines > 0).sort((p, q) => q.lines - p.lines || p.mail.localeCompare(q.mail));
+  const nameCount = new Map();
+  for (const a of live) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
+  const shown = live.slice(0, BRIEF_OWNERS);
+  const rest = live.slice(BRIEF_OWNERS);
+  const bf = r.busFactor;
+  const act = r.activity;
+  const orphans = r.orphans;
+  const dropped = r.dropped;
+  const droppedClasses = dropped?.applied ? DROP_CLASSES.filter((k) => dropped.classes[k]?.files).map((k) => ({ class: k, files: dropped.classes[k].files, lines: dropped.classes[k].lines })) : [];
+  const botRows = r.bots?.included ? [] : r.bots?.excluded ?? [];
+  const reformat = r.reformat?.applied ? r.reformat.suspects : [];
+  const stillCounted = r.reformat?.applied ? [] : r.reformat?.suspects ?? [];
+  /** @type {{ sha: string, subject: string, kind: string }[]} */
+  const setAside = [
+    ...reformat.map((s) => ({ sha: s.shortSha, subject: s.subject, kind: "reformat" })),
+    ...(r.mechanicalCheck?.setAsideCommits ?? []).map((c) => ({ sha: c.shortSha, subject: c.subject, kind: c.reason === "boilerplate" ? "boilerplate" : "mechanical rewrite" })),
+  ];
+  const merged = r.identityMerge?.applied ? r.identityMerge.groups : [];
+  /** @type {{ names: string[], addresses: string[], lines: number, lineShare: number, strength: string, source: string }[]} */
+  const proposals = [
+    ...r.identityHints.people.filter((p) => p.lines > 0 && !(merged.length && p.strength === "strong")).map((p) => ({ names: [p.name], addresses: p.addresses, lines: p.lines, lineShare: p.lineShare, strength: p.strength, source: "identity hint" })),
+    ...r.possibleSamePerson.suggestions.filter((s) => s.lines > 0).map((s) => ({ names: [...new Set(s.addresses.map((a) => a.name || a.mail))], addresses: s.addresses.map((a) => a.mail), lines: s.lines, lineShare: s.lineShare, strength: s.strength, source: "possible same person" })),
+  ];
+  const directories = (r.grouping?.groups ?? [])
+    .filter((g) => g.lines > 0 && g.authors.length)
+    .slice(0, BRIEF_DIRECTORIES)
+    .map((g) => ({ dir: g.key, lines: g.lines, lineShare: r.sample.linesAttributed ? g.lines / r.sample.linesAttributed : 0, topOwner: g.authors[0].author, topOwnerLines: g.authors[0].lines, topOwnerShare: g.authors[0].lineShare }));
+  const committed = r.committedByOthers;
+  const reapplied = r.reappliedCredit;
+  return {
+    view: "brief",
+    ref: r.ref,
+    sha: x.sha.slice(0, 7),
+    asOf: act?.asOf ?? null,
+    shallow: r.shallow,
+    scope: { paths: x.scope.paths, include: x.scope.include, exclude: x.scope.exclude, since: x.scope.since, until: x.scope.until, sampleEvery: r.sample.every },
+    files: r.sample.filesSampled,
+    filesTotal: r.sample.filesTotal,
+    commits: r.commitWindow.commits,
+    lines: r.sample.linesAttributed,
+    linesWithBlank: live.reduce((s, a) => s + a.linesWithBlank, 0),
+    owners: {
+      total: live.length,
+      shown: shown.map((a) => ({ author: a.author, mail: a.mail, ...((a.addresses ?? 0) > 1 ? { addresses: a.addresses } : {}), sharedName: (nameCount.get(a.author) ?? 0) > 1, lines: a.lines, lineShare: a.lineShare, linesWithBlank: a.linesWithBlank, shareWithBlank: a.shareWithBlank, commits: a.commits, commitShare: a.commitShare })),
+      others: { people: rest.length, lines: rest.reduce((s, a) => s + a.lines, 0), lineShare: rest.reduce((s, a) => s + a.lineShare, 0), linesWithBlank: rest.reduce((s, a) => s + a.linesWithBlank, 0), shareWithBlank: rest.reduce((s, a) => s + a.shareWithBlank, 0) },
+    },
+    busFactor: bf && {
+      thresholdPercent: bf.thresholdPercent,
+      value: bf.value,
+      authors: bf.authors,
+      withBlank: bf.withBlank ? bf.withBlank.value : null,
+      authorsFor80Percent: bf.authorsFor80Percent,
+      active: x.activeBusFactor,
+    },
+    activity: act && { activeDays: act.activeDays, authors: act.authors, activeAuthors: act.activeAuthors, activeShare: act.activeShare, inactiveShare: act.inactiveShare, largestInactive: act.largestInactive.slice(0, 3) },
+    orphans: orphans && { files: orphans.files, scopeFiles: orphans.scopeFiles, lines: orphans.lines, lineShare: orphans.lineShare, largest: orphans.items.slice(0, BRIEF_ORPHANS_NAMED).map((f) => ({ path: f.path, owner: f.owner, lines: f.lines })) },
+    leftOut: {
+      bots: { identities: botRows.length, names: botRows.map((b) => b.author).slice(0, 3), lines: botRows.reduce((s, b) => s + b.lines, 0), commits: botRows.reduce((s, b) => s + b.commits, 0) },
+      dropped: { files: dropped?.applied ? dropped.files : 0, lines: dropped?.applied ? dropped.lines : 0, classes: droppedClasses },
+      setAside: setAside.slice(0, BRIEF_SET_ASIDE),
+      setAsideTotal: setAside.length,
+      suspectedStillCounted: stillCounted.slice(0, 3).map((s) => ({ sha: s.shortSha, subject: s.subject })),
+    },
+    identity: { mergeApplied: Boolean(r.identityMerge?.applied), appliedGroups: merged.length, proposals: proposals.slice(0, 5), proposalsTotal: proposals.length },
+    directories,
+    singleOwnerFiles: { files: x.singleOwner.files.slice(0, BRIEF_SINGLE_OWNER), more: x.singleOwner.more + Math.max(0, x.singleOwner.files.length - BRIEF_SINGLE_OWNER) },
+    committedByOthers: { total: committed?.total ?? 0, commits: (committed?.commits ?? []).slice(0, 2).map((c) => ({ sha: c.shortSha, subject: c.subject, lines: c.lines, author: c.author, committer: c.committer })) },
+    reappliedCredit: { total: reapplied?.total ?? 0, commits: (reapplied?.commits ?? []).slice(0, 2).map((c) => ({ sha: c.shortSha, subject: c.subject, lines: c.lines, credited: c.credited, reappliedBy: c.reappliedBy })) },
+    quoteRule: BRIEF_QUOTE_RULE,
+  };
+}
+
+/** @param {string} s @param {number} max the string cut to max characters, with an ellipsis when it was longer */
+function cut(s, max) {
+  const flat = s.replace(/[\r\n\t]+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, Math.max(1, max - 3))}...` : flat;
+}
+
+/** @param {string} p @param {number} max a path cut from the left to max characters, so the file name stays */
+function cutPath(p, max) {
+  return p.length > max ? `...${p.slice(p.length - max + 3)}` : p;
+}
+
+/**
+ * The brief as plain text: at most BRIEF_MAX_LINES lines and about BRIEF_MAX_CHARS characters. The lists shrink step by
+ * step until it fits; the facts that carry a number (owners, bus factor, activity) never shrink.
+ * @param {ReturnType<typeof briefOf>} b
+ * @returns {string}
+ */
+export function renderBrief(b) {
+  const steps = [
+    { dirs: BRIEF_DIRECTORIES, single: BRIEF_SINGLE_OWNER, aside: BRIEF_SET_ASIDE, subject: 48, hints: 3, orphans: BRIEF_ORPHANS_NAMED, notes: 2 },
+    { dirs: 4, single: 3, aside: 3, subject: 36, hints: 2, orphans: 2, notes: 1 },
+    { dirs: 3, single: 2, aside: 2, subject: 28, hints: 1, orphans: 1, notes: 1 },
+    { dirs: 2, single: 1, aside: 1, subject: 20, hints: 1, orphans: 1, notes: 1 },
+  ];
+  for (const limits of steps) {
+    const text = briefLines(b, limits).join("\n");
+    if (text.length <= BRIEF_MAX_CHARS && text.split("\n").length <= BRIEF_MAX_LINES) return text;
+  }
+  // Last resort: every line is cut, never a number dropped from the owner lines.
+  return briefLines(b, steps[steps.length - 1]).map((l) => cut(l, 230)).slice(0, BRIEF_MAX_LINES).join("\n");
+}
+
+/**
+ * @param {ReturnType<typeof briefOf>} b
+ * @param {{ dirs: number, single: number, aside: number, subject: number, hints: number, orphans: number, notes: number }} lim
+ * @returns {string[]}
+ */
+function briefLines(b, lim) {
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const name = (/** @type {string} */ s) => cut(s, 40);
+  const people = (/** @type {number} */ k) => `${n(k)} ${k === 1 ? "person" : "people"}`;
+  const sampleNote = b.scope.sampleEvery > 1 ? `; sample: 1 file in ${b.scope.sampleEvery}` : "";
+  /** @type {string[]} */
+  const out = [];
+  out.push(`surviving-lines brief; ref ${b.ref} @ ${b.sha}${b.asOf ? `; as of ${b.asOf}` : ""}; files ${n(b.files)}; commits ${n(b.commits)}, merges excluded${sampleNote}${b.shallow ? `; ${SHALLOW_MARK}` : ""}`);
+  const scope = [
+    b.scope.paths.length ? `paths ${b.scope.paths.join(" ")}` : "",
+    b.scope.include.length ? `include ${b.scope.include.join(" ")}` : "",
+    b.scope.exclude.length ? `exclude ${b.scope.exclude.join(" ")}` : "",
+    b.scope.since ? `since ${b.scope.since}` : "",
+    b.scope.until ? `until ${b.scope.until}` : "",
+  ].filter(Boolean);
+  out.push(cut(`scope: ${scope.length ? scope.join("; ") : "whole repository"}; ${n(b.lines)} non-blank lines, ${n(b.linesWithBlank)} counting blank lines`, 230));
+  if (!b.owners.shown.length) {
+    out.push("owners: nobody holds a counted line");
+  } else {
+    out.push(`owners, top ${b.owners.shown.length} of ${b.owners.total}: non-blank lines (share) | counting blank lines (share) | commits (share)`);
+    for (const a of b.owners.shown) {
+      const label = a.addresses ? `${a.author} (${a.addresses} addresses)` : a.sharedName ? `${a.author} <${a.mail}>` : a.author;
+      out.push(`  ${name(label)}: ${n(a.lines)} (${pct(a.lineShare)}) | ${n(a.linesWithBlank)} (${pct(a.shareWithBlank)}) | ${n(a.commits)} (${pct(a.commitShare)})`);
+    }
+    if (b.owners.others.people) out.push(`  ${people(b.owners.others.people)} more: ${n(b.owners.others.lines)} (${pct(b.owners.others.lineShare)}) | ${n(b.owners.others.linesWithBlank)} (${pct(b.owners.others.shareWithBlank)})`);
+  }
+  const bf = b.busFactor;
+  if (bf) {
+    const named = bf.authors.slice(0, 3).map(name).join(", ") + (bf.authors.length > 3 ? ", ..." : "");
+    const reach = typeof bf.authorsFor80Percent === "number" ? `; to reach 80%: ${bf.authorsFor80Percent}` : "";
+    const blank = bf.withBlank !== null ? `; counting blank lines: ${bf.withBlank}` : "";
+    const active = bf.active ? `; active people only: ${bf.active.value} (${bf.active.authors.slice(0, 3).map(name).join(", ")}${bf.active.authors.length > 3 ? ", ..." : ""}; counted on the lines of the ${people(bf.active.people)} with a commit in the last ${b.activity?.activeDays ?? 365} days)` : "; active people only: none committed in the window";
+    out.push(`bus factor (smallest number of authors holding ${bf.thresholdPercent}% of the lines): ${bf.value} (${named})${blank}${reach}${active}`);
+  }
+  if (b.activity) {
+    const a = b.activity;
+    out.push(a.activeAuthors >= a.authors
+      ? `activity as of ${b.asOf}: all ${people(a.authors)} holding lines committed in the last ${a.activeDays} days`
+      : `activity as of ${b.asOf}: ${a.activeAuthors} of ${a.authors} people committed in the last ${a.activeDays} days and hold ${pct(a.activeShare)} of the non-blank lines; ${pct(a.inactiveShare)} belong to people with no commit then${a.largestInactive.length ? ` (largest: ${a.largestInactive.slice(0, 2).map((p) => `${name(p.author)} ${pct(p.lineShare)}`).join(", ")})` : ""}`);
+  }
+  if (b.orphans) {
+    const o = b.orphans;
+    out.push(o.files
+      ? `orphaned files (top owner inactive, nobody active holds 20%+): ${n(o.files)} of ${n(o.scopeFiles)}, ${pct(o.lineShare)} of the lines; largest: ${o.largest.slice(0, lim.orphans).map((f) => `${cutPath(f.path, 44)} (${name(f.owner)}, ${n(f.lines)})`).join(", ")}`
+      : "orphaned files (top owner inactive, nobody active holds 20%+): none");
+  }
+  const left = [];
+  if (b.leftOut.bots.identities) left.push(`bots ${b.leftOut.bots.identities} (${b.leftOut.bots.names.map(name).join(", ")}; ${n(b.leftOut.bots.lines)} lines, ${n(b.leftOut.bots.commits)} commit${b.leftOut.bots.commits === 1 ? "" : "s"})`);
+  if (b.leftOut.dropped.files) left.push(`${n(b.leftOut.dropped.files)} file${b.leftOut.dropped.files === 1 ? "" : "s"}, ${n(b.leftOut.dropped.lines)} lines (${b.leftOut.dropped.classes.map((c) => `${c.class} ${n(c.files)}`).join(", ")}; --keep-generated counts them)`);
+  out.push(`left out of every number: ${left.length ? left.join("; ") : "no bots, no lockfile, generated, vendored or binary files"}`);
+  if (b.leftOut.setAsideTotal) {
+    const shown = b.leftOut.setAside.slice(0, lim.aside).map((c) => `${c.sha} "${cut(c.subject, lim.subject)}" (${c.kind})`);
+    const more = b.leftOut.setAsideTotal - shown.length;
+    out.push(`set-aside commits (their lines go back to earlier authors): ${shown.join("; ")}${more > 0 ? `; and ${more} more` : ""}`);
+  }
+  if (b.leftOut.suspectedStillCounted.length) out.push(`suspected reformat commits still counted (--keep-reformat): ${b.leftOut.suspectedStillCounted.map((c) => `${c.sha} "${cut(c.subject, lim.subject)}"`).join("; ")}`);
+  const idLead = b.identity.mergeApplied ? `identity: --merge-identities applied ${b.identity.appliedGroups} strong group${b.identity.appliedGroups === 1 ? "" : "s"} in memory; further proposals, NOT applied` : "identity hints, proposals only, NOT applied";
+  if (b.identity.proposalsTotal) {
+    const shown = b.identity.proposals.slice(0, lim.hints).map((p) => `${p.names.slice(0, 3).map(name).join(" / ")}${p.names.length > 3 ? ` / and ${p.names.length - 3} more` : ""} (${p.addresses.slice(0, 3).join(", ")}) ${n(p.lines)} lines ${pct(p.lineShare)} if one person, ${p.strength}`);
+    const more = b.identity.proposalsTotal - shown.length;
+    out.push(`${idLead}: ${shown.join("; ")}${more > 0 ? `; and ${more} more` : ""}`);
+  } else {
+    out.push(`${idLead}: none suspected from names and addresses (that does not prove there are none)`);
+  }
+  if (b.directories.length) {
+    out.push(`first-level directories (lines, share of all, top owner and their share of it): ${b.directories.slice(0, lim.dirs).map((d) => `${d.dir === "." ? "(root files)" : `${cutPath(d.dir, 30)}/`} ${n(d.lines)} ${pct(d.lineShare)}, ${name(d.topOwner)} ${pct(d.topOwnerShare)}`).join("; ")}`);
+  }
+  if (b.singleOwnerFiles.files.length) {
+    const more = b.singleOwnerFiles.more + Math.max(0, b.singleOwnerFiles.files.length - lim.single);
+    out.push(`single-owner files (one person holds ${Math.round(SINGLE_OWNER_MIN_SHARE * 100)}%+ of at least ${SINGLE_OWNER_MIN_LINES} lines): ${b.singleOwnerFiles.files.slice(0, lim.single).map((f) => `${cutPath(f.path, 44)} (${name(f.author)}, ${n(f.lines)})`).join(", ")}${more > 0 ? `, and ${more} more` : ""}`);
+  }
+  if (b.committedByOthers.total) {
+    const c = b.committedByOthers;
+    out.push(`committed by someone else, lines credited to the author: ${n(c.total)} commit${c.total === 1 ? "" : "s"}; ${c.commits.slice(0, lim.notes).map((x) => `${n(x.lines)} lines of ${x.sha} "${cut(x.subject, lim.subject)}" are ${name(x.author)}'s, committed by ${name(x.committer)}`).join("; ")}`);
+  }
+  if (b.reappliedCredit.total) {
+    const c = b.reappliedCredit;
+    out.push(`re-applied work credited to the original author: ${n(c.total)} commit${c.total === 1 ? "" : "s"}; ${c.commits.slice(0, lim.notes).map((x) => `${n(x.lines)} lines of ${x.sha} "${cut(x.subject, lim.subject)}" credited to ${name(x.credited)}, re-applied by ${name(x.reappliedBy)}`).join("; ")}`);
+  }
+  out.push(b.quoteRule);
+  return out;
+}
+
+/**
+ * The brief as JSON: a small object with the schema version and the tool, then the facts of briefOf.
+ * @param {ReturnType<typeof briefOf>} b
+ */
+export function renderBriefJson(b) {
+  return JSON.stringify({ schemaVersion: SCHEMA_VERSION, tool: { name: "surviving-lines", version: toolVersion() }, ...b }, null, 2);
 }
 
 /** @param {number} x */
@@ -5312,10 +5574,21 @@ async function main() {
   }
   if (o.paths[0] === "--help") { console.log(HELP); return; }
   if (o.paths[0] === "--version") { console.log(toolVersion()); return; }
+  // --time-budget: when the run is slower than the budget it stops its git processes, prints nothing and exits 0.
+  const budget = o.timeBudget === undefined ? null : setTimeout(() => {
+    stopGitProcesses();
+    process.exit(0);
+  }, o.timeBudget * 1000);
+  budget?.unref();
   try {
     const r = await analyse(o);
+    if (budget) clearTimeout(budget);
     let output;
 
+    if (o.brief && "brief" in r) {
+      console.log(o.json ? renderBriefJson(r.brief) : renderBrief(r.brief));
+      return;
+    }
     if (o.json) {
       output = renderJson(r);
     } else if (o.csv) {

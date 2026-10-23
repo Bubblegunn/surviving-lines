@@ -1082,5 +1082,224 @@
         }
       }
     }
+  },
+  "$defs": {
+    "brief": {
+      "title": "surviving-lines --brief --json output",
+      "description": "The small object printed by --brief --json: the facts of the plain-text brief, from the same analysis as every other view. It is a separate document from the root schema above (it has no authors list). schemaVersion changes under the same rule. Lines are non-blank unless the key says linesWithBlank.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "tool", "view", "ref", "sha", "asOf", "shallow", "scope", "files", "filesTotal", "commits", "lines", "linesWithBlank", "owners", "busFactor", "activity", "orphans", "leftOut", "identity", "directories", "singleOwnerFiles", "committedByOthers", "reappliedCredit", "quoteRule"],
+      "properties": {
+        "schemaVersion": { "type": "integer", "const": 1 },
+        "tool": { "type": "object", "additionalProperties": false, "required": ["name", "version"], "properties": { "name": { "type": "string", "const": "surviving-lines" }, "version": { "type": "string" } } },
+        "view": { "type": "string", "const": "brief" },
+        "ref": { "type": "string" },
+        "sha": { "type": "string", "description": "The first seven characters of the commit id of the ref." },
+        "asOf": { "type": ["string", "null"], "description": "YYYY-MM-DD, the author date of the ref's commit; null when no author holds a line." },
+        "shallow": { "type": "boolean" },
+        "scope": {
+          "type": "object",
+          "description": "What the brief covers: empty lists and null mean the whole repository.",
+          "additionalProperties": false,
+          "required": ["paths", "include", "exclude", "since", "until", "sampleEvery"],
+          "properties": {
+            "paths": { "type": "array", "items": { "type": "string" } },
+            "include": { "type": "array", "items": { "type": "string" } },
+            "exclude": { "type": "array", "items": { "type": "string" } },
+            "since": { "type": ["string", "null"] },
+            "until": { "type": ["string", "null"] },
+            "sampleEvery": { "type": "integer", "minimum": 1, "description": "1 means every file; above 1 the figures are a sample." }
+          }
+        },
+        "files": { "type": "integer", "minimum": 0, "description": "Files counted (sampled)." },
+        "filesTotal": { "type": "integer", "minimum": 0 },
+        "commits": { "type": "number", "minimum": 0, "description": "Non-merge commits in the window." },
+        "lines": { "type": "number", "minimum": 0, "description": "Non-blank lines attributed." },
+        "linesWithBlank": { "type": "number", "minimum": 0, "description": "The same lines counting blank lines." },
+        "owners": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "shown", "others"],
+          "properties": {
+            "total": { "type": "integer", "minimum": 0, "description": "People holding at least one non-blank line." },
+            "shown": {
+              "type": "array",
+              "description": "The six people with the most non-blank lines.",
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["author", "mail", "sharedName", "lines", "lineShare", "linesWithBlank", "shareWithBlank", "commits", "commitShare"],
+                "properties": {
+                  "author": { "type": "string" },
+                  "mail": { "type": "string" },
+                  "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses." },
+                  "sharedName": { "type": "boolean", "description": "True when another row has the same name; the text then shows the address." },
+                  "lines": { "type": "number", "minimum": 0 },
+                  "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "linesWithBlank": { "type": "number", "minimum": 0 },
+                  "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "commits": { "type": "number", "minimum": 0 },
+                  "commitShare": { "type": "number", "minimum": 0, "maximum": 1 }
+                }
+              }
+            },
+            "others": {
+              "type": "object",
+              "description": "Everyone below the shown rows, added up.",
+              "additionalProperties": false,
+              "required": ["people", "lines", "lineShare", "linesWithBlank", "shareWithBlank"],
+              "properties": {
+                "people": { "type": "integer", "minimum": 0 },
+                "lines": { "type": "number", "minimum": 0 },
+                "lineShare": { "type": "number", "minimum": 0 },
+                "linesWithBlank": { "type": "number", "minimum": 0 },
+                "shareWithBlank": { "type": "number", "minimum": 0 }
+              }
+            }
+          }
+        },
+        "busFactor": {
+          "type": ["object", "null"],
+          "description": "Null when no line is counted. value is on non-blank lines; withBlank is the same counting blank lines; active is counted on the lines of the people with a commit in the activity window only (as --without counts the people who remain), null when nobody is active.",
+          "additionalProperties": false,
+          "required": ["thresholdPercent", "value", "authors", "withBlank", "authorsFor80Percent", "active"],
+          "properties": {
+            "thresholdPercent": { "type": "number" },
+            "value": { "type": "integer", "minimum": 1 },
+            "authors": { "type": "array", "items": { "type": "string" } },
+            "withBlank": { "type": ["integer", "null"] },
+            "authorsFor80Percent": { "type": ["integer", "null"] },
+            "active": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "required": ["value", "authors", "people"],
+              "properties": { "value": { "type": "integer", "minimum": 1 }, "authors": { "type": "array", "items": { "type": "string" } }, "people": { "type": "integer", "minimum": 1, "description": "How many people are active." } }
+            }
+          }
+        },
+        "activity": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["activeDays", "authors", "activeAuthors", "activeShare", "inactiveShare", "largestInactive"],
+          "properties": {
+            "activeDays": { "type": "integer", "minimum": 1 },
+            "authors": { "type": "integer", "minimum": 1 },
+            "activeAuthors": { "type": "integer", "minimum": 0 },
+            "activeShare": { "type": "number", "minimum": 0, "maximum": 1 },
+            "inactiveShare": { "type": "number", "minimum": 0, "maximum": 1 },
+            "largestInactive": {
+              "type": "array",
+              "maxItems": 3,
+              "items": { "type": "object", "additionalProperties": false, "required": ["author", "lines", "lineShare", "lastCommit"], "properties": { "author": { "type": "string" }, "lines": { "type": "number" }, "lineShare": { "type": "number" }, "lastCommit": { "type": ["string", "null"] } } }
+            }
+          }
+        },
+        "orphans": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["files", "scopeFiles", "lines", "lineShare", "largest"],
+          "properties": {
+            "files": { "type": "integer", "minimum": 0 },
+            "scopeFiles": { "type": "integer", "minimum": 0 },
+            "lines": { "type": "number" },
+            "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+            "largest": { "type": "array", "maxItems": 3, "items": { "type": "object", "additionalProperties": false, "required": ["path", "owner", "lines"], "properties": { "path": { "type": "string" }, "owner": { "type": "string" }, "lines": { "type": "number" } } } }
+          }
+        },
+        "leftOut": {
+          "type": "object",
+          "description": "What is in none of the numbers.",
+          "additionalProperties": false,
+          "required": ["bots", "dropped", "setAside", "setAsideTotal", "suspectedStillCounted"],
+          "properties": {
+            "bots": { "type": "object", "additionalProperties": false, "required": ["identities", "names", "lines", "commits"], "properties": { "identities": { "type": "integer", "minimum": 0 }, "names": { "type": "array", "items": { "type": "string" } }, "lines": { "type": "number" }, "commits": { "type": "number" } } },
+            "dropped": {
+              "type": "object",
+              "description": "Lockfiles, generated files, vendored code and binary files.",
+              "additionalProperties": false,
+              "required": ["files", "lines", "classes"],
+              "properties": {
+                "files": { "type": "integer", "minimum": 0 },
+                "lines": { "type": "number" },
+                "classes": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["class", "files", "lines"], "properties": { "class": { "type": "string", "enum": ["lockfile", "generated", "vendored", "binary"] }, "files": { "type": "integer" }, "lines": { "type": "number" } } } }
+              }
+            },
+            "setAside": {
+              "type": "array",
+              "description": "Commits set aside (reformat, mechanical rewrite, boilerplate), at most five.",
+              "maxItems": 5,
+              "items": { "type": "object", "additionalProperties": false, "required": ["sha", "subject", "kind"], "properties": { "sha": { "type": "string" }, "subject": { "type": "string" }, "kind": { "type": "string" } } }
+            },
+            "setAsideTotal": { "type": "integer", "minimum": 0 },
+            "suspectedStillCounted": { "type": "array", "description": "Suspected reformat commits that were not set aside (--keep-reformat).", "items": { "type": "object", "additionalProperties": false, "required": ["sha", "subject"], "properties": { "sha": { "type": "string" }, "subject": { "type": "string" } } } }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "description": "Same-person guesses. proposals are never applied by the brief; appliedGroups counts the strong groups --merge-identities merged in memory.",
+          "additionalProperties": false,
+          "required": ["mergeApplied", "appliedGroups", "proposals", "proposalsTotal"],
+          "properties": {
+            "mergeApplied": { "type": "boolean" },
+            "appliedGroups": { "type": "integer", "minimum": 0 },
+            "proposalsTotal": { "type": "integer", "minimum": 0 },
+            "proposals": {
+              "type": "array",
+              "maxItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["names", "addresses", "lines", "lineShare", "strength", "source"],
+                "properties": {
+                  "names": { "type": "array", "items": { "type": "string" } },
+                  "addresses": { "type": "array", "items": { "type": "string" } },
+                  "lines": { "type": "number", "description": "The lines the person would hold if the addresses were one." },
+                  "lineShare": { "type": "number" },
+                  "strength": { "type": "string", "enum": ["strong", "weak"] },
+                  "source": { "type": "string", "enum": ["identity hint", "possible same person"] }
+                }
+              }
+            }
+          }
+        },
+        "directories": {
+          "type": "array",
+          "description": "The five first-level directories with the most lines ('.' is the files at the root), each with its top owner.",
+          "maxItems": 5,
+          "items": { "type": "object", "additionalProperties": false, "required": ["dir", "lines", "lineShare", "topOwner", "topOwnerLines", "topOwnerShare"], "properties": { "dir": { "type": "string" }, "lines": { "type": "number" }, "lineShare": { "type": "number" }, "topOwner": { "type": "string" }, "topOwnerLines": { "type": "number" }, "topOwnerShare": { "type": "number" } } }
+        },
+        "singleOwnerFiles": {
+          "type": "object",
+          "description": "Files where one person holds 90% or more of at least 20 lines.",
+          "additionalProperties": false,
+          "required": ["files", "more"],
+          "properties": {
+            "files": { "type": "array", "maxItems": 5, "items": { "type": "object", "additionalProperties": false, "required": ["path", "author", "lines", "share"], "properties": { "path": { "type": "string" }, "author": { "type": "string" }, "lines": { "type": "number" }, "share": { "type": "number" } } } },
+            "more": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "committedByOthers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "commits"],
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "commits": { "type": "array", "maxItems": 2, "items": { "type": "object", "additionalProperties": false, "required": ["sha", "subject", "lines", "author", "committer"], "properties": { "sha": { "type": "string" }, "subject": { "type": "string" }, "lines": { "type": "number" }, "author": { "type": "string" }, "committer": { "type": "string" } } } }
+          }
+        },
+        "reappliedCredit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "commits"],
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "commits": { "type": "array", "maxItems": 2, "items": { "type": "object", "additionalProperties": false, "required": ["sha", "subject", "lines", "credited", "reappliedBy"], "properties": { "sha": { "type": "string" }, "subject": { "type": "string" }, "lines": { "type": "number" }, "credited": { "type": "string" }, "reappliedBy": { "type": "string" } } } }
+          }
+        },
+        "quoteRule": { "type": "string", "description": "The closing line of the text brief, word for word." }
+      }
+    }
   }
 }
