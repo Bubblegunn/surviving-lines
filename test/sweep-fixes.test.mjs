@@ -245,3 +245,46 @@ test("S4: a widened bot name is excluded from the shares and counted in the excl
     },
   );
 });
+
+/** @param {any} r */
+function blankTotals(r) {
+  const perAuthor = r.authors.reduce((/** @type {number} */ s, /** @type {any} */ a) => s + a.linesWithBlank, 0);
+  return { perAuthor, header: r.sample.linesWithBlank, bus: r.busFactor?.withBlank?.total };
+}
+
+test("S5: an author whose surviving lines are all blank shows their blank count, and the with-blank totals agree", async () => {
+  await withRepo(
+    (dir) => {
+      commitAsIdentity(dir, ANN, "2026-01-01T00:00:00Z", "a", { "a.js": lines("a", 6) });
+      commitAsIdentity(dir, ["Bob", "bob@x.org"], "2026-01-02T00:00:00Z", "b", { "b.txt": "\n".repeat(10) });
+    },
+    async (dir) => {
+      const r = await analyse(parseArgs(["--cwd", dir]));
+      const bob = r.authors.find((/** @type {any} */ a) => a.author === "Bob");
+      assert.equal(bob?.lines, 0);
+      assert.equal(bob?.linesWithBlank, 10);
+      const t = blankTotals(r);
+      assert.equal(r.sample.linesWithBlank, 16);
+      assert.equal(t.perAuthor, t.header);
+      assert.equal(t.bus, t.header);
+    },
+  );
+});
+
+test("S5: a blank-only author with no commit in the --since window still appears, and the totals agree", async () => {
+  await withRepo(
+    (dir) => {
+      commitAsIdentity(dir, ["Bob", "bob@x.org"], "2025-01-02T00:00:00Z", "b", { "b.txt": "\n".repeat(10) });
+      commitAsIdentity(dir, ANN, "2026-01-01T00:00:00Z", "a", { "a.js": lines("a", 6) });
+    },
+    async (dir) => {
+      const r = await analyse(parseArgs(["--cwd", dir, "--since", "2025-12-01"]));
+      const bob = r.authors.find((/** @type {any} */ a) => a.author === "Bob");
+      assert.equal(bob?.linesWithBlank, 10);
+      assert.equal(bob?.commits, 0);
+      const t = blankTotals(r);
+      assert.equal(t.perAuthor, t.header);
+      assert.equal(t.bus, t.header);
+    },
+  );
+});

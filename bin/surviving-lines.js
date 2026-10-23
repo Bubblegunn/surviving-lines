@@ -1228,6 +1228,13 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(o.jobs, sampled.length || 1) }, worker));
+  // An author whose surviving lines are all blank is in no non-blank count. Without a row of their own their blank lines
+  // would be in the size of the files but in no author's with-blank figure, so the totals would disagree.
+  for (const file of sampled) {
+    for (const [mail, { name, fullName }] of perFileRaw.get(file.path) ?? []) {
+      if (!authors.has(mail)) authors.set(mail, { name: fullName ?? name, lines: 0, commits: 0 });
+    }
+  }
   for (const [mail, a] of authors) a.withBlank = withBlankOf.get(mail) ?? a.lines;
   return { authors, attributed, groupAcc, blamedByCommit, origins, copiedFiles, fileCounts, perFile, perFileRaw };
 }
