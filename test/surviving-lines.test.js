@@ -156,6 +156,7 @@ test("the table of a small repository with no reformat suspect is exactly the he
       "------------------------------------------",
       "Ada            11   52.4%        1   33.3%",
       "Bob            10   47.6%        2   66.7%",
+      "top: Ada holds 11 non-blank lines (52.4%), 11 counting blank lines (52.4%)",
       "",
       "bus factor 1: Ada alone holds 52.4% of 21 surviving lines · to reach 80%: 2 authors",
       "bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.",

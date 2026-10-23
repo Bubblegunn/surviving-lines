@@ -34,7 +34,7 @@ Run `npx surviving-lines --merge-identities`. It counts the addresses that the i
 
 ## Who should review a file?
 
-`npx surviving-lines --reviewers <path>` lists the authors of one file or directory, most surviving lines first, with their lines and commits under that path, the date of their newest commit there, and whether they were active in the year before the ref's date. The `suggested` line names up to three of them, active ones first. It is a starting point. Who wrote the code that is left is not always who should review the next change to it.
+`npx surviving-lines --reviewers <path>` lists the authors of one file or directory, most surviving lines first, with their lines and commits under that path, the date of their newest commit there, and whether they were active in the year before the ref's date. The `suggested` line names up to three of them, active ones first. It is a starting point. Who wrote the code that is left is not always who should review the next change to it. Under the table a `top:` line gives the top author with the non-blank and the blank-inclusive count; the same line is printed by the default view and by `--history`.
 
 ## What does bus factor mean here?
 

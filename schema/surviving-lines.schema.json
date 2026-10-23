@@ -62,6 +62,7 @@
               "key": { "type": "string", "description": "The directory (\".\" for files at the root) or the extension." },
               "filesSampled": { "type": "integer", "minimum": 0, "description": "Sampled files in the group, so a group resting on one file is visible." },
               "lines": { "type": "integer", "minimum": 0 },
+              "linesWithBlank": { "type": "integer", "minimum": 0, "description": "The group's lines counting blank lines (lines leaves them out)." },
               "authors": {
                 "type": "array",
                 "items": {
@@ -73,6 +74,8 @@
                     "mail": { "type": "string" },
                     "lines": { "type": "integer", "minimum": 0 },
                     "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "linesWithBlank": { "type": "integer", "minimum": 0, "description": "The author's lines in the group counting blank lines." },
+                    "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of linesWithBlank over the group's linesWithBlank." },
                     "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person in this list: how many." }
                   }
                 }
@@ -301,6 +304,7 @@
         "properties": {
           "path": { "type": "string" },
           "lines": { "type": "integer", "minimum": 1 },
+          "linesWithBlank": { "type": "integer", "minimum": 0, "description": "The file's lines counting blank lines (lines leaves them out); bots are left out as for lines." },
           "owners": {
             "type": "array",
             "minItems": 1,
@@ -312,7 +316,8 @@
               "properties": {
                 "name": { "type": "string" },
                 "lines": { "type": "integer", "minimum": 1 },
-                "share": { "type": "number", "minimum": 0, "maximum": 1 }
+                "share": { "type": "number", "minimum": 0, "maximum": 1 },
+                "linesWithBlank": { "type": "integer", "minimum": 0, "description": "The owner's lines in the file counting blank lines." }
               }
             }
           }
@@ -668,6 +673,8 @@
               "mails": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Lowercased addresses of this person, sorted." },
               "lines": { "type": "number", "minimum": 0 },
               "lineShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "On the basis named by suggestedBasis." },
+              "linesWithBlank": { "type": "number", "minimum": 0, "description": "The person's lines counting blank lines, on the same basis." },
+              "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of linesWithBlank over the total with blank lines." },
               "lastCommit": { "type": ["string", "null"], "description": "The newest lastCommit of the addresses, YYYY-MM-DD." },
               "active": { "type": "boolean", "description": "True when any address is active." }
             }
@@ -677,7 +684,7 @@
           "type": ["array", "null"],
           "maxItems": 3,
           "description": "The same cut taken from active people only, in line order; null when it equals suggested. It is shown beside suggested and never replaces it.",
-          "items": {"type": "object", "additionalProperties": false, "required": ["author", "mails", "lines", "lineShare", "lastCommit", "active"], "properties": {"author": {"type": "string"}, "mails": {"type": "array", "items": {"type": "string"}, "minItems": 1, "description": "Lowercased addresses of this person, sorted."}, "lines": {"type": "number", "minimum": 0}, "lineShare": {"type": "number", "minimum": 0, "maximum": 1, "description": "On the basis named by suggestedBasis."}, "lastCommit": {"type": ["string", "null"], "description": "The newest lastCommit of the addresses, YYYY-MM-DD."}, "active": {"type": "boolean", "description": "True when any address is active."}}}
+          "items": {"type": "object", "additionalProperties": false, "required": ["author", "mails", "lines", "lineShare", "lastCommit", "active"], "properties": {"author": {"type": "string"}, "mails": {"type": "array", "items": {"type": "string"}, "minItems": 1, "description": "Lowercased addresses of this person, sorted."}, "lines": {"type": "number", "minimum": 0}, "lineShare": {"type": "number", "minimum": 0, "maximum": 1, "description": "On the basis named by suggestedBasis."}, "linesWithBlank": {"type": "number", "minimum": 0}, "shareWithBlank": {"type": "number", "minimum": 0, "maximum": 1}, "lastCommit": {"type": ["string", "null"], "description": "The newest lastCommit of the addresses, YYYY-MM-DD."}, "active": {"type": "boolean", "description": "True when any address is active."}}}
         },
         "topOwner": {
           "type": ["object", "null"],
@@ -701,6 +708,8 @@
               "mail": { "type": "string", "description": "Lowercased, as .mailmap resolved it." },
               "lines": { "type": "number", "minimum": 0, "description": "An integer unless --co-authors share is used." },
               "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "linesWithBlank": { "type": "number", "minimum": 0, "description": "The lines counting blank lines." },
+              "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of linesWithBlank over the total with blank lines." },
               "commits": { "type": "number", "minimum": 0, "description": "Commits touching the path in the window; an integer unless --co-authors share is used." },
               "lastCommit": { "type": ["string", "null"], "description": "Author date, YYYY-MM-DD, of the newest non-merge commit touching the path at the ref; null when there is none." },
               "active": { "type": "boolean", "description": "True when lastCommit is no more than inactiveAfterDays before asOf." },
@@ -745,6 +754,8 @@
               "commits": { "type": "integer", "minimum": 1, "description": "Counted non-merge commits at the path; set-aside commits are not counted when the correction applies." },
               "lines": { "type": "number", "minimum": 0, "description": "Surviving lines in the path, after the reformat correction and any --merge-identities merge." },
               "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "linesWithBlank": { "type": "number", "minimum": 0, "description": "The lines counting blank lines." },
+              "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of linesWithBlank over the total with blank lines." },
               "addresses": { "type": "integer", "minimum": 2, "description": "Present only under --merge-identities, on a row that holds several addresses of one person: how many." }
             }
           }

@@ -65,7 +65,7 @@ test("--group-by blocks merge the addresses of a person inside each block", asyn
     const lib = r.grouping?.groups.find((g) => g.key === "lib");
     const docs = r.grouping?.groups.find((g) => g.key === "docs");
     assert.ok(lib && docs);
-    assert.deepEqual(lib.authors, [{ author: "Ada", mail: "ada@example.com", lines: 20, lineShare: 1, addresses: 2 }]);
+    assert.deepEqual(lib.authors, [{ author: "Ada", mail: "ada@example.com", lines: 20, lineShare: 1, linesWithBlank: 20, shareWithBlank: 1, addresses: 2 }]);
     assert.equal(lib.busFactor?.value, 1);
     assert.equal(docs.authors.length, 1, "Bob has one address and no block change");
     assert.equal(docs.authors[0].addresses, undefined);

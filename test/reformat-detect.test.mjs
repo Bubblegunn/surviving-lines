@@ -140,6 +140,7 @@ const SNAPSHOT_BOTS_TABLE = [
   `Bob                  6   26.1%        1   20.0%`,
   `Botticelli           4   17.4%        1   20.0%`,
   `Bot Hawkins          2    8.7%        1   20.0%`,
+  `top: Ada holds 11 non-blank lines (47.8%), 11 counting blank lines (47.8%)`,
   ``,
   `bus factor 2: Ada and Bob together hold 73.9% of 23 surviving lines · to reach 80%: 3 authors`,
   `bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.`,

@@ -1081,7 +1081,7 @@ export function busFactor(lineCounts, thresholdPercent) {
  * Turn the per-group tallies into rows: bots out of the group's denominator (unless asked for),
  * authors by lines then address, groups by lines then name. A group's file count is every sampled
  * file in it, including a file whose lines all went to a bot, so a group resting on one file shows.
- * @param {Map<string, { files: number, authors: Map<string, { name: string, lines: number }> }>} acc
+ * @param {Map<string, { files: number, authors: Map<string, { name: string, lines: number, withBlank?: number }> }>} acc
  * @param {boolean} includeBots
  * @param {number} thresholdPercent the --bus-factor-threshold the group's bus factor is measured with
  */
@@ -1090,11 +1090,12 @@ function buildGroups(acc, includeBots, thresholdPercent) {
     .map(([key, g]) => {
       const kept = [...g.authors.entries()].filter(([mail, a]) => includeBots || !isBotIdentity(a.name, mail));
       const lines = kept.reduce((sum, [, a]) => sum + a.lines, 0);
+      const linesWithBlank = kept.reduce((sum, [, a]) => sum + (a.withBlank ?? a.lines), 0);
       const authors = kept
-        .map(([mail, a]) => ({ author: a.name, mail, lines: a.lines, lineShare: lines ? a.lines / lines : 0 }))
+        .map(([mail, a]) => ({ author: a.name, mail, lines: a.lines, lineShare: lines ? a.lines / lines : 0, linesWithBlank: a.withBlank ?? a.lines, shareWithBlank: linesWithBlank ? (a.withBlank ?? a.lines) / linesWithBlank : 0 }))
         .sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
       const bf = busFactor(authors, thresholdPercent);
-      return { key, filesSampled: g.files, lines, authors, busFactor: bf && { thresholdPercent, ...bf } };
+      return { key, filesSampled: g.files, lines, linesWithBlank, authors, busFactor: bf && { thresholdPercent, ...bf } };
     })
     .sort((x, y) => y.lines - x.lines || x.key.localeCompare(y.key));
 }
@@ -1137,7 +1138,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
   /** @type {Map<string, { name: string, lines: number, commits: number, withBlank?: number }>} */
   const authors = new Map();
   let attributed = 0;
-  /** @type {Map<string, { files: number, authors: Map<string, { name: string, lines: number }> }>} */
+  /** @type {Map<string, { files: number, authors: Map<string, { name: string, lines: number, withBlank?: number }> }>} */
   const groupAcc = new Map();
   /** @type {Map<string, { name: string, mail: string, lines: number }>} */
   const blamedByCommit = new Map();
@@ -1216,6 +1217,12 @@ async function blamePass(o, sampled, blameArgs, grouping, progress) {
         for (const [mail, { name, lines }] of counts) {
           const a = g.authors.get(mail) ?? { name, lines: 0 };
           a.lines += lines;
+          g.authors.set(mail, a);
+        }
+        // The same lines with their blank lines, for the with-blank column of the group tables.
+        for (const [mail, { name, lines }] of rawCounts) {
+          const a = g.authors.get(mail) ?? { name, lines: 0 };
+          a.withBlank = (a.withBlank ?? 0) + lines;
           g.authors.set(mail, a);
         }
         groupAcc.set(key, g);
@@ -1836,7 +1843,7 @@ export function scopeNotes(r, opts = {}) {
  * add up, the newest commit wins, and the person is active when any address is.
  * @param {Options} o
  * @param {string} path the --reviewers path
- * @param {{ author: string, mail: string, lines: number, lineShare: number, commits: number, addresses?: number }[]} rows the table's rows
+ * @param {{ author: string, mail: string, lines: number, lineShare: number, commits: number, addresses?: number, linesWithBlank?: number, shareWithBlank?: number }[]} rows the table's rows
  * @param {boolean} applied whether the rows have the suspected reformat commits left out
  * @param {Map<string, string[]> | null} membersOf under --merge-identities, each merged row's canonical address to every address it holds
  * @param {{ mail: string, day: string }[]} pathCommits the commits at the path, from readPathCommits
@@ -1861,19 +1868,21 @@ async function reviewersView(o, path, rows, applied, membersOf, pathCommits) {
       const daysSince = lastCommit === null ? Infinity : (Date.parse(asOf) - Date.parse(lastCommit)) / 86400000;
       // asOf is the ref's own author date. An ancestor normally has an earlier or equal author date, so a last commit
       // after asOf only appears with clock skew or a hand-set date. It is counted as active, not rejected.
-      return { author: a.author, mail: a.mail, lines: a.lines, lineShare: a.lineShare, commits: a.commits, lastCommit, active: daysSince <= INACTIVE_AFTER_DAYS, ...(a.addresses ? { addresses: a.addresses } : {}) };
+      return { author: a.author, mail: a.mail, lines: a.lines, lineShare: a.lineShare, linesWithBlank: a.linesWithBlank ?? a.lines, shareWithBlank: a.shareWithBlank ?? a.lineShare, commits: a.commits, lastCommit, active: daysSince <= INACTIVE_AFTER_DAYS, ...(a.addresses ? { addresses: a.addresses } : {}) };
     });
   const lastOf = new Map(authors.map((a) => [a.mail, a]));
-  /** @type {Map<string, { author: string, mails: string[], lines: number, lineShare: number, lastCommit: string | null, active: boolean }>} */
+  /** @type {Map<string, { author: string, mails: string[], lines: number, lineShare: number, linesWithBlank: number, shareWithBlank: number, lastCommit: string | null, active: boolean }>} */
   const people = new Map();
   for (const b of rows) {
     if (b.lines <= 0 || isPlaceholderIdentity(b.author, b.mail)) continue;
     const a = lastOf.get(b.mail);
     const key = foldIdentity(b.author);
-    const p = people.get(key) ?? { author: b.author, mails: [], lines: 0, lineShare: 0, lastCommit: null, active: false };
+    const p = people.get(key) ?? { author: b.author, mails: [], lines: 0, lineShare: 0, linesWithBlank: 0, shareWithBlank: 0, lastCommit: null, active: false };
     p.mails.push(...memberMails(b.mail));
     p.lines += b.lines;
     p.lineShare += b.lineShare;
+    p.linesWithBlank += b.linesWithBlank ?? b.lines;
+    p.shareWithBlank += b.shareWithBlank ?? b.lineShare;
     if (a?.lastCommit && (p.lastCommit === null || a.lastCommit > p.lastCommit)) p.lastCommit = a.lastCommit;
     p.active = p.active || Boolean(a?.active);
     people.set(key, p);
@@ -1934,7 +1943,7 @@ export function setAsideFor(suspects, path) {
  * --merge-identities merge. The as-of date is the ref commit's author date, as in the reviewers view.
  * @param {Options} o
  * @param {string} path the --history path
- * @param {{ author: string, mail: string, lines: number, lineShare: number, commits: number, addresses?: number }[]} rows the table's rows
+ * @param {{ author: string, mail: string, lines: number, lineShare: number, commits: number, addresses?: number, linesWithBlank?: number, shareWithBlank?: number }[]} rows the table's rows
  * @param {Map<string, string[]> | null} membersOf under --merge-identities, each merged row's canonical address to every address it holds
  * @param {{ sha: string, mail: string, day: string }[]} pathCommits the commits at the path, from readPathCommits
  * @param {{ sha: string, shortSha: string, subject: string, author: string, date: string, files?: string[] }[]} suspects the reformat suspects
@@ -1967,6 +1976,8 @@ async function historyView(o, path, rows, membersOf, pathCommits, suspects, appl
       commits: held.reduce((sum, h) => sum + h.commits, 0),
       lines: row.lines,
       lineShare: row.lineShare,
+      linesWithBlank: row.linesWithBlank ?? row.lines,
+      shareWithBlank: row.shareWithBlank ?? row.lineShare,
       ...(row.addresses ? { addresses: row.addresses } : {}),
     });
   }
@@ -2021,14 +2032,15 @@ export function foldAddresses(list, canonicalOf) {
 /**
  * The lines of one list (a group block, or the plain count) with the merge applied, and its shares and bus factor
  * recomputed on the same total the list was shared over.
- * @param {{ author: string, mail: string, lines: number }[]} list
+ * @param {{ author: string, mail: string, lines: number, linesWithBlank?: number }[]} list
  * @param {number} total
  * @param {Map<string, { author: string, mail: string }>} canonicalOf
  * @param {number} thresholdPercent
+ * @param {number} [totalWithBlank] the same total counting blank lines; given, the rows' with-blank shares are recomputed on it
  */
-function mergedLines(list, total, canonicalOf, thresholdPercent) {
+function mergedLines(list, total, canonicalOf, thresholdPercent, totalWithBlank) {
   const authors = foldAddresses(list, canonicalOf)
-    .map((a) => ({ ...a, lineShare: total ? a.lines / total : 0 }))
+    .map((a) => ({ ...a, lineShare: total ? a.lines / total : 0, ...(totalWithBlank !== undefined && a.linesWithBlank !== undefined ? { shareWithBlank: totalWithBlank ? a.linesWithBlank / totalWithBlank : 0 } : {}) }))
     .sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
   const bf = busFactor(authors, thresholdPercent);
   return { authors, busFactor: bf && { thresholdPercent, ...bf } };
@@ -2133,10 +2145,11 @@ function identityLine(r) {
  * @param {boolean} includeBots
  * @param {Map<string, { author: string, mail: string }>} canonicalOf empty unless the identities are merged
  * @param {Map<string, string>} nameOf the name the table shows for an address
- * @returns {{ lines: number, owners: { name: string, lines: number, share: number }[] }}
+ * @param {Map<string, { name: string, lines: number, fullName?: string }>} [rawCounts] the same file's counts with blank lines included; given, the result also carries the with-blank figures
+ * @returns {{ lines: number, linesWithBlank?: number, owners: { name: string, lines: number, share: number, linesWithBlank?: number }[] }}
  */
-export function ownersOfFile(counts, includeBots, canonicalOf, nameOf) {
-  /** @type {Map<string, { name: string, lines: number }>} */
+export function ownersOfFile(counts, includeBots, canonicalOf, nameOf, rawCounts) {
+  /** @type {Map<string, { name: string, lines: number, withBlank: number }>} */
   const people = new Map();
   let total = 0;
   for (const [mail, c] of counts) {
@@ -2144,15 +2157,25 @@ export function ownersOfFile(counts, includeBots, canonicalOf, nameOf) {
     if (!includeBots && isBotIdentity(name, mail)) continue;
     const canon = canonicalOf.get(mail);
     const key = canon?.mail ?? mail;
-    const p = people.get(key) ?? { name: canon?.author ?? name, lines: 0 };
+    const p = people.get(key) ?? { name: canon?.author ?? name, lines: 0, withBlank: 0 };
     p.lines += c.lines;
     total += c.lines;
     people.set(key, p);
   }
+  let totalWithBlank = 0;
+  if (rawCounts) {
+    for (const [mail, c] of rawCounts) {
+      const name = nameOf.get(mail) ?? c.fullName ?? c.name;
+      if (!includeBots && isBotIdentity(name, mail)) continue;
+      totalWithBlank += c.lines;
+      const p = people.get(canonicalOf.get(mail)?.mail ?? mail);
+      if (p) p.withBlank += c.lines;
+    }
+  }
   const owners = [...people.entries()]
     .sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0]))
-    .map(([, p]) => ({ name: p.name, lines: p.lines, share: total ? p.lines / total : 0 }));
-  return { lines: total, owners };
+    .map(([, p]) => ({ name: p.name, lines: p.lines, share: total ? p.lines / total : 0, ...(rawCounts ? { linesWithBlank: p.withBlank } : {}) }));
+  return { lines: total, ...(rawCounts ? { linesWithBlank: totalWithBlank } : {}), owners };
 }
 
 /** R10-3: a commit qualifies when a file it changed shows at least this many added plus deleted lines. */
@@ -2296,13 +2319,14 @@ export function whitespaceOnlyLine(r) {
  * @param {boolean} includeBots
  * @param {Map<string, { author: string, mail: string }>} canonicalOf
  * @param {Map<string, string>} nameOf
+ * @param {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} [perFileRaw] the same counts with blank lines included; given, rows carry their with-blank figures
  */
-export function filesView(limit, perFile, includeBots, canonicalOf, nameOf) {
+export function filesView(limit, perFile, includeBots, canonicalOf, nameOf, perFileRaw) {
   const all = [...perFile]
-    .map(([path, counts]) => ({ path, ...ownersOfFile(counts, includeBots, canonicalOf, nameOf) }))
+    .map(([path, counts]) => ({ path, ...ownersOfFile(counts, includeBots, canonicalOf, nameOf, perFileRaw?.get(path)) }))
     .filter((f) => f.lines > 0)
     .sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
-  const files = all.slice(0, limit).map((f) => ({ path: f.path, lines: f.lines, owners: f.owners.slice(0, 3) }));
+  const files = all.slice(0, limit).map((f) => ({ path: f.path, lines: f.lines, ...(f.linesWithBlank !== undefined ? { linesWithBlank: f.linesWithBlank } : {}), owners: f.owners.slice(0, 3) }));
   const summary = {
     total: all.length,
     shown: files.length,
@@ -2328,12 +2352,14 @@ export function renderFiles(r) {
   const owner = (/** @type {{ name: string, share: number } | undefined} */ x) => (x ? `${x.name} ${pct(x.share)}` : "");
   const pathW = Math.max(4, ...files.map((f) => displayWidth(f.path)));
   const ownerW = Math.max(9, ...files.map((f) => displayWidth(f.owners[0]?.name ?? "")));
-  const head = `${padEndDisplay("file", pathW)}  ${"lines".padStart(7)}  ${padEndDisplay("top owner", ownerW)}  ${"share".padStart(6)}  next two owners`;
+  // The with-blank size is printed when some file's size differs with and without its blank lines.
+  const both = files.some((f) => f.linesWithBlank !== undefined && f.linesWithBlank !== f.lines);
+  const head = `${padEndDisplay("file", pathW)}  ${"lines".padStart(7)}${both ? `  ${"with blank".padStart(10)}` : ""}  ${padEndDisplay("top owner", ownerW)}  ${"share".padStart(6)}  next two owners`;
   out.push(head);
   out.push("-".repeat(displayWidth(head)));
   for (const f of files) {
     const [top, ...next] = f.owners;
-    out.push(`${padEndDisplay(f.path, pathW)}  ${n(f.lines).padStart(7)}  ${padEndDisplay(top?.name ?? "", ownerW)}  ${(top ? pct(top.share) : "").padStart(6)}  ${next.slice(0, 2).map(owner).join(", ")}`.trimEnd());
+    out.push(`${padEndDisplay(f.path, pathW)}  ${n(f.lines).padStart(7)}${both ? `  ${n(f.linesWithBlank ?? f.lines).padStart(10)}` : ""}  ${padEndDisplay(top?.name ?? "", ownerW)}  ${(top ? pct(top.share) : "").padStart(6)}  ${next.slice(0, 2).map(owner).join(", ")}`.trimEnd());
   }
   if (sum && sum.total > sum.shown) out.push(`… ${n(sum.total - sum.shown)} more file${sum.total - sum.shown === 1 ? "" : "s"}`);
   if (sum) out.push(`files: ${n(sum.total)}; one owner above 80% in ${n(sum.oneOwnerAbove80Percent)}; no owner above 50% in ${n(sum.noOwnerAbove50Percent)}`);
@@ -2680,7 +2706,7 @@ export async function analyse(o) {
   const byLinesWithBlank = rows.map((x) => ({ author: x.author, mail: x.mail, lines: x.linesWithBlank })).sort((x, y) => y.lines - x.lines || x.mail.localeCompare(y.mail));
   const runBusFactorWithBlank = busFactor(byLinesWithBlank, o.busFactorThreshold);
   let groups = grouping ? buildGroups(groupAcc, o.includeBots, o.busFactorThreshold) : null;
-  if (groups && o.mergeIdentities) groups = groups.map((g) => ({ ...g, ...mergedLines(g.authors, g.lines, canonicalOf, o.busFactorThreshold) }));
+  if (groups && o.mergeIdentities) groups = groups.map((g) => ({ ...g, ...mergedLines(g.authors, g.lines, canonicalOf, o.busFactorThreshold, g.linesWithBlank) }));
   if (uncorrected && o.mergeIdentities) uncorrected = { ...uncorrected, ...mergedLines(uncorrected.authors, uncorrected.linesAttributed, canonicalOf, o.busFactorThreshold) };
   // One log call at the path serves both path views; --reviewers and --history cannot be asked for together.
   const pathView = o.reviewers ?? o.history;
@@ -2692,7 +2718,7 @@ export async function analyse(o) {
   const ownerMerge = o.mergeIdentities ? canonicalOf : new Map();
   const skipShas = new Set([...ignoredByUser, ...(applied ? suspects.map((x) => x.sha) : []), ...strongRewrites.map((c) => c.sha)]);
   const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
-  const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf);
+  const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
   const lastCommits = await readLastCommits(o, rows, membersOf);
   return {
@@ -3114,6 +3140,24 @@ function appliedBlock(r, counted, suspects, it) {
  * @param {Awaited<ReturnType<typeof analyse>>} r
  * @param {number} top
  */
+/**
+ * One plain sentence with both line counts of the top author, so a single quoted line carries the non-blank figure and
+ * the blank-inclusive figure. The top author is the one with the most non-blank lines in the run's rows; the first of
+ * them wins a tie. Null when no author holds a line.
+ * @param {{ authors: { author: string, mail: string, lines: number, lineShare: number, linesWithBlank?: number, shareWithBlank?: number, addresses?: number }[] }} r
+ * @returns {string | null}
+ */
+export function topAuthorLine(r) {
+  if (!r.authors.length) return null;
+  const top = r.authors.reduce((best, a) => (a.lines > best.lines ? a : best));
+  const withBlank = top.linesWithBlank ?? top.lines;
+  if (top.lines <= 0 && withBlank <= 0) return null;
+  const nameCount = new Map();
+  for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  return `top: ${rowLabel(top, nameCount)} holds ${n(top.lines)} non-blank lines (${pct(top.lineShare)}), ${n(withBlank)} counting blank lines (${pct(top.shareWithBlank ?? top.lineShare)})`;
+}
+
 /** The default table (R9-4): every author with at least this share of the lines, within MIN_ROWS and MAX_ROWS rows. */
 const DEFAULT_ROW_SHARE = 0.01;
 const DEFAULT_MIN_ROWS = 10;
@@ -3153,6 +3197,8 @@ export function renderTable(r, top) {
   } else if (tail.length) {
     lines.push(`… ${tail.length} more author${tail.length === 1 ? "" : "s"}`);
   }
+  const topLine = topAuthorLine(r);
+  if (topLine) lines.push(topLine);
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
   const notes = scopeNotes(r);
@@ -3179,20 +3225,23 @@ export function renderReviewers(r, top) {
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
   const shown = v.authors.slice(0, top);
   const nameW = Math.max(6, ...shown.map((a) => displayWidth(label(a))));
-  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}  ${"commits".padStart(7)}  ${"last commit".padEnd(11)}  activity`;
+  const both = hasBlankBasis(shown);
+  const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}  ${"commits".padStart(7)}  ${"last commit".padEnd(11)}  activity`;
   lines.push(head);
   lines.push("-".repeat(displayWidth(head)));
   for (const a of shown) {
-    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${(a.lastCommit ?? "-").padEnd(11)}  ${a.active ? "active" : "inactive"}`);
+    lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${(a.lastCommit ?? "-").padEnd(11)}  ${a.active ? "active" : "inactive"}`);
   }
   if (v.authors.length > top) lines.push(`… ${v.authors.length - top} more author${v.authors.length - top === 1 ? "" : "s"}`);
+  const topLine = topAuthorLine(r);
+  if (topLine) lines.push(topLine);
   lines.push(`rows are ordered by surviving lines; the last commit date and the active marker (a commit in the ${v.inactiveAfterDays} days before ${v.asOf}) are information and do not change the order.`);
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus, "");
   const manySuspects = (r.reformat?.suspects.length ?? 0) > 1;
   const heading = v.suggestedBasis === "reformatIgnored" ? `suggested by surviving lines (with the suspected reformat commit${manySuspects ? "s" : ""} ignored)` : "suggested by surviving lines";
-  const person = (/** @type {typeof v.suggested[number]} */ p) => `${p.author} (${p.lines.toLocaleString("en-US")} lines, ${pct(p.lineShare)}${p.mails.length > 1 ? `, ${p.mails.length} addresses` : ""}, last commit ${p.lastCommit ?? "unknown"}, ${p.active ? "active" : "inactive"})`;
+  const person = (/** @type {typeof v.suggested[number]} */ p) => `${p.author} (${p.lines.toLocaleString("en-US")} lines, ${pct(p.lineShare)}${p.linesWithBlank !== undefined && p.linesWithBlank !== p.lines ? `, ${p.linesWithBlank.toLocaleString("en-US")} with blank, ${pct(p.shareWithBlank)}` : ""}${p.mails.length > 1 ? `, ${p.mails.length} addresses` : ""}, last commit ${p.lastCommit ?? "unknown"}, ${p.active ? "active" : "inactive"})`;
   lines.push(v.suggested.length ? `${heading}: ${v.suggested.map(person).join(", ")}` : "suggested: none, no author holds a surviving line here");
   if (v.suggestedActiveOnly) {
     lines.push(v.suggestedActiveOnly.length ? `active only (a cut by recent commits; the line-ranked list above is the ownership answer): ${v.suggestedActiveOnly.map(person).join(", ")}` : "active only: nobody with lines here committed in the active window; the line-ranked list above is the ownership answer");
@@ -3240,14 +3289,17 @@ export function renderHistory(r, top) {
   const label = (/** @type {{author: string, mail: string, addresses?: number}} */ a) => rowLabel(a, nameCount);
   const shown = h.authors.slice(0, top);
   const nameW = Math.max(6, ...shown.map((a) => displayWidth(label(a))));
-  const head = `${padEndDisplay("author", nameW)}  ${"first commit".padEnd(12)}  ${"last commit".padEnd(12)}  ${"commits".padStart(7)}  ${"lines now".padStart(9)}`;
+  const both = hasBlankBasis(shown);
+  const head = `${padEndDisplay("author", nameW)}  ${"first commit".padEnd(12)}  ${"last commit".padEnd(12)}  ${"commits".padStart(7)}  ${"lines now".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}`;
   if (h.authors.length) {
     lines.push(head);
     lines.push("-".repeat(displayWidth(head)));
     for (const a of shown) {
-      lines.push(`${padEndDisplay(label(a), nameW)}  ${a.firstCommit.padEnd(12)}  ${a.lastCommit.padEnd(12)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${a.lines.toLocaleString("en-US").padStart(9)}`);
+      lines.push(`${padEndDisplay(label(a), nameW)}  ${a.firstCommit.padEnd(12)}  ${a.lastCommit.padEnd(12)}  ${a.commits.toLocaleString("en-US").padStart(7)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}`);
     }
     if (h.authors.length > top) lines.push(`… ${h.authors.length - top} more ${h.authors.length - top === 1 ? "person" : "people"}`);
+    const topLine = topAuthorLine(r);
+    if (topLine) lines.push(topLine);
     // The first committer is the oldest row; the holder of most lines is the largest, the older one on a tie.
     const first = h.authors[0];
     // A person a strong suggestion counts as one is compared by the merged figure, the one the headline leads with.
@@ -3302,13 +3354,14 @@ export function renderGroups(r, top) {
   let groupThreshold = null;
   for (const g of r.grouping?.groups ?? []) {
     lines.push("");
-    lines.push(`${g.key}  ·  ${g.filesSampled} file${g.filesSampled === 1 ? "" : "s"} sampled  ·  ${g.lines.toLocaleString("en-US")} lines`);
+    const both = hasBlankBasis(g.authors);
+    lines.push(`${g.key}  ·  ${g.filesSampled} file${g.filesSampled === 1 ? "" : "s"} sampled  ·  ${g.lines.toLocaleString("en-US")} lines${both && g.linesWithBlank !== undefined ? `, ${g.linesWithBlank.toLocaleString("en-US")} counting blank lines` : ""}`);
     const rows = g.authors.slice(0, top);
     const nameW = Math.max(6, ...rows.map((a) => displayWidth(label(a))));
-    const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}`;
+    const head = `${padEndDisplay("author", nameW)}  ${"lines".padStart(9)}  ${"share".padStart(6)}${both ? `  ${"with blank".padStart(10)}  ${"share".padStart(6)}` : ""}`;
     lines.push(head);
     lines.push("-".repeat(displayWidth(head)));
-    for (const a of rows) lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}`);
+    for (const a of rows) lines.push(`${padEndDisplay(label(a), nameW)}  ${a.lines.toLocaleString("en-US").padStart(9)}  ${pct(a.lineShare).padStart(6)}${both ? `  ${(a.linesWithBlank ?? a.lines).toLocaleString("en-US").padStart(10)}  ${pct(a.shareWithBlank ?? a.lineShare).padStart(6)}` : ""}`);
     if (g.authors.length > top) lines.push(`… ${g.authors.length - top} more author${g.authors.length - top === 1 ? "" : "s"}`);
     const groupLine = busFactorLine(g.busFactor, g.authors);
     if (groupLine) {
@@ -4058,15 +4111,17 @@ export function renderIdentities(groups, sameAddress = [], possible = { count: 0
     for (const alias of s.aliases) lines.push(`  map  ${s.mail}  committed as "${alias}"`);
     lines.push(`  because the same address, ${s.mail}, is written under ${s.aliases.length + 1} names`, "");
   }
+  // The with-blank count is added after the non-blank one when the two differ, so either convention can read it.
+  const blankNote = (/** @type {{ lines: number, linesWithBlank?: number }} */ m) => (m.linesWithBlank !== undefined && m.linesWithBlank !== m.lines ? ` (${m.linesWithBlank.toLocaleString("en-US")} counting blank lines)` : "");
   for (const g of groups) {
     lines.push(`${g.canonical.author || g.canonical.mail}`);
     for (const m of g.members) {
       const mark = m.mail === g.canonical.mail ? "keep" : "map ";
-      lines.push(`  ${mark} ${m.mail}  ${m.commits} commit${m.commits === 1 ? "" : "s"}, ${m.lines.toLocaleString("en-US")} line${m.lines === 1 ? "" : "s"}`);
+      lines.push(`  ${mark} ${m.mail}  ${m.commits} commit${m.commits === 1 ? "" : "s"}, ${m.lines.toLocaleString("en-US")} line${m.lines === 1 ? "" : "s"}${blankNote(m)}`);
     }
     for (const r of g.reasons) lines.push(`  because ${r}`);
     lines.push(`  strength: ${g.strength}${g.strength === "strong" ? "" : " (a guess; not merged by --merge-identities, confirm before writing a .mailmap line)"}`);
-    for (const w of g.weakAdditions ?? []) lines.push(`  weak addition, not in the group above and not merged by --merge-identities: ${w.member.mail}  ${w.member.commits} commit${w.member.commits === 1 ? "" : "s"}, ${w.member.lines.toLocaleString("en-US")} line${w.member.lines === 1 ? "" : "s"}, because ${w.reasons.join("; ")}`);
+    for (const w of g.weakAdditions ?? []) lines.push(`  weak addition, not in the group above and not merged by --merge-identities: ${w.member.mail}  ${w.member.commits} commit${w.member.commits === 1 ? "" : "s"}, ${w.member.lines.toLocaleString("en-US")} line${w.member.lines === 1 ? "" : "s"}${blankNote(w.member)}, because ${w.reasons.join("; ")}`);
     lines.push("");
   }
   const mailmapLines = (/** @type {typeof groups} */ gs) => {

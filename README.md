@@ -351,13 +351,15 @@ npx surviving-lines --reviewers lib
 
 The `suggested` line names up to three people, active ones first. It reads the same rows as the table, so a reformat commit that is left out by default is already left out of the suggestion. It is a starting point: who wrote the code that is left is not always who should review the next change to it.
 
+Under the table a `top:` line gives the top author with both counts in one sentence (`top: Ann holds 6 non-blank lines (37.5%), 8 counting blank lines (16.7%)`), so a quoted line is right under either way of counting. When blank lines were dropped, the table also gets `with blank` and `share` columns, and each `suggested` person shows the blank-inclusive figure.
+
 Rows are ordered by surviving lines. The last commit date and the `active` or `inactive` marker are printed for information; they never reorder the list or remove a top-three owner. When the active-only cut differs, it is printed as a second line next to the line-ranked one. Every view prints the same scope notes (dropped files, bots excluded, reformat commits ignored, identities merged by `.mailmap`, possible same-person suggestions, moved-in lines), and `--json` carries them as `dropped`, `bots`, `reformat`, `mailmap`, `identityHints` and `possibleSamePerson`.
 
 `--reviewers` and the bus factor count two addresses of one person separately until a `.mailmap` joins them. The `suggested` line is the one exception: it merges addresses that share a name, and nothing else.
 
 ## Who shaped a path
 
-`--history <path>` takes a file or a directory and lists the people who changed it, oldest first. Each row gives the first and last commit at that path, the commits there, and the lines that person still holds at the ref. A commit that only reformatted the path is set aside: it is not counted, and a person whose only commit there was a formatting change has no row. The line under the list names who made the first commit and who holds the most lines now.
+`--history <path>` takes a file or a directory and lists the people who changed it, oldest first. Each row gives the first and last commit at that path, the commits there, and the lines that person still holds at the ref. A commit that only reformatted the path is set aside: it is not counted, and a person whose only commit there was a formatting change has no row. The table has the `share` of each person, and `with blank` and `share` columns when blank lines were dropped. Under the list, a `top:` line gives the top author with the non-blank and the blank-inclusive count, and the line after it names who made the first commit and who holds the most lines now.
 
 ```sh
 npx surviving-lines --history lib/index.js
@@ -394,7 +396,7 @@ The bus factor is the smallest number of authors whose surviving lines together 
 bus factor 2: Troy Goode <troy@work.example> and Douglas Christopher Wilson together hold 56.5% of 1,985 surviving lines
 ```
 
-When blank lines were dropped from the counted lines (the header says `non-blank; N with blank lines`), the author table gets two more columns, `with blank` and `share`, the `bus factor` line states both bases (`... of 2,941 non-blank lines (76.9% of 3,322 lines with blank lines)`, and `counting blank lines: bus factor N` when it differs), and `--json` gives `linesWithBlank`, `shareWithBlank` and `busFactor.withBlank`. Rows stay ordered by non-blank lines.
+When blank lines were dropped from the counted lines (the header says `non-blank; N with blank lines`), the author table gets two more columns, `with blank` and `share`, the `bus factor` line states both bases (`... of 2,941 non-blank lines (76.9% of 3,322 lines with blank lines)`, and `counting blank lines: bus factor N` when it differs), and `--json` gives `linesWithBlank`, `shareWithBlank` and `busFactor.withBlank`. Rows stay ordered by non-blank lines. The default view, `--reviewers` and `--history` print one `top:` line under the table: `top: <author> holds <n> non-blank lines (<share>), <m> counting blank lines (<share>)`. The same columns appear in `--reviewers`, `--history` and the `--group-by` blocks (`--json` adds `linesWithBlank` and `shareWithBlank` to their rows), `--files` adds a `with blank` size column, and `--identities` adds the blank-inclusive count to an address line when it differs.
 
 `--files [n]` prints one row per file, largest first (25 rows by default): lines, top owner and share, the next two owners, then `files: K; one owner above 80% in M; no owner above 50% in P`. It cannot be combined with `--group-by`, `--csv`, `--markdown`, `--identities`, `--reviewers`, `--history` or `--co-authors share`.
 
