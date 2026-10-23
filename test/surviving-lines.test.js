@@ -18,8 +18,8 @@ async function fixtureRepo() {
       ...process.env,
       GIT_AUTHOR_NAME: who === "ada" ? "Ada" : "Bob",
       GIT_AUTHOR_EMAIL: who === "ada" ? "ada@example.com" : "bob@example.com",
-      GIT_COMMITTER_NAME: "CI",
-      GIT_COMMITTER_EMAIL: "ci@example.com",
+      GIT_COMMITTER_NAME: who === "ada" ? "Ada" : "Bob",
+      GIT_COMMITTER_EMAIL: who === "ada" ? "ada@example.com" : "bob@example.com",
       GIT_AUTHOR_DATE: who === "ada" ? "2026-01-10T10:00:00Z" : "2026-03-10T10:00:00Z",
       GIT_COMMITTER_DATE: who === "ada" ? "2026-01-10T10:00:00Z" : "2026-03-10T10:00:00Z",
     };
@@ -51,8 +51,8 @@ async function gapFixtureRepo() {
     ...process.env,
     GIT_AUTHOR_NAME: "Charlie",
     GIT_AUTHOR_EMAIL: "charlie@example.com",
-    GIT_COMMITTER_NAME: "CI",
-    GIT_COMMITTER_EMAIL: "ci@example.com",
+    GIT_COMMITTER_NAME: "Charlie",
+    GIT_COMMITTER_EMAIL: "charlie@example.com",
     GIT_AUTHOR_DATE: "2026-04-10T10:00:00Z",
     GIT_COMMITTER_DATE: "2026-04-10T10:00:00Z",
   };

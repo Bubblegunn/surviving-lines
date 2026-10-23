@@ -287,12 +287,13 @@ export function assistantsIn(t) {
 
 /**
  * Lines per blamed commit, from `git blame --line-porcelain`: every line repeats its commit's headers, so the
- * commit id on the header line and the author-mail line after it are enough.
+ * commit id on the header line and the author-mail line after it are enough. The committer headers follow the author
+ * headers of the same commit; they are kept as `committer` and `committerMail` (G12) when git printed them.
  * @param {string} porcelain
- * @returns {Map<string, { name: string, mail: string, lines: number }>}
+ * @returns {Map<string, { name: string, mail: string, lines: number, committer?: string, committerMail?: string }>}
  */
 export function countBlameByCommit(porcelain) {
-  /** @type {Map<string, { name: string, mail: string, lines: number }>} */
+  /** @type {Map<string, { name: string, mail: string, lines: number, committer?: string, committerMail?: string }>} */
   const counts = new Map();
   let sha = "";
   let name = "";
@@ -305,6 +306,12 @@ export function countBlameByCommit(porcelain) {
       const entry = counts.get(sha) ?? { name, mail, lines: 0 };
       entry.lines++;
       counts.set(sha, entry);
+    } else if (line.startsWith("committer ")) {
+      const entry = counts.get(sha);
+      if (entry && entry.committer === undefined) entry.committer = line.slice(10);
+    } else if (line.startsWith("committer-mail ")) {
+      const entry = counts.get(sha);
+      if (entry && entry.committerMail === undefined) entry.committerMail = line.slice(15).replace(/^<|>$/g, "").toLowerCase();
     }
   }
   return counts;
@@ -1278,7 +1285,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
   let attributed = 0;
   /** @type {Map<string, { files: number, authors: Map<string, { name: string, lines: number, withBlank?: number }> }>} */
   const groupAcc = new Map();
-  /** @type {Map<string, { name: string, mail: string, lines: number }>} */
+  /** @type {Map<string, { name: string, mail: string, lines: number, committer?: string, committerMail?: string }>} */
   const blamedByCommit = new Map();
   let cursor = 0;
   let completed = 0;
@@ -1344,7 +1351,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
         authors.set(mail, a);
       }
       for (const [sha, c] of countBlameByCommit(out)) {
-        const e = blamedByCommit.get(sha) ?? { name: c.name, mail: c.mail, lines: 0 };
+        const e = blamedByCommit.get(sha) ?? { name: c.name, mail: c.mail, lines: 0, committer: c.committer, committerMail: c.committerMail };
         e.lines += c.lines;
         blamedByCommit.set(sha, e);
       }
@@ -2110,6 +2117,7 @@ export function scopeNotes(r, opts = {}) {
   const left = [botsLine(r), mailmapLine(r)].filter(Boolean);
   add(left.length ? left.join("\n").split("\n") : null);
   add(reformatBlock(r));
+  add(committedByOthersLines(r));
   add(mechanicalLine(r));
   add(whitespaceOnlyLine(r));
   add(copyEffectLine(r));
@@ -2177,6 +2185,45 @@ export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
       files: single.slice(0, SINGLE_OWNER_SHOWN).map((f) => ({ path: f.path, author: f.owners[0].name, lines: f.lines, share: f.owners[0].share })),
       more: Math.max(0, single.length - SINGLE_OWNER_SHOWN),
     },
+  };
+}
+
+/** G12: a commit is named when at least this many of its lines survive in the scope and its committer is someone else than its author. */
+const COMMITTED_BY_OTHERS_MIN_LINES = 5;
+/** G12: this many such commits are named; the rest are counted. */
+const COMMITTED_BY_OTHERS_SHOWN = 5;
+
+/**
+ * G12: the blamed commits whose committer is not their author. The credit goes to the author, so a reader needs to
+ * know which lines were committed by someone else. The two identities are compared after .mailmap (the blame output
+ * has it applied) and the identity merge: the same address, the same merged person, or the same name is one person.
+ * Bots as authors are left out unless they are counted. The subjects of the listed commits come from one git call.
+ * @param {Options} o
+ * @param {Map<string, { name: string, mail: string, lines: number, committer?: string, committerMail?: string }>} blamedByCommit
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ */
+export async function committedByOthers(o, blamedByCommit, canonicalOf) {
+  const idOf = (/** @type {string} */ mail) => canonicalOf.get(mail)?.mail ?? mail;
+  const hits = [...blamedByCommit]
+    .filter(([, b]) => b.lines >= COMMITTED_BY_OTHERS_MIN_LINES && b.committerMail !== undefined && b.committerMail !== "" && idOf(b.committerMail) !== idOf(b.mail) && foldIdentity(b.committer ?? "") !== foldIdentity(b.name))
+    .filter(([, b]) => o.includeBots || !isBotIdentity(b.name, b.mail))
+    .sort((x, y) => y[1].lines - x[1].lines || x[0].localeCompare(y[0]));
+  const shown = hits.slice(0, COMMITTED_BY_OTHERS_SHOWN);
+  /** @type {Map<string, string>} */
+  const subjects = new Map();
+  if (shown.length) {
+    try {
+      for (const line of (await git(["log", "--no-walk=unsorted", "--format=%H%x09%s", ...shown.map(([sha]) => sha)], o.cwd)).split("\n")) {
+        const tab = line.indexOf("\t");
+        if (tab > 0) subjects.set(line.slice(0, tab), line.slice(tab + 1));
+      }
+    } catch {
+      // A subject is a label; the commit is still named by its id.
+    }
+  }
+  return {
+    total: hits.length,
+    commits: shown.map(([sha, b]) => ({ sha, shortSha: sha.slice(0, 7), subject: subjects.get(sha) ?? "", lines: b.lines, author: b.name, authorMail: b.mail, committer: b.committer ?? "", committerMail: b.committerMail ?? "" })),
   };
 }
 
@@ -3077,6 +3124,8 @@ export async function analyse(o) {
   const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
+  // G12: the strong identity groups count as one person here whether or not --merge-identities merged them.
+  const committedElsewhere = await committedByOthers(o, blamedByCommit, canonicalOf);
   return {
     ref: o.ref,
     sort: o.sort,
@@ -3106,6 +3155,7 @@ export async function analyse(o) {
     mailmap,
     sameAddress,
     lastCommits,
+    committedByOthers: committedElsewhere,
     reviewers,
     history,
     authors: rows,
@@ -3692,6 +3742,20 @@ function fileOwnersLines(path, fo) {
   if (one.files.length) {
     out.push(`files only one person has written (${pct(SINGLE_OWNER_MIN_SHARE)} or more of at least ${SINGLE_OWNER_MIN_LINES} lines): ${one.files.map((f) => `${f.path} (${f.author}, ${n(f.lines)} lines, ${pct(f.share)})`).join(", ")}${one.more ? `, and ${n(one.more)} more` : ""}`);
   }
+  return out;
+}
+
+/**
+ * G12: one line per blamed commit whose author is not its committer, up to five, then a count of the rest. Empty when
+ * there is none.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @returns {string[]}
+ */
+export function committedByOthersLines(r) {
+  const c = r.committedByOthers;
+  if (!c || c.total === 0) return [];
+  const out = c.commits.map((x) => `credited to the author: ${x.lines.toLocaleString("en-US")} lines of ${x.shortSha} "${x.subject}" are credited to ${x.author}, committed by ${x.committer}`);
+  if (c.total > c.commits.length) out.push(`and ${c.total - c.commits.length} more commit${c.total - c.commits.length === 1 ? "" : "s"} committed by someone else`);
   return out;
 }
 

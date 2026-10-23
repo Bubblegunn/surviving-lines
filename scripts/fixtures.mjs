@@ -67,9 +67,10 @@ export function commitAs(dir, who, date, message, files) {
  * @param {string} date an ISO timestamp
  * @param {string} message the whole commit message, trailers included
  * @param {Record<string, string | Buffer | null>} files path to content; null removes the file
+ * @param {[string, string]} [committer] the committer name and address; the author when omitted
  * @returns {string} the new commit id
  */
-export function commitAsIdentity(dir, identity, date, message, files) {
+export function commitAsIdentity(dir, identity, date, message, files, committer) {
   const [name, email] = identity;
   /** @type {string[]} */
   const added = [];
@@ -86,7 +87,7 @@ export function commitAsIdentity(dir, identity, date, message, files) {
   }
   if (added.length) git(dir, ["add", "--", ...added]);
   if (removed.length) git(dir, ["rm", "-q", "--", ...removed]);
-  const env = { GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_NAME: "CI", GIT_COMMITTER_EMAIL: "ci@example.com", GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date };
+  const env = { GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_NAME: committer?.[0] ?? name, GIT_COMMITTER_EMAIL: committer?.[1] ?? email, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date };
   git(dir, ["commit", "-q", "--allow-empty", "-m", message], env);
   return git(dir, ["rev-parse", "HEAD"]).trim();
 }

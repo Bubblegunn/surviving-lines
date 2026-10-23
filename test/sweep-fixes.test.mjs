@@ -27,7 +27,7 @@ async function withRepo(build, fn) {
 
 /** Commit the staged index (a gitlink or symlink added by hand) as Ann. @param {string} dir @param {string} message */
 function commitIndex(dir, message) {
-  const env = { GIT_AUTHOR_NAME: "Ann", GIT_AUTHOR_EMAIL: "ann@x.org", GIT_COMMITTER_NAME: "CI", GIT_COMMITTER_EMAIL: "ci@example.com", GIT_AUTHOR_DATE: DATE, GIT_COMMITTER_DATE: DATE };
+  const env = { GIT_AUTHOR_NAME: "Ann", GIT_AUTHOR_EMAIL: "ann@x.org", GIT_COMMITTER_NAME: "Ann", GIT_COMMITTER_EMAIL: "ann@x.org", GIT_AUTHOR_DATE: DATE, GIT_COMMITTER_DATE: DATE };
   git(dir, ["commit", "-q", "-m", message], env);
 }
 

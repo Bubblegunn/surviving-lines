@@ -506,6 +506,35 @@
       "description": "The newest author date (YYYY-MM-DD) of each table row, by the row's address; a merged row takes the newest of its addresses.",
       "additionalProperties": { "type": "string" }
     },
+    "committedByOthers": {
+      "type": "object",
+      "description": "Blamed commits whose committer is not their author (after .mailmap and the identity groups judged strong), with at least 5 surviving lines in the scope. The lines are credited to the author.",
+      "additionalProperties": false,
+      "required": ["total", "commits"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0, "description": "How many such commits there are." },
+        "commits": {
+          "type": "array",
+          "description": "The five with the most lines.",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["sha", "shortSha", "subject", "lines", "author", "authorMail", "committer", "committerMail"],
+            "properties": {
+              "sha": { "type": "string" },
+              "shortSha": { "type": "string" },
+              "subject": { "type": "string" },
+              "lines": { "type": "integer", "minimum": 5, "description": "Surviving lines of the commit in the scope." },
+              "author": { "type": "string" },
+              "authorMail": { "type": "string" },
+              "committer": { "type": "string" },
+              "committerMail": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
     "mailmap": {
       "type": "object",
       "additionalProperties": false,

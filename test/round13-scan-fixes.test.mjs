@@ -23,7 +23,7 @@ test("the list of links and submodules is the whole tree's, whatever directory t
     symlinkSync("real.js", join(dir, "link.js"));
     symlinkSync("inner.js", join(dir, "sub/inner-link.js"));
     git(dir, ["add", "link.js", "sub/inner-link.js"]);
-    git(dir, ["commit", "-q", "-m", "link"], { GIT_AUTHOR_NAME: "Ann", GIT_AUTHOR_EMAIL: "ann@x.org", GIT_COMMITTER_NAME: "CI", GIT_COMMITTER_EMAIL: "ci@example.com", GIT_AUTHOR_DATE: DATE, GIT_COMMITTER_DATE: DATE });
+    git(dir, ["commit", "-q", "-m", "link"], { GIT_AUTHOR_NAME: "Ann", GIT_AUTHOR_EMAIL: "ann@x.org", GIT_COMMITTER_NAME: "Ann", GIT_COMMITTER_EMAIL: "ann@x.org", GIT_AUTHOR_DATE: DATE, GIT_COMMITTER_DATE: DATE });
     // Running the whole tool from a subdirectory is not supported (paths are blamed as the diff names them, from the
     // repository root), so the function is called directly with a working directory below the root.
     const fromRoot = await listNonRegularPaths(parseArgs(["--cwd", dir]));
