@@ -42,6 +42,10 @@ Run `npx surviving-lines --merge-identities`. It counts the addresses that the i
 
 `npx surviving-lines --reviewers <path>` lists the authors of one file or directory, most surviving lines first, with their lines and commits under that path, the date of their newest commit there, and whether they were active in the year before the ref's date. The `suggested` line names up to three of them, active ones first. It is a starting point. Who wrote the code that is left is not always who should review the next change to it. Under the table a `top:` line gives the top author with the non-blank and the blank-inclusive count; the same line is printed by the default view and by `--history`.
 
+## Who is still active?
+
+The line `as of <date>: k of n authors committed in the last 365 days and hold x% of the non-blank lines; y% of the lines belong to people with no commit in that time` is printed under the table, `--files`, `--reviewers` and `--history` whenever someone has stopped committing. The window ends at the date of the ref's commit, so the answer does not change from day to day; `--active-days <n>` changes its length.
+
 ## What does bus factor mean here?
 
 The bus factor is the smallest number of authors whose surviving lines together reach 50% of the lines counted, so a bus factor of 1 means one person holds at least half of the code that is left. `--bus-factor-threshold <n>` changes the 50%. It measures how concentrated the surviving code is, not who understands it. It counts lines, not commits, and it counts each address separately until a `.mailmap` joins them.

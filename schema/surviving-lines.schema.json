@@ -506,6 +506,38 @@
       "description": "The newest author date (YYYY-MM-DD) of each table row, by the row's address; a merged row takes the newest of its addresses.",
       "additionalProperties": { "type": "string" }
     },
+    "activity": {
+      "type": ["object", "null"],
+      "description": "Who is still committing, as of the author date of the ref's commit (never today). A person (rows with the same folded name are one) is active with a commit anywhere in the repository in the activeDays days up to asOf. Lines are non-blank lines. Null when no author holds a line. The text view prints a line only when someone is inactive.",
+      "additionalProperties": false,
+      "required": ["asOf", "activeDays", "authors", "activeAuthors", "lines", "activeLines", "activeShare", "inactiveShare", "largestInactive"],
+      "properties": {
+        "asOf": { "type": "string", "description": "YYYY-MM-DD, the author date of the ref's commit." },
+        "activeDays": { "type": "integer", "minimum": 1, "description": "The window, from --active-days (default 365)." },
+        "authors": { "type": "integer", "minimum": 1, "description": "People holding at least one non-blank line." },
+        "activeAuthors": { "type": "integer", "minimum": 0 },
+        "lines": { "type": "number", "description": "Non-blank lines held by those people." },
+        "activeLines": { "type": "number" },
+        "activeShare": { "type": "number", "minimum": 0, "maximum": 1 },
+        "inactiveShare": { "type": "number", "minimum": 0, "maximum": 1 },
+        "largestInactive": {
+          "type": "array",
+          "description": "The five inactive people with the most lines.",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "lines", "lineShare", "lastCommit"],
+            "properties": {
+              "author": { "type": "string" },
+              "lines": { "type": "number" },
+              "lineShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "lastCommit": { "type": ["string", "null"], "description": "Newest commit anywhere in the repository, or null when none was found." }
+            }
+          }
+        }
+      }
+    },
     "reappliedCredit": {
       "type": "object",
       "description": "Blamed commits that re-apply a reverted change (a revert of a revert) or are `git cherry-pick -x` copies of another author's commit, and still hold surviving lines. Their lines are credited to the author of the original commit. Absent from the counts when --no-reapply-credit is given.",

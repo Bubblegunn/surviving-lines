@@ -249,6 +249,7 @@ line of the table prints.
                      lines credited to the author of the original commit when that commit is in the repository
 --merge-identities   count the suggested same-person addresses as one, in memory (nothing written)
 --bus-factor-threshold <n>  percent of the lines counted that the bus factor must reach (default: 50)
+--active-days <n>    an author is active with a commit in the n days before the ref's commit date (default: 365)
 --reviewers <path>   list who should review a file or directory
 --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -398,6 +399,8 @@ What the check does not recognise:
 - Trailing commas, semicolons and parentheses are not recognised. A commit that adds or removes them is not listed.
 - A commit that adds, deletes or renames files, or changes more than 1000 files, is not judged.
 - It is a heuristic. A listed commit is a suspect, not proof; read it with `git show <id>` before ignoring it.
+
+## Who is still active
 
 ## Bus factor
 

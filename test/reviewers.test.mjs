@@ -166,7 +166,8 @@ test("the table and the suggestion both leave out the suspected formatter commit
     assert.ok(text.includes(`${PEOPLE.bob[0]}`), text);
     assert.ok(text.includes("Authors who gain lines from this: Ada 40 (93.0%) with the correction, 10 (23.3%) without."), text);
     assert.doesNotMatch(text, /69\.8%/, "no share of the plain count next to the committer's name");
-    assert.equal(text.includes("top owner"), false);
+    // The orphaned line also says "top owner", so only a line that starts with it counts.
+    assert.doesNotMatch(text, /^top owner/m);
   });
 });
 
@@ -185,7 +186,7 @@ test("the not-active line names at most three authors of the table, then the cou
     const r = await analyse(parseArgs(["--cwd", dir, "--reviewers", "lib"]));
     const text = renderReviewers(r, 5);
     assert.ok(text.includes(`not active in the year before 2026-04-12: ${PEOPLE.ada[0]}, ${PEOPLE.bob[0]}, ${PEOPLE.charlie[0]}, and 2 more`), text);
-    assert.equal(text.includes("top owner"), false, text);
+    assert.doesNotMatch(text, /^top owner/m, text);
     // Only the table's rows are named: with --top 2 the list is the two shown authors.
     assert.ok(renderReviewers(r, 2).includes(`not active in the year before 2026-04-12: ${PEOPLE.ada[0]}, ${PEOPLE.bob[0]}`), renderReviewers(r, 2));
   });

@@ -106,6 +106,8 @@ Measure who wrote the code that is still alive in a git ref.
                        then one line for the rest, and a last-commit column)
   --files [n]          one row per file, largest first, n rows (default 25): lines, top owner and share, next two owners,
                        then a summary line. Not with --group-by, --csv, --markdown, --identities, --reviewers, --history
+  --active-days <n>    an author is active with a commit in the n days before the ref's commit date (default: 365). Used by the line
+                       under the table (as of <date>: k of n authors committed ...; nothing is printed when everyone is active)
   --reviewers <path>   list who should review a file or directory: lines, commits, last commit, and whether active
   --history <path>     list who changed a file or directory, oldest first: first and last commit, commits, lines now
                        --since and --until do not narrow its dates or commit counts (they can drop a person with no lines left)
@@ -138,7 +140,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, activeDays: number, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -146,7 +148,7 @@ groupBy?: string, files?: number, reviewers?: string, history?: string, topGiven
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, activeDays: ACTIVE_DAYS_DEFAULT, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -169,6 +171,7 @@ export function parseArgs(argv) {
     else if (a === "--ai-breakdown") o.aiBreakdown = true;
     else if (a === "--group-by") { o.groupBy = next(); parseGroupBy(o.groupBy); }
     else if (a === "--files") { o.files = 25; if (/^\d+$/.test(argv[i + 1] ?? "")) { o.files = Number(argv[++i]); if (o.files < 1) throw new Error("--files must be an integer >= 1"); } }
+    else if (a === "--active-days") { o.activeDays = Number(next()); if (!Number.isInteger(o.activeDays) || o.activeDays < 1) throw new Error("--active-days must be an integer >= 1"); }
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
     else if (a === "--suggest-codeowners") o.suggestCodeowners = true;
@@ -2195,6 +2198,72 @@ export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
   };
 }
 
+/** G11: the default activity window, in days before the ref's commit date (--active-days). */
+const ACTIVE_DAYS_DEFAULT = 365;
+/**
+ * G11: one entry per person (rows with the same folded name are one person, as the owner lists treat them) with the
+ * newest commit anywhere in the repository and whether that commit is inside the window. The window is counted back
+ * from the ref's own commit date, never from today, so the same repository answers the same way on any day. A commit
+ * dated after the ref (clock skew) counts as inside the window.
+ * @param {{ author: string, mail: string, lines: number }[]} rows the table's rows (bots already out unless counted)
+ * @param {Record<string, string>} lastCommits each row's newest commit date, from readLastCommits
+ * @param {string} asOf YYYY-MM-DD
+ * @param {number} activeDays
+ * @returns {Map<string, { author: string, lines: number, lastCommit: string | null, active: boolean }>}
+ */
+export function peopleActivity(rows, lastCommits, asOf, activeDays) {
+  /** @type {Map<string, { author: string, lines: number, lastCommit: string | null, active: boolean }>} */
+  const people = new Map();
+  for (const a of rows) {
+    if (!(a.lines > 0)) continue;
+    const key = foldIdentity(a.author);
+    const p = people.get(key) ?? { author: a.author, lines: 0, lastCommit: null, active: false };
+    p.lines += a.lines;
+    const day = lastCommits[a.mail] ?? null;
+    if (day !== null && (p.lastCommit === null || day > p.lastCommit)) p.lastCommit = day;
+    people.set(key, p);
+  }
+  for (const p of people.values()) {
+    p.active = p.lastCommit !== null && (Date.parse(asOf) - Date.parse(p.lastCommit)) / 86400000 <= activeDays;
+  }
+  return people;
+}
+
+/**
+ * G11a: how many authors are still committing and how much of the code they hold.
+ * @param {Map<string, { author: string, lines: number, lastCommit: string | null, active: boolean }>} people
+ * @param {string} asOf
+ * @param {number} activeDays
+ */
+export function activityOf(people, asOf, activeDays) {
+  const all = [...people.values()];
+  const lines = all.reduce((s, p) => s + p.lines, 0);
+  if (!all.length || lines <= 0) return null;
+  const active = all.filter((p) => p.active);
+  const activeLines = active.reduce((s, p) => s + p.lines, 0);
+  const idle = all.filter((p) => !p.active).sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+  return {
+    asOf,
+    activeDays,
+    authors: all.length,
+    activeAuthors: active.length,
+    lines,
+    activeLines,
+    activeShare: activeLines / lines,
+    inactiveShare: (lines - activeLines) / lines,
+    largestInactive: idle.slice(0, 5).map((p) => ({ author: p.author, lines: p.lines, lineShare: p.lines / lines, lastCommit: p.lastCommit })),
+  };
+}
+
+/**
+ * The one line under the table, or null when everyone is active (or nobody holds a line).
+ * @param {ReturnType<typeof activityOf> | null | undefined} a
+ */
+export function activityLine(a) {
+  if (!a || a.activeAuthors >= a.authors) return null;
+  return `as of ${a.asOf}: ${a.activeAuthors} of ${a.authors} author${a.authors === 1 ? "" : "s"} committed in the last ${a.activeDays} days and hold ${pct(a.activeShare)} of the non-blank lines; ${pct(a.inactiveShare)} of the lines belong to people with no commit in that time`;
+}
+
 /** G12: a commit is named when at least this many of its lines survive in the scope and its committer is someone else than its author. */
 const COMMITTED_BY_OTHERS_MIN_LINES = 5;
 /** G12: this many such commits are named; the rest are counted. */
@@ -2952,6 +3021,8 @@ export function renderFiles(r) {
   }
   if (sum && sum.total > sum.shown) out.push(`… ${n(sum.total - sum.shown)} more file${sum.total - sum.shown === 1 ? "" : "s"}`);
   if (sum) out.push(`files: ${n(sum.total)}; one owner above 80% in ${n(sum.oneOwnerAbove80Percent)}; no owner above 50% in ${n(sum.noOwnerAbove50Percent)}`);
+  const activeLine = activityLine(r.activity);
+  if (activeLine) out.push(activeLine);
   const notes = scopeNotes(r);
   if (notes.length) out.push("", ...notes);
   out.push("");
@@ -3311,6 +3382,10 @@ export async function analyse(o) {
   const nameOf = new Map([...authors].map(([mail, a]) => [mail, a.name]));
   const ownerMerge = o.mergeIdentities ? canonicalOf : new Map();
   const lastCommits = await readLastCommits(o, rows, membersOf);
+  // G11: who is still committing, as of the ref's own commit date (never today), and what follows from it.
+  const asOfDay = await refDay(o);
+  const people = peopleActivity(rows, lastCommits, asOfDay, o.activeDays);
+  const activity = activityOf(people, asOfDay, o.activeDays);
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits, lastCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
@@ -3351,6 +3426,7 @@ export async function analyse(o) {
     mailmap,
     sameAddress,
     lastCommits,
+    activity,
     committedByOthers: committedElsewhere,
     reappliedCredit: reapplied,
     reviewers,
@@ -3852,6 +3928,8 @@ export function renderTable(r, top) {
   }
   const topLine = topAuthorLine(r);
   if (topLine) lines.push(topLine);
+  const activeLine = activityLine(r.activity);
+  if (activeLine) lines.push(activeLine);
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
   const notes = scopeNotes(r);
@@ -3908,6 +3986,8 @@ export function renderReviewers(r, top) {
     const more = idle.length - named.length;
     lines.push(`not active in the year before ${v.asOf}: ${named.join(", ")}${more ? `, and ${more} more` : ""}`);
   }
+  const activeLine = activityLine(r.activity);
+  if (activeLine) lines.push(activeLine);
   const owned = fileOwnersLines(v.path, v.fileOwners);
   if (owned.length) lines.push("", ...owned);
   const notes = scopeNotes(r, { view: v });
@@ -4035,6 +4115,8 @@ export function renderHistory(r, top) {
   // The run's bus factor is the path's: the rows were blamed over the path alone.
   const bus = busFactorBlock(r.busFactor, r.authors);
   if (bus.length) lines.push("", ...bus);
+  const activeLine = activityLine(r.activity);
+  if (activeLine) lines.push("", activeLine);
   const owned = fileOwnersLines(h.path, h.fileOwners);
   if (owned.length) lines.push("", ...owned);
   const notes = scopeNotes(r, { view: h });
