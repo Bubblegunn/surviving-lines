@@ -1367,6 +1367,52 @@
         }
       }
     },
+    "timeline": {
+      "type": ["object", "null"],
+      "description": "The --timeline view: who made most of the changes in each period. Null unless --timeline was given. It counts commits or lines changed, not surviving lines.",
+      "additionalProperties": false,
+      "required": ["path", "by", "resolution", "first", "last", "commits", "buckets", "at"],
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "by": { "type": "string", "enum": ["commits", "lines"] },
+        "resolution": { "type": ["string", "null"], "enum": ["yearly", "monthly", "daily", null], "description": "Yearly above 5 years, monthly above 60 days, else daily; null when no commit was counted." },
+        "first": { "type": ["string", "null"] },
+        "last": { "type": ["string", "null"] },
+        "commits": { "type": "integer", "minimum": 0, "description": "Counted commits." },
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bucket", "winner", "count", "total", "share", "handover"],
+            "properties": {
+              "bucket": { "type": "string" },
+              "winner": { "type": ["string", "null"], "description": "Null for an empty bucket between the first and the last." },
+              "count": { "type": "integer", "minimum": 0 },
+              "total": { "type": "integer", "minimum": 0 },
+              "share": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+              "handover": { "type": ["object", "null"], "additionalProperties": false, "required": ["from", "to"], "properties": { "from": { "type": "string" }, "to": { "type": "string" } } }
+            }
+          }
+        },
+        "at": {
+          "type": "array",
+          "description": "With --at: the blame result at the last commit before each date.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["date", "commit", "busFactor", "top", "note"],
+            "properties": {
+              "date": { "type": "string" },
+              "commit": { "type": ["string", "null"] },
+              "busFactor": { "type": ["integer", "null"] },
+              "top": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["author", "lines", "share"], "properties": { "author": { "type": "string" }, "lines": { "type": "integer", "minimum": 0 }, "share": { "type": "number", "minimum": 0, "maximum": 1 } } } },
+              "note": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
     "forDiff": {
       "type": ["object", "null"],
       "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",

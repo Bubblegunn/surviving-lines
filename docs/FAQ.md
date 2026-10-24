@@ -70,6 +70,10 @@ The line `as of <date>: k of n authors committed in the last 365 days and hold x
 
 `surviving-lines --written-since 2026-04-24` lists, per person, the surviving lines whose author date is on or after that day, the lines they inserted in the same window and the share that was kept, plus the window's share of all lines. It reads the author date, not the committer date, so rebased work keeps the day its author gave it. Add `--churn` for all-time inserted and deleted lines. It counts lines, not quality.
 
+## Who owned this directory over the years?
+
+`surviving-lines --timeline src/engine/` prints, per year (or month or day, chosen from the span), the person with the most commits, their share, and a `handover` line when the main contributor changed to someone with half of the bucket or more. `--by lines` counts lines added plus removed instead. It is commit activity, not surviving lines; `--at <date>` adds the blame bus factor at a past date.
+
 ## Is our CODEOWNERS file still right?
 
 `surviving-lines --check-codeowners` compares the file (`.github/CODEOWNERS`, `CODEOWNERS` or `docs/CODEOWNERS` at the ref, or the file you name) with the surviving lines and the commit dates, using GitHub's matching rules. It lists files no rule covers, rules that match no file, rules whose declared owners and observed owners (20% or more of the covered lines) share nobody, declared owners with no line and no commit there for a year, undeclared people who hold half, and declared owners with no recent commit, each with its line number. Teams (`@org/team`) and handles it cannot map to a person offline are listed as not comparable and are never counted as drift. It does not say who should own the code.
