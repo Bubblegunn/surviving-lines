@@ -1209,6 +1209,22 @@
         }
       }
     },
+    "tree": {
+      "type": ["object", "null"],
+      "description": "The --tree view: the owner of every directory and file, from the run's per-file blame counts. Null unless --tree was given. A node's owner is the person with the most surviving non-blank lines in its subtree.",
+      "additionalProperties": false,
+      "required": ["asOf", "activeDays", "depth", "childrenShown", "scopeLines", "scopeFiles", "nodes", "more"],
+      "properties": {
+        "asOf": { "type": "string", "description": "The ref commit's author date, YYYY-MM-DD." },
+        "activeDays": { "type": "integer", "minimum": 1 },
+        "depth": { "type": "integer", "minimum": 0, "description": "Levels of nodes shown below the root; 0 means every level." },
+        "childrenShown": { "type": "integer", "minimum": 1, "description": "Children kept per node (--top, default 25), the ones with the most lines." },
+        "scopeLines": { "type": "integer", "minimum": 0, "description": "Non-blank surviving lines in the scope, bots left out." },
+        "scopeFiles": { "type": "integer", "minimum": 0, "description": "Files with at least one counted line." },
+        "nodes": { "type": "array", "description": "The top level: directories first, then files, each alphabetical.", "items": { "$ref": "#/$defs/treeNode" } },
+        "more": { "type": "integer", "minimum": 0, "description": "Top-level nodes left out by the cap." }
+      }
+    },
     "forDiff": {
       "type": ["object", "null"],
       "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",
@@ -1723,6 +1739,25 @@
     }
   },
   "$defs": {
+    "treeNode": {
+      "type": "object",
+      "description": "One node of the --tree view. A directory whose only child is a directory is one node with a joined name.",
+      "additionalProperties": false,
+      "required": ["name", "path", "kind", "owner", "share", "lines", "active", "bot", "children", "more", "below"],
+      "properties": {
+        "name": { "type": "string", "description": "The last path segment (joined segments for a collapsed chain), with a trailing / for a directory." },
+        "path": { "type": "string", "description": "The full path of the node (of the deepest directory of a collapsed chain)." },
+        "kind": { "type": "string", "enum": ["dir", "file"] },
+        "owner": { "type": ["string", "null"], "description": "The person with the most lines in the subtree (equal lines go by name); null when no line is counted." },
+        "share": { "type": ["number", "null"], "minimum": 0, "maximum": 1, "description": "The owner's lines over the node's counted lines; below 0.5 the text view says no owner above 50%." },
+        "lines": { "type": "integer", "minimum": 0, "description": "Counted non-blank lines in the subtree." },
+        "active": { "type": ["boolean", "null"], "description": "Whether the owner has a commit in the activity window; null without an owner." },
+        "bot": { "type": "boolean", "description": "True for a file whose every counted line belongs to a bot (not counted)." },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/treeNode" } },
+        "more": { "type": "integer", "minimum": 0, "description": "Children left out by the cap." },
+        "below": { "type": "boolean", "description": "True when this directory has children that the depth hides." }
+      }
+    },
     "brief": {
       "title": "surviving-lines --brief --json output",
       "description": "The small object printed by --brief --json: the facts of the plain-text brief, from the same analysis as every other view. It is a separate document from the root schema above (it has no authors list). schemaVersion changes under the same rule. Lines are non-blank unless the key says linesWithBlank.",

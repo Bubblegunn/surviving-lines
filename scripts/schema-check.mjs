@@ -1,15 +1,21 @@
 // The part of JSON Schema that schema/surviving-lines.schema.json uses, checked by hand so the tests need
 // no dependency: type, const, enum, required, properties, additionalProperties false, items, minimum and
-// maximum. Returns every violation with its path; an empty list means the value conforms.
+// maximum, and local $ref ("#/$defs/name"). Returns every violation with its path; an empty list means the value conforms.
 // (test/surviving-lines.test.js carries its own copy of this function; keep the two in step.)
 
 /**
  * @param {any} schema
  * @param {any} value
  * @param {string} [path]
+ * @param {any} [root] the document that local $ref values ("#/$defs/name") are resolved against
  * @returns {string[]}
  */
-export function schemaErrors(schema, value, path = "$") {
+export function schemaErrors(schema, value, path = "$", root = schema) {
+  if (typeof schema.$ref === "string") {
+    const target = schema.$ref.replace(/^#\//, "").split("/").reduce((/** @type {any} */ node, key) => node?.[key], root);
+    if (!target) return [`${path}: unresolved reference ${schema.$ref}`];
+    return schemaErrors(target, value, path, root);
+  }
   /** @type {string[]} */
   const errors = [];
   const typeOf = (/** @type {any} */ v) => (v === null ? "null" : Array.isArray(v) ? "array" : Number.isInteger(v) ? "integer" : typeof v);
@@ -29,10 +35,10 @@ export function schemaErrors(schema, value, path = "$") {
   if (typeOf(value) === "object") {
     for (const key of schema.required ?? []) if (!(key in value)) errors.push(`${path}: missing key ${key}`);
     for (const [key, v] of Object.entries(value)) {
-      if (schema.properties?.[key]) errors.push(...schemaErrors(schema.properties[key], v, `${path}.${key}`));
+      if (schema.properties?.[key]) errors.push(...schemaErrors(schema.properties[key], v, `${path}.${key}`, root));
       else if (schema.additionalProperties === false) errors.push(`${path}: key ${key} is not in the schema`);
     }
   }
-  if (Array.isArray(value) && schema.items) value.forEach((v, i) => errors.push(...schemaErrors(schema.items, v, `${path}[${i}]`)));
+  if (Array.isArray(value) && schema.items) value.forEach((v, i) => errors.push(...schemaErrors(schema.items, v, `${path}[${i}]`, root)));
   return errors;
 }

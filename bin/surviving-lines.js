@@ -139,6 +139,10 @@ Measure who wrote the code that is still alive in a git ref.
                        they wrote, lines per directory (--group-by dir:<n> sets the depth), commits, last commit and activity.
                        An author is a name or an address (after .mailmap and --merge-identities). Repeatable; prints its own
                        view, with --json only; -- <path> scopes it; --top caps the lists
+  --tree [depth]       the ownership tree: for each directory and file, the person with the most surviving lines in it and their share, with
+                       a mark for owners who are not active and for nodes where nobody holds half. Depth counts levels of nodes (default 2,
+                       0 = all); a directory whose only child is a directory is printed on one line; --top caps the children per node
+                       (default 25); -- <path> scopes it. Prints its own view, with --json only
   --for-diff <base>..<head>  who should review a change: the people who wrote the lines it replaces or deletes (blamed at the base
                        commit, with this run's blame rules), without the change authors, with per-file flags (inactive owners, orphaned,
                        one owner holds 80%+, new, deleted, renamed). Also <base>...<head> (from the merge base) and <base> alone
@@ -179,7 +183,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -217,6 +221,7 @@ export function parseArgs(argv) {
     else if (a === "--time-budget") { o.timeBudget = Number(next()); if (!Number.isFinite(o.timeBudget) || o.timeBudget <= 0) throw new Error("--time-budget must be a number of seconds above 0"); }
     else if (a === "--without") o.without.push(next());
     else if (a === "--owned-by") o.ownedBy.push(next());
+    else if (a === "--tree") { o.tree = TREE_DEPTH_DEFAULT; if (/^\d+$/.test(argv[i + 1] ?? "")) o.tree = Number(argv[++i]); }
     else if (a === "--why-not") o.whyNot = next();
     else if (a === "--check-codeowners") { o.checkCodeowners = ""; const v = argv[i + 1]; if (v !== undefined && v !== "--" && !v.startsWith("-")) o.checkCodeowners = argv[++i]; }
     else if (a === "--for-diff") { o.forDiff = next(); if (!o.forDiff.trim()) throw new Error("--for-diff needs a revision range such as main..feature"); }
@@ -274,10 +279,10 @@ export function parseArgs(argv) {
   }
   // The views added in round 13 (--for-diff, --owned-by, --why-not, --check-codeowners) print their own output. Each one is refused with every other view
   // and every output format; only --json may be combined with them.
-  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
+  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
   const optionsSet = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", ...newViews });
   for (const view of Object.keys(newViews).filter((k) => newViews[k])) {
-    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
+    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
     const clash = Object.keys(own).find((k) => own[k]);
     if (clash) throw new Error(`${view} prints its own view; it can be combined with --json only, not with ${clash}`);
   }
@@ -3417,6 +3422,187 @@ export function renderOwnedBy(r) {
   return out.join("\n");
 }
 
+/** R13 #7: --tree shows this many levels of nodes unless a depth is given. */
+const TREE_DEPTH_DEFAULT = 2;
+/** R13 #7: children printed under one node unless --top is given; the rest is one "... n more" line. */
+const TREE_CHILDREN_SHOWN = 25;
+/** R13 #7: no tree line is wider than this many terminal columns. */
+const TREE_WIDTH = 100;
+/** R13 #7: a node whose top owner holds less than this share is marked "no owner above 50%". */
+const TREE_NO_OWNER_SHARE = 0.5;
+
+/**
+ * @typedef {{ name: string, path: string, dir: boolean, lines: number, botOnly: boolean, owners: Map<string, { name: string, lines: number }>, kids: Map<string, TreeBuild> }} TreeBuild
+ * @typedef {{ name: string, path: string, kind: "dir" | "file", owner: string | null, share: number | null, lines: number, active: boolean | null, bot: boolean, children: TreeNode[], more: number, below: boolean }} TreeNode
+ */
+
+/**
+ * R13 #7: the ownership tree, from the per-file blame counts of the run (the owners of --files: non-blank lines, bots
+ * out, people folded by name, .mailmap and --merge-identities applied). A node's owner is the person with the most
+ * surviving lines in its subtree (equal lines go by name); its share is their lines over the subtree's lines. A file whose
+ * every counted line belongs to a bot has no counted lines: it is listed as a bot file and adds nothing to its directories.
+ * `depth` counts levels of nodes below the root (1 = the top level); 0 shows every level. A directory whose only child is a
+ * directory is one node with a joined name, and counts as one level. Each node shows its `shown` largest children (by lines);
+ * directories come first, then files, each alphabetical.
+ * @param {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} perFile
+ * @param {boolean} includeBots
+ * @param {Map<string, { author: string, mail: string }>} canonicalOf
+ * @param {Map<string, string>} nameOf
+ * @param {Map<string, { active: boolean }>} people
+ * @param {number} depth
+ * @param {number} shown
+ * @param {{ asOf: string, activeDays: number }} when
+ */
+export function treeOf(perFile, includeBots, canonicalOf, nameOf, people, depth, shown, when) {
+  /** @type {(name: string, path: string, dir: boolean) => TreeBuild} */
+  const make = (name, path, dir) => ({ name, path, dir, lines: 0, botOnly: false, owners: new Map(), kids: new Map() });
+  const root = make("", "", true);
+  let scopeLines = 0;
+  let scopeFiles = 0;
+  for (const path of [...perFile.keys()].sort()) {
+    const counts = /** @type {NonNullable<ReturnType<typeof perFile.get>>} */ (perFile.get(path));
+    const f = foldedOwners(counts, includeBots, canonicalOf, nameOf);
+    const botOnly = f.lines <= 0 && foldedOwners(counts, true, canonicalOf, nameOf).lines > 0;
+    if (f.lines <= 0 && !botOnly) continue;
+    if (f.lines > 0) {
+      scopeLines += f.lines;
+      scopeFiles++;
+    }
+    const parts = path.split("/");
+    let at = root;
+    const walked = [root];
+    for (const [i, part] of parts.entries()) {
+      const leaf = i === parts.length - 1;
+      let next = at.kids.get(part);
+      if (!next) {
+        next = make(part, parts.slice(0, i + 1).join("/"), !leaf);
+        at.kids.set(part, next);
+      }
+      at = next;
+      walked.push(at);
+    }
+    at.botOnly = botOnly;
+    for (const n of walked) {
+      n.lines += f.lines;
+      for (const ow of f.owners) {
+        const e = n.owners.get(ow.key) ?? { name: ow.name, lines: 0 };
+        e.lines += ow.lines;
+        n.owners.set(ow.key, e);
+      }
+    }
+  }
+  /** @param {TreeBuild} n */
+  const topOwner = (n) => [...n.owners].map(([key, e]) => ({ key, ...e })).sort((x, y) => y.lines - x.lines || x.name.localeCompare(y.name))[0] ?? null;
+  /**
+   * @param {TreeBuild} first
+   * @param {number} level
+   * @returns {TreeNode}
+   */
+  const shape = (first, level) => {
+    let cur = first;
+    let name = first.name;
+    while (cur.dir && cur.kids.size === 1) {
+      const only = /** @type {TreeBuild} */ ([...cur.kids.values()][0]);
+      if (!only.dir) break;
+      name += `/${only.name}`;
+      cur = only;
+    }
+    const top = topOwner(cur);
+    const kids = [...cur.kids.values()];
+    const open = cur.dir && (depth === 0 || level < depth);
+    const keep = open ? [...kids].sort((x, y) => y.lines - x.lines || x.name.localeCompare(y.name)).slice(0, shown) : [];
+    keep.sort((x, y) => Number(y.dir) - Number(x.dir) || x.name.localeCompare(y.name));
+    return {
+      name: cur.dir ? `${name}/` : name,
+      path: cur.path,
+      kind: cur.dir ? "dir" : "file",
+      owner: top ? top.name : null,
+      share: top && cur.lines ? top.lines / cur.lines : null,
+      lines: cur.lines,
+      active: top ? people.get(top.key)?.active === true : null,
+      bot: cur.botOnly || (!top && cur.lines === 0),
+      children: keep.map((k) => shape(k, level + 1)),
+      more: open ? kids.length - keep.length : 0,
+      below: cur.dir && !open && kids.length > 0,
+    };
+  };
+  const rootKids = [...root.kids.values()].sort((x, y) => y.lines - x.lines || x.name.localeCompare(y.name)).slice(0, shown);
+  rootKids.sort((x, y) => Number(y.dir) - Number(x.dir) || x.name.localeCompare(y.name));
+  return { ...when, depth, childrenShown: shown, scopeLines, scopeFiles, nodes: rootKids.map((k) => shape(k, 1)), more: root.kids.size - rootKids.length };
+}
+
+/**
+ * The columns a string takes, cut in the middle with an ellipsis when it is wider than `max`.
+ * @param {string} s
+ * @param {number} max
+ */
+function cutMiddle(s, max) {
+  if (displayWidth(s) <= max) return s;
+  const chars = [...s];
+  let head = Math.ceil((max - 1) / 2);
+  let tail = Math.max(0, max - 1 - head);
+  const build = () => `${chars.slice(0, head).join("")}…${tail ? chars.slice(-tail).join("") : ""}`;
+  while ((head > 0 || tail > 0) && displayWidth(build()) > max) {
+    if (head >= tail && head > 0) head--;
+    else tail--;
+  }
+  return build();
+}
+
+/**
+ * The --tree view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderTree(r) {
+  const t = r.tree;
+  if (!t) throw new Error("renderTree needs a result from --tree");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  /** @type {{ prefix: string, name: string, note: string }[]} */
+  const rows = [];
+  let below = false;
+  /**
+   * @param {TreeNode} node
+   * @param {string} prefix
+   * @param {string | null} parentOwner
+   * @param {number} level
+   * @param {{ more: number, last: boolean }} edge
+   */
+  const walk = (node, prefix, parentOwner, level, edge) => {
+    const branch = level === 1 ? "" : edge.last ? "└── " : "├── ";
+    let note = "";
+    if (node.bot) note = "bot";
+    else if (node.kind === "dir" || node.owner !== parentOwner) {
+      note = `${node.owner} ${Math.round((node.share ?? 0) * 100)}%`;
+      if (level === 1 && node.kind === "dir") note += ` (of ${n(node.lines)})`;
+      if ((node.share ?? 0) < TREE_NO_OWNER_SHARE) note += " (no owner above 50%)";
+      if (node.active === false) note += " (inactive)";
+    }
+    rows.push({ prefix: prefix + branch, name: node.name, note });
+    if (node.below) below = true;
+    const childPrefix = level === 1 ? "" : prefix + (edge.last ? "    " : "│   ");
+    node.children.forEach((c, i) => walk(c, childPrefix, node.owner, level + 1, { more: node.more, last: i === node.children.length - 1 && node.more === 0 }));
+    if (node.more) rows.push({ prefix: `${childPrefix}└── `, name: `... ${n(node.more)} more`, note: "" });
+  };
+  t.nodes.forEach((node) => walk(node, "", null, 1, { more: 0, last: true }));
+  if (t.more) rows.push({ prefix: "", name: `... ${n(t.more)} more`, note: "" });
+  const noteW = Math.max(0, ...rows.map((x) => displayWidth(x.note)));
+  // A note follows the name after at least two dots and two spaces, so the name gets the rest of the width.
+  const nameBudget = (/** @type {{ prefix: string }} */ x) => Math.max(8, TREE_WIDTH - displayWidth(x.prefix) - (noteW ? noteW + 4 : 0));
+  const cutRows = rows.map((x) => ({ ...x, name: cutMiddle(x.name, nameBudget(x)) }));
+  const col = Math.max(...cutRows.filter((x) => x.note).map((x) => displayWidth(x.prefix) + displayWidth(x.name)), 0);
+  const body = cutRows.map((x) => {
+    if (!x.note) return x.prefix + x.name;
+    const left = x.prefix + x.name;
+    return `${left} ${".".repeat(col - displayWidth(left) + 1)} ${x.note}`;
+  });
+  const out = [headerLine(r), `ownership tree, ${t.depth === 0 ? "every level" : `${t.depth} level${t.depth === 1 ? "" : "s"}`}: owner = most surviving non-blank lines in the subtree, share = their part of it; inactive = no commit in the ${t.activeDays} days before ${t.asOf}`, "", ...(body.length ? body : ["no file with a counted line in this scope"])];
+  if (below) out.push("", `directories below level ${t.depth} are counted in their parent; --tree <n> shows more levels, --tree 0 all`);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("", "These are surviving lines, not who understands the code.");
+  return out.join("\n");
+}
+
 /** R13 #4: where GitHub looks for the file, in its order; the first one that exists is used. */
 export const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 /** R13 #4: a file of this size or more gets a warning; GitHub does not read a file above its limit. */
@@ -5073,6 +5259,7 @@ export async function analyse(o) {
   const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
   const withoutResult = o.without.length ? withoutOf(main.perFile, o.includeBots, ownerMerge, nameOf, rows, resolveLeavers(o.without, rows, membersOf), o.busFactorThreshold) : null;
   const ownedByResult = o.ownedBy.length ? ownedByOf(main.perFile, main.perFileRaw, o.includeBots, ownerMerge, nameOf, rows, botRows, o.ownedBy, membersOf, await readCommitDays(o), asOfDay, o.activeDays, grouping?.kind === "dir" ? grouping.depth : 1, o.topGiven ? o.top : OWNED_BY_SHOWN) : null;
+  const treeResult = o.tree !== undefined ? treeOf(main.perFile, o.includeBots, ownerMerge, nameOf, people, o.tree, o.topGiven ? o.top : TREE_CHILDREN_SHOWN, { asOf: asOfDay, activeDays: o.activeDays }) : null;
   /** @type {ReturnType<typeof whyNotOf> | null} */
   let whyNotResult = null;
   if (o.whyNot !== undefined) {
@@ -5148,6 +5335,7 @@ export async function analyse(o) {
     without: withoutResult,
     forDiff: forDiffResult,
     ownedBy: ownedByResult,
+    tree: treeResult,
     whyNot: whyNotResult,
     codeownersCheck: codeownersResult,
     committedByOthers: committedElsewhere,
@@ -7053,6 +7241,8 @@ async function main() {
       output = renderWhyNot(r);
     } else if (r.ownedBy) {
       output = renderOwnedBy(r);
+    } else if (r.tree) {
+      output = renderTree(r);
     } else if (r.forDiff) {
       output = renderForDiff(r, o.topGiven ? o.top : FOR_DIFF_REVIEWERS_SHOWN);
     } else if (r.without) {
