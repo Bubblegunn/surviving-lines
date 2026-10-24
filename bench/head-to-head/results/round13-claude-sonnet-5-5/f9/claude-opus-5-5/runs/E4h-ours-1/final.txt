@@ -1,0 +1,46 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node /private/tmp/r13/final/ours-src/bin/surviving-lines.js'; $SL --group-by dir --suggest-codeowners --merge-identities 2>&1
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by dir --suggest-codeowners --merge-identities 2>&1
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --identities 2>&1 | head -40; ls -la .mailmap 2>&1
+ - Bash: git show --stat --format='%h %an %s' 62628c0 | cat && printf '# proposed by surviving-lines, confirm before relying on them\nTroy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n' > .mailmap && node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by dir --suggest-codeowners 2>&1 | grep -E '^(test|lib|\.|\.github) |^(Troy|Douglas|alex|Alejandro)|^#|^/|bus factor|mailmap|top:'
+ - Bash: mv .mailmap /tmp/mm.bak && node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by dir 2>&1 | grep -E '^(test|lib) |^Troy'; mv /tmp/mm.bak .mailmap; git status --short
+FINAL ANSWER:
+I'd add two CODEOWNERS lines: `/lib/` and `/test/` go to Troy Goode. For the root files and `.github/`, nobody holds half the lines. All figures come from `surviving-lines --group-by dir --suggest-codeowners` at `62628c0`.
+
+```
+# Proposed from surviving lines; reviewers, not authorship, should decide final ownership.
+/lib/   <email redacted>   # Troy Goode: 144 of 214 non-blank lines (67.3%), 159 of 238 counting blank lines (66.8%)
+/test/  <email redacted>   # Troy Goode: 420 of 820 non-blank lines (51.2%), 517 of 966 counting blank lines (53.5%)
+# /.github/: nobody holds half. Top is Douglas Christopher Wilson, 92 lines (30.2%) / 118 counting blank lines (32.2%)
+# Root files: nobody holds half. Douglas Christopher Wilson 95 (29.4%) / 115 (27.7%); Troy Goode 85 (26.3%) / 134 (32.3%)
+```
+
+Replace the email with Troy's GitHub handle if you have it.
+
+**How the rules were applied:**
+- **Same person counted once:** I treated two of Troy's addresses as one person, `<email redacted>` and `troy@laptop.example`. The tool rates this a strong match on name and address, but it's still a guess.
+  - The `/test/` line depends on this merge. Without it, Troy's main address holds 388 lines (47.3%), 481 counting blank lines (49.8%). That's just under half, so `/test/` would get no owner.
+  - Without the merge, `/lib/` still clears half: 132 lines (61.7%), 147 counting blank lines (61.8%).
+- **Formatting commits:** commit `62628c0` ("style: reformat js…", by Fiona Formatter) rewrote 1,016 lines in 4 files. I checked it with `git show --stat`. Those lines are credited back to whoever wrote them before. The tool flagged 7 other commits as possibly mechanical but kept them; the largest is `739dc11` "docs: reformat license", with 17 lines. Setting it aside would only move lines in the root files, where nobody comes close to half anyway.
+- **Bots:** dependabot[bot] is left out (10 lines, 11 commits).
+
+**Things to know before using this:**
+- **`.github/` has no active owner.** The two biggest holders there, Douglas Christopher Wilson and Íñigo Marquínez Prado, have no commit in the year before 2026-04-12. That's the date of the last commit, not today. No one who is active holds 20% of `.github/`.
+- **Root files:** the tool won't suggest a pattern for these, because it would also match every directory.
+- **Troy is the only active person in `lib/` and `test/`.** If he leaves, nobody active has written code there.
+- **Douglas Christopher Wilson:** he holds 344 lines (42.0%) / 374 counting blank lines (38.7%) of `test/`. He's below half and inactive, so he isn't named.
+- **What the counts measure:** they show whose code is still there. They don't show review work or who understands the code.
+
+**One file added:** because you asked to count each person once, I wrote a `.mailmap` with a "confirm before relying on them" comment and re-ran the tool. The results matched the in-memory merge.
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+```
+The second line covers the same address under two names; it doesn't change any owner. The file isn't committed. Please confirm both merges are correct, or delete the file.
+META cost=0.29966740000000003 ms=48616 turns=8

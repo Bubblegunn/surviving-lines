@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: cd lib && ls; echo ---; git log --all --no-merges --pretty=format:"%an" -- . | sort | uniq -c | sort -rn; echo ---; git log --no-merges --since="90 days ago" --pretty=format:"%an" -- . | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files .); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -4; done; git log -1 --format=%cd
+FINAL ANSWER:
+**Bus factor for `lib/` is about 2, and it's fragile. Troy Goode alone is at the 50% line.**
+
+`lib/` holds a single file, `index.js`. The numbers below come from `git log --no-merges` on that directory.
+
+| Metric | Value |
+|---|---|
+| Source files | 1 (`index.js`) |
+| Total commits | 66 |
+| Distinct authors | 25 |
+| Top author | Troy Goode, 33 commits (50%) |
+| Next authors | Douglas Christopher Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3 |
+| Authors with a single commit | 20 |
+| Commits in the last 90 days | 0 |
+
+**How many people have to leave:**
+- **Troy Goode alone is exactly 50%.** That is not over half, so strictly the bus factor is 2. Troy plus Douglas Wilson reaches about 56%.
+- **If Troy leaves, you lose the main author.** The remaining history is spread thin across 24 people, and most of them made one drive-by commit.
+- **For "nobody understands it", count the repeat contributors, not the authors.** Only four people have made 3 or more commits. Realistically the code is understood by Troy, Douglas, Alejandro and Simon. Once those four are gone, only one-off contributors remain.
+
+**Caveats:**
+- **Inactivity:** nobody has committed to `lib/` in the last 90 days. The last commit in the repo is 2026-04-12, about six months ago, so I can't tell who is still around. The contributor list says nothing about who is available to answer questions.
+- **Noisy history:** the most recent commits are a formatting pass ("Fiona Formatter") and an annotation commit. Commit counts also say little about who understands the code. This is a small file, so the logic itself is probably easy to pick up from reading it.
+- **Missing history:** I didn't follow renames or history from before the file moved into `lib/`, so older authorship may be missing.
+- **Importance:** I didn't run the dependents check. `index.js` is the library's entry point, so every consumer depends on it.
+
+**What to do about it:**
+1. Confirm whether Troy, Douglas, Alejandro and Simon are still reachable or active.
+2. Have a current maintainer review the code and add short notes on the non-obvious behavior.
+3. Make sure at least two active people can review and release changes to `lib/index.js`.
+META cost=0.0605339 ms=15748 turns=4

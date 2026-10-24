@@ -1,0 +1,24 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%ad|%s' --date=short --no-merges; git log -1 --format='%ad %h'
+ - Bash: git log --since="2026-03-29" --format='%h|%an|%ae|%cn|%ad' --date=iso; echo; git shortlog -sne HEAD | head -30; echo; git show --stat --format=%h 62628c0 | tail -15; git ls-files | grep -v node_modules | head -50
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- $f 2>/dev/null | awk -v f=$f '/^[0-9a-f]{40} /{c=$1} /^author-mail /{print c, $2}'; done > /tmp/bl.txt
+echo "by author (all history):"; awk '{print $2}' /tmp/bl.txt | sort | uniq -c | sort -rn | head -5
+echo "window commits:"; for c in b2005d9 02afce3 5317ebe; do full=$(git rev-parse $c); echo $c $(grep -c "^$full" /tmp/bl.txt); done
+git show --stat --format=%h b2005d9 02afce3 5317ebe | cat
+FINAL ANSWER:
+Two people committed in the 14 days up to the latest commit (2026-03-29 to 2026-04-12). I counted lines from those window commits that blame still attributes to the author today.
+
+| Person | Commits in window | Lines still in the code |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (2026-04-10), `b2005d9` lib: annotate handlers (2026-04-10) | **48** (36 in `test/vary.js`, 12 in `lib/index.js`) |
+| **Vansh Sharma** | `5317ebe` docs: app.del() with app.delete() in README example (#411) (2026-04-07) | **1** (the README line) |
+
+- **Troy Goode:** he appears under two author emails, `troy@laptop.example` for these commits and `<email redacted>` for his older history. I counted him once. The 48 lines are only from his window commits. His older work adds many more lines, about 700 under the gmail address alone.
+- **Formatting-only commit excluded:** `62628c0` by Fiona Formatter reindented four files (1016 lines added and 1016 removed). I ran blame with that commit ignored (`--ignore-rev`), so lines it only reindented stay credited to their real authors.
+- **Bots:** dependabot made no commits in the window. Its latest commit here (`ee714bd`) is older.
+META cost=0.059595499999999996 ms=15657 turns=4

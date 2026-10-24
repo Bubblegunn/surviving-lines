@@ -1,0 +1,75 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E1-ppi-1/repo; git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; echo; find . -type f \( -name "*.js" -o -name "*.ts" \) -not -path "*/node_modules/*" -not -path "./.git/*" | wc -l; ls; for f in $(git ls-files | grep -E '\.(js|ts)$'); do n=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort -u | wc -l); top=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -1); tot=$(git log --all --no-merges --oneline -- $f | wc -l); echo "$n|$tot|$top|$f"; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E1-ppi-1/repo; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a: $(git log --all --no-merges --author="$a" -1 --format=%cd)"; done; git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn | head -5; git ls-files | grep -v node_modules | wc -l; grep -rn "require(" test lib | grep -c "lib\|\.\./"; git log --since="2025-04-12" --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all | Generated: 2026-10-24
+
+### Project-Level Bus Factor: 1
+
+The project is small: one library file, `lib/index.js`, plus 6 test files. That file is the whole product. Its history has 25 authors, but Troy Goode wrote 29 of its 62 commits (47%). Most of the other authors made 1–4 commits each. The only way to keep the file's bus factor above 1 is to have more than one active maintainer who understands it.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 7 (`.js`) |
+| Files with bus factor 1 (one author ever) | 2 (29%), both trivial test helpers |
+| Files with bus factor 2 | 1 (14%) |
+| Files with bus factor 3+ | 4 (57%) |
+| Files where one person has more than 80% of commits | 2 (`test/support/env.js`, `test/vary.js`, each with a single commit) |
+
+### Critical Risk Areas
+
+By raw author count, nothing here is a single-contributor risk. Ownership is concentrated by commit share and by who is still active:
+
+| File | Primary contributor | Share | Active? | Dependents | Risk |
+|---|---|---|---|---|---|
+| `lib/index.js` | Troy Goode | 29/62 (47%) | ✅ Last commit 2026-04-10 | Every test file, plus `package.json` `main` | [MEDIUM] |
+| `test/example-app.js`, `test/issue-2.js`, `test/error-response.js` | Troy Goode | 67–83% | ✅ Active | 0 | [LOW] |
+| `test/test.js` | Douglas Christopher Wilson | 8/11 (73%) | ❌ Inactive since 2021-09 | 0 | [LOW] |
+| `test/support/env.js` | Douglas Christopher Wilson | 100% (1 commit) | ❌ Inactive since 2021-09 | 0 | [LOW] |
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary owner | Ownership % | Bus factor |
+|---|---|---|---|---|
+| `lib/` | 25 | Troy Goode | 47% | 1–2 |
+| `test/` | 1–4 per file | Troy Goode / Douglas Christopher Wilson | 67–100% | 1–2 |
+
+### Knowledge Heat Map
+
+```
+repo/
+├── lib/    [█████░░░░░] 🟡 Troy Goode 47% (active; Douglas Christopher Wilson 4 commits, inactive since 2021)
+└── test/   [███████░░░] 🟡 Troy Goode / Douglas Christopher Wilson, small files, 1–4 authors each
+```
+
+### Whole-repo history
+
+| Contributor | Commits | Status |
+|---|---|---|
+| Douglas Christopher Wilson | 143 | ❌ Inactive since 2021-09 |
+| Troy Goode | 95 | ✅ Active (2026-04) |
+| dependabot[bot] | 11 | automation |
+| Everyone else | 1–4 each | mostly one-off |
+
+Since 2025-04, Troy Goode has made only 2 commits. The recent activity is mostly dependabot (11) and about 10 occasional contributors, each with 1–3 commits. Day-to-day maintenance is thin and spread across people who contribute rarely.
+
+### Recommendations
+
+1. **Immediate:** Name a second maintainer who reviews and merges changes to `lib/index.js`, so Troy Goode is not the only one who knows it.
+2. **Short-term:** Document the intent behind the `lib/index.js` handlers and the history behind the issue-specific tests (`test/issue-2.js`). Douglas Christopher Wilson, the top committer overall, has been inactive for about 5 years, so his knowledge of the project is effectively lost.
+3. **Ongoing:** Encourage the recent contributors (Ulises Gascón, Jon Church, and others) to take on reviews. Require a review on every change to `lib/`.
+
+**Caveats:**
+- Authors are counted by git name, so one person with several names or emails would be counted as several.
+- With only 7 files, the per-file percentages come from very few commits, so treat them as indicative rather than precise.
+- I counted dependents by hand. Only `lib/index.js` has any, and those are the test files.
+META cost=0.0716676 ms=19617 turns=5

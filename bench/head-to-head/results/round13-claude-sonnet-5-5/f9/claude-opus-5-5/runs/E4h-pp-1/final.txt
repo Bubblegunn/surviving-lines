@@ -1,0 +1,96 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -a && git ls-files | head -50 && git log --format='%h %an <%ae> %s' | head -40 && git shortlog -sne --all | head -40 && cat .mailmap 2>/dev/null; ls .git-blame-ignore-revs 2>/dev/null
+ - Bash: git show --stat 62628c0 b2005d9 02afce3 | cat && git show 62628c0 -w --ignore-blank-lines | head -60 && git show b2005d9 02afce3 | head -80
+ - Bash: git log --format='%h %an %s' -i -E --grep='format|style|indent|whitespace|lint|prettier|semicolon|quote|tabs|spaces' | cat
+ - Bash: for f in $(git ls-files); do git blame --line-porcelain --ignore-rev 62628c0 -- "$f" | awk -v f="$f" '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author /{sub(/^author /,"");a=$0} /^\t/{print f"\t"c"\t"a}'; done > /tmp/blame.tsv; cut -f2,3 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -40
+ - Bash: git show 62628c0 | grep '^@@' | awk '{split($2,a,",");split($3,b,","); if (a[2]!=b[2]||substr(a[1],2)!=substr(b[1],2)) print "MISMATCH",$0}' | head; echo done; for c in 555f180 3a39e99 739dc11 815c7c6 fcd2b56 4f13c63; do echo "=== $c"; git show --stat --format='%an %s' $c | cat; git show -w $c --format= | grep -c '^[+-][^+-]'; done
+ - Bash: git show -w 555f180 --format= | grep '^[+-][^+-]' | head -30; echo ====; git show 739dc11 --format= | cat; echo ===; git show 815c7c6 --format= | head -40; echo; git show -w 3a39e99 --format= | grep '^[+-][^+-]' | head -20
+ - Bash: git show 739dc11 --format= | cat; echo '----'; git show 815c7c6 --format= | head -40
+ - Bash: mkdir -p /tmp/co && cat > /tmp/co/blame.py <<'EOF'
+import subprocess, sys, re, collections
+IGN = ["62628c0","739dc11","815c7c6"]
+def git(*a): return subprocess.run(["git",*a],capture_output=True,text=True,check=True).stdout
+full = {c: git("rev-parse",c).strip() for c in IGN}
+def blame(rev, path, line=None):
+    args=["blame","-w","--line-porcelain"]+sum((["--ignore-rev",c] for c in IGN),[])
+    if line: args+=["-L",f"{line},{line}"]
+    out=git(*args, rev, "--", path)
+    res=[]; cur=None
+    for l in out.split("\n"):
+        m=re.match(r"^([0-9a-f]{40}) (\d+) (\d+)",l)
+        if m: cur={"sha":m[1],"orig":int(m[2])}
+        elif l.startswith("author-mail "): cur["mail"]=l[12:]
+        elif 
+ - Bash: cat > /tmp/co/agg.py <<'EOF'
+import sys, collections
+alias={"alex94puchades":"Alejandro Caravaca Puchades"}
+groups=collections.defaultdict(collections.Counter)
+for l in open(sys.argv[1]):
+    f,sha,a,m=l.rstrip("\n").split("\t")
+    if "[bot]" in a: groups_key=None; continue
+    a=alias.get(a,a)
+    top=f.split("/")[0]
+    key=top+"/" if "/" in f else f
+    groups[key][a]+=1
+    if "/" not in f: groups["(all root files)"][a]+=1
+for k,c in sorted(groups.items()):
+    t=sum(c.values()); top=c.most_common(3)
+    print(f"{k:20} total={t:4} "+"; ".join(f"{a} {n} ({100*n/t:.1f}%)" for a,n in top))
+EOF
+python3 -I /tmp/co/agg.py /tmp/co/out.tsv; grep -c 'bot\]' /tmp/co/out.tsv; grep 'bot\]' /tmp/co/
+ - Bash: cd /tmp/co && awk -F'\t' '$3 ~ /Troy/ {split($1,p,"/"); k=(p[2]?p[1]"/":$1); print k"\t"$4}' out.tsv | sort | uniq -c; awk -F'\t' '$1=="README.md"' out.tsv | cut -f2,3 | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+Here are the suggested lines. Only **lib/** and five root files have someone holding at least half the surviving lines. **test/**, **.github/**, and the root files taken as one group don't.
+
+```
+# CODEOWNERS (later rules take precedence)
+
+# test/    no owner: Troy Goode 46.9%, Douglas Christopher Wilson 41.4%
+# .github/ no owner: Douglas Christopher Wilson 29.5%, Íñigo Marquínez Prado 26.0%, Sebastian Beltran 17.2%
+
+/lib/           @troygoode
+/README.md      @troygoode
+/LICENSE        @troygoode
+/HISTORY.md     @dougwilson
+/package.json   @dougwilson
+/.eslintrc.yml  @dougwilson
+/.gitignore     @dougwilson
+```
+
+| Path | Surviving lines | Top holder | Share | Result |
+|---|---|---|---|---|
+| lib/ | 238 | Troy Goode | 66.8% (next: Wilson 9.2%) | owner |
+| test/ | 966 | Troy Goode | 46.9% (Wilson 41.4%) | **nobody holds half** |
+| .github/ | 366 | Douglas Christopher Wilson | 29.5% | **nobody holds half** |
+| All root files together | 415 | Troy Goode | 42.7% (Wilson 23.6%, Jon Church 17.3%) | **nobody holds half** |
+| README.md | 277 | Troy Goode | 51.3% (Jon Church 26.0%) | owner, just barely |
+| LICENSE | 22 | Troy Goode | 100% | owner |
+| HISTORY.md | 64 | Douglas Christopher Wilson | 78.1% | owner |
+| package.json | 40 | Douglas Christopher Wilson | 50.0% exactly | owner, right at the line |
+| .eslintrc.yml | 7 | Douglas Christopher Wilson | 100% | owner |
+| .gitignore | 5 | Douglas Christopher Wilson | 80% | owner |
+
+**How I counted:**
+- **Blame:** I ran `git blame -w` on every tracked file at HEAD, so whitespace-only changes didn't count. This mattered for Troy's old "jslint"/"lint"/"whitespace" commits, which mostly re-indented code.
+- **Formatting-only commits skipped:**
+  - `62628c0` (Fiona Formatter, the 4-space/double-quote reformat): git couldn't trace 237 lines past this commit because the quotes changed. Its edits replace lines one-for-one, so I traced each of those lines back to the commit before it.
+  - `815c7c6` (Linus Unnebäck, restyled the README code examples).
+  - `739dc11` (Douglas Christopher Wilson, re-wrapped the LICENSE text).
+
+  After that, no surviving line is credited to any of these three commits.
+- **Kept:** `b2005d9` ("lib: annotate handlers") adds `// checked` comments, so it's a content change, not formatting.
+- **One person, one count:** Troy Goode commits as both `<email redacted>` and `troy@laptop.example`, so I merged the two (48 lines from the laptop address). I assumed they're the same person because the name matches; please confirm. I also merged `alex94puchades` with Alejandro Caravaca Puchades, since they share an email address.
+- **Bots:** I left dependabot's 10 lines out of the totals (in `.github/` and `package.json`).
+
+**Borderline results:**
+- **package.json** is at exactly 50%. If dependabot's 2 lines in it counted, Wilson would drop to 47.6% and the file would have no owner.
+- **README.md** is at 51.3% only because the Linus style commit is skipped. I didn't re-run the count with that commit included. It holds 37 README lines that would otherwise mostly go to Troy, so Troy would probably fall below half.
+- **test/** stays under half for Troy (46.9%) even with both of his addresses merged.
+
+**Check before using:** `@troygoode` and `@dougwilson` are my guesses at their GitHub usernames; git history only records names and emails. Also, a lot of the surviving lines come from people who may no longer be active, so you may want to treat this as a starting point rather than a final assignment.
+META cost=0.40333420000000003 ms=108672 turns=11

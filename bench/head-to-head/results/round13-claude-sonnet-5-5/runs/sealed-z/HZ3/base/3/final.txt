@@ -1,0 +1,42 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -20; echo; git ls-files | grep -v -E '^(\.git|LICENSE)' | head -80
+ - Bash: for f in $(git ls-files | grep -E '\.(zig|md|zon)$'); do git blame -w -M -C --line-porcelain $f | grep '^author-mail ' | sed "s|^|$f |"; done | awk '{print $3}' | sort | uniq -c | sort -rn; echo; git ls-files | grep -E '\.(zig|md|zon)$' | xargs wc -l | tail -1; echo; for f in src/args.zig src/help.zig src/width.zig src/width_table.zig; do echo $f; git blame -w -M -C --line-porcelain $f | grep '^author-mail ' | sort | uniq -c | sort -rn | head -4; done; git shortlog -sne --all | wc -l
+ - Bash: for f in src/args.zig src/help.zig src/width.zig src/width_table.zig build.zig README.md demo.zig demo_verb.zig; do echo "$f total=$(wc -l <$f) felix=$(git blame -w -M -C --line-porcelain $f | grep '^author-mail ' | grep -c -E 'mq32|masterq32|random-projects|ib-queissner')"; done; git log --since=2025-10-24 --format='%an' | sort | uniq -c | sort -rn | head; git log -1 --format=%ad
+FINAL ANSWER:
+Ownership is concentrated in the core parser and spread out everywhere else. I counted surviving lines with `git blame -w -M -C` over the current tree: 2,225 lines in the `.zig`, `.md` and `.zon` files. I merged Felix Queißner's five author emails into one person.
+
+**Felix Queißner (xq)**
+- Felix owns about 831 of 2,225 lines, or 37%.
+- Leaving out the generated `width_table.zig`, that is 831 of about 1,740 lines, or 48%.
+
+**By file**
+
+| File | Lines | Felix's share | Main other author |
+|---|---|---|---|
+| `src/args.zig` (the parser) | 1,049 | 705 (67%) | Vincent Rischmann (64), mochalins (60) |
+| `README.md` | 90 | 70 (78%) | |
+| `demo.zig` | 63 | 34 (54%) | |
+| `src/help.zig` | 337 | 1 | jnagpaul (166), Dhole (75), Bob Farrell (42) |
+| `src/width.zig` and `src/width_table.zig` | 508 | 0 | Wen Li |
+
+**If Felix stopped answering**
+- About 37% of the code would have no author left, and nearly all of it is the parsing and option-handling logic in `args.zig`. That file is the heart of the library.
+- Roughly a third of `args.zig`, about 340 lines, is written by others. Those people can only cover the pieces they touched.
+- `help.zig` and the width code would be fine. They have authors who know them.
+
+**Bus factor**
+- For the library as a whole it is **1**, since Felix is the only person who understands most of `args.zig`.
+- For the code outside the parser it is closer to 3–4, because help is split among jnagpaul, Dhole and Bob Farrell, and width belongs to Wen Li.
+- Wen Li's 552 lines look like the second-largest share. About 484 of them are the generated width table, which is much less hard to maintain than hand-written code. Counting those lines overstates Wen Li's ownership.
+
+**Caveats**
+- Line counts measure what survives, not who understands the design. Felix is probably still the only person who knows why the parser is built the way it is.
+- The contributor list is long (37 identities) but thin. Most have only a few commits.
+- Recent activity is still led by Felix: 7 of the roughly 20 commits in the last year, by the author names in `git log`. Wen Li, Tobias Ek and Dhole also have recent commits, and Wen Li and Tobias Ek are the two likeliest successors.
+- The last commit is dated 2026-11-04, which is after today's date. That is probably a clock or rebase oddity in the history.
+META cost=0.0614142 ms=20842 turns=4

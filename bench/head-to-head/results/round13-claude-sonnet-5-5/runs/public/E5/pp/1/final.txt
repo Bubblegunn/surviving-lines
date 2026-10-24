@@ -1,0 +1,64 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -50; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | tail -3; git show --stat --format='%h %an %s' b2005d9 | head; wc -l lib/index.js
+FINAL ANSWER:
+`lib/index.js` is the core of the `cors` middleware. It has 238 lines and about 90 commits, counting renames with `--follow`.
+
+## Who shaped it
+
+**Troy Goode** is the original author and the main shaper. He made the first commit on 2013-01-30 and 29 of the file's commits. In 2013 he added the `origin` callback handling and the JSLint cleanup. He added Connect support without Express and Express 4 support in 2014. He added `Access-Control-Expose-Headers`, switched to the `vary` module, moved to ESLint in 2015, and published 2.8.0 in 2016.
+
+Other contributors, in rough chronological order:
+- **2013–2014:**
+  - Simon Mansfield added the undefined-`Origin` check.
+  - Eric di Domenico allowed `origin` to be a callback.
+  - Mathias Buus switched to non-Express request and response methods.
+  - Typicode added PATCH to the default methods.
+  - Alberto Leal fixed an `options.origin` callback override.
+  - Shane Tomlinson normalized method names to uppercase.
+  - Igor Soarez added `Vary: Origin` for specific origins.
+- **2015:**
+  - Raymond Feng removed a closure in `applyHeaders`.
+  - Eran Tiktin fixed `Vary` being added for `*`.
+  - max.laverse allowed passing the preflight request on to `next()`.
+  - DracoBlue added exposed headers to OPTIONS responses.
+  - Alejandro Caravaca Puchades, under two identities, added RegExp and array `origin` matching.
+  - jordandenison fixed strict-mode handling of non-object options.
+- **2016–2017:**
+  - Hannah Wolfe named the anonymous middleware function.
+  - Saad Tazi fixed a crash on frozen options.
+  - Tomek Kopczuk added `Vary: Origin` for regular expressions.
+  - Benjamin Eidelman added a Safari pre-flight workaround.
+  - Chima Alaebo removed an unreachable branch.
+- **Douglas Christopher Wilson** was the maintainer from 2017. He added `Vary: Access-Control-Request-Headers` and fixed the missing-`methods` error in 2017. He also made ESLint and lint fixes.
+- **Later:**
+  - Tom Arad fixed `maxAge: 0` in 2018.
+  - LuisEGR removed unused parameters in 2021.
+  - Troy Goode's `lib: annotate handlers` commit (2026-04-10) touched 12 lines.
+  - Fiona Formatter did the 2026-04-12 reformat to 4-space indent and double quotes.
+
+## Whose code is still there
+
+A plain `git blame` credits Fiona Formatter with 32 lines. That commit only changed style, so I re-ran blame with `--ignore-rev 62628c0`. These are the surviving lines per author:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 (about 2/3 of the file) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 (plus 4 under `alex94puchades`) |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy Goode wrote most of what's still there. Wilson holds the largest share after that. The 2015 RegExp and array `origin` matching is still in place, and so is Raymond Feng's `applyHeaders` optimization.
+
+Blame covers the lines' most recent edits, and I ran it with `-w -M -C`. A line that was reworked can show its last editor even when the idea is someone else's.
+META cost=0.0664464 ms=16436 turns=3

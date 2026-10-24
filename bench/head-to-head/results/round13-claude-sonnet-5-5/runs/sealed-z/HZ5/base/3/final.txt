@@ -1,0 +1,66 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .mailmap; git log --oneline | wc -l; git shortlog -sne HEAD | head -20; for d in src tests; do echo "== $d"; git ls-files $d | grep -v -e '^tests/.*\.json$' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author-mail' ; done | sort | uniq -c | sort -rn; done
+ - Bash: git log --all --format='%an <%ae>|%cn' | sort | uniq -c | sort -rn | grep -i -e wrona -e nowak -e ramsey; git show --stat 3eac4de | head; git show --stat 3b40daf | tail -3; git ls-files src tests | grep -v json | while read f; do n=$(git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author-mail' | sort | uniq -c | sort -rn | head -1); t=$(wc -l <"$f"); echo "$t $f $n"; done | sort -rn | head -25
+FINAL ANSWER:
+Ben Ramsey wrote most of the surviving code, and losing them would hurt most in the core interfaces and abstract classes.
+
+I counted surviving lines with `git blame -w -M -C` on `HEAD` for `src/` and `tests/`. I left out `tests/**/*.json` and merged aliases through `.mailmap`.
+
+**`src/` (3,470 lines, or 3,175 without the generated file)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 2,171 | 68% (63% if the generated file is counted) |
+| Carlos C Soto | 270 | 8.5% |
+| zf2timo (Timo Tewes) | 223 | 7% |
+| icanhazstring | 199 | 6% |
+| Kévin Gomez | 145 | 4.6% |
+| Tomasz Wrona | 358 | 63 hand-written; the other 295 are `src/Generated/TypeMap.php` |
+| Everyone else | about 100 | 3% |
+
+**`tests/` (3,625 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 1,964 | 54% |
+| icanhazstring | 594 | 16% |
+| Kévin Gomez | 329 | 9% |
+| Carlos C Soto | 204 | 5.6% |
+| zf2timo (Timo Tewes) | 174 | 4.8% |
+| Simone Todaro | 113 | 3% |
+| peter279k | 91 | 2.5% |
+| Everyone else | about 150 | 4% |
+
+**What Ben's departure would cost**
+
+Ben wrote nearly all of the public API surface and its base classes:
+- `CollectionInterface`: 179 of 253 lines.
+- `DoubleEndedQueueInterface`: 249 of 313 lines.
+- `QueueInterface`: 157 of 202 lines.
+- `MapInterface`: 137 of 142 lines.
+- `AbstractCollection`: 217 of 365 lines.
+- `AbstractMap`: 199 of 205 lines.
+- `AbstractArray`: 165 of 171 lines.
+- `NamedParameterMap`: 104 of 110 lines.
+- `tests/types/maps.php`: all 104 lines.
+
+He also holds most of the test suites, including `CollectionManipulationTest` and `CollectionTest`. The other team will have to learn the design intent behind these files from the code, because Ben is the only person with full context on them.
+
+**Other people with real ownership**
+- **Kévin Gomez:** `DoubleEndedQueue`, including its tests (243 of 525 test lines).
+- **Timo Tewes:** `Queue`.
+- **Carlos Soto:** `TypedMap` and the `ValueToStringTrait` tests.
+- **icanhazstring:** `ValueExtractorTrait` and its tests.
+
+**Caveats**
+- **Generated file:** Tomasz Wrona's 358 lines in `src/` are mostly one generated file, `src/Generated/TypeMap.php`, added in a single commit. They are not hand-written code, and the real author is whoever owns the generator.
+- **Unmerged alias:** `Kasia Nowak <kasia@nowak.example>` appears in `src/` with 2 lines and isn't in `.mailmap`. That may be a separate person or an alias. I couldn't tell which.
+- **Ben's other email:** `<email redacted>` is mapped to Ben in `.mailmap`, and no surviving lines are attributed to it.
+- **Line counts versus importance:** Counts reward volume, so a short, subtle design decision counts for little.
+- **Formatting commits:** Commits like the php-cs-fixer pass and bot edits touch only a few lines, because `-w` ignores whitespace changes.
+META cost=0.0706285 ms=26003 turns=3

@@ -1,0 +1,35 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL --identities; ls -a | grep -i mailmap; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -60
+ - Bash: S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --identities; git log --format='%an|%ae|%cn' | grep -i -E 'troy|alex' | sort | uniq -c
+ - Bash: S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js
+cat > .mailmap <<'EOF'
+# Proposed identity merges: unconfirmed guesses from names and addresses in the history.
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+node $S 2>&1 | head -14
+FINAL ANSWER:
+Yes, two people appeared under more than one identity.
+
+- **Troy Goode** committed under `<email redacted>` (93 commits) and `troy@laptop.example` (2 commits). The name is identical, so this is a strong match.
+- **Alejandro Caravaca Puchades** has the same address, `<email redacted>`, under two names: "Alejandro Caravaca Puchades" (4 commits) and "alex94puchades" (1 commit).
+
+I added both mappings to a new `.mailmap` at the repo root, under a comment saying they are proposals. They are unconfirmed guesses from names and addresses. I haven't committed the file. Git log, blame, shortlog and surviving-lines all read `.mailmap`, so one file fixes every count.
+
+**The top author is still Troy Goode.** Merging raised Troy's count and left the ranking unchanged:
+
+| | Before | After |
+|---|---|---|
+| Troy Goode, non-blank lines | 605 (36.4%) | 649 (39.0%) |
+| Troy Goode, lines counting blank lines | 762 (38.4%) | 810 (40.8%) |
+| Troy Goode, commits | 93 (29.5%) | 95 (30.2%) |
+
+Douglas Christopher Wilson is second with 551 lines (33.2%), or 629 counting blank lines (31.7%). He has more commits, 143 (45.4%), but fewer surviving lines. The Alejandro merge only combines 27 lines under one name and doesn't change the top of the table.
+
+The history also has "Efe" and "Fiona Formatter". I left both alone because nothing links them to anyone else.
+META cost=0.0689192 ms=20373 turns=4

@@ -1,0 +1,72 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "Focus on surviving code ownership (git blame of lines currently in HEAD), not commit counts. Note that commit 62628c0 reformatted all JS and .git-blame-ignore-revs exists, so use --ignore-revs-file."}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -E '\.(js|ts|json|md)$' | grep -v node_modules | wc -l; git ls-files '*.js' | grep -v node_modules | head -50; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: for f in $(git ls-files '*.js'); do echo "== $f"; git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo ==== TOTAL; for f in $(git ls-files '*.js'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo; git log -1 --format=%ad; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a last: $(git log --author="$a" -1 --format=%ad)"; done; wc -l lib/index.js
+ - Bash: for f in $(git ls-files '*.js'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | head -8; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a: first $(git log --author="$a" --format=%ad --date=short | tail -1) last $(git log --author="$a" -1 --format=%ad --date=short)"; done; git log -1 --format=%ad --date=short; git ls-files '*.js' | xargs wc -l | tail -1
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis (surviving lines)
+
+Period: all history | Generated: 2026-10-24 | Method: `git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs` on every tracked `.js` file at HEAD. This skips the 62628c0 reformat, so lines are credited to whoever wrote them, not to the reformat commit. I did the blame directly instead of launching the contributor-analyzer agent, because the question was about surviving lines.
+
+### Project-level bus factor: 1
+
+Troy Goode owns 676 of 1,202 surviving lines (56%). That is more than half the codebase on their own.
+
+### Who owns the code today
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| **Troy Goode** | 676 | 56% | 2026-04-10 (active) |
+| **Douglas Christopher Wilson** | 394 | 33% | 2021-09-07 (inactive about 5 years) |
+| Alejandro Caravaca Puchades | 30 | 2.5% | not checked |
+| Eric di Domenico | 16 | 1.3% | not checked |
+| Alberto Leal | 15 | 1.2% | not checked |
+| About 14 others | ≤9 each | about 5% combined | not checked |
+
+The commit count gives a different ranking. By commits, Douglas leads with 143 against Troy's 122. By surviving lines, Troy is well ahead. Many of Douglas's commits were small or have since been replaced, and Troy's earlier code is still there.
+
+### Per-file ownership
+
+| File | Lines | Top owner | Share | Second owner |
+|---|---|---|---|---|
+| `lib/index.js` (the library itself) | 233 | Troy Goode | 68% | Douglas, 9%. 18 authors in total. |
+| `test/test.js` | 732 | Douglas | 46% | Troy, 43% |
+| `test/example-app.js` | 81 | Troy | 83% | Douglas |
+| `test/error-response.js` | 66 | Troy | 86% | Douglas |
+| `test/issue-2.js` | 48 | Troy | 83% | Douglas |
+| `test/vary.js` | 36 | Troy | 100% | none |
+| `test/support/env.js` | 2 | Douglas | 100% | none |
+
+### Risk areas
+
+- **Troy Goode is the main risk.** They are the sole maintainer for most of `lib/index.js` and own all of `test/vary.js`. They are still active, so this is concentration risk, not an abandoned-code problem.
+- **Douglas's 33% has no active maintainer.** None of his code is in a file Troy hasn't also touched. He owns 46% of `test/test.js`, the largest file, so a lot of the test suite's logic is understood by someone who left in 2021.
+- **`lib/index.js` looks broadly shared but isn't.** It has 18 contributors, but 16 of them wrote 12 lines or fewer, mostly one-line fixes. They are not people who could maintain it.
+- Dependents counts are not meaningful here. This is a single-module library, so `lib/index.js` is the whole public surface.
+
+### Heat map
+
+```
+repo/
+├── lib/index.js          [███████░░░] 🔴 Troy 68%, Douglas 9%, long tail of one-line fixes
+├── test/test.js          [█████░░░░░] 🟡 Douglas 46% (inactive) / Troy 43%
+└── test/*.js (others)    [█████████░] 🔴 Troy 83–100%
+```
+
+### Recommendations
+
+1. **Immediate**: Have a second person review every change to `lib/index.js` until someone else has real ownership of it.
+2. **Short-term**: Assign someone to read through and refactor the Douglas-authored parts of `test/test.js`. This is the code with no active owner.
+3. **Ongoing**: Document why `lib/index.js` works the way it does, since that knowledge lives with Troy. Add a second maintainer with commit and release rights.
+
+### Caveats
+
+- The blame covers `.js` files only. The repo has no other source languages. I didn't check docs or config.
+- Authors are matched by name. "Alejandro Caravaca Puchades" and "alex94puchades" (4 lines in `lib/index.js`) are probably the same person, which I did not merge. If so, their share is a little higher than shown.
+- The "last commit" dates are the only activity check I ran. I did not check the smaller contributors.
+META cost=0.08225560000000001 ms=24786 turns=6

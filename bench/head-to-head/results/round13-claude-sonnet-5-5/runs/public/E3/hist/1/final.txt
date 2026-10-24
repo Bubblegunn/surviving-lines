@@ -1,0 +1,27 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary", "max_results": 1}
+ - Bash: git ls-files | sed -E 's/.*\///' | grep -o '\.[^.]*$' | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files); do e=".${f##*.}"; [ "$f" = .gitignore ] && e=.gitignore; git blame -w --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1rn
+FINAL ANSWER:
+Here is who owns the most surviving lines at HEAD for each extension. I counted with `git blame -w`, so changes that only touch whitespace aren't credited.
+
+| Extension | Top owner | Lines | Share of the type |
+|---|---|---|---|
+| `.js` (7 files) | Troy Goode | 517 | about 38% |
+| `.yml` (6 files) | Douglas Christopher Wilson | 117 | about 29% |
+| `.md` (2 files) | Troy Goode | 116 | about 31% |
+| `.json` (1 file) | Douglas Christopher Wilson | 20 | about 43% |
+| `.gitignore` (1 file) | Douglas Christopher Wilson | 4 | 80% |
+| `LICENSE` (no extension) | Douglas Christopher Wilson | 17 | about 77% |
+
+- **`.js`:** Fiona Formatter is second with 291 lines, from the latest commit that reformatted to 4-space indents and double quotes. The quote changes rewrote lines, so `-w` doesn't undo them. Without that commit, Troy Goode's lead would be larger, and he would own roughly half the lines.
+- **`.yml`:** Ownership is spread out. Íñigo Marquínez Prado has 95 lines and Sebastian Beltran has 63.
+- **`.md`:** Jon Church is second with 72 lines, and Douglas Christopher Wilson has 67.
+- **`.json`:** This is a single file, so the numbers are small.
+- **`LICENSE`:** My script labeled it ".LICENSE" because the file has no extension.
+META cost=0.04839399999999999 ms=10342 turns=4

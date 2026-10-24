@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files src tests | wc -l && git log --format='%aN <%aE>' --mailmap | sort | uniq -c | sort -rn | head -30 && echo --- && git log --oneline | wc -l && git log --format='%h %aN %s' --mailmap | head -50 && echo --- && ls -a && cat .mailmap 2>/dev/null
+ - Bash: git ls-files -z src tests | xargs -0 -n1 -I{} sh -c 'git blame -w -e --line-porcelain -- "{}" 2>/dev/null | grep "^author-mail " ' | sort | uniq -c | sort -rn | head -40; echo ---; git ls-files -z src tests | xargs -0 -n1 -I{} sh -c 'git blame -w --line-porcelain -- "{}" 2>/dev/null | grep "^author " ' | sort | uniq -c | sort -rn | head -40
+ - Bash: git show --stat --format='%h %aN: %s' c3611fa | tail -3; git show --stat --format='%h %aN: %s' 3b40daf | tail -2; git show --stat --format='%h %aN: %s' 3eac4de | tail -2; echo ---; git ls-files -z src tests | xargs -0 -n1 -I{} sh -c 'git blame -w --ignore-rev c3611fa --ignore-rev 3b40daf --line-porcelain -- "{}" 2>/dev/null | grep "^author " ' | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files -z src tests | xargs -0 -n1 -I{} sh -c 'git blame -w --ignore-rev c3611fa --ignore-rev 3b40daf --line-porcelain -- "{}" 2>/dev/null | grep "^author " ' | awk '{print}' | wc -l; echo --- tomasz files; git ls-files src tests | while read f; do n=$(git blame -w --ignore-rev c3611fa --ignore-re
+FINAL ANSWER:
+Ben Ramsey wrote most of the surviving code in `src/` and `tests/`, and losing him would be the largest single loss. Nobody else comes close.
+
+**Who wrote the surviving lines** (`git blame -w`, names merged via `.mailmap`, with the mechanical namespace rename `c3611fa` and the php-cs-fixer run `3b40daf` ignored):
+
+| Author | Surviving lines (of ~7,100) | Share |
+|---|---|---|
+| Ben Ramsey | ~4,685 | ~66% |
+| icanhazstring | ~662 | ~9% |
+| Carlos C Soto | ~478 | ~7% |
+| Tomasz Wrona | ~399 | ~6% |
+| Kévin Gomez | ~332 | ~5% |
+| zf2timo | ~153 | ~2% |
+| Simone Todaro | ~122 | ~2% |
+| peter279k | ~90 | ~1% |
+| Everyone else (about 10 people) | under 50 each | under 1% each |
+
+Dependabot and github-actions made no surviving changes to `src/` or `tests/`.
+
+**Caveats on those numbers:**
+- Tomasz Wrona's count is inflated by `src/Generated/TypeMap.php` (295 lines). That file is generated, so it isn't hand-written. His hand-written surviving code is roughly 100 lines (`ChunkTrait` and its test).
+- Blame counts surviving lines, not design or review work. Ben also wrote the release-prep and CI commits and the refactor history, and none of that shows up here.
+- Ben is the largest contributor in most files, but he is not the sole author of most of them. For example, `tests/CollectionManipulationTest.php` is about 354 of 738 lines.
+
+**If Ben left, the main loss would be:**
+- Core design and maintenance: the bulk of `AbstractCollection`, the queue and deque interfaces, and the type and test scaffolding.
+- Recent feature work: the grouping support, `column()`/`sort()`/`where()` on non-object collections, and the `Sort` enum.
+- Release and CI process: he prepared the 1.x, 2.0, 2.1.0 and 2.1.1 releases and updated the workflows.
+- Project conventions: he wrote the `.mailmap` and most of the type-cleanup commits, so the next team will need his reasoning on types.
+
+**For the handoff:** the next-largest contributors (icanhazstring, Carlos C Soto, Kévin Gomez, zf2timo) are the people to ask about their own areas. I haven't checked whether they're still reachable or still active.
+META cost=0.005388840000000001 ms=29125 turns=4

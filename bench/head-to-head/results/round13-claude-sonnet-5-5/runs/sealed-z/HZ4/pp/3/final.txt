@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-pp-3/repo; echo "== exposure dir commits"; git shortlog -sne HEAD -- lib/grape_entity/exposure | head -15; echo "== exposure last commit per author"; git log --format='%an|%ad' --date=short -- lib/grape_entity/exposure | awk -F'|' '!s[$1]++'; echo "== delegator files"; git ls-files | grep -i deleg; echo "== delegator commits"; git shortlog -sne HEAD -- $(git ls-files | grep -i deleg) | head; git log --format='%an|%ad' --date=short -- $(git ls-files | grep -i deleg) | awk -F'|' '!s[$1]++'; echo "== overall"; git shortlog -sne HEAD | head -15; git log -1 --format=%ad --date=short
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-pp-3/repo; echo "== last commit per author overall"; git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -30; echo "== surviving lines by author (blame, lib/)"; for f in $(git ls-files lib); do git blame --line-porcelain -w -M -C HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-pp-3/repo; for d in "lib/grape_entity/exposure" "lib/grape_entity/delegator.rb lib/grape_entity/delegators"; do echo "== $d"; for f in $(git ls-files $d); do git blame --line-porcelain -w -M -C HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6; done; echo; git shortlog -sn HEAD | awk '{c=$1; $1=""; print c, $0}' | grep -iE 'marco|lena|anna|kowal|brandt|silva'
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-pp-3/repo; for f in lib/grape_entity/delegator.rb lib/grape_entity/delegators/*.rb lib/grape_entity/exposure/delegator_exposure.rb; do git blame --line-porcelain -w -M -C HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** the person with the most commits is not the person who owns the most code. I used `git blame` with `-w -M -C` to count surviving lines, so whitespace changes and moved code don't count as ownership.
+
+**Reviewer for `lib/grape_entity/exposure`**
+- **Marco Silva** is the best first reviewer. They own 143 surviving lines there, the second most, and their last commit to the directory was 2026-08-03.
+- **Lena Brandt** (18 lines, last commit 2026-07-14) and **Anna Kowalczyk** (last commit 2026-08-10) are the other recent contributors, so they work as second reviewers.
+- **Vladimir Kochnev** owns the most lines (392) and has the most commits there (5). Their last commit to the directory was 2015-09-18, so they're a name to know, not someone to route to.
+
+**Reviewer for the delegator code**
+This covers `delegator.rb`, `delegators/*`, and `exposure/delegator_exposure.rb`.
+- **Lena Brandt** is the best choice. They own 12 surviving lines and last committed there on 2026-07-14.
+- **Marco Silva** (4 lines, last commit 2026-07-21) is the backup.
+- Kochnev again owns most of it (71 lines), but their last commit there was in 2015.
+
+**Effectively gone from this history**
+For these people, the last commit to these areas is from 2023 or earlier:
+- **Vladimir Kochnev:** last commit 2015 in both areas.
+- **James McCarthy:** last commit 2017. They still own 56 lines in `exposure` and 12 in the delegator code.
+- **Dmitry Tsepelev:** last commit 2018.
+- **Alexander Yunin:** last commit 2016. They still own 59 lines in `exposure`.
+- **Paul Padier:** last commit 2023-12. They own 10 delegator lines.
+- **Daniel Dao:** last commit 2023-02.
+
+Overall, anyone whose last commit is before about mid-2025 hasn't touched the repo in over a year. That includes Mark Madsen, who owns 265 lines in `lib/`, and Peter Scholz / LeFnord, whose last commit was 2024-04.
+
+**Most commits vs. most code**
+- **Most commits:** Daniel Doubrovkine (dblock) leads once you merge the three name and email variants. That's about 54 + 42 + 16 = 112 commits, plus a few more under another name spelling.
+- **Most code owned:** Vladimir Kochnev owns 758 surviving lines in `lib/`, with only 16 commits. Mark Madsen is second with 265. dblock owns only about 38 lines. Most of dblock's commits are maintenance, such as changelog, README, CI, and release work, not library code.
+
+**Caveats**
+- Author names are split across emails (for example, Marco Silva appears with two addresses and `<email redacted>`). I merged them by name, and the same goes for dblock and Peter Scholz / LeFnord. There is no `.mailmap`, so the counts are approximate.
+- Marco Silva, Lena Brandt and Anna Kowalczyk all use `@kestrel.example` addresses and only show up in the last few months. I haven't checked whether they're current maintainers or CI or bot-style accounts. Confirm they're real reviewers before you route to them.
+- Commit dates are author dates, so they can differ from merge dates.
+META cost=0.07834340000000001 ms=22587 turns=5

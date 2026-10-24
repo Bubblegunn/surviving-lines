@@ -1,0 +1,32 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | wc -l; git ls-files | grep -vE 'package-lock|\.(png|jpg|gif|ico)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: git ls-files | grep -vE 'package-lock|\.(png|jpg|gif|ico)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | wc -l; git log --format='%an' | sort | uniq -c | sort -rn | head -5; git log --reverse --format='%ad' --date=short | head -1; git log -1 --format=%ad --date=short
+FINAL ANSWER:
+**Troy Goode and Douglas Christopher Wilson own most of the surviving code.** I counted lines with `git blame` across the 1,997 lines of text in tracked files, excluding the lockfile and images. Lines from the reformat commit `62628c0` are credited to whoever wrote them before it, using the repo's `.git-blame-ignore-revs`. I also ignored whitespace changes and counted lines moved or copied between files as their original author's.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~31% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| everyone else | ~230 | ~12% |
+
+- **Commits mislead here.** By commit count Wilson leads, with 143 commits to Goode's 122. Goode's lines have survived better, so Goode owns about a quarter more of the current code.
+- **Ownership is split between two people.** Together they own about 72% of the lines. Nobody else is above 5%.
+- **The line counts include a few non-code lines.** Dependabot (10 lines) and Efe (6 lines) show up, and 19 lines had no author name in the blame output.
+- **Surviving lines don't show who understands the code.** A line that has survived may be one nobody dares touch.
+- **I haven't checked whether Goode or Wilson is still active.** If either has left, that would change the picture a lot. I can check that and break the numbers down by directory if you want.
+- **The history starts 2013-01-30.** I didn't check whether the repo was imported or truncated, so earlier authors may be missing.
+
+I didn't run the busfactor skill's script because it doesn't answer this question. It weights commits by recency, and it generates a CODEOWNERS file and a bus-factor report. I can run it if you want those.
+META cost=0.06256500000000001 ms=17372 turns=5

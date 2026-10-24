@@ -1,0 +1,38 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --help 2>&1 | head -80
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; echo "=== default identities ==="; $SL --group-by dir --suggest-codeowners 2>&1; echo; echo "=== merged identities (in memory) ==="; $SL --merge-identities --group-by dir --suggest-codeowners 2>&1
+ - Bash: ls -la /private/tmp/r13/final/ours-src/bin/ 2>&1; ls /private/tmp/r13/final/ 2>&1; which surviving-lines 2>&1
+ - Bash: echo "=== default identities ===" && node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by dir --suggest-codeowners 2>&1; echo; echo "=== merged identities (in memory) ===" && node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --merge-identities --group-by dir --suggest-codeowners 2>&1
+FINAL ANSWER:
+Two of the four paths have an owner: `/lib/` and `/test/`. `.github/` and the root files have none, because nobody holds half of their lines.
+
+```
+# CODEOWNERS suggestion (not written to the repo)
+/lib/    @<troy-github-handle>
+/test/   @<troy-github-handle>
+```
+
+Replace `<troy-github-handle>` with Troy Goode's GitHub handle. SL reports authors by email, and CODEOWNERS needs a handle.
+
+| Path | Surviving lines (non-blank) | Top person's share | Result |
+|---|---|---|---|
+| `lib/` | Troy Goode 144 of 214 (merged identities); 132 of 214 unmerged | 67.3% merged, 61.7% unmerged | Owner: Troy Goode |
+| `test/` | Troy Goode 420 of 820 (merged); 388 of 820 unmerged | 51.2% merged, 47.3% unmerged | Owner: Troy Goode, but only if the two identities are one person |
+| `.github/` | Douglas Christopher Wilson 92 of 305 | 30.2% | No owner. SL marks it orphaned: no active person holds 20%. |
+| Root files | Douglas Christopher Wilson 95 of 323 | 29.4% | No owner. SL skips root files for CODEOWNERS because a root pattern would match every directory. |
+
+Notes on the basis:
+
+- **Identity merge:** I counted Troy Goode once across `<email redacted>` and `troy@laptop.example`, as you asked. SL marks that merge as a guess from names and addresses, and I did not write a `.mailmap` entry. If the two addresses are not one person, `test/` has no owner.
+- **Formatting commit:** SL set aside `62628c0` (the JS reformat) by default. Without that correction, the counts shift a little, but the owners do not change.
+- **Bots:** `dependabot[bot]` is excluded.
+- **Activity:** Troy Goode is the only active author in `lib/` and `test/`, so both owner lines are active. SL measured activity relative to the repo's HEAD date, 2026-04-12.
+- **Scope:** These figures show who wrote the code that survives, not who should review changes to it.
+
+Commands run: `node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by dir --suggest-codeowners`, and the same with `--merge-identities`. Nothing was written to the repository.
+META cost=0.00749965 ms=31471 turns=5

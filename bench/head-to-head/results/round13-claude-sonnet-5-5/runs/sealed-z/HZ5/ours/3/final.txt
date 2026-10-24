@@ -1,0 +1,72 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: [ -f "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" ] && echo ok; cd /private/tmp/r13/final/out-F/runs/HZ5-ours-3/repo && node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by dir --merge-identities
+ - Bash: S="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $S --merge-identities -- src tests; echo ======; $S --merge-identities --without "Ben Ramsey" -- src tests; echo =====; git show --stat c3611fa | tail -5
+ - Bash: S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --merge-identities -- src tests; echo ======; node $S --merge-identities --without "Ben Ramsey" -- src tests; echo =====; git show --stat c3611fa | tail -5
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ5-ours-3/repo; S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --merge-identities --without "Ben Ramsey" -- src tests 2>&1 | head -40; git show --stat c3611fa | tail -4
+FINAL ANSWER:
+Ben Ramsey wrote most of both directories, and the code written by anyone else is mostly by people who haven't committed in years. I'm answering from the surviving-lines output, which counts lines still present at HEAD with `git blame -w -M -C`. It does not use commit counts.
+
+**Scope**
+- 64 files in `src/` and `tests/`: 5,617 non-blank lines, 6,800 counting blank lines.
+- Left out: `src/Generated/TypeMap.php` (295 generated lines) and the github-actions[bot] (12 lines).
+- Merged by `.mailmap`: `<email redacted>` is counted as Ben Ramsey, which adds 204 lines across these two directories. That merge is already in every number below.
+- Two commits look mechanical but were kept in the counts, not set aside: c3611fa (Tomasz Wrona's namespace rename, 20 surviving lines) and 3b40daf (the php-cs-fixer run by the bot, 12 lines). I ran `git show --stat` only on c3611fa. It touches 11 files with 20 insertions and 20 deletions.
+
+**Who wrote `src/`** (2,798 non-blank lines, 3,163 with blank)
+
+| Author | Lines | Share | With blank | Share |
+|---|---|---|---|---|
+| Ben Ramsey | 1,961 | 70.1% | 2,171 | 68.6% |
+| Carlos C Soto | 238 | 8.5% | 270 | 8.5% |
+| zf2timo | 196 | 7.0% | 223 | 7.1% |
+| icanhazstring | 149 | 5.3% | 199 | 6.3% |
+| Kévin Gomez | 115 | 4.1% | 145 | 4.6% |
+| Tomasz Wrona | 56 | 2.0% | 63 | 2.0% |
+| Simone Todaro | 23 | 0.8% | 29 | 0.9% |
+| David Stockton | 22 | 0.8% | 22 | 0.7% |
+| Raphael Tomé Santana | 20 | 0.7% | 22 | 0.7% |
+| Mohamed Younes | 8 | 0.3% | 9 | 0.3% |
+
+Six more authors hold the rest.
+
+**Who wrote `tests/`** (2,819 non-blank lines, 3,625 with blank)
+
+| Author | Lines | Share | With blank | Share |
+|---|---|---|---|---|
+| Ben Ramsey | 1,557 | 55.2% | 1,964 | 54.2% |
+| icanhazstring | 488 | 17.3% | 594 | 16.4% |
+| Kévin Gomez | 212 | 7.5% | 329 | 9.1% |
+| Carlos C Soto | 153 | 5.4% | 204 | 5.6% |
+| zf2timo | 118 | 4.2% | 174 | 4.8% |
+| Simone Todaro | 94 | 3.3% | 113 | 3.1% |
+| peter279k | 85 | 3.0% | 91 | 2.5% |
+| Tomasz Wrona | 51 | 1.8% | 61 | 1.7% |
+| Mohamed Younes | 18 | 0.6% | 24 | 0.7% |
+| Tom Carrio | 16 | 0.6% | 20 | 0.6% |
+
+Three more authors hold the rest.
+
+**Both directories combined**
+- Ben Ramsey holds 3,518 non-blank lines (62.6%), or 4,135 counting blank lines (60.9%).
+- Next come icanhazstring (637 lines, 11.3%), Carlos C Soto (391, 7.0%), Kévin Gomez (327, 5.8%) and zf2timo (314, 5.6%).
+- Nine more authors hold 1.0% together; the largest is Raphael Tomé Santana at 0.4%.
+- Some lines are credited to the author, not the committer. Ben committed 81 lines by peter279k (bf292fb), 26 by Mohamed Younes (77a182e) and 24 by Raphael Tomé Santana (19effc8). GitHub committed 17 lines by Tom Carrio (1c1d5f9).
+- Copy detection matters here. With `-C`, Ben holds 62.6% (3,518 lines); with only `-w -M` he holds 68.4% (3,842 lines). zf2timo goes from 2.2% to 5.6% and Kévin Gomez from 4.6% to 5.8% with `-C`.
+
+**If Ben Ramsey left**
+- **Lines and files:** he holds 3,518 of 5,617 lines (62.6%). He is the top owner of 44 of the 64 files (4,358 lines), including `tests/CollectionManipulationTest.php`, `src/AbstractCollection.php` and `src/CollectionInterface.php`.
+- **Files nobody else knows:** 24 files (1,390 lines) have no one remaining with at least 10%. Examples are `src/Map/AbstractMap.php` (98.3% Ben), `src/AbstractArray.php` (96.7%), `src/Map/MapInterface.php`, `src/Map/NamedParameterMap.php`, `src/Grouping.php`, and the type-test files `tests/types/maps.php` and `tests/types/arrays.php` (100% Ben).
+- **Bus factor:** the bus factor is the smallest number of authors whose surviving lines reach 50%. It is 1 now, and 3 once Ben is removed, counted on the remaining lines. Reaching 80% takes 3 authors now (4 counting blank lines).
+- **Who would inherit:** icanhazstring (609 lines in 20 files), Carlos C Soto (332 lines in 18 files) and Kévin Gomez (327 lines in 4 files). Their last commits were 2019-01-06, 2016-05-27 and 2018-10-02, so none of them is active.
+- **Who is active:** as of 2026-09-01, 3 of 17 authors committed in the last 365 days and hold 64.6% of the lines. Ben is one of them (last commit 2026-08-05). Tomasz Wrona (last commit 2026-07-14) is another, but holds only 107 lines (1.9%). 35.4% of the lines belong to people with no commit in that window.
+
+So the main loss is Ben Ramsey, and there is no ready successor. The only other active author with a real stake in the code is Tomasz Wrona, with 1.9% of the lines. The people who wrote the next largest shares have been inactive for years. Hand-over planning should focus on the 24 files above and the type tests.
+
+These are line counts, not measures of understanding. Review work, design discussion and code deleted on purpose leave no lines behind.
+META cost=0.1375565 ms=33615 turns=7

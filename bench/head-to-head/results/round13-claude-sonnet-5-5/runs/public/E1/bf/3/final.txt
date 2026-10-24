@@ -1,0 +1,38 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ && cd /private/tmp/r13/final/out-F/runs/E1-bf-3/repo && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; echo; git log -1 --format=%ci; git log --reverse --format='%ci' | head -1; git ls-files | wc -l; git ls-files | sed 's|/.*||' | sort | uniq -c; echo; for d in lib test; do echo "== $d"; git log --format='%ae' -- $d | sort | uniq -c | sort -rn | head -5; done; echo "== recent 12mo"; git log --since='2025-04-12' --format='%ae' | sort | uniq -c | sort -rn
+ - Bash: for a in <email redacted> troy@laptop.example <email redacted> fiona@formatter.example; do echo "$a: $(git log --author=$a --format='%ci %s' | sed -n '1p;$p' | tr '\n' '|')"; done; echo; git log --since='2025-04-12' --format='%ae %ci %s' -- lib test | head -20; echo; git log --format='%h %ae %s' -3 -- lib; git show --stat --format='%h %ae %s' 62628c0 | head -20; git log --format='%ae' --author-date-order -- lib | sort | uniq -c | sort -rn | head -3; git log --format='%ae' -- .github | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**No part of this codebase has a healthy bus factor. The main dependency is on Troy Goode, and that conclusion is shaky because of how the recent commits are attributed.**
+
+This looks like the Express `cors` package: 1 `lib/index.js` file, 7 files in `test/`, 4 in `.github/`, plus root config files. I ran the busfactor script with `--dry-run --no-github`, then checked its output against raw `git log`. I did not write a `CODEOWNERS` file.
+
+**Single-contributor areas**
+
+| Area | Main contributor | Evidence | Status |
+|---|---|---|---|
+| `lib/` (the whole implementation) | Troy Goode | 33 of ~45 commits to `lib` | Bus factor 1 if the 2026 `troy@laptop.example` commits are Troy; otherwise effectively orphaned |
+| `test/` | Troy Goode, with Douglas Wilson close behind | 31 and 23 commits | Troy leads, but Douglas is a credible second |
+| `.github/` | Douglas Wilson | 10 commits; Dependabot has 9 | Douglas is inactive, so effectively orphaned; the script assigns it to Ulises Gascón and Ignacio Mangas, who have 2 commits each |
+
+**Why the picture is shaky**
+- **Troy Goode:** `<email redacted>` last committed in 2019. The only recent Troy commits come from `troy@laptop.example`, on 2026-04-10: "lib: annotate handlers" and "test: vary header coverage". It is the same display name, but I can't confirm it's the same person. If you can, merge the two emails in the author cache.
+- **Douglas Wilson:** 143 commits, the top committer, but the last was in 2021. Plain `git shortlog` makes him look like a confident owner, but he is probably not active.
+- **The script's fallback owner is a formatter:** `fiona@formatter.example` made one commit on 2026-04-12 that rewrote 1,016 lines across `lib/` and `test/` (4-space indent, double quotes). The script treats that as expertise and puts Fiona first in the `*` fallback rule. I would not trust that.
+- **Everyone else is a drive-by:** apart from Troy and Douglas, nobody has more than 5 commits. Alejandro Caravaca Puchades has 5 in `lib/`, Ulises Gascón has 3 overall, and Jon Church has 3 overall.
+- **Recent activity:** the last 12 months are mostly Dependabot (11 commits) and one-off contributors. Ulises, Jon Church and Ignacio Mangas are the only plausible active maintainers.
+- **History is imported:** the script flags a bulk first commit on 2013-01-31. Ownership reflects work since the import, not who first wrote the code.
+
+**Suggested next steps**
+1. Ask the project who Troy's `laptop.example` identity is. This decides whether `lib/` is a bus-factor-1 or an orphaned zone.
+2. Confirm whether Ulises Gascón, Jon Church and Ignacio Mangas are the real maintainers. If so, they need to review `lib/`.
+3. Exclude the formatting commit from ownership scoring before generating `CODEOWNERS`.
+
+These results are inferred from commit volume, so treat them as a starting point rather than a measurement of who knows the code.
+META cost=0.08133119999999999 ms=25202 turns=6

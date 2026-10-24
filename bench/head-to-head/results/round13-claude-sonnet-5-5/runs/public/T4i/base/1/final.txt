@@ -1,0 +1,18 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T4i-base-1/repo; ls -a; find . -iname CODEOWNERS -not -path './node_modules/*'; echo ---; git log --format='%an <%ae>' --follow -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log -8 --format='%h %an %ad %s' --date=short -- lib/index.js; cat .git-blame-ignore-revs
+FINAL ANSWER:
+There's no CODEOWNERS file, so I went by git history. Troy Goode is the best choice.
+
+- **Troy Goode** (<email redacted>) has 29 of the commits on `lib/index.js`, far more than anyone else. They also made the latest substantive change, "lib: annotate handlers" on 2026-04-10.
+- **Douglas Christopher Wilson** has 4 commits, mostly lint and build work, with the last in 2017. He's a possible second reviewer, but his activity is old.
+- **Alejandro Caravaca Puchades** also has 5 commits, under two author names. I haven't checked how recent they are.
+
+Ignore Fiona Formatter, whose commit is the most recent one on the file. It's the 4-space/double-quote reformat, so they aren't a meaningful owner. `.git-blame-ignore-revs` already lists that commit, so `git blame` will skip it. Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` if you haven't, so blame shows the real authors.
+
+I only read the history. I didn't check who is currently active on the project or who has review rights on GitHub.
+META cost=0.0364572 ms=7654 turns=2

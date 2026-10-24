@@ -1,0 +1,41 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50 && echo "---" && git log --format='%an' | sort | uniq -c | sort -rn | head && echo "--- files" && git ls-files | sed 's|/[^/]*$||' | sort | uniq -c | sort -rn | head -40 && echo "--- total commits" && git rev-list --all --count
+ - Bash: for f in $(git ls-files | grep -vE '\.(png|jpg|svg|ico)$'); do case "$f" in *.md|LICENSE|*.json|*.yml|.gitignore) ;; *) ;; esac; out=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn); [ -z "$out" ] && continue; total=$(echo "$out" | awk '{s+=$1} END{print s}'); top=$(echo "$out" | head -1); echo "$total lines | $top"; done | sort -t'|' -k1 -rn | head -60
+ - Bash: git show --stat 62628c0 | head -30 && echo "--- ignoring reformat + blame per file" && for f in $(git ls-files | grep -E '\.(js|md|json|yml)$|^LICENSE|^\.gitignore'); do out=$(git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn); [ -z "$out" ] && continue; total=$(echo "$out" | awk '{s+=$1} END{print s}'); top=$(echo "$out" | head -1 | sed 's/^ *//'); echo "$total | $f | $top"; done | sort -rn
+ - Bash: echo "--- last commit date per top author" && for a in "Douglas Christopher Wilson" "Troy Goode" "Íñigo Marquínez Prado" "Sebastian Beltran" "Ulises Gascón"; do echo "$a: $(git log --author="$a" -1 --format=%ad --date=short) (commits: $(git log --author="$a" --oneline | wc -l))"; done && echo "--- commits in last 12 months (since 2025-10-24)" && git log --since=2025-10-24 --format='%an' | sort | uniq -c | sort -rn | head && echo "--- commits per year by Douglas / Troy" && for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a:"; git log --author="$a" --format=%ad --date=format:%Y | sort | uniq -c; done && echo "--- Troy's recent commits" && git log --author="Troy Goode" --format='%a
+FINAL ANSWER:
+**Short answer:** The codebase has a bus factor of about 1, and two people account for almost all of it. Troy Goode owns the library code and is the only one of the two still committing. Douglas Christopher Wilson wrote about half the tests, the main CI workflow, and the build and packaging files, but has not committed since September 2021.
+
+**Ownership by file** (git blame, ignoring the April 2026 "style: reformat js" commit, which rewrote about 1,000 lines under the name "Fiona Formatter" and would otherwise distort the numbers):
+
+| File | Lines | Main owner | Share |
+|---|---|---|---|
+| `lib/index.js` (core library) | 238 | Troy Goode | 159 (67%) |
+| `test/test.js` | 731 | Douglas Christopher Wilson | 365 (50%) |
+| `test/example-app.js` | 81 | Troy Goode | 67 (83%) |
+| `test/error-response.js` | 66 | Troy Goode | 57 (86%) |
+| `test/issue-2.js`, `test/vary.js` | 48, 36 | Troy Goode | 40, 36 (fully) |
+| `README.md` | 277 | Troy Goode | 116 (42%) |
+| `HISTORY.md` | 64 | Douglas Christopher Wilson | 50 (78%) |
+| `package.json`, `LICENSE`, `.eslintrc.yml`, `.gitignore` | small | Douglas Christopher Wilson | mostly |
+| `.github/workflows/ci.yml` | 220 | Douglas Christopher Wilson | 108 (49%) |
+| `.github/workflows/scorecard.yml` | 73 | Íñigo Marquínez Prado | 69 (94%) |
+| `.github/workflows/codeql.yml` | 66 | Sebastian Beltran | 63 (95%) |
+| `.github/dependabot.yml` | 15 | Ulises Gascón | 15 (all) |
+
+**Activity and risk:**
+
+- **Troy Goode** is the most important single point of failure. The core library is mostly theirs, and they are the only contributor with recent work in `lib/` (two commits on 2026-04-10). Their commits were heavy from 2013 to 2016 and sparse since then, so their current availability is uncertain.
+- **Douglas Christopher Wilson** is the more serious gap. Their last commit was 2021-09-07, so the test suite and the main CI workflow have had no active maintainer for about five years. Nobody else currently has the knowledge to change the tests with confidence.
+- **Everyone else** has one to four commits each, which is not enough to count as an owner. The CodeQL, Scorecard and Dependabot pieces are each held by one person with a few commits, though those are configuration files and easier to replace.
+- In the last 12 months, the human committers are Troy (2 commits), Jon Church, Ignacio Mangas, Vansh Sharma, Ulises Gascón, Phillip Barta and you. Most of those are one-off contributions.
+
+**Limits of this analysis:** Blame measures surviving lines, not who understands the code. It also cannot see npm publish rights, GitHub admin access, or knowledge kept in issues or chat. Troy appears under two email identities; I counted them as one person.
+
+**What would reduce the risk:** have someone other than Troy review and merge changes to `lib/index.js`, document the test setup and CI, and confirm that at least two people can publish to npm and administer the repository.
+META cost=0.00580968 ms=28221 turns=5

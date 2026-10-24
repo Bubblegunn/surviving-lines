@@ -1,0 +1,35 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL --merge-identities --tree 2>&1 | head -40
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --merge-identities --tree 2>&1 | head -40
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --merge-identities -- .eslintrc.yml .gitignore HISTORY.md LICENSE package.json README.md 2>&1 | head -14; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --merge-identities -- .github 2>&1 | sed -n 1,10p
+FINAL ANSWER:
+With the two Troy Goode addresses counted as one person, only `lib/` and `test/` have an owner holding at least half the lines. I excluded `dependabot[bot]` and ignored the formatting-only commit 62628c0. I ran `--merge-identities` in memory only and did not write a `.mailmap`. The match is a guess from names and addresses and is unconfirmed.
+
+```
+# CODEOWNERS
+/lib/    @troygoode
+/test/   @troygoode
+```
+
+| Path | Top owner | Share of non-blank lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 67% of 214 | Yes |
+| `test/` | Troy Goode | 51% of 820 | Yes, but only just |
+| `.github/` | Douglas Christopher Wilson | 30.2% (92 of 305) | No |
+| Root files | Douglas Christopher Wilson | 29.4% (95 of 323) | No |
+
+The `lib/` and `test/` shares come from `--merge-identities --tree`. The `.github/` and root-file rows come from `--merge-identities -- <paths>`. Those runs print shares but not Troy's line counts for `lib/` and `test/`, so I'm not quoting counts for those two.
+
+- **`test/`:** Troy Goode's 51% is a thin margin. Within `test/`, Douglas Christopher Wilson holds all of `test/support/` and half of `test/test.js`.
+- **`.github/`:** Nobody reaches 50%. Douglas holds 92 lines (30.2%), Íñigo Marquínez Prado 80 (26.2%) and Sebastian Beltran 53 (17.4%). Íñigo and Sebastian each wrote a separate workflow file almost entirely. Douglas's last commit was 2021-09-07, so I left a gap here rather than name an inactive owner.
+- **Root files:** Nobody reaches 50%. Douglas holds 95 lines, Troy Goode 85 and Jon Church 59 (18.3%). The shares differ by file. Douglas holds 94% of `LICENSE` and 80% of `HISTORY.md`, but `README.md` has no owner above 50% (Troy Goode has the most, at 33%). Jon Church is the only one of the three with a recent commit.
+
+For context, across the whole repo Troy Goode (both addresses) holds 649 non-blank lines (39.0%). Douglas holds 551 (33.2%).
+
+`@troygoode` is a guess at his GitHub handle, so please replace it with the real one. You could add a team to the unowned paths.
+META cost=0.08491560000000001 ms=30397 turns=5

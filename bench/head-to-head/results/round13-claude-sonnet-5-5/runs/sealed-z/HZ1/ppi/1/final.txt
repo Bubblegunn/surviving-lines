@@ -1,0 +1,67 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.py' | grep -v -E '^(build|dist)/' > /tmp/pyfiles.txt; wc -l < /tmp/pyfiles.txt; cat /tmp/pyfiles.txt; echo ---; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; git shortlog -sne --all --no-merges | head -5
+ - Bash: while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done < /tmp/pyfiles.txt > /tmp/blame.tsv; echo "LINES BY AUTHOR (all py)"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -12; echo; echo "TOTAL"; wc -l < /tmp/blame.tsv
+ - Bash: echo "BY AREA/AUTHOR"; awk -F'\t' '{split($1,p,"/"); a=p[1]; c[a" | "$2]++; t[a]++} END{for(k in c){split(k,x," \\| "); printf "%s\t%d\t%.0f%%\n",k,c[k],100*c[k]/t[x[1]]}}' /tmp/blame.tsv | sort -t$'\t' -k1,1 -k2,2nr | awk -F'\t' '{n[substr($1,1,index($1," |")-1)]++; if(n[substr($1,1,index($1," |")-1)]<=4)print}'; echo; echo "DANA FILES"; grep -P '\tDana Kessler' /tmp/blame.tsv | cut -f1 | sort | uniq -c | sort -rn; echo; git log --all --no-merges --author="Dana Kessler" --format='%h %ad %s' --date=short --shortstat
+ - Bash: echo "LAST COMMIT per top author"; for a in "Jonathan Hartley" "Arnon Yaari" "Dana Kessler" "Nathaniel J. Smith" "Delgan"; do echo "$a: $(git log --all --no-merges --author="$a" -1 --format=%ad --date=short)"; done; echo; echo "CORE LIB ONLY (colorama/)"; grep -P '^colorama/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -6; echo; echo "PER-FILE top author (lines)"; for f in $(cat /tmp/pyfiles.txt); do grep -P "^\Q$f\E\t" /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | awk -v f=$f '{t+=$1; if(NR==1){n=$1;a=$2" "$3}; k++} END{printf "%s\t%s %.0f%%\t%d authors\t%d lines\n",f,a,100*n/t,k,t}'; done | grep -E 'colorama/|tests/'; echo; for f in colorama/ansitowin32.py colorama
+ - Bash: head -25 colorama/_vendor/_typing_compat.py; grep -rn "_typing_compat\|_vendor" --include='*.py' --include='*.toml' --include='*.cfg' . | grep -v '^./colorama/_vendor/' | head; echo ---; echo "BLAME IGNORING REFORMAT c73f380, EXCLUDING VENDORED FILE"; echo c73f380* > /dev/null; git rev-parse c73f380 > /tmp/ignore.txt; for f in $(grep -v _vendor /tmp/pyfiles.txt); do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" | grep '^author ' | cut -d' ' -f2-; done | sort | uniq -c | sort -rn | head -8; echo ---; for m in ansitowin32 win32 winterm ansi initialise; do echo "$m imported by: $(grep -rlE "(from|import) .*\b$m\b|from \.$m|from colorama\.$m" --include='*.py
+ - Bash: git rev-parse c73f380 > /tmp/ignore.txt; for f in $(grep -v _vendor /tmp/pyfiles.txt); do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" | grep '^author ' | cut -d' ' -f2-; done | sort | uniq -c | sort -rn | head -8; echo ---; for m in ansitowin32 win32 winterm ansi initialise; do echo "$m imported by: $(grep -rlE "(from|import) .*\b$m\b|from \.$m|from colorama\.$m" --include='*.py' . | grep -v "colorama/$m.py" | wc -l) files"; done; ls tools 2>&1 | head -3
+FINAL ANSWER:
+## Bus Factor Analysis
+Period: all history | Generated: 2026-10-24 | 25 Python files, 3,040 lines at HEAD
+
+### Who wrote the code that exists today
+
+Raw `git blame` credits Dana Kessler with the most lines (1,324). That figure is misleading:
+
+- **1,103 of those lines are one file**, `colorama/_vendor/_typing_compat.py`. It says it was vendored from `typing_extensions` 4.12.2 and is marked "DO NOT EDIT". Dana only added it.
+- **Nothing imports it**, and the `tools/vendor.sh` script its header points to doesn't exist. The body is about 100 near-identical `_compat_NNN` stub functions, which doesn't look like `typing_extensions`. Someone should check where it came from before handover.
+- **Another 221 lines** are credited to Dana for a quote-style reformat (`c73f380`). I excluded that commit from the numbers below.
+
+Excluding the vendored file and the reformat commit, here is who wrote the remaining 1,936 lines:
+
+| Author | Lines | Share | Commits (all-time) | Last commit |
+|---|---|---|---|---|
+| Jonathan Hartley | 1,080 | 56% | 85 | 2026-07-03 |
+| Arnon Yaari | 232 | 12% | 64 | 2022-06-17 |
+| Nathaniel J. Smith | 196 | 10% | 15 | 2022-10-16 |
+| Delgan | 107 | 6% | n/a | 2018-10-15 |
+| John Szakmeister | 62 | 3% | 4 | n/a |
+| Segev Finer | 37 | 2% | n/a | n/a |
+| About 20 others | the rest | | | |
+
+### Project-level bus factor: 1
+
+Jonathan Hartley alone wrote 56% of the surviving code. If they left, less than half of the codebase would have anyone who wrote it.
+
+### Your two biggest contributors: Hartley and Yaari
+
+- **Together** they wrote 68% of the code.
+- **Hartley** hasn't committed in about 113 days, which is past the 90-day activity cutoff. Whether they'd answer questions is something you'll need to find out directly.
+- **Yaari** has been gone since mid-2022. The questions you'd put to them are probably already unanswerable.
+- **Exposure is moderate to high, concentrated in the Windows console layer.** Hartley's share of each file:
+
+| File | Hartley's share | Authors | Imported by |
+|---|---|---|---|
+| `win32.py` | 59% | 8 | 3 files |
+| `ansitowin32.py` | 51% | 13 | 6 files |
+| `winterm.py` | 48% | 10 | 2 files |
+| `tests/winterm_test.py` | 90% | 4 | |
+
+- **Mitigations:** no single `colorama/` file is controlled by one person. Every file has at least 4 authors and a top share of 59% or less. Nathaniel J. Smith (10%) is the best backup for the core library, but they've also been inactive since 2022.
+- **Single-author files:** only the vendored file, `_vendor/__init__.py` and `tests/__init__.py`, which are trivial or generated.
+- **Active maintainers:** Dana Kessler is the only person with a commit in the last 90 days (2026-08-20), and their 4 commits are formatting, vendoring, a test move and a small `NO_COLOR` change. Nobody active has deep knowledge of the Windows console code.
+
+### Recommendations
+
+1. **Immediate:** ask Hartley for a walkthrough of `win32.py`, `winterm.py` and `ansitowin32.py` before handover, and record it. Also ask them about the vendored `_typing_compat.py` and the missing `tools/vendor.sh`.
+2. **Short-term:** have the new team pair-review changes to the Windows console code, and add docstrings or an architecture note for it.
+3. **Ongoing:** get at least two people on the new team to make real changes in `colorama/` early, so no file depends on one person.
+
+**Method note:** blame ran with `-w -M -C`. Dependents were counted by grepping for imports, so treat them as approximate.
+META cost=0.1189693 ms=40454 turns=9

@@ -1,0 +1,34 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs && git ls-files | wc -l && git ls-files | sed 's/.*\.//' | sort | uniq -c | sort -rn | head
+ - Bash: count(){ for f in $(git ls-files); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$@" -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn; }; echo "== with ignore-revs"; count; echo "== naive"; for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -5; echo; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that is still here today.
+
+I ran `git blame` on every tracked file and counted the lines each person last wrote. I used `-w -M -C` so whitespace changes and moved code don't take ownership. I also passed `--ignore-revs-file .git-blame-ignore-revs`.
+
+The ignore-revs file matters here. Commit `62628c0` reformatted all the JS to 4 spaces and double quotes. A plain blame gives Fiona Formatter 1,018 lines, about half the repo, which isn't real authorship. With that commit skipped, the totals come out like this:
+
+| Author | Lines | Share (approx.) |
+|---|---|---|
+| Troy Goode | 810 | 40% |
+| Douglas Christopher Wilson | 629 | 31% |
+| Íñigo Marquínez Prado | 95 | 5% |
+| Jon Church | 72 | 3.5% |
+| Sebastian Beltran | 67 | 3% |
+| Ulises Gascón | 52 | 2.5% |
+| Ignacio Mangas | 44 | 2% |
+| Alejandro Caravaca Puchades | 30 | 1.5% |
+| Linus Unnebäck | 26 | 1% |
+| ~35 others | 1–17 each | the remaining ~10% |
+
+- **Commits versus surviving code:** Douglas Christopher Wilson has the most commits (143, against Troy Goode's 122). Troy Goode still owns about 180 more surviving lines. That is probably because Troy's code is in the large files, while much of Douglas's work was edits to existing lines that later commits replaced.
+- **Remaining reformat lines:** Fiona Formatter still holds 2 lines, so the reformat commit was the last to touch some lines even after the ignore.
+- **Counting scope:** The counts cover every tracked file, including the YAML, markdown, JSON and LICENSE files, not just the JS. The totals are approximate because I didn't sum them exactly.
+
+If you'd rather see ownership for only the source files, or grouped by directory, I can rerun it that way.
+META cost=0.0476751 ms=14726 turns=3

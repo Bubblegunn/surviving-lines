@@ -1,0 +1,28 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; git shortlog -sn --all | wc -l
+ - Bash: git shortlog -sne --all | tail -16; echo; git shortlog -sne --all | sed -E 's/^ *[0-9]+\t//' | awk -F' <' '{n[$1]++; e[$1]=e[$1]" "$2} END{for(k in n) if(n[k]>1) print k, e[k]}'; git shortlog -sne --all | sed -E 's/^ *[0-9]+\t//' | awk -F' <' '{print $2}' | sort | uniq -d
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** used `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** also committed as `alex94puchades` with the same email address, `<email redacted>` (4 commits plus 1).
+
+I added a `.mailmap` at the repo root that merges each into one identity. I didn't rewrite any history, and I haven't committed the file. Troy Goode now shows 122 commits and Alejandro 5.
+
+**The top author is still Douglas Christopher Wilson with 143 commits.** Troy Goode is second with 122, so the merge didn't change the order.
+
+Other names and emails in the history that I didn't merge:
+
+- `Efe <<email redacted>>` has a different email from yours. I left it alone because it could be someone else.
+- `Fiona Formatter <fiona@formatter.example>` looks like a bot or placeholder, but it appears under only one identity.
+META cost=0.0495951 ms=10719 turns=4

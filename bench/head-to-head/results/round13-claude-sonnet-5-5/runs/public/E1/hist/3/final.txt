@@ -1,0 +1,52 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 3}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/E1-hist-3/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/E1-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/E1-hist-3/repo"}
+FINAL ANSWER:
+**Short answer:** the project has a bus factor of 2. Two people wrote most of it, and no single person owns it outright. The line-ownership numbers are distorted by a formatting commit, and I've flagged where.
+
+## Commit-based view
+- **Douglas Christopher Wilson**: 143 of 326 non-merge commits (43.9%).
+- **Troy Goode**: 95 commits (29.1%).
+- Together that is 73%. Everyone else has 4 or fewer commits, and there are 64 authors in total.
+- The history runs 2013-01 to 2026-04.
+
+No directory crosses the 80% single-author "silo" threshold:
+
+| Directory | Top author | Share |
+|---|---|---|
+| root | Wilson | 51% |
+| `test` | Goode | 44% |
+| `lib` | Goode | 50% |
+| `.github` | Wilson | 37% |
+
+## Where one person is the main owner (current lines)
+- **Douglas Wilson** is the main owner of these files, and his last commit was 2021-09-07:
+  - `package.json` (48%)
+  - `HISTORY.md` (78%)
+  - `LICENSE` (77%)
+  - `.github/workflows/ci.yml` (49%)
+  - `.eslintrc.yml`, `test/.eslintrc.yml` and `test/support/env.js` (100%)
+  - `.gitignore` (80%)
+- **Troy Goode** is the main owner of `README.md` (38%), `test/issue-2.js` (83%) and `test/vary.js` (100%). His last commit was 2026-04-10.
+- **Single-owner CI files:**
+  - `.github/workflows/scorecard.yml` is 93% Íñigo Marquínez Prado.
+  - `.github/workflows/codeql.yml` is 95% Sebastian Beltran.
+  - `.github/dependabot.yml` is 100% Ulises Gascón.
+
+## Caveats
+1. **"Fiona Formatter" is an artifact.** Blame credits this identity with 51% of lines, including most of `lib/index.js` (90%) and `test/test.js` (94%). That comes from the latest commit, `62628c0`, which reformatted the JS. It is not real knowledge ownership. The real authors of `lib/index.js` are mainly Troy Goode and earlier contributors. Re-running blame with `git blame -w --ignore-rev 62628c0` would give a truer picture. I haven't done that.
+2. **All 18 files show as "orphaned", but that is misleading.** The last commit was 2026-04-12 and today is 2026-10-24, so the "inactive for 6 months" cutoff catches everyone, including Troy Goode. The tool is reporting a dormant repo, not a loss of specific people.
+3. **Wilson's gap is the strongest signal.** He has no commits since 2021-09 but still leads the commit counts and owns the build, config and release files. Troy Goode is the main author of the core `lib/` and `test/` code and was last active in April 2026.
+
+## Recommendations
+- Get a second person to review and take on the files Wilson owns: `package.json`, the release and history docs, and CI.
+- Keep Troy Goode in the loop for `lib/` and the tests, since both he and Wilson are the knowledge holders.
+- Rerun the ownership analysis with the formatting commit ignored for accurate line-level numbers.
+META cost=0.07808480000000001 ms=14114 turns=5

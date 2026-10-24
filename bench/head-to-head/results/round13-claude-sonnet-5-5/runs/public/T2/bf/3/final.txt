@@ -1,0 +1,37 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib directory bus factor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/T2-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log -1 --format=%ci && git log --no-merges --format='%ae|%ad' --date=short -- lib | awk -F'|' '{n[$1]++; if(!($1 in last)) last[$1]=$2; first[$1]=$2} END{for(a in n) print n[a], a, first[a], last[a]}' | sort -rn; git ls-files lib | wc -l; git log --reverse --format='%ad %h' --date=short | head -2; git rev-list --count HEAD
+ - Bash: git ls-files lib; git log --no-merges --format='%h %ae %ad %s' --date=short --since=2020-01-01 -- lib; git log --no-merges --numstat --format='%h' -3 -- lib | head -20; git ls-files | wc -l
+FINAL ANSWER:
+**Short answer:** by commit count, `lib` is spread across many people. By recent, substantive knowledge, it is close to zero. I'd call it effectively orphaned, with a caveat about one possible identity match.
+
+`lib` is a single file, `lib/index.js`, with 33 non-merge commits from 25 email addresses. The history is imported: it starts on 2013-01-30 with a bulk commit, so ownership reflects work since then. The newest commit in the repo is 2026-04-12, and I treated that as "now". I only ran the script as a dry run, which printed the repo-wide CODEOWNERS and nothing about `lib`. The numbers below come from `git log` directly, so I haven't run the script's own scoring.
+
+**Who wrote it**
+- `<email redacted>` made 32 commits, from 2013 to 2016-08. They are the original author, and nothing from them has landed since 2016.
+- Everyone else made 1–5 commits each, and the last of those was in 2021.
+- The only commits in the last 12 months are from two addresses:
+  - `fiona@formatter.example` (2026-04-12), a whole-file reformat to 4-space indent and double quotes. It touched 214 lines but was mechanical.
+  - `troy@laptop.example` (2026-04-10), "annotate handlers", which touched 12 lines.
+
+**What that means**
+- **Active authors in the last 12 months:** two addresses, and neither has shown real understanding of the code. The reformat is the kind of change that makes someone look like an expert without being one. The annotation commit is small.
+- **The knowledge:** it sits with Troy Goode (2013–2016), who has been inactive for about 10 years if `troy@laptop.example` is a different person. The 2017–2021 contributors, including the last substantive fix in 2021, are also inactive.
+- **If `troy@laptop.example` is Troy Goode:** the bus factor is 1. The original author came back recently, but it is a single person and the annotation commit was small.
+- **If it isn't:** nobody active understands the file, so it is orphaned.
+
+I can't tell which from git alone. I ran with `--no-github`, so the script couldn't try to link the two emails to one account. Do you know whether `troy@laptop.example` is `<email redacted>`? If it is, I can record that and re-run so the numbers are consistent.
+
+**Caveats**
+- Commit volume only approximates knowledge. Someone who reviews but never commits looks like a stranger here.
+- The roster counts anyone without a commit in 12 months as inactive. If any of the older contributors are still around, the orphaned verdict is too pessimistic.
+- The repo has only 18 tracked files, so "the lib directory" is one file.
+
+I haven't written `.github/CODEOWNERS` or `ownership.json`. I can generate them and the HTML risk report if you want.
+META cost=0.0711056 ms=19711 turns=6

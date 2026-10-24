@@ -1,0 +1,54 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files | grep -E '\.zig$' | grep -v -E '^(zig-cache|\.zig-cache)/' > /tmp/zfiles.txt; wc -l < /tmp/zfiles.txt; echo ---commits; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head; echo ---last; git log --all --no-merges --pretty='%an|%ad' --date=short | sort -t'|' -k1,1 -u | head -20; echo ---blame; while read f; do git blame --line-porcelain -w -M -C -- "$f" 2>/dev/null | grep '^author ' | sed "s|^author |$f\t|"; done < /tmp/zfiles.txt > /tmp/blame.tsv; awk -F'\t' '{t[$2]++; n++} END{for(a in t) printf "%d\t%.1f%%\t%s\n", t[a], 100*t[a]/n, a}' /tmp/blame.tsv | sort -rn; echo ---perfile; awk -F'\t' '{c[$1"\t"$2]++; tot[$1]++} END{for(k in c){split(k,p,"\t"); pr
+FINAL ANSWER:
+**The bus factor is 2.** Ownership is concentrated in two people, but not as heavily as the project's size might suggest.
+
+I measured this with `git blame` over the 7 tracked `.zig` files (about 2,120 lines). I used blame because it shows who wrote the lines that exist today, not who made the most commits. The skill's built-in file list leaves out `.zig`, so I ran the git commands directly instead of launching the contributor-analyzer agent.
+
+### Who wrote the current code
+
+| Author | Lines | Share |
+|---|---|---|
+| Felix Queißner (3 name aliases merged) | 758 | **35.8%** |
+| Wen Li | 552 | **26.0%** |
+| jnagpaul | 188 | 8.9% |
+| Vincent Rischmann | 130 | 6.1% |
+| mochalins | 77 | 3.6% |
+| Dhole | 75 | 3.5% |
+| About 20 others | 340 | 16.1% |
+
+- **Bus factor:** Felix and Wen Li together wrote 61.8% of the code. That is past the 50% threshold, so losing those two leaves most of the code without an author.
+- **If only Felix stopped answering:** 35.8% of the current lines would have no author left. Counting commits instead, Felix has about 46 of roughly 100 non-merge commits.
+- **Wen Li's share is mostly generated:** nearly all of it is `src/width_table.zig` (484 lines, 100% Wen Li) plus `src/width.zig` (24 lines, also 100%). That looks like a Unicode lookup table. I'd treat it as a table to regenerate, not as knowledge to preserve.
+- **Without the generated table:** Felix has 46% of the remaining 1,636 lines. Felix and jnagpaul together have about 58%, so the bus factor is still 2.
+
+### By file
+
+| File | Lines | Top author | Bus factor |
+|---|---|---|---|
+| `src/args.zig` (the core library) | 1049 | Felix, 67% (704 lines) | **2**. It has 23 contributors, but one person wrote two-thirds of it. |
+| `src/help.zig` | 337 | jnagpaul, 49% | 2 (jnagpaul and Dhole reach 71%) |
+| `src/width.zig` and `src/width_table.zig` | 508 | Wen Li, 100% | **1** (low risk, since it is a generated data table) |
+| `demo_verb.zig` | 83 | Vincent Rischmann, 58% | 2 |
+| `demo.zig` | 63 | Felix, 52% | 2 |
+| `build.zig` | 80 | Vincent Rischmann, 22% | 4 or more, the healthiest file |
+
+### Caveats
+
+- **Felix may not be active.** Their latest commit is 2026-04-16, about 6 months ago and outside the skill's 90-day "active" window. I didn't check whether Wen Li is still active.
+- **A date looks wrong.** One contributor's latest commit is dated 2026-11-04, which is after today's date (2026-10-24). That is probably clock skew in the history.
+- **Blame has limits.** A mechanical rename like the `allocator` to `gpa` change can shift blame lines, though I used `-w -M -C` to reduce that.
+- **I skipped the dependents check.** With 7 files, the import-graph step adds little. `args.zig` is the only core file anyway.
+
+### Recommendations
+
+1. **Now:** Have a second person review `src/args.zig`, since it holds the core logic and the most concentrated ownership. Someone other than Felix should take on the parsing and option-handling paths.
+2. **Short term:** Document how `width_table.zig` is generated, ideally with a script checked in, so it doesn't depend on Wen Li.
+3. **Ongoing:** Spread `help.zig` knowledge beyond jnagpaul, and keep rotating reviewers on `args.zig`.
+META cost=0.0778947 ms=21515 turns=4

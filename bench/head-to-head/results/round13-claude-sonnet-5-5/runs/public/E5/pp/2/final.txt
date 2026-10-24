@@ -1,0 +1,65 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -80; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---BLAME; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js; git show --stat --format='%h %an %s' b2005d9 | head
+FINAL ANSWER:
+`lib/index.js` is the `cors` middleware. It has about 60 commits from 25 authors, and it is 238 lines today. Troy Goode wrote most of it and still owns most of the surviving lines.
+
+**Who shaped it**
+
+- **Troy Goode, 2013–2016 (29 commits).** Troy made the first commit on 2013-01-30 and set the core design.
+  - Case-insensitive header lookup and `origin: false` to disable CORS came in the first days.
+  - He added pause/resume of the request for async middleware, and `use strict`.
+  - Callback-style `origin` and Connect support without Express arrived in 2013.
+  - `Access-Control-Expose-Headers` and Express 4+ support came in 2014.
+  - He switched to the `vary` module in 2014, moved to ESLint in 2015, and shipped 2.8.0 in 2016.
+- **Early contributors, 2013–2014.**
+  - Simon Mansfield added the early `Origin` checks and moved where the credentials header is sent.
+  - Damien Klinnert limited `Allow-Methods` to OPTIONS requests.
+  - Eric di Domenico added the callback form of `origin`.
+  - Mathias Buus switched to non-Express request and response methods.
+  - Typicode added PATCH to the default methods.
+  - Shane Tomlinson made method names uppercase before comparison.
+  - Alberto Leal fixed `options.origin` callbacks being overridden.
+  - Igor Soarez added `Vary: Origin` for specific origins.
+- **2015 contributors.**
+  - Alejandro Caravaca Puchades (also committing as alex94puchades) added RegExp and array-of-conditions support for `origin`.
+  - Raymond Feng optimized `applyHeaders` by removing a closure.
+  - max.laverse let the preflight request pass through to `next()`.
+  - Eran Tiktin fixed `Vary` for `*`.
+  - DracoBlue added exposed headers on OPTIONS responses.
+  - jordandenison fixed strict-mode handling of non-object options.
+- **Douglas Christopher Wilson, 2017.** He is the second-largest surviving author. He added `Vary: Access-Control-Request-Headers`, fixed a crash when `methods` was missing from the options delegate, and did lint and ESLint upgrades.
+  - Saad Tazi fixed a crash on frozen options.
+  - Tomek Kopczuk added `Vary: Origin` for regular expressions.
+  - Benjamin Eidelman added the Safari preflight workaround.
+  - Chima Alaebo removed an unreachable branch.
+- **Recent changes.**
+  - Tom Arad fixed `maxAge: 0` in 2018.
+  - LuisEGR removed unused parameters in 2021.
+  - Troy Goode's "annotate handlers" commit on 2026-04-10 changed 12 lines.
+  - Fiona Formatter's 2026-04-12 commit reformatted the file to 4-space indent and double quotes.
+
+**Whose code is still in it**
+
+A plain `git blame` credits Fiona Formatter with 32 lines, but that is only the quote-style reformat. I re-ran blame ignoring that commit (`--ignore-rev 62628c0`, with `-w -M -C`). The line counts below are what survives:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy's 159 lines are about two-thirds of the file. Several 2013–2014 authors no longer appear in blame, including Typicode, Damien Klinnert, jordandenison, DracoBlue and Tomek Kopczuk, so their changes were later rewritten or removed. The `-w` flag also hides whitespace-only changes, so the 4-space reindent doesn't show up as authorship.
+META cost=0.0680167 ms=16138 turns=3

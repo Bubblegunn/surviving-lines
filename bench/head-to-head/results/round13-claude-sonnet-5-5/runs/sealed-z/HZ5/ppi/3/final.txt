@@ -1,0 +1,92 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cat .mailmap; echo ---; git log --all --no-merges --format='%aN <%aE>' | sort | uniq -c | sort -rn | head -30; echo ---; git ls-files src tests | wc -l; git ls-files src tests | sed 's|/[^/]*$||' | sort | uniq -c; git log -1 --format=%cd
+ - Bash: cd . && for f in $(git ls-files src tests); do case $f in *.php|*.neon|*.json|*.xml) ;; *) continue;; esac; git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{c[m]++} END{for(k in c) print f"\t"k"\t"c[k]}'; done > /tmp/blame.tsv
+python3 -I - <<'E'
+import collections
+rows=[l.rstrip('\n').split('\t') for l in open('/tmp/blame.tsv')]
+def agg(pred,label):
+    c=collections.Counter(); files=collections.defaultdict(set)
+    for f,a,n in rows:
+        if pred(f): c[a]+=int(n); files[a].add(f)
+    t=sum(c.values()); print(label,t)
+    for a,n in c.most_common(12): print(f"  {a:50} {n:5} {100*n/t:5.1f}% files={len(files[a])}")
+agg(lambda f:f.star
+ - Bash: for e in <email redacted> <email redacted> <email redacted> tomasz.wrona@brightmail.example <email redacted> <email redacted>; do printf "%s  " $e; git log --all --author="$e" -1 --format=%cs; done
+FINAL ANSWER:
+## Bus Factor Analysis
+Period: all history | Generated: 2026-10-24 | Method: `git blame -w -M -C` on HEAD, so it counts surviving lines. Author identities go through `.mailmap`, which folds Ben's `<email redacted>` into `<email redacted>`. I counted 65 files and about 7,100 lines in `src/` and `tests/`.
+
+### Project-level bus factor: 1
+Ben Ramsey alone owns 68% of the surviving lines in `src/` and 54% in `tests/`. That is more than half of the code, so losing Ben leaves more than half of it without a knowledgeable maintainer.
+
+### Who wrote the code today
+
+**`src/`** (3,175 lines, excluding generated code)
+
+| Author | Lines | Share | Files | Last commit |
+|---|---|---|---|---|
+| Ben Ramsey | 2,171 | 68.4% | 31 | 2026-08 (active) |
+| Carlos C Soto | 270 | 8.5% | 12 | 2016 (inactive) |
+| zf2timo | 223 | 7.0% | 16 | 2016 (inactive) |
+| icanhazstring | 199 | 6.3% | 8 | 2019 (inactive) |
+| Kévin Gomez | 145 | 4.6% | 2 | 2018 (inactive) |
+| Tomasz Wrona | 63 | 2.0% | 8 | 2026-07 (active) |
+| Everyone else | under 1% each | | | |
+
+**`tests/`** (3,625 lines)
+
+| Author | Lines | Share | Files | Last commit |
+|---|---|---|---|---|
+| Ben Ramsey | 1,964 | 54.2% | 31 | active |
+| icanhazstring | 594 | 16.4% | 14 | 2019 |
+| Kévin Gomez | 329 | 9.1% | 2 | 2018 |
+| Carlos C Soto | 204 | 5.6% | 9 | 2016 |
+| zf2timo | 174 | 4.8% | 3 | 2016 |
+| Simone Todaro | 113 | 3.1% | 3 | 2020 |
+| Everyone else | 2.5% or less each | | | |
+
+Tomasz Wrona is the only other person who has committed recently. Their `.mailmap` entry folds in `T. Wrona`. They own `src/Generated/TypeMap.php` (295 lines, 100%), `src/Support/ChunkTrait.php` and `tests/Support/ChunkTraitTest.php`. All of that is recent work. I listed the generated file separately because it is machine output, not hand-written code.
+
+### Critical risk areas
+Ben is the main author (80% or more of surviving lines) of the core public API, with no active second maintainer:
+
+| File | Ben's share | Notes |
+|---|---|---|
+| `src/AbstractArray.php` | 96% | Base class for the collection types |
+| `src/ArrayInterface.php` | 94% | |
+| `src/Collection.php` | 85% | |
+| `src/Map/AbstractMap.php` | 97% | |
+| `src/Map/MapInterface.php` | 96% | |
+| `src/Map/NamedParameterMap.php` | 95% | |
+| `src/DoubleEndedQueueInterface.php` | 80% | |
+| `src/Grouping.php` | 98% | |
+| `src/Support/TypeTrait.php` | 96% | |
+| `tests/types/*` and `tests/stubs/phpstan.php` | 100% | All PHPStan/Psalm type tests |
+
+The type tests are the least-shared area. No one else has ever touched them, so if Ben leaves, nobody else knows the static-analysis contract (generics and templates).
+
+Ben also holds the majority of `AbstractCollection.php` (59%) and `CollectionInterface.php` (71%), which are the central types. I didn't run the dependents count from the skill's Step 3. By structure, though, `AbstractArray`, `AbstractCollection` and `AbstractMap` are the base classes everything else extends, so their dependents are high.
+
+### Areas that aren't Ben-dependent, but whose owners have left
+- **Queue and DoubleEndedQueue** (`Queue.php`, `DoubleEndedQueue.php`, and their tests): the main authors are zf2timo (2016) and Kévin Gomez (2018). Ben does not own these, and the original authors are gone. Nobody currently holds this knowledge, so it is a risk even if Ben stays.
+- **Set and TypedMap** (`AbstractSet`, `Set`, `Map/TypedMap`, `Map/AbstractTypedMap`, `ValueToStringTrait`): mostly Carlos C Soto (2016), who is also inactive.
+- **`ValueExtractorTrait` tests**: mostly icanhazstring (2019), who is also inactive.
+
+### What the loss of Ben would mean
+- **Lost knowledge:** the design of the core classes and interfaces, the Map family, the type-test suite, and most of the test suite.
+- **Mitigation already present:** Tomasz Wrona is the only recent contributor. They currently own the generated type map and chunking, which are peripheral areas, and are the obvious candidate to bring into the core.
+- **Not a gap:** `src/Exception/*` is spread across three or more authors with no one over 67%. It is also trivial code.
+
+### Recommendations
+1. **Immediate:** before the handoff, have Ben walk the receiving team through `AbstractArray`, `AbstractCollection`, `Map/AbstractMap` and the `tests/types/` suite. Record the reasoning behind the generics and the PHPStan/Psalm contract in docs.
+2. **Short-term:** have the receiving team make a few real changes in the Queue, DoubleEndedQueue and Set code while Ben is still available to review. Those areas have no living expert.
+3. **Ongoing:** require two reviewers on interface files (`*Interface.php`) and `tests/types/`. Add a CODEOWNERS entry with at least two names, and consider whether Tomasz Wrona stays involved.
+
+One caveat on the numbers: blame counts surviving lines, so it shows who owns the code today, not who has the most understanding of it. Lines changed by php-cs-fixer or other bulk reformatting go to whoever ran the tool. I used `-w -M -C` to reduce that, but it is not eliminated.
+META cost=0.1044894 ms=30665 turns=6

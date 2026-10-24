@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -25
+ - Bash: for d in lib test examples .; do :; done
+git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s|^author |${f%%/*}\t|"; done | sort | uniq -c | sort -rn | awk '{c=$1;$1="";print c"\t"$0}' | head -15
+echo; git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' | xargs cat | wc -l
+FINAL ANSWER:
+Surviving code at HEAD is mostly Troy Goode's and Douglas Christopher Wilson's. I counted lines with `git blame -w -M -C`, skipping the 4-space/double-quote reformat commit (62628c0) via `.git-blame-ignore-revs`. I excluded lockfiles and images. The repo has about 2,000 tracked lines.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~40% |
+| Douglas Christopher Wilson | 629 | ~31% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1% |
+| Everyone else (about 15 more, including Efe at 6 lines) | | the remaining ~10% |
+
+By area:
+- **`test/`:** Troy Goode (517 lines) and Wilson (374) hold most of it.
+- **`lib/`:** Troy Goode (159 lines) still holds the most, and Wilson holds only 22. Wilson's commit count is much higher than his share of the code here.
+- **`.github/`:** this is mostly Wilson (118), Marquínez Prado (95), Beltran (63), Gascón (45) and Mangas (44).
+- **`README.md`:** Troy Goode (116) and Jon Church (72).
+- **`HISTORY.md` and `package.json`:** mostly Wilson.
+
+These counts have three limits:
+- Blame credits the last author to touch a line. Lines changed by later mechanical edits, such as the "annotate handlers" commit, may point to a different person than the original author.
+- `-M -C` follows lines moved or copied between files, but it is a heuristic.
+- Line count says nothing about how important the code is, and the test files inflate the totals.
+
+I can narrow this to `lib/` only, or exclude `HISTORY.md` and the docs, if you want.
+META cost=0.055066300000000006 ms=16453 turns=3

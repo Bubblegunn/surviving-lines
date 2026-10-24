@@ -1,0 +1,36 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git log --format='%h %an <%ae> %ad %s' --date=short | head -20; git log --oneline | wc -l; git ls-files | head -50; for c in 62628c0 b2005d9 02afce3; do git show --stat --format='%h %an %s' $c | tail -15; done
+ - Bash: git show b2005d9 | head -60; git show 62628c0 -w --stat | tail -3; ls -a; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30
+ - Bash: run(){ for f in $(git ls-files); do git blame --line-porcelain -w "$@" HEAD -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -12; echo ---; }; echo RAW; run; echo IGNORE-REFORMAT; run --ignore-revs-file .git-blame-ignore-revs; echo IGNORE-BOTH; run --ignore-revs-file .git-blame-ignore-revs --ignore-rev b2005d9; echo CODE-ONLY lib+test; for f in lib/index.js test/*.js test/support/env.js; do git blame --line-porcelain -w --ignore-revs-file .git-blame-ignore-revs --ignore-rev b2005d9 HEAD -- "$f" | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head; echo; for f in lib/index.js; do git blame --line-porcelain -w --ignore-revs-file .git-blame-ignore-revs --ig
+ - Bash: for f in $(git ls-files); do git blame --line-porcelain -w --ignore-revs-file .git-blame-ignore-revs HEAD -- "$f" | sed -n 's/^author-mail //p'; done | sort | uniq -c | sort -rn | head -5; git ls-files | xargs cat | wc -l; for f in $(git ls-files); do echo "$f $(git blame --line-porcelain -w --ignore-revs-file .git-blame-ignore-revs HEAD -- "$f" | sed -n 's/^author //p' | sort | uniq -c | sort -rn | head -1)"; done
+FINAL ANSWER:
+Troy Goode owns most of the code still in the repo, and Douglas Christopher Wilson is close behind. I ran `git blame` on every tracked file at HEAD (1,995 lines) and counted who wrote each surviving line. Getting a fair count took two corrections:
+
+1. **Skipping the reformat commit.** Commit `62628c0` from "Fiona Formatter" re-indented and re-quoted the JS files. A plain blame credits Fiona with 293 lines she didn't write. The repo's `.git-blame-ignore-revs` lists that commit, so I skipped it (along with whitespace-only changes), which gives those lines back to their original authors.
+2. **Combining Troy's two email addresses.** Troy commits as both `<email redacted>` and `troy@laptop.example`, so I counted them together. The laptop address accounts for 48 lines: all of the new `test/vary.js` (36 lines) and 12 `// checked` comments added to the ends of existing lines in `lib/index.js`. Skipping that comment commit too barely changes the totals.
+
+**Lines still present, by author:**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | ~746 | ~37% |
+| Douglas Christopher Wilson | 645 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ignacio Mangas | 54 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Everyone else | under 30 each | — |
+
+**Which files each person owns:**
+- **Troy:** the actual library and most of the tests. He wrote 157 of the roughly 240 lines in `lib/index.js` (about two-thirds; Douglas is next with 22). He also has the most surviving lines in `README.md`, `test/error-response.js`, `test/example-app.js`, `test/issue-2.js` and `test/vary.js`.
+- **Douglas:** the project infrastructure. That's `test/test.js` (365 lines), the CI workflow, `package.json`, `HISTORY.md`, `LICENSE` and the lint config.
+- **Smaller owners:** Íñigo (the scorecard workflow), Sebastian (CodeQL), Ulises (dependabot config), and Jon and Ignacio (docs and CI changes).
+
+By commit count Douglas leads, 143 to Troy's 122. By surviving lines Troy is ahead, mainly because the library code is his. Fiona, the top author in a plain blame of the JS files, owns essentially nothing apart from the two-line ignore-revs file.
+META cost=0.16952240000000002 ms=34966 turns=5

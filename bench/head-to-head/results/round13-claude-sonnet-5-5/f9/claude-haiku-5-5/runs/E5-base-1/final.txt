@@ -1,0 +1,28 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an <%ae> %ad %s' --date=short -- lib/index.js && echo --- && git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn && echo --- && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo --- && wc -l lib/index.js && ls lib
+ - Bash: git show --stat 62628c0 | head -20 && echo --- && git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo --- && git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo --- && git show --stat b2005d9 | head -12 && git show b2005d9 -- lib/index.js | head -60 && echo --- && git blame -w --ignore-rev 62628c0 lib/index.js | sed -n '1,40p'
+FINAL ANSWER:
+**Short answer:** Troy Goode wrote and maintained most of `lib/index.js`, from the first commit in January 2013 through the 2026 annotation pass. About 25 other contributors made smaller changes. The raw blame makes Fiona Formatter look like the largest author, but that's only because of a 2026 reformat.
+
+**Who shaped it**
+
+- **Troy Goode** (2013–2026): wrote the original file ("first commit", 2013-01-30). He added the case-insensitive header lookup, the `origin: false` shortcut, Connect support without Express, Express 4 support, the `vary` module, and the `pause`/`resume` handling for async middleware. He also made the 2.8.0 release and, in April 2026, added `// checked` annotations to the handlers (`b2005d9`). Those annotations look comment-only.
+- **Douglas Christopher Wilson** (2017): fixed the `Vary: Access-Control-Request-Headers` handling for dynamic `allowedHeaders`, fixed a missing `methods` error, and did lint cleanups.
+- **Alejandro Caravaca Puchades** (2015): added regex and array support for `origin`, and switched to `RegExp#test`.
+- **Simon Mansfield** (2013): added the early `Origin` check and moved the credentials header so it's sent on non-OPTIONS requests.
+- **Raymond Feng** (2015): optimized `applyHeaders` by removing a closure.
+- **Others with smaller changes:** Benjamin Eidelman (Safari pre-flight workaround), Tomek Kopczuk and Igor Soarez (`Vary: Origin`), Shane Tomlinson (method name normalization), Mathias Buus (non-Express request/response methods), Saad Tazi (frozen options), Typicode (added `PATCH` to defaults), Tom Arad (`maxAge: 0` fix), LuisEGR (removed unused parameters), Chima Alaebo (removed an unreachable branch), and a few more.
+
+**What's still in today's code**
+
+- **Fiona Formatter's 2026 reformat (`62628c0`)** changed the indentation and quote style on about 428 lines without changing logic. That's why raw `git blame` credits her with 214 of the 238 lines.
+- **Ignoring that reformat and whitespace** (`git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9`), Troy Goode owns about 157 lines. The rest are spread across Douglas Christopher Wilson (22), Alejandro Caravaca Puchades (12), Raymond Feng (9), max.laverse (6), LuisEGR (6), and others.
+- The defaults object (`origin: "*"`, the methods list, `preflightContinue`, `optionsSuccessStatus`) and the `isOriginAllowed` logic are still mostly from 2013–2016 commits.
+
+I only checked the commit history and blame here. I didn't read the surrounding code or the other files in the repo, so I can't say how the code is used beyond what's in `lib/index.js`.
+META cost=0.00478417 ms=16178 turns=3

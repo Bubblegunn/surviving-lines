@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git log --format='%h %an <%ae> %s' | head -30; echo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E4h-bf-2/repo; git ls-files | grep -v -E 'lock|\.(png|jpg)$' | while read f; do git blame -w -M --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author-mail /{print f"\t"$2}'; done > /tmp/bl.tsv
+awk -F'\t' '{split($1,p,"/"); d=(length(p)>1?p[1]:"(root)"); print d"\t"$2}' /tmp/bl.tsv | sed 's/troy@laptop.example/<email redacted>/;s/<<email redacted>>/<<email redacted>>/' | grep -v 'bot\]' | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{t[$2]+=$1; c[$2","NR]=$0} END{}1' | head -60
+echo; git ls-files lib .github; git ls-files | grep -v /
+ - Bash: sed 's/troy@laptop.example/<email redacted>/' /tmp/bl.tsv | grep -v 'bot\]' | awk -F'\t' '{split($1,p,"/"); d=(length(p)>1?p[1]:"(root)"); n[d,$2]++; t[d]++} END{for(k in n){split(k,a,SUBSEP); if(n[k]/t[a[1]]>=0.3) printf "%s %s %d/%d=%.1f%%\n",a[1],a[2],n[k],t[a[1]],100*n[k]/t[a[1]]}}'; git ls-files | grep -v / | while read f; do echo -n "$f: "; git blame -w --ignore-rev 62628c0 --line-porcelain "$f" | grep -c '^author-mail'; done
+FINAL ANSWER:
+Only `lib` and `test` have an owner who holds at least half the surviving lines. `.github` and the root files have none.
+
+I counted surviving lines with `git blame -w -M`. I ignored the formatting commit `62628c0` (Fiona Formatter's reindent and quote change) and excluded dependabot. I merged Troy Goode's two emails (`<email redacted>` and `troy@laptop.example`) into one person. I did not run the busfactor script, because its decay-weighted commit score isn't the surviving-lines measure you asked for.
+
+| Path | Top holder | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 66.8% | Yes |
+| `test/` | Troy Goode | 517/966 = 53.5% | Yes |
+| `.github/` | Doug Wilson | 118/366 = 32.2% | No |
+| Root files | Troy Goode | 134/415 = 32.3% | No |
+
+- **`test/`:** Troy only clears 50% because of the merge. `test/` is the closest call, and Doug Wilson holds 38.7% of it.
+- **`.github/`:** The rest is split across Íñigo Marquínez Prado (95 lines), Sebastian Beltran (63), Ulises Gascón (45) and Ignacio Mangas (44).
+- **Root files:** Troy leads with 32.3%, followed by Doug (115) and Jon Church (72). Most of the weight is in `README.md` (277 lines), so the root is effectively a docs-and-metadata mix.
+
+Suggested CODEOWNERS:
+
+```
+# No single owner holds >=50% of surviving lines for the root files or .github/,
+# so they are left unowned on purpose.
+
+/lib/   @<troy-goode-handle>
+/test/  @<troy-goode-handle>
+```
+
+- **GitHub handle:** I don't have Troy's GitHub handle. I didn't look it up, so replace the placeholder.
+- **Recent activity:** I haven't checked whether Troy is still active. If Troy has left, GitHub would request reviews from someone who can't give them.
+- **Why `.github` and root are unowned:** Adding a rule for the top committer would claim ownership the history doesn't support. If you want a fallback anyway, add a `* @team` line at the top. Last match wins, so it would sit above the specific rules.
+META cost=0.0882537 ms=22777 turns=6

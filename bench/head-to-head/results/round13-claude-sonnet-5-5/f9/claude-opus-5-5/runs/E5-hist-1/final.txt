@@ -1,0 +1,56 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %ad %an <%ae> | %s' --date=short --numstat -- lib/index.js | head -150; echo ---; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git blame -w -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js; cat .mailmap 2>/dev/null
+ - Bash: git log --follow --format='%h %ad %an <%ae> | %s' --date=short -- lib/index.js | tail -5; echo ---; git blame -w -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep -E '^(author|author-mail) ' | paste - - | sort | uniq -c | sort -rn; echo ---; git show b2005d9 --stat; git show b2005d9 -- lib/index.js | head -80; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | grep -i troy
+ - Bash: git blame -w -C -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git log --format='%h %ae %s' --author=laptop.example; git show 62628c0 --stat | tail -3; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 lib/index.js | awk '{print $1}' | sort | uniq -c | sort -rn | head -8
+FINAL ANSWER:
+`lib/index.js` is mostly Troy Goode's code. If you run a plain `git blame` you'll get a misleading answer, so it's worth explaining why before getting to the history.
+
+## Why a plain `git blame` misleads here
+
+The two most recent commits to the file change how it looks but not what it does:
+
+| Commit | Date | Author | What it did |
+|---|---|---|---|
+| `62628c0` | 2026-04-12 | Fiona Formatter | Reformatted to 4-space indent and double quotes; rewrote all 214 lines |
+| `b2005d9` | 2026-04-10 | Troy Goode (`troy@laptop.example`) | Added `// checked` comments to the end of 12 function-declaration lines |
+
+A plain `git blame` gives 214 of the 238 lines to Fiona Formatter. That reflects the reformat, not who wrote the code. Even `blame -w` still credits Fiona with 32 lines, because changing quote style isn't a whitespace change. The `// checked` commit also takes over the blame for 12 lines whose logic it didn't touch.
+
+One more thing: `b2005d9` was made under `troy@laptop.example`, not the usual `<email redacted>`. Its only other commit to the repo is `02afce3` (test changes). There's no `.mailmap` file, so tools count these as two different people. I can't tell from the repo whether it's really the same person on another machine, so treat that as unconfirmed.
+
+## Who wrote the code still in the file
+
+I ran `git blame -w -C -C --ignore-rev 62628c0 --ignore-rev b2005d9`, which skips those two commits and also tracks lines that were moved or copied:
+
+| Author | Lines (of 238) |
+|---|---|
+| Troy Goode | 157 (~66%) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades (two name spellings) | 16 |
+| Raymond Feng | 9 |
+| max.laverse, LuisEGR | 6 each |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+The commits with the most surviving lines are all Troy's: `4f13c63` "wrapping up" from 2013 (58 lines), `8ec22a9` (34), `0a80d70` (19) and the first commit `bcd03d9` (14). Next come Douglas Wilson's `075c4b5` (17) and Alejandro's `e64e854` (12).
+
+## How the file developed
+
+1. **2013: Troy Goode creates it.** The first commit `bcd03d9` was on 2013-01-30. In October 2013 the "wrapping up" commit (`4f13c63`, +147/−102) and a JSLint pass (`555f180`) gave the file most of its lasting structure. Early outside contributions: Simon Mansfield's handling of a missing `Origin` header, Eric di Domenico's option to pass `origin` as a callback, and Mathias Buus making it work with plain Connect (not just Express).
+2. **2014–2015: community features, with Troy as maintainer.** Support for `Access-Control-Expose-Headers`, Express 4 support, using the `vary` module (`165f35e`, after Igor Soarez's earlier `Vary: Origin` work), Raymond Feng's `applyHeaders` speed-up, and max.laverse's `preflightContinue`. The biggest change of this period came in May 2015, when Alejandro Caravaca Puchades let `origin` be a RegExp or an array of them. Troy then switched the project to ESLint and cleaned up (`fcd2b56`, `8ec22a9`).
+3. **2016–2018: Douglas Christopher Wilson takes over maintenance.** Fixes for `Vary` on dynamic allowed headers (`075c4b5`) and for the `methods` option when using a delegate (`d603fdc`), plus lint upgrades. Smaller fixes came from Saad Tazi (frozen options), Tomek Kopczuk (`Vary` with regexps), Benjamin Eidelman (a Safari preflight workaround) and Tom Arad (`maxAge: 0`).
+4. **2021:** LuisEGR removed unused parameters.
+5. **2026:** only the two cosmetic commits described above.
+
+## Bottom line
+
+Troy Goode wrote the file and still owns about two-thirds of its logic. Douglas Christopher Wilson and Alejandro Caravaca Puchades are the other main contributors whose code is still there, and about 15 others each have a few lines left. Fiona Formatter and the `troy@laptop.example` account appear at the top of a plain blame but wrote none of the logic.
+
+If you want normal blame to give the right answer, list `62628c0` (and possibly `b2005d9`) in a `.git-blame-ignore-revs` file and set `git config blame.ignoreRevsFile .git-blame-ignore-revs`. If the two Troy emails are the same person, a `.mailmap` entry would merge them.
+META cost=0.1825678 ms=29498 turns=4

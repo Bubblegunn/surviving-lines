@@ -1,0 +1,66 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %ad %an <%ae> | %s' --date=short -- lib/index.js | head -80; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -20; wc -l lib/index.js
+ - Bash: git show --stat --format='%h %an <%ae>%ncommitter: %cn <%ce> %cd%n%B' b2005d9 62628c0; git show b2005d9 -- lib/index.js | head -80; echo ---NAIVE; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---IGNORE-REFORMAT; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; ls .git-blame-ignore-revs 2>/dev/null
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author-mail ' | sort | uniq -c | sort -rn; echo; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 lib/index.js | awk '{print $1}' | grep -c '^\*\|^0000'; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^summary ' | sort | uniq -c | sort -rn | head -25; git diff b2005d9 62628c0 -w --stat -- lib/index.js
+FINAL ANSWER:
+`lib/index.js` was largely written by Troy Goode, the project's creator, and his code is still most of the file. A plain `git blame` gives the wrong answer, though: it credits "Fiona Formatter" with 214 of the 238 lines. That's because of two recent commits that changed no logic, so I ran blame again with both of them ignored.
+
+## The two recent commits that skew blame
+
+- **`62628c0` (2026-04-12), Fiona Formatter:** "style: reformat js with 4-space indent and double quotes". It's purely cosmetic: it touched every line of `lib/index.js` (plus the test files) to change indentation and quote style.
+- **`b2005d9` (2026-04-10), "Troy Goode <troy@laptop.example>":** "lib: annotate handlers". It only adds `// checked` comments to the ends of 12 function signature lines. Note that the email is `troy@laptop.example`, not the `<email redacted>` address on every one of Troy's other commits since 2013. Git can't confirm it's the same person, so I've counted it separately and left it out of his totals.
+
+## How the file developed (66 commits, 2013–2026)
+
+1. **2013–2014, Troy Goode writes the core.** His "first commit" was on 2013-01-30. After that came case-insensitive header lookup, `origin: false`, and the big restructure "wrapping up" (Oct 2013). In 2014 he added Express 4 support and switched to the `vary` module (#30/#33). Contributors in this period included:
+   - Simon Mansfield: early origin checks and where the credentials header goes
+   - Eric di Domenico: `origin` as a callback
+   - Mathias Buus: support for apps that don't use Express
+   - Typicode: added PATCH to the default methods
+   - Shane Tomlinson: uppercase method names
+   - Igor Soarez: `Vary: Origin`
+2. **2015, community features.**
+   - Raymond Feng: made `applyHeaders` faster
+   - Alejandro Caravaca Puchades: RegExp and array `origin` matching (5 commits)
+   - max.laverse: `preflightContinue`
+   - DracoBlue: exposed headers on OPTIONS
+   - Troy's switch to ESLint and cleanup (#42)
+3. **2016–2018, Douglas Christopher Wilson maintains it** (the Express/jshttp maintainer). He handled `Vary` correctness, the missing-`methods` fix and the lint/eslint updates. Others in this period:
+   - Saad Tazi: fix for frozen options
+   - Tomek Kopczuk: `Vary` with regex origins
+   - Benjamin Eidelman: Safari pre-flight workaround
+   - Tom Arad: `maxAge: 0`
+4. **2021:** LuisEGR removed unused parameters.
+5. **2026:** the two cosmetic commits above.
+
+By number of commits that touched the file, Troy has 29, Wilson 4, Caravaca Puchades 5 (counting both his name spellings), Mansfield 3 and jordandenison 2. Everyone else has one each.
+
+## Whose code is in it today
+
+These counts come from `git blame -w -M -C --ignore-rev 62628c0 --ignore-rev b2005d9`:
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 157 | ~66% |
+| Douglas Christopher Wilson | 22 | ~9% |
+| Alejandro Caravaca Puchades | 16 | ~7% |
+| Raymond Feng | 9 | ~4% |
+| max.laverse | 6 | |
+| LuisEGR | 6 | |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each | |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each | |
+| Chima Alaebo, Tom Arad, Shane Tomlinson, Eran Tiktin, Hannah Wolfe | 1 each | |
+
+The commits with the most surviving lines are Troy's "wrapping up" (58 lines, 2013) and "#42: now passing all tests again" (34). After those come "support Access-Control-Expose-Headers" (19) and Wilson's dynamic-`allowedHeaders` `Vary` fix (17).
+
+A few contributors from the log have no lines left, because their code has since been rewritten: DracoBlue, Tomek Kopczuk, jordandenison and Typicode.
+
+One caveat: even with whitespace ignored, the reformat still changes 32 lines because of the switch to double quotes. `--ignore-rev` passes those lines back to earlier authors using git's heuristics, so a few line counts could be off by one or two. The overall picture is solid.
+
+To make GitHub and local blame skip the reformat automatically, you could add `62628c0` to a `.git-blame-ignore-revs` file (the repo doesn't have one yet) and run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+META cost=0.1744244 ms=33535 turns=4

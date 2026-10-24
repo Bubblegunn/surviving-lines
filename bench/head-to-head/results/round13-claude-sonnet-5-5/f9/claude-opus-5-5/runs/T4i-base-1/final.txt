@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4i-base-1/repo; ls -a; cat .git-blame-ignore-revs; find . -iname 'CODEOWNERS*' -not -path './node_modules/*' -not -path './.git/*'; cat .github/CODEOWNERS 2>/dev/null; echo ---; git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --format='%h %an <%ae> %ad %s' --date=short -- lib/index.js | head -30
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4i-base-1/repo; ls -R .github; git show --stat b2005d9 | head; git show b2005d9 -- lib/index.js | head -60; git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep -E '^(author|author-mail) ' | paste - - | sort | uniq -c | sort -rn | head -5; grep -A5 -iE 'maintainer|contributor|author' package.json
+FINAL ANSWER:
+Ask **Troy Goode** (<email redacted>) as the primary reviewer, and **Douglas Christopher Wilson** (<email redacted>) as the second.
+
+The repo has no CODEOWNERS file, so I went by authorship history. A plain `git blame` gives a misleading answer here: it credits 214 of the 238 lines to "Fiona Formatter". That's commit `62628c0`, which only reformatted the file. The repo already lists that commit in `.git-blame-ignore-revs`, so I re-ran blame skipping it and ignoring whitespace (`git blame -w --ignore-revs-file .git-blame-ignore-revs`):
+
+| Author | Lines | Notes |
+|---|---|---|
+| Troy Goode | 159 | The package author (per `package.json`). He wrote most of the core logic from 2014 to 2016. 12 of these lines are from `b2005d9` (2026), which only added `// checked` comments, so that commit isn't real logic work. |
+| Douglas Christopher Wilson | 22 | Made most of the substantive fixes in 2017: `Vary` header handling, the options-delegate fix, and the eslint upgrade. |
+| Alejandro Caravaca Puchades | 12 | Added regexp and array support for `options.origin` (2015). |
+| Raymond Feng, max.laverse, LuisEGR, others | ≤7 each | Small, focused changes. |
+
+Which reviewer fits best depends on what you're changing:
+- **Origin matching (`isOriginAllowed`, regexp or array origins):** Alejandro Caravaca Puchades wrote that code, so add him.
+- **`Vary` headers, preflight handling, or options delegates:** Douglas Wilson is the best fit.
+- **Anything else:** Troy Goode.
+
+Most of this history is several years old, so check that these people are still active on the project before you request their review.
+META cost=0.116088 ms=17103 turns=3

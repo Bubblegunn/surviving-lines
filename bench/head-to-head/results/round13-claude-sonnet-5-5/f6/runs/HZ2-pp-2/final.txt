@@ -1,0 +1,43 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-pp-2/runs/HZ2-pp-2/repo; ls; for f in time.go version7.go sql.go; do echo "== $f"; git shortlog -sne HEAD -- $f | head -8; echo "last:"; git log -3 --format='%an <%ae> %ad %s' --date=short -- $f; done; echo; ls CODEOWNERS .github/CODEOWNERS MAINTAINERS* 2>&1; echo; echo "== recent overall"; git log -15 --format='%an %ad %s' --date=short; echo; git shortlog -sne --since=2025-01-01 HEAD | head
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-pp-2/runs/HZ2-pp-2/repo; echo "== database_sql.go follow"; git log --follow --format='%an %ad %s' --date=short -- database_sql.go | head -12; echo; git shortlog -sne HEAD -- database_sql.go null.go; echo "== mailmap"; cat .mailmap; echo "== last commit per author"; git log --format='%aN|%aE|%ad' --date=short | awk -F'|' '!s[$1]++' | head -30; echo "== time.go/version7 blame lines"; for f in time.go version7.go database_sql.go; do echo $f; git blame -w -C -e --date=short $f | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/' | sort | uniq -c | sort -rn | head -5; done; grep -n -i -E 'review|maintain|owner' CONTRIBUTING.md README.md | head
+FINAL ANSWER:
+There's no CODEOWNERS or MAINTAINERS file, and CONTRIBUTING.md doesn't name reviewers. So this comes from git history only. I can't tell from the repo who is currently a maintainer with merge rights.
+
+**Who to ask**
+
+The only person who is both active and has touched all three areas is **Ravi Menon** (ravi.menon@harbor.example). They made the most recent commit (2026-06-17) and are the top committer since 2025. They've also edited each area:
+- `version7.go`: the v7 clock step-back docs (2026-05-05).
+- SQL: the `sql.go` → `database_sql.go` rename (2025-03).
+- The `.mailmap` and the repo housekeeping.
+
+They only contributed small edits to `version7.go` and the SQL code, so they are a reviewer, not the original author.
+
+Two other people are recently active:
+- **Alexander Rowe** (alex.rowe@mailbox.example, also "Alex Rowe" and "arowe" via `.mailmap`) last committed 2026-03-09. They added `UUID.UnixMillis` to `time.go` and the `IsV8` helper and its tests. That's a small share of `time.go` (11 lines).
+- **Mei Chen** last committed 2025-08-02. They added the `Time7` accessor in `version7.go` (11 lines).
+
+**Are the original authors still around?**
+
+| File | Original author | Last commit | Status |
+|---|---|---|---|
+| `time.go` | Paul Borman (about 111 of 150 lines) | `<email redacted>`: 2021-07-12. `bormanp`: 2023-10-26. | Not active in recent years. He was the original author and a Google maintainer, so he may still be reachable. |
+| `version7.go` | MikeWang (`<email redacted>`, about 95 of 115 lines) | 2024-07-02 | Not active for over two years. |
+| SQL (`database_sql.go`) | Justin Overfelt (about 26 lines), Andrew Stone, David E. Wheeler, Daniel Souza | All 2015–2017, apart from Steven Kaufman's single edit in 2021 | Long gone from the project. |
+
+**Recommendation**
+
+- Make Ravi Menon the default reviewer for all three areas.
+- For `time.go` and `version7.go`, add Alexander Rowe or Mei Chen as a second reviewer, since they are the active people who've worked there.
+- For the SQL code, nobody active has real depth. Review it carefully for `driver.Valuer` and `Scanner` behavior, and check it against `sql_test.go` and `null.go`.
+- Consider adding a `CODEOWNERS` file once you've confirmed who actually holds maintainer rights.
+
+Two things to check before you rely on this:
+- Commit authorship doesn't show who has GitHub permissions. Check the repo's collaborator settings.
+- The "Kofi Mensah" commit is dated 1970-01-01, which looks like a bad or rewritten timestamp. I'd treat it with suspicion when judging activity.
+META cost=0.0694219 ms=16941 turns=3

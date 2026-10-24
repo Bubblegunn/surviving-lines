@@ -1,0 +1,39 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== all-time commits per author =="; git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/index.js | sort | uniq -c | sort -rn; echo; echo "== last 1y =="; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo; echo "== last commit per author (repo-wide) =="; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++' | head -15; echo; echo "== blame lines =="; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; echo "== dependents =="; grep -rlE "lib/index|require\(['\"]\.\./?['\"]\)|require\(['\"]\.\./lib" --include=*.js . --exclude-dir=node_mod
+FINAL ANSWER:
+## Who should review `lib/index.js`
+
+**Ask Troy Goode first.** If you want a second reviewer, add Douglas Christopher Wilson or Alejandro Caravaca Puchades.
+
+**Ownership (all history, non-merge commits)**
+
+| Contributor | Commits | Notes |
+|---|---|---|
+| Troy Goode | 29 (28 under `<email redacted>`, 1 under `troy@laptop.example`) | Original author and primary owner, about 55% of commits. Active: last commit 2026-04-10, "lib: annotate handlers". |
+| Douglas Christopher Wilson | 4 | Last touched the file in 2017 (lint and build changes). |
+| Alejandro Caravaca Puchades | 5 (4 + 1 under `alex94puchades`) | Two identities for the same person. |
+| Simon Mansfield | 3 | |
+| 21 others | 1–2 each | Mostly small one-off fixes. |
+
+The file has about 26 distinct contributors. It is not a bus-factor-1 file in the strict sense, but real knowledge is concentrated in Troy.
+
+**Caveats**
+- **Blame is misleading.** `git blame` credits 214 of 238 lines to "Fiona Formatter", but that is only the 2026-04-12 reformat commit (`62628c0`). Run `git blame -w` or use `--ignore-rev 62628c0` to see who wrote the logic. Don't treat Fiona as the owner.
+- **Few recent maintainers.** Only 2 commits in the last year (Troy's annotation and the reformat). Apart from Troy, the other substantive contributors have not touched the file since 2017–2021.
+- **Importance is high.** `package.json` sets `"main": "./lib/index.js"`, so this file is the package's whole public entry point. Any change affects every consumer. My dependent-count grep failed (a zsh glob error), but the `main` field already settles the point.
+
+**Risk:** MEDIUM. Ownership is concentrated in one active person, with a long tail of occasional contributors and few recent maintainers.
+
+**Recommendations**
+1. Get Troy's review on any behavior change. He wrote the original logic and just annotated the handlers.
+2. For a second opinion on CORS or header semantics, look at who wrote the relevant lines with `git blame -w -L <range> lib/index.js`. Doug Wilson's earlier work is the most likely fit.
+3. Make sure the tests cover your change, since there are few active reviewers who know the file.
+
+I can run `git blame -w` on the specific section you're changing, or run `/project-pilot:impact` on the file, if you'd like either.
+META cost=0.06549830000000001 ms=15533 turns=4

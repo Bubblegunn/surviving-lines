@@ -1,0 +1,25 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29 --until=2026-04-13 --no-merges --format='%h|%an|%ae|%ad|%s' --date=short --shortstat; echo ---; git log -1 --format='%ad %s' --date=iso; git log --format='%an|%ae' | sort | uniq -c; cat .mailmap 2>/dev/null
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep -E '^(author |[0-9a-f]{40} )' ; done | awk '/^author /{sub(/^author /,"");print}' | sort | uniq -c | sort -rn | head -8
+echo ---window commits
+for f in $(git ls-files); do git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -E '^[0-9a-f]{40} ' | cut -c1-7; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe|62628c0'
+git show --stat --format=%h b2005d9 02afce3 5317ebe | cat
+FINAL ANSWER:
+Two people committed in the 14-day window (2026-03-29 to 2026-04-12), once you set aside the formatting commit and bots.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (+36 lines, `test/vary.js`)<br>`b2005d9` lib: annotate handlers (12 lines changed, `lib/index.js`) | 810 across the whole repo. 47 of these come from the two window commits: 36 from `02afce3` and 11 from `b2005d9`. |
+| **Vansh Sharma** | `5317ebe` docs: `app.del()` with `app.delete()` in the README example (#411) | 1 line, the README line that commit changed |
+
+- **Troy Goode:** Troy's commits appear under two emails, `<email redacted>` and `troy@laptop.example`. I counted them as one person. Both window commits used the laptop address.
+- **Excluded commit:** `62628c0` by Fiona Formatter is the 4-space/double-quote reformat. I left it out, and the line counts ignore it. Without that, it would have taken over most of the surviving lines.
+- **Bots:** There were no bot commits in the window. Dependabot appears elsewhere in the history.
+
+The 810 and 47 figures are my own `git blame` counts, run with whitespace and moved-line detection on. A few lines still blame to the formatting commit because blame couldn't trace them back further. That could shift Troy's totals slightly.
+META cost=0.0575779 ms=14809 turns=3

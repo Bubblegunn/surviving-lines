@@ -1,0 +1,22 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29T00:00:00 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=iso; echo; git log -1 --format='%ad' --date=iso
+ - Bash: git log --format='%an|%ae' | sort | uniq -c | sort -rn | head -20; echo; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- $f 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- $f 2>/dev/null | grep -a '^author-mail ' ; done | grep -E 'troy|vansh' | sort | uniq -c
+FINAL ANSWER:
+Two people committed in the 14 days up to 2026-04-12 (window starts 2026-03-29), after setting aside the formatting commit and bots.
+
+| Person | Commits in window | Lines still in the code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage; `b2005d9` lib: annotate handlers | 746 |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) | 1 |
+
+- **Troy Goode:** Troy appears under two emails, `troy@laptop.example` and `<email redacted>`. I counted them as one person. The two window commits use the laptop address. The 746 lines are 48 under the laptop address and 698 under the gmail address.
+- **Vansh Sharma:** the one remaining line is the README fix.
+- **Excluded:** `62628c0`, Fiona Formatter's reformat commit, which only changed indentation and quotes. Dependabot's most recent commit is `ee714bd`, which falls before the window.
+- **Line counts:** I used `git blame` with `62628c0` ignored, so reformatted lines still credit their original author. Lines count for a person if they wrote them at any time, not only in the window.
+META cost=0.0474084 ms=14571 turns=4

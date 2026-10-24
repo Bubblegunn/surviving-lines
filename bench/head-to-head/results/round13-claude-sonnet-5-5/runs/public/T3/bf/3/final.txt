@@ -1,0 +1,24 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all; ls -a | grep -i mailmap; git config mailmap.file
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -Ei "troy|alex94|Caravaca"
+FINAL ANSWER:
+Two people showed up under more than one identity. I added a `.mailmap` file at the repo root that merges them, and `git shortlog` now counts each person once.
+
+- **Troy Goode:** the `troy@laptop.example` address is now merged into `<email redacted>`. That takes Troy from 120 commits to 122.
+- **Alejandro Caravaca Puchades:** the "alex94puchades" name is now merged into the full name. That takes them from 4 commits to 5.
+
+I didn't commit the file, and the git history is unchanged. Git tools that read `.mailmap` will show the merged counts, including `git shortlog` and `git log --use-mailmap`. GitHub's contributor graph ignores it.
+
+**Top author:** Douglas Christopher Wilson is still first with 143 commits. Troy Goode is second with 122, so the merge didn't change who is on top.
+
+"Fiona Formatter" looks like a bot-style identity (`fiona@formatter.example`). It has only one commit, so I left it alone.
+META cost=0.0480346 ms=12362 turns=3

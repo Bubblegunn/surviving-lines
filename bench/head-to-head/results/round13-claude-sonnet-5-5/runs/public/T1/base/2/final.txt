@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --oneline | wc -l && git show --stat --format='%an %s' HEAD | tail -5 && echo --- naive && git ls-files -z | xargs -0 -n1 git blame -w -M -C --line-porcelain -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -15 && echo --- ignoring reformat && git ls-files -z | xargs -0 -n1 git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -15
+ - Bash: git ls-files -z | xargs -0 -n1 git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- 2>/dev/null | grep '^author ' | wc -l; git ls-files | wc -l
+FINAL ANSWER:
+By surviving lines, **Troy Goode** owns the most code in the repo, and **Douglas Christopher Wilson** is second.
+
+I ran `git blame` on all 18 tracked files, which covers 1,995 lines. I used `-w -M -C` so whitespace changes and moved or copied lines don't take ownership from the original author.
+
+The latest commit, `62628c0` ("reformat js with 4-space indent and double quotes"), rewrote about 1,000 lines. Blamed naively, it gives its author, Fiona Formatter, 291 lines, which is third place. That is only a reformat, not authorship. The table below skips that commit with `--ignore-rev 62628c0`, so each line goes to whoever last changed it in substance.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1% |
+| Everyone else | ~170 | ~8% |
+
+"Everyone else" includes Ollie Buck, Eric di Domenico, Alberto Leal, max.laverse, dependabot[bot] and Saad Tazi.
+
+- **Two authors hold about 73% of the code.** No one else has more than about 5%.
+- **Test files are most of the line count.** `test/test.js` alone is about 1,370 lines of the reformat diff. The split would look different if you counted only `lib/`.
+- **The `-w` flag could have pushed lines to the wrong person.** I skipped only the reformat commit, so the earlier `b2005d9` ("annotate handlers") still counts. Any other formatting-only commit would still count for its author.
+- **Blame cannot tell a rewrite from an original.** A line goes to whoever last touched it, not to whoever first wrote the idea. If you want ownership by file or directory, I can break it down that way.
+META cost=0.0467146 ms=16420 turns=3

@@ -1,0 +1,33 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git show --stat --format='%h %an %ad %s' 62628c0 | tail -5; git log --oneline | wc -l; git ls-files | wc -l; git rev-list --max-parents=0 HEAD | xargs git show -s --format='root %h %ad'
+ - Bash: echo "ignoring reformat + whitespace/moves:" && for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+echo; echo "naive blame:"; for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -5
+echo; git log -1 --format='%an %ad' 62628c0
+FINAL ANSWER:
+**Troy Goode and Douglas Christopher Wilson own most of what's still here.** I used `git blame` on the 18 tracked files at HEAD, so this counts surviving lines, not commits.
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+Eric di Domenico (16), Alberto Leal (15), max.laverse (10), dependabot[bot] (10) and Saad Tazi (10) come next, with a longer tail below them.
+
+- **The reformat commit would have skewed the result.** Commit `62628c0` ("reformat js with 4-space indent and double quotes", by Fiona Formatter) rewrote about 1,016 lines in `lib/` and `test/`. Plain `git blame` credits all of them to Fiona, which makes them the top owner. That is misleading, because they changed whitespace and quotes, not logic. The table above uses `-w -M -C --ignore-rev 62628c0` to skip whitespace changes, follow moved lines, and look through that commit to the original author. It's worth adding that commit to a `.git-blame-ignore-revs` file.
+- **The history goes back to 2013.** The root commit is from January 2013, so the long tail of authors is real and not a sign of an imported repo.
+- **I haven't checked who is still active.** The table shows who wrote the lines, not who still maintains them. I can check each author's recent commits to flag orphaned code. I could also generate a `CODEOWNERS` file with the busfactor script, which weights by recency instead of surviving lines. Say if you want either.
+META cost=0.0630816 ms=18468 turns=5

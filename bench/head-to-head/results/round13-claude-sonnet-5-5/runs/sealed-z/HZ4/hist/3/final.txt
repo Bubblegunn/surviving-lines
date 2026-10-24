@@ -1,0 +1,40 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 10}
+ - Bash: ls lib/grape_entity lib/grape_entity/exposure; grep -rli delegator lib | head
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-3/repo/lib/grape_entity/exposure"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-3/repo/lib/grape_entity/delegators"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-3/repo", "top": 10}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-3/repo"}
+FINAL ANSWER:
+**Reviewers**
+
+- **`lib/grape_entity/exposure`:** Marco Silva is the best choice. They are the only active person who owns a meaningful share of the directory. They own 100% of `grouped_exposure.rb` (143 lines, 19% of the directory) and last committed on 2026-09-15. Lena Brandt (last commit 2026-07-14) is a reasonable second reviewer, and Anna Kowalczyk (2026-08-10) is a third.
+- **Delegator code (`lib/grape_entity/delegators/`):** Lena Brandt is the only active contributor there. They own about 11% of the surviving lines and have touched three of the four files, so there's no strong owner to route to. Pair them with Marco Silva for anything structural. I didn't blame-check `delegator.rb` or `exposure/delegator_exposure.rb` separately. `delegator_exposure.rb` shows Vladimir Kochnev as main owner (73%), with Lena Brandt and James McCarthy at 2 lines each.
+
+**Who has effectively left** (no commits since 2026-04-24, which is six months before today)
+
+- **Vladimir Kochnev:** Last commit 2015-09-18. They are the main owner of 8 of 10 exposure files, at 53% of the directory's lines. They are also the main owner of all 4 delegator files, at 67% of those lines.
+- **James McCarthy:** Last commit 2017-04. They are a secondary owner across both areas.
+- **Alexander Yunin:** Last commit 2016-07. They own 78% of `nesting_exposure/output_builder.rb`.
+- **Dmitry Tsepelev:** Last commit 2018-01.
+- **Others:** LeFnord, peter scholz, Paul Padier and several one-time contributors.
+
+9 of 10 exposure files and all 4 delegator files are orphaned, meaning inactive authors own more than 50% of their lines. `grouped_exposure.rb` is the only exposure file that isn't.
+
+**Does the most commits mean the most code?**
+
+No. By commit count the top contributor is dblock, with 38 non-merge commits. Their other name variants ("dB", "Daniel Doubrovkine (dB.)…") are counted separately, so their real total is higher. dblock last committed in 2016-11. By surviving lines, the top owner is Vladimir Kochnev, with about 17% of the repo and 21 files as main owner. They have only 11 commits.
+
+dblock owns about 8.5% of the lines, mostly in docs such as `README.md` and `CONTRIBUTING.md`. The most commits went to a docs and maintenance contributor, and the most code belongs to the original implementer of the exposure and delegator architecture. Both are inactive.
+
+**Caveats**
+
+- Commit counts exclude merge commits.
+- The identities aren't fully merged. "Andrei Subbota" and "Andrey Subbota" (9 commits each) are probably the same person, and the dblock variants are one person too. A `.mailmap` fix would change the rankings slightly but not these conclusions.
+- Marc Rohloff and Andrei Subbota are active (last commit 2026-06-02) and own sizable parts of the repo overall, but they own none of the exposure or delegator code. They are fallback reviewers for general questions only.
+META cost=0.0998598 ms=17891 turns=7

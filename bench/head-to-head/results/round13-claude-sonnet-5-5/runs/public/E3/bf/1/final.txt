@@ -1,0 +1,33 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-bf-1/repo; ls .git-blame-ignore-revs 2>&1 | head -1; git ls-files | awk -F. '{print (NF>1?$NF:"(none)")}' | sort | uniq -c | sort -rn | head -20
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-bf-1/repo
+for ign in "" "--ignore-rev 62628c0"; do echo "== ${ign:-plain blame}"
+git ls-files | while read f; do e=${f##*.}; [ "$e" = "$f" ] && e="(none)"; git blame -w --line-porcelain $ign -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //;s/^/$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";if(!(e in s)){s[e]=1;print e, c, $0}}'
+done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-bf-1/repo
+git log -1 --format='%an' 62628c0; git blame -w --ignore-rev 62628c0 -- $(git ls-files '*.js' | head -1) 2>&1 | head -3
+for ign in "--ignore-rev 62628c0"; do
+git ls-files '*.js' '*.md' | while read f; do e=${f##*.}; git blame -w --line-porcelain $ign -- "$f" | grep '^author ' | sed "s/^author //;s/^/$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | head -8; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-bf-1/repo
+git ls-files | while read f; do e=${f##*.}; [ "$e" = "$f" ] && e="(none)"; git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author ' | sed "s/^author //;s/^/$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";n[e]++; if(n[e]<=2)print e, c, $0}'
+FINAL ANSWER:
+Surviving lines by extension, from `git blame -w`, with the top owner first and the runner-up second:
+
+| Extension | Top owner | Lines | Runner-up |
+|---|---|---|---|
+| `.js` (7 files) | Troy Goode | 612 | Douglas Christopher Wilson (420) |
+| `.md` (2) | Troy Goode | 116 | Jon Church (72) |
+| `.yml` (6) | Douglas Christopher Wilson | 117 | Íñigo Marquínez Prado (95) |
+| `.json` (1) | Douglas Christopher Wilson | 20 | Troy Goode (12) |
+| `.gitignore` (1) | Douglas Christopher Wilson | 4 | Troy Goode (1) |
+| no extension (1) | Douglas Christopher Wilson | 17 | Troy Goode (5) |
+
+I excluded the latest commit (`62628c0`, Fiona Formatter's reindent and quote change) with `--ignore-rev`. Otherwise it takes credit for lines it only reformatted. This mostly affects `.js`. In plain blame Troy Goode's `.js` count drops to 517, and the rest of the table looks the same. Troy Goode still leads either way.
+
+Line counts are small, so a handful of lines can flip a ranking. The `.json`, `.gitignore` and extensionless rows are single files.
+META cost=0.08593390000000001 ms=21612 turns=5

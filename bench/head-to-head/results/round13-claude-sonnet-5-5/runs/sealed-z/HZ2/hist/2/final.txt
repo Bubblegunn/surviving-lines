@@ -1,0 +1,47 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor,mcp__git-historian__blame_summary", "max_results": 5}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-2/repo", "file": "time.go"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-2/repo", "file": "version7.go"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-2/repo", "file": "sql.go"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-2/repo", "inactive_after": "1 year ago"}
+ - Bash: ls; git log --follow --format='%h %ad %an %s' --date=short -- time.go | head -20; echo ---; git log --format='%h %ad %an %s' --date=short -- sql.go | head; echo ---; git log --format='%h %ad %an %s' --date=short -3 --author='Sam Okafor'; git log --format='%an|%ad' --date=short -1 --author='Ravi Menon'
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-2/repo", "file": "database_sql.go"}
+ - Bash: git show --stat --format='%h %s' c50c42f | head; git log --format='%ad %an' --date=short -1 -- database_sql.go; git log --since=2025-10-24 --format='%an' | sort | uniq -c; git log --format='%h %ad %an %s' --date=short -- version7.go | head -12
+ - Bash: git log --since=2025-10-24 --format='%h %ad %an <%ae> %s' --date=short; git log --format='%an <%ae>' | sort -u | grep -iE 'rowe|mensah|menon|okafor|chen|wang'; cat .mailmap 2>/dev/null
+FINAL ANSWER:
+I've finished the history check, and here is what it shows.
+
+## Who to ask
+
+**Ravi Menon** is the best first reviewer. They're the only clearly active maintainer, with commits on 2026-05-05 and 2026-06-17.
+- They wrote the latest `version7.go` change (the v7 clock step-back docs).
+- They renamed `sql.go` to `database_sql.go`.
+- They own the most recent work in the repo.
+
+**Alexander Rowe** is a possible second reviewer.
+- They added `UnixMillis` to `time.go` (2025-02) and committed `Test IsV8` on 2026-03-09.
+- `.mailmap` lists "Alex Rowe" (`alex@rowe.example`) and "Alexander Rowe" (`alex.rowe@mailbox.example`) as separate identities. The tool therefore reports "Alex Rowe" as inactive since 2025-06-30. I haven't confirmed they're the same person, so check before relying on this.
+
+**Kofi Mensah** also has a recent commit (`d97a7fa`), but its date is 1970-01-01, which is clearly wrong. Treat their activity as unknown and ask them directly.
+
+## Did the original authors stick around?
+
+For these three areas, mostly not.
+
+| Area | Who wrote it | Status |
+|---|---|---|
+| `time.go` | Blame says Sam Okafor, 100%. That's misleading: their only change is `c50c42f` "Normalize line endings" (2025-04-22), which rewrote every line. The real authors are **Paul Borman** (2011–2016, last commit 2021), **MikeWang** (v6/v7 in 2023), **Youngjae Lee**, **Nicu Micle** and **Alexander Rowe**. | Okafor's last commit was 2025-05-06. Borman, Wang, Lee and Micle are all inactive. |
+| `version7.go` | MikeWang wrote 86% of it. Mei Chen added `Time7` (2025-08) and Ravi Menon made the 2026 doc change. | MikeWang's last commit was 2024-07. Mei Chen's last commit was 2025-08-02, so they're inactive on the 1-year cutoff. Only Ravi Menon is active. |
+| SQL (`database_sql.go`) | Justin Overfelt (2015–16), with Andrew Stone, Daniel Souza, David E. Wheeler, Paul Borman and Steven Kaufman. | All inactive. Steven Kaufman's last change was 2021. Ravi Menon only renamed the file. |
+
+## Risk
+- With a 1-year cutoff, 37 of the 40 files are orphaned.
+- Ravi Menon is the only active author I can confirm, and they're the main owner of 3 files. Everything else rests on them or on you.
+- The blame for `time.go` hides its real history. Use `git log --follow -- time.go` and look at Borman's and MikeWang's commits for the reasoning behind the code.
+- The `sql_test.go` coverage is mostly Overfelt's old code.
+META cost=0.1106613 ms=27437 turns=10

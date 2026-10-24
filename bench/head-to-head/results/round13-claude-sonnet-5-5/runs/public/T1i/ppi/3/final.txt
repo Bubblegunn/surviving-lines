@@ -1,0 +1,59 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cat .git-blame-ignore-revs; git log --oneline | wc -l; git ls-files | grep -E '\.(js|ts|jsx|tsx)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts)$' | grep -v node_modules | awk -F/ '{print $1}' | sort | uniq -c
+ - Bash: git ls-files | grep -E '\.(js|ts)$'; echo; for f in $(git ls-files | grep -E '\.js$'); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain "$f" | grep '^author ' | sed "s|^author |$f\t|"; done | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: echo "== lib/index.js only (production code) vs all; last commit per author =="; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | grep -E 'Troy Goode|Douglas|Puchades|Raymond|LuisEGR|max.laverse'; echo; git log -1 --format='repo last commit: %ad %an' --date=short; git log -3 --format='%h %an %ad %s' --date=short; git shortlog -sn --no-merges HEAD | head -5
+FINAL ANSWER:
+## Bus Factor Analysis (surviving code)
+Method: `git blame -w -M -C` on every current source file. I ignored the reformat commit `62628c0` through `.git-blame-ignore-revs`, so Fiona Formatter doesn't own everything. Period: all history. Generated 2026-10-24.
+
+### Project-level bus factor: 1
+
+Troy Goode authored 56% of the surviving JS lines (676 of 1,202). If Troy left, more than half the code would have no one who wrote it.
+
+| Author | Lines still here | Share | Last commit |
+|---|---|---|---|
+| **Troy Goode** | 676 | 56% | 2026-04-10 (active) |
+| **Douglas Christopher Wilson** | 394 | 33% | 2021-09-07 (inactive about 5 years) |
+| Alejandro Caravaca Puchades (plus `alex94puchades`, probably the same person) | 30 to 34 | about 3% | 2015 |
+| About 18 other people | 1 to 14 lines each | about 8% combined | mostly 2015 to 2021 |
+
+### Ownership by area
+
+| Area | Main owner | Share | Bus factor |
+|---|---|---|---|
+| `lib/index.js`, the only production file | Troy Goode | 67% (159 of 238 lines) | 1 |
+| `test/test.js` | Douglas 339, Troy 317 | 46% / 43% | 2 |
+| `test/vary.js` | Troy | 100% | 1 |
+| `test/example-app.js`, `test/issue-2.js`, `test/error-response.js` | Troy | 70 to 83%, with Douglas holding the rest | 1 to 2 |
+| `test/support/env.js` | Douglas | 100% (2 lines) | 1 |
+
+### Critical risk
+
+`lib/index.js` is the whole library, so every other file depends on it.
+- Troy owns two-thirds of it and is the only active owner.
+- Douglas owns 22 lines (9%) and hasn't committed in five years.
+- Everyone else owns 12 lines or fewer, and nearly all of them left years ago.
+
+So the effective bus factor for the production code is 1. Troy is the one person who could still explain it.
+
+### Commit counts give a different answer
+
+`git shortlog` has Douglas first (143 commits to Troy's 95). Most of Douglas's work was earlier, and Troy's later changes replaced or sat on top of it. That makes Douglas look like the owner by history, but Troy owns more of the code that exists now.
+
+### Caveats
+- The test files are about 80% of the measured lines, so the 56% overall figure leans on tests. The production-only figure is Troy at 67%.
+- Troy's share rose after "lib: annotate handlers" (2026-04-10). If that commit was a mechanical annotation pass, it may overstate how much of the logic Troy understands.
+- Names aren't merged beyond the one alias I flagged. There's no `.mailmap`, so some small contributors may be double-counted.
+- The repo has only 7 JS files, so the percentages are coarse.
+
+### Recommendations
+1. **Immediate:** Have a second person review Troy's changes to `lib/index.js`. Right now nobody active but Troy has seen it in depth.
+2. **Short-term:** Walk someone else through the handler and route logic in `lib/index.js`, and have them take over `test/vary.js`.
+3. **Ongoing:** Add a `.mailmap`, and write down design decisions, since the person who held the context for the older code (Douglas) is no longer active.
+META cost=0.0796649 ms=25542 turns=6

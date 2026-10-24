@@ -1,0 +1,86 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files && echo --- && git shortlog -sne --all --no-merges && echo --- && git log --pretty='%h %ad %an | %s' --date=short | head -40 && git log --oneline | wc -l
+ - Bash: for mode in plain moves ignore; do echo "=== $mode"; for f in $(git ls-files | grep -vE '^(LICENSE|\.git)'); do case $mode in plain) opt="";; moves) opt="-w -M -C -C";; ignore) opt="-w -M -C -C --ignore-rev 1f8eb6c --ignore-rev 4c841d5 --ignore-rev 785def0";; esac; git blame --line-porcelain $opt -- $f 2>/dev/null | grep '^author-mail ' | sed "s|^|$f |"; done | awk '{m=$3; if(m~/mq32|masterq32|ib-queissner|random-projects/) m="FELIX"; print $1, m}' > /tmp/bl_$mode.txt; awk '{c[$2]++; t++} END{for(k in c) printf "%6d %5.1f%% %s\n", c[k], 100*c[k]/t, k; print t" total"}' /tmp/bl_$mode.txt | sort -rn | head -12; done
+ - Bash: git blame -w -M -C -C --line-porcelain -- src/args.zig 2>&1 | head -3; git show --stat 785def0 4c841d5 4ae7ba4 5f6dc38 | grep -E '\||^commit'
+ - Bash: bash -c '
+for mode in moves ignore; do echo "=== $mode"; for f in $(git ls-files | grep -vE "^(LICENSE|\.git)"); do case $mode in moves) opt="-w -M -C -C";; ignore) opt="-w -M -C -C --ignore-rev 1f8eb6c --ignore-rev 4c841d5";; esac; git blame --line-porcelain $opt -- $f | grep "^author-mail " | sed "s|^|$f |"; done | awk "{m=\$3; if(m~/mq32|masterq32|ib-queissner|random-projects/) m=\"FELIX\"; print \$1, m}" > /tmp/bl_$mode.txt; awk "{c[\$2]++; t++} END{for(k in c) printf \"%6d %5.1f%% %s\n\", c[k], 100*c[k]/t, k; print t\" total\"}" /tmp/bl_$mode.txt | sort -rn | head -8; done
+echo; echo "=== per file (ignore mode): file total felix% top-other"
+awk "{t[\$1]++; if(\$2==\"FELIX\") f[\$1]++; c
+ - Bash: grep '^src/help' /tmp/bl_ignore.txt | sort | uniq -c; git blame -w -C -C -C --ignore-rev 1f8eb6c --ignore-rev 4c841d5 --line-porcelain src/help.zig | grep '^author-mail' | sort | uniq -c; git show 5f6dc38 --stat --format='%an %s%n%b'; ls tools 2>&1
+ - Bash: for filt in 'width_table' 'width_table|README|build.zig.zon|\.md$'; do echo "== excl $filt"; grep -vE "$filt" /tmp/bl_ignore.txt | awk '{c[$2]++; t++} END{for(k in c) printf "%5d %5.1f%% %s\n", c[k], 100*c[k]/t, k; print t" total"}' | sort -rn | head -5; done; echo; echo "src/*.zig hand-written:"; grep -E '^src/' /tmp/bl_ignore.txt | grep -v width_table | awk '{c[$2]++; t++} END{for(k in c) printf "%5d %5.1f%% %s\n", c[k], 100*c[k]/t, k; print t" total"}' | sort -rn | head -4; for a in mq32.de masterq32 random-projects ib-queissner jnagpaul rischmann; do echo "$a last: $(git log -1 --format=%ad --date=short --author=$a)"; done
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis: zig-args
+Period: all history | Generated: 2026-10-24 | Based on `git blame` of the current tree
+
+### Project-level bus factor: 1 (it's borderline)
+
+Felix Queißner (xq) wrote **51% of the hand-written library code in `src/`**. If Felix stopped answering questions, about half of what ships today would have nobody left who wrote it.
+
+Counted across every hand-written file, including the README, build files and demos, Felix's share is **49.6%**. That's just under the 50% line, so by that strict count the bus factor is 2 (Felix plus jnagpaul). Either way, one person holds about half the code, and nobody else comes close.
+
+### How I counted
+
+Commit counts don't show who wrote today's code, so I used line-level blame with three corrections:
+- **Felix's five email addresses were merged** into one person. Commit counts alone split them up and hide how much is theirs: 46 of 132 commits.
+- **Moves and copies were tracked** (`-M -C -C`). Otherwise Tobias Ek would get credit for `help.zig`, which they only cut out of `args.zig` (5f6dc38). The same applies to the `src/` move (785def0).
+- **The mechanical rename was ignored** (1f8eb6c / 4c841d5, "Rename allocator to gpa…").
+- **`src/width_table.zig` was excluded.** It's 484 generated lines ("DO NOT EDIT") and accounts for almost all of Wen Li's 23% share in a plain blame.
+
+Even plain blame puts Felix first at 38%. The corrections just remove the noise.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Lines blamed (all tracked files) | 2,225 |
+| Hand-written lines (excluding generated table) | 1,741 |
+| Felix's lines | 863 (49.6% of hand-written, 51.1% of `src/`) |
+| Next largest owner | jnagpaul: 188 lines (10.8%) |
+| Lines left with no author if Felix leaves | ~863 |
+
+### Knowledge distribution by file
+
+| File | Lines | Felix % | Who else | Risk |
+|---|---|---|---|---|
+| `src/args.zig` | 1,049 | **69%** | many small contributors | 🔴 core parser, mostly Felix |
+| `README.md` | 90 | 78% | — | 🟡 |
+| `demo.zig` | 63 | 54% | — | 🟢 low importance |
+| `demo_verb.zig` | 83 | 31% | — | 🟢 |
+| `src/help.zig` | 337 | 0.3% | jnagpaul 166, Dhole 75, Bob Farrell 42 | 🟡 owned by people who've gone quiet |
+| `build.zig` / `.zon` | 95 | 11–20% | spread out | 🟢 |
+| `src/width.zig` | 24 | 0% | Wen Li (new, Oct 2026) | 🟢 small |
+| `src/width_table.zig` | 484 | — | generated | ⚠️ the generator isn't in the repo |
+
+```
+src/
+├── args.zig        [███████░░░] 🔴 Felix 69%: the parser itself
+├── help.zig        [██████████] 🟡 jnagpaul/Dhole/Bob Farrell, none active recently
+├── width.zig       [░░░░░░░░░░] 🟢 Wen Li, new
+└── width_table.zig [  generated ] ⚠️ tools/gen_width.zig is missing
+```
+
+### Who's still around
+
+- **Felix**: last commit 2026-04-16, about 6 months ago. They're not "active" by the 90-day test; it looks like they show up mainly for Zig version bumps.
+- **jnagpaul** (second-largest owner, author of most of `help.zig`): last commit in 2023.
+- **Vincent Rischmann** (7%): last commit 2025-03.
+- **Who's actively committing now:** Wen Li, Tobias Ek, Dmitri Volkov and Krzysztof Wolicki. Between them they wrote very little of the existing code. Their recent work is moving, renaming and adding new pieces.
+
+So the real picture is worse than "bus factor 1." The main author is only occasionally around, the second author is gone, and the active team has written only the edges.
+
+### Recommendations
+
+1. **Right away:** have someone on the active team (Tobias already knows `help.zig` from extracting it) take ownership of `src/args.zig`. A good start is to collect questions about the parsing internals and put them to Felix while Felix still responds.
+2. **Short term:** commit `tools/gen_width.zig`, or document how `width_table.zig` is regenerated. Right now nobody can rebuild that file.
+3. **Ongoing:** document `help.zig`'s design. Its authors (jnagpaul, Dhole, Bob Farrell) have all gone quiet, so it's already orphaned in practice.
+
+A few more things:
+- The repo is small (13 files), so I ran the analysis directly rather than through the contributor-analyzer subagent.
+- The latest commits are dated after today (bd73202 says 2026-11-04, 4ae7ba4 says 2026-10-27). That suggests a contributor's clock is wrong. It doesn't change the blame figures.
+META cost=0.27609720000000004 ms=64293 turns=9

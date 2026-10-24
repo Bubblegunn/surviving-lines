@@ -1,0 +1,85 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: echo "commits: $(git rev-list --all --no-merges --count)" && echo "contributors:" && git shortlog -sn --all --no-merges | head -30 && echo "--- files:" && git ls-files | grep -vE '(^|/)(node_modules|vendor|dist|build)/' | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' | wc -l && git ls-files | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' | grep -vE '(^|/)(node_modules|vendor|dist|build)/' | head -100
+ - Bash: git ls-files | grep -vE '^(node_modules|vendor)/' | head -80 && echo "---" && for f in $(git ls-files | grep -E '\.(js|json|md|ts)$' | grep -vE '^(node_modules|vendor|dist|build)/'); do echo "== $f"; git log --all --no-merges --format='%an' -- "$f" | sort | uniq -c | sort -rn | head -4; done
+ - Bash: echo "== blame lib/index.js (surviving lines)" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo "== blame test/test.js" && git blame --line-porcelain test/test.js | grep '^author ' | sort | uniq -c | sort -rn && echo "== blame test/vary.js" && git blame --line-porcelain test/vary.js | grep '^author ' | sort | uniq -c | sort -rn && echo "== blame test/error-response.js" && git blame --line-porcelain test/error-response.js | grep '^author ' | sort | uniq -c | sort -rn && echo "== blame test/example-app.js" && git blame --line-porcelain test/example-app.js | grep '^author ' | sort | uniq -c | sort -rn && echo "== blame test/issue-2.js" && git blam
+ - Bash: git log -8 --format='%h %an <%ae> %ad %s' --date=short && echo "--- Fiona commits" && git log --all --author='Fiona' --format='%h %an <%ae> %ad %s' --date=short | head && echo "--- mailmap" && ls -la .mailmap 2>/dev/null; echo "--- commits touching lib/index.js last 12 months" && git log --all --no-merges --since='1 year ago' --format='%an' -- lib/index.js | sort | uniq -c && echo "--- commits per file in last 1y" && for f in lib/index.js test/test.js test/vary.js test/error-response.js test/example-app.js test/issue-2.js test/support/env.js package.json .github/workflows/ci.yml README.md; do echo "$f: $(git log --all --no-merges --since='1 year ago' --format=%an -- $f | sort | uniq -c | sor
+ - Bash: for f in lib/index.js test/test.js test/error-response.js test/example-app.js test/vary.js test/issue-2.js package.json; do echo "== $f (ignoring reformat 62628c0)"; git blame --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -6; done && echo "== dependents of lib/index.js" && grep -rn "require(" test/*.js | grep -E "\.\./|lib" | head && echo "== package main/files" && grep -nE '"(main|files|engines)"' -A2 package.json && echo "== CI/workflow commit history" && git log --all --format='%an %ad' --date=short -- .github/workflows/ci.yml | head -5
+ - Bash: for f in lib/index.js test/test.js test/error-response.js test/example-app.js test/vary.js test/issue-2.js; do t=$(git blame --ignore-rev 62628c0 --line-porcelain -- $f | grep -c '^author '); echo "$f total=$t"; done && echo "== Troy last-touch file list" && git log --all --no-merges --author='Troy Goode' --format='%ad' --date=short | sort | tail -1 && git log --all --no-merges --author='Troy Goode' --format='%ad' --date=short | sort | head -1 && echo "== Douglas last commit" && git log --all --no-merges --author='Douglas Christopher Wilson' --format='%ad %s' --date=short | head -2 && echo "== Douglas commits per year" && git log --all --no-merges --author='Douglas Christopher Wilson' --form
+FINAL ANSWER:
+## Bus Factor Analysis
+
+Period: all history (no `--period` given) | Generated: 2026-10-24
+
+I ran this directly with git rather than through the contributor-analyzer agent, since the repo is small. The reformat commit `62628c0` (Fiona Formatter, 2026-04-12, rewrote quotes and indentation in every JS file) distorts plain `git blame`, so the line counts below use `git blame --ignore-rev 62628c0`. Lines that were reformatted still count toward Fiona because their text changed, so the Troy and Douglas figures are lower bounds.
+
+---
+
+### Project-Level Bus Factor: 2 nominal, 1 effective
+
+> If Troy Goode left, the library entry point would have no recently active maintainer who knows it. If Douglas Christopher Wilson also left, about 60% of the surviving lines in `lib/index.js` would have no one left to ask. Douglas has not committed since 2021, so for practical purposes the bus factor is 1.
+
+### Overview
+
+The project is an Express middleware package. It has 7 JavaScript files: one shipped file (`lib/index.js`, the `main` and only entry in `files`) and six test files.
+
+| Metric | Value |
+|--------|-------|
+| JS files analyzed | 7 |
+| Files where one active person owns >50% of surviving lines | 4 of 7 (Troy Goode) |
+| Files where the >50% owners are all inactive (no commits in 12 months) | 2 of 7 (`test/test.js`, `lib/index.js`) |
+| Files with a single historical author | `test/vary.js` (100% Troy) |
+| Repo-wide last commit | 2026-04-12 (about 6 months ago) |
+
+Every maintainer is past the skill's 90-day "active" threshold. The whole project has been quiet since April 2026.
+
+### Critical Risk Areas
+
+| File | Sole / Main Owner | Owner Active? | Dependents | Risk |
+|------|-------------------|---------------|------------|------|
+| `lib/index.js` | Troy Goode (46%), Douglas Wilson (15%) | Troy: last commit 2026-04-10 (dormant 2019–2026). Douglas: last commit 2021-09-07 | Published entry point; required by 3 test files; external npm consumers unknown | **CRITICAL** |
+| `test/test.js` | Douglas Wilson (37%), Troy Goode (29%), Fiona (24%, reformat) | Douglas inactive since 2021; Troy as above | Test suite for the whole library | **HIGH** |
+| `test/vary.js` | Troy Goode (100%) | Troy as above | Test for `Vary` header behavior | **HIGH** |
+| `test/error-response.js`, `test/example-app.js`, `test/issue-2.js` | Troy Goode (81–85%) | Troy as above | Regression and example tests | **MEDIUM** |
+| `package.json` | Douglas (49%), Troy (29%), others | Douglas inactive | Release metadata | MEDIUM |
+| `.github/workflows/ci.yml` | Douglas (49%), Ignacio Mangas (25%), Ulises Gascón (14%), Íñigo Marquínez Prado (12%) | Ignacio: 2025-12-01. Ulises: 2026-01-22. Douglas inactive | Every PR's CI gate | MEDIUM |
+
+### Knowledge Distribution by Module
+
+| Module | Contributors (surviving lines, reformat excluded) | Primary Owner | Ownership % | Bus Factor |
+|--------|---------------------------------------------------|---------------|-------------|------------|
+| `lib/` | Troy 109, Fiona 57, Douglas 36, others 36 (238 total) | Troy Goode | 46% (up to ~70% if Fiona's reformatted lines are his) | 2 (Troy + Douglas ≈ 61%) |
+| `test/` (core suite) | Douglas 270, Troy 213, Fiona 178, others ~70 (731 total) | Douglas Wilson | 37% | 2 |
+| `test/` (small tests) | Troy: `vary`, `error-response`, `example-app`, `issue-2` | Troy Goode | 81–100% | 1 |
+| CI | Douglas 108, Ignacio 54, Ulises 30, Íñigo 26 (220 total) | Douglas Wilson | 49% | 2+, but Douglas is inactive |
+
+### Knowledge Heat Map (Text)
+
+```
+lib/                  [██████████] 🔴 Bus Factor: 1 effective (Troy 46%, dormant since 2019 except Apr 2026; Douglas 15%, inactive since 2021)
+test/test.js          [██████████] 🔴 Bus Factor: 2, both main owners inactive (Douglas 37%, Troy 29%)
+test/ (small files)   [██████████] 🔴 Bus Factor: 1 (Troy 81–100%)
+package.json          [██████░░░░] 🟡 Bus Factor: 2 (Douglas 49%, Troy 29%)
+.github/workflows/    [█████░░░░░] 🟡 Bus Factor: 4 (distributed; Ignacio and Ulises recently active)
+```
+
+### Notes on the data
+
+- Troy Goode has 95 commits, but 59 of them are from 2013. Douglas has 143 commits, mostly 2017–2020. The pattern is a long tail of one-off contributors, with the real maintainership passing between Douglas and Troy.
+- Troy's recent activity is two commits in April 2026 (`lib: annotate handlers`, `test: vary header coverage`). That is a return, not steady ongoing work.
+- `Fiona Formatter` (`fiona@formatter.example`) is a single-commit identity for a whole-repo reformat. It should not be read as a contributor.
+- The repo's `files` field ships only `lib/index.js`, so the library's real dependents are outside this repository and cannot be counted from it.
+
+### Recommendations
+
+1. **Immediate:** Ask Troy Goode to walk through `lib/index.js` and the test harness, and to confirm whether they plan to keep maintaining the project. Their answer determines whether this is a 1-person project.
+2. **Immediate:** Find a second maintainer with publish rights for the npm package, and confirm who holds them. The release path ran through Ulises Gascón in January 2026 (`2.8.6`), so start there.
+3. **Short-term:** Pair one of the active CI owners (Ignacio Mangas, Ulises Gascón) with `test/test.js`, since Douglas's knowledge of that file is now historical.
+4. **Short-term:** Add `62628c0` to a `.git-blame-ignore-revs` file. This keeps the reformat from hiding real ownership in future `git blame` runs.
+5. **Ongoing:** Write a short `CONTRIBUTING` or maintainer note covering the test layout and release steps. The repo's own commit `848e2bd` removed a nonexistent CONTRIBUTING.md from the tarball, so there is no current written guidance for a new maintainer.
+META cost=0.01064165 ms=55094 turns=9

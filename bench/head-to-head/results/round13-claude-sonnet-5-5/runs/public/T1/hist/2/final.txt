@@ -1,0 +1,38 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__knowledge_risk,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 4}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T1-hist-2/repo", "top": 15}
+ - Bash: git show --stat --format='%h %an %ad %s' HEAD | tail -5; echo ---; git ls-files | grep -vE '^(package-lock|node_modules)' | grep -E '\.(js|md|json|yml|yaml|ts)$|^[A-Z]+$' > /tmp/files.txt; wc -l /tmp/files.txt
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -20; echo; git log -1 --format='%an <%ae> %ad' 62628c0; git log --format='%an' | grep -c 'Fiona'
+FINAL ANSWER:
+**Troy Goode and Douglas Christopher Wilson own most of the code that's still here, roughly 40% and 32% of the lines. A naive blame says otherwise.**
+
+**Why the naive result is wrong:** The latest commit, `62628c0`, was a mechanical reformat to 4-space indent and double quotes. It was authored by "Fiona Formatter", who has no other commits. A plain blame gives that commit about 51% of all lines, including 94% of `test/test.js` and 90% of `lib/index.js`. That ownership is only whitespace and quote changes, so I discarded it.
+
+**How I measured it:** I ran `git blame -w -M -C --ignore-rev 62628c0` over every tracked file, which credits each line to whoever last changed its substance. These are line counts across about 1,950 lines.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Everyone else (~25 people) | the remainder | ~10% |
+
+**What each of them owns:**
+- **Troy Goode:** Most of `lib/index.js` and the tests (`test/test.js`, `test/vary.js`, `test/issue-2.js`, `test/error-response.js`, `test/example-app.js`), plus a large part of the README.
+- **Douglas Christopher Wilson:** `HISTORY.md`, `LICENSE`, `.eslintrc.yml`, much of `package.json`, and the largest share of `ci.yml`. His last commit was in 2021, so this is mostly repo scaffolding.
+- **The `.github` workflows:** Íñigo Marquínez Prado owns `scorecard.yml`, Sebastian Beltran owns `codeql.yml`, and Ulises Gascón owns `dependabot.yml`.
+
+**Caveats:**
+- The ignore-rev blame credits a line to its last real change. Where the reformat only rewrapped a line, the original author keeps credit. Where it merged or split lines, `-w` and `-M` handle most cases but not all, so treat the percentages as approximate.
+- The knowledge-risk tool counts everyone as inactive because I left its cutoff at 6 months ago and the most recent activity is April 2026. By that measure all 18 files are "orphaned", and I wouldn't read much into that.
+- I did not check how the code is licensed or who holds the copyright. Line ownership here means authorship, and `LICENSE` is the place to look for legal ownership.
+META cost=0.0803259 ms=17056 turns=5

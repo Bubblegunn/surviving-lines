@@ -1,0 +1,70 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "reviewers and ownership for time.go, version7.go, sql.go"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ours-1/repo; ls; SL='node /private/tmp/r13/final/ours-src/bin/surviving-lines.js'; for f in time.go version7.go sql.go; do echo "=== $f"; $SL --reviewers $f; done
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ours-1/repo; grep -l -i "sql" *.go; for f in time.go version7.go database_sql.go; do echo "=== $f"; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --reviewers $f; done
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ours-1/repo; for f in null.go sql_test.go; do echo "=== $f"; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --reviewers $f | sed -n '5,14p;18,22p'; done; git log --oneline -3 -- database_sql.go
+FINAL ANSWER:
+**Short answer:** almost nobody who wrote these files is still active. Each file is close to orphaned. The main author of each one has had no commit in the 365 days before 2026-06-17, which is the date of the HEAD commit (`08af9ee`), not today. In the tables below, "inactive" means no commit in that window, and it says nothing about whether they'd answer an email.
+
+All figures are surviving lines from `surviving-lines --reviewers <file>` (git blame `-w -M -C`). Each row gives non-blank lines first, then lines counting blanks.
+
+## time.go — 134 lines (152 counting blanks)
+
+| Author | Lines (share) | Counting blanks (share) | Last commit here | Status |
+|---|---|---|---|---|
+| Paul Borman | 95 (70.9%) | 111 (73.0%) | 2016-02-29 | inactive |
+| MikeWang | 12 (9.0%) | 12 (7.9%) | 2023-11-24 | inactive |
+| Alexander Rowe | 10 (7.5%) | 11 (7.2%) | 2025-02-18 | inactive here, but committed elsewhere in the repo on 2026-03-09 |
+| Nicu Micle | 8 (6.0%) | 8 (5.3%) | 2024-11-14 | inactive |
+
+- **Bus factor is 1 on both line counts.** That means one author, Paul Borman, holds over 50% of the lines.
+- **The original author is gone.** Borman wrote most of it and last committed to the repo in 2016.
+- **Best person to contact: Alexander Rowe.** They're the only author of this file still committing to the project, though they hold only 7.5% of it.
+- **Ignore the "Normalize line endings" commit (`c50c42f`, Sam Okafor).** It touched every line but only changed whitespace, so Sam Okafor owns none of them.
+
+## version7.go — 103 lines (117 counting blanks)
+
+| Author | Lines (share) | Counting blanks (share) | Last commit here | Status |
+|---|---|---|---|---|
+| MikeWang | 84 (81.6%) | 95 (81.2%) | 2024-01-12 | inactive |
+| Mei Chen | 10 (9.7%) | 11 (9.4%) | 2025-08-02 | active |
+| Paul Borman | 4 (3.9%) | 6 (5.1%) | — | inactive |
+| Ravi Menon | 2 (1.9%) | 2 (1.7%) | 2026-05-05 | active |
+
+- **Bus factor is 1: MikeWang.** They wrote v7 (#139) and the monotonicity fix (#150).
+- **Mei Chen is the best active reviewer.** They wrote the `Time7` accessor; Ravi Menon committed it on their behalf.
+- **Ravi Menon is also active** and the most recent committer to the repo, but holds only 2 lines here.
+
+## SQL code
+
+`sql.go` was renamed to `database_sql.go` in `cfc4a55`. The lines are still credited to the people who originally wrote them, not to whoever did the rename.
+
+- **database_sql.go**, 48 lines (59 counting blanks), bus factor 2:
+  - Justin Overfelt: 19 (39.6%) / 26 (44.1%)
+  - Andrew Stone: 10 (20.8%) / 11 (18.6%)
+  - David E. Wheeler: 7 (14.6%) / 8 (13.6%)
+  - Daniel Souza: 6 (12.5%) / 8 (13.6%)
+  - Paul Borman: 5 (10.4%) / 5 (8.5%)
+- **sql_test.go:** Justin Overfelt holds 62 lines (66.0%), 78 counting blanks (69.0%).
+- **null.go** (`NullUUID`, the SQL Scan/Value wrapper): Samuel Roth holds 91 lines (90.1%), 107 counting blanks (90.7%), all from one commit in 2021.
+
+None of the authors of any SQL file has committed in the last year. The most recent of them was Andrew Stone, in 2017. There is no active person to consult, so whoever reviews these is effectively doing it fresh.
+
+## What I'd do
+- **v7 changes:** ask Mei Chen to review, and try MikeWang as the original author if you can reach them.
+- **time.go changes:** ask Alexander Rowe, and also review v7-related parts with Mei Chen.
+- **SQL changes:** you'll be the de facto owner. Lean on `sql_test.go` and `null_test.go` (Samuel Roth wrote 198 lines there).
+- **Ask Ravi Menon** about current project conventions. They're the most recently active committer.
+
+## Caveats
+- **These counts measure whose code survives, not who understands it.** Review comments and design discussions don't show up in line counts.
+- **Possible duplicate identities are not merged.** The repo-wide summary flags these as likely the same person, based only on names and email addresses. That's a guess, nobody has confirmed it, and I haven't applied it.
+  - **Paul Borman** has three addresses. Counted as one person, he'd hold 1,201 lines (41.7%) of the whole repo, against 1,135 (39.5%) for the <email redacted> address alone.
+  - **Alex Rowe** has two addresses, holding 63 lines (alex@rowe.example) and 19 lines (alex.rowe@mailbox.example). That would be 82 lines (2.9%) if they're one person. I also haven't confirmed that "Alex Rowe" is the same person as "Alexander Rowe" in time.go.
+  - Neither merge would change who to ask for these files.
+META cost=0.3404552 ms=59746 turns=7

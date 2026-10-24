@@ -1,0 +1,47 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne HEAD | head -20; echo ---; git ls-files | grep -v '^\.' | head -50
+ - Bash: for f in $(git ls-files | grep -E '\.(zig|md|zon)$|LICENSE'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep -E '^author-mail ' | sed "s|^|$f |"; done > /tmp/blame.txt
+echo "== by author (lines)"; awk '{print $3}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -15
+echo "== by file"; awk '{print $1}' /tmp/blame.txt | sort | uniq -c
+echo "== src+demo only"; grep -E '^(src|demo|build)' /tmp/blame.txt | awk '{print $3}' | sort | uniq -c | sort -rn | head -10
+echo "== total"; wc -l < /tmp/blame.txt
+git shortlog -sn --no-merges HEAD | awk '{s+=$1} END{print "commits",s}'; git shortlog -sn HEAD | wc -l
+echo "== last 12mo"; git shortlog -sne --since='12 months ago' HEAD
+ - Bash: cd /tmp; echo "Wen by file:"; grep wen.li blame.txt | awk '{print $1}' | sort | uniq -c
+echo "Felix by file:"; grep -E 'mq32|masterq32|ib-queissner|random-projects' blame.txt | awk '{print $1}' | sort | uniq -c
+echo "args.zig top:"; grep '^src/args.zig' blame.txt | awk '{print $3}' | sort | uniq -c | sort -rn | head -5
+echo "authors for 50% (merged Felix):"; sed -E 's/<(<email redacted>|<email redacted>|<email redacted>|<email redacted>)>/<FELIX>/' blame.txt | awk '{print $3}' | sort | uniq -c | sort -rn | awk '{c+=$1; print c, $0}' | head -6
+FINAL ANSWER:
+**If Felix Queißner stopped answering, about 37% of the current lines would have no author left, and the bus factor is about 2.** I'm assuming the four Felix emails are one person, and I measured with `git blame -w -M -C` on HEAD, which counts surviving lines rather than commits.
+
+**Ownership of current lines (2,246 total)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Felix (4 emails combined) | 841 | 37% |
+| Wen Li | 552 | 25% |
+| jnagpaul | 188 | 8% |
+| Vincent Rischmann | 132 | 6% |
+| mochalins | 77 | 3% |
+| Dhole | 75 | 3% |
+| ~27 others | the rest | long tail |
+
+- **Core parser:** Felix wrote 705 of the 1,049 lines in `src/args.zig`, about 67%. The next largest contributors there are Vincent (64 lines), mochalins (60) and Wen Li (40). This file is where the loss would hurt most.
+- **Wen Li's share is mostly generated data:** 484 of their 552 lines are `src/width_table.zig`, which looks like a Unicode width table. Without that file, Felix owns about 48% of the hand-written code. Wen's remaining 68 lines are small.
+- **`src/help.zig`:** Felix wrote only 1 of its 337 lines, so it is already someone else's code.
+- **Felix also owns most of the surrounding files:** `README.md` (70 of 90 lines), `LICENSE`, and about half of the demos.
+- **Commit counts point the same way:** Felix has about 45 of the 130 commits. Counting them needs the identity merge, because the shortlog splits Felix across several emails.
+
+**Bus factor**
+
+- **Strict version:** counting the fewest people whose departure would leave over half the code unwritten by anyone remaining, it is about 2 (Felix and Wen). Losing Felix alone takes 37% of the code, and also removes the author of the main parser.
+- **Without the generated table:** Felix is near 50% alone, and the next contributor has only about 10%. It is effectively a bus factor of 1 for `args.zig`, softened by a decent tail of contributors.
+- **Recent activity is more spread out:** in the last 12 months, 11 people committed. Felix had 7 of about 20 commits (5 under one email, 2 under another). Tobias Ek, Wen Li and Dhole were active too.
+
+**Caveats:** `git blame` credits the last person to touch a line, so a refactor like the move to `src/` or the `gpa` rename can hide who originally wrote it. Mechanical commits may have moved some of Felix's lines to other names. If so, his true share is a bit higher than 37%.
+META cost=0.06274869999999999 ms=20972 turns=4

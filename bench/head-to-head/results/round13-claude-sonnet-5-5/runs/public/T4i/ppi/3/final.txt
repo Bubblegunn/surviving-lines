@@ -1,0 +1,37 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T4i-ppi-3/repo; git ls-files lib/index.js; echo "--- authors (all commits)"; git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/index.js | sort | uniq -c | sort -rn | head -15; echo "--- recent (last commit dates)"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | head -5; echo "--- blame (current lines)"; git blame -w -M --line-porcelain lib/index.js 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -10; echo "--- importers"; grep -rl "require(.*\(lib\|\.\)\(/index\)\?['\"]" --include="*.js" . 2>/dev/null | grep -v node_modules | head; echo "--- last 90d"; git log --all --no-merges --since="90 da
+FINAL ANSWER:
+## Bus factor for `lib/index.js`
+
+**Review it with Troy Goode, and ask Douglas Christopher Wilson as a second reviewer.**
+
+| Signal | Result |
+|---|---|
+| Top committer | Troy Goode, 29 commits (28 under `<email redacted>`, 1 under `troy@laptop.example`) |
+| Current lines by blame | Troy Goode 138, Fiona Formatter 32, Douglas Christopher Wilson 18, Alejandro Caravaca Puchades 15 (12 + 3 under a second name), Raymond Feng 7, LuisEGR 6, max.laverse 5, Simon Mansfield 3, Igor Soarez 3 |
+| Contributors | 15 or more distinct authors in the top-15 list alone |
+| Bus factor for this file | Moderate. Troy owns the most code, but several others have touched it. |
+| Dependents | The test files `test/test.js`, `test/vary.js`, `test/example-app.js`, `test/error-response.js` and `test/issue-2.js` match my import grep. I did not confirm that each one imports this exact file. |
+
+**Reviewer notes**
+- **Troy Goode:** They wrote most of the file and have the most history in it. Their last commit to it was 2026-04-10.
+- **Douglas Christopher Wilson:** They have 4 commits and 18 surviving lines. Their last commit to the file was in 2017, so confirm they're still reachable.
+- **Alejandro Caravaca Puchades:** They have 5 commits across two author names (4 + 1) and 15 surviving lines. They are a reasonable alternative to Doug.
+- **Fiona Formatter:** Ignore this name. The 32 lines come from the 4-space and double-quote reformat, not from anyone who knows the logic. Run `git blame --ignore-revs-file .git-blame-ignore-revs lib/index.js` to see real authorship.
+
+**Activity risk**
+- The repo has no commits in the last 90 days, and the latest commits date from April 2026.
+- Check that Troy is still active before you rely on them. If they're not, Alejandro or Doug are the fallback.
+
+**Before you merge**
+- Run the test suite, since five test files exercise this file.
+- A second reviewer outside the top committer would reduce the single-owner risk.
+
+I only analyzed this one file. I did not run the full-repo scan or the contributor-analyzer agent, so I haven't calculated a project-level bus factor. Say so if you want that.
+META cost=0.0619651 ms=15655 turns=4

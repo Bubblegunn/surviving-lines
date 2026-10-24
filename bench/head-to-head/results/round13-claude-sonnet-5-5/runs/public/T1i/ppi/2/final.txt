@@ -1,0 +1,60 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files | grep -E '\.(js|ts|json|md)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.js$' | grep -v node_modules | head -50; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: for f in $(git ls-files | grep -E '\.js$'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain $f | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv
+echo "== overall"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn
+echo "== per file"; sort /tmp/blame.tsv | uniq -c | sort -k2,2 -k1,1rn
+echo "== last commit per author"; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++'
+echo "== importers of lib/index.js"; grep -rl "lib\|require(" test | wc -l
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own almost all the code that is still here. Troy owns about 56% of it and Douglas about 33%.
+
+I ran `git blame` on every tracked `.js` file (7 files, about 1,200 lines). The skill's default method counts commits per file, so I swapped that for blame, with `-w -M -C` to follow moved and whitespace-changed lines. I also excluded the reformat commit (`62628c0`) using the repo's `.git-blame-ignore-revs`. Without that, the person who ran the formatter would own most of the repo. I didn't launch the contributor-analyzer agent, since the repo is small enough to do this directly.
+
+## 🚌 Bus Factor Analysis
+Scope: surviving lines only | Generated: 2026-10-24
+
+### Project-level bus factor: 1
+Troy Goode alone owns more than 50% of the surviving lines. Troy and Douglas together own about 89%. The remaining ~11% is spread across 18 other people.
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 676 | ~56% | 2026-04-10 |
+| Douglas Christopher Wilson | 394 | ~33% | 2021-09-07 |
+| Alejandro Caravaca Puchades (plus alias `alex94puchades`) | 34 | ~3% | 2015 |
+| Eric di Domenico | 16 | ~1% | 2013 |
+| Alberto Leal | 15 | ~1% | 2014 |
+| 15 others | ≤ 9 each | ~6% combined | 2013–2018, 2024 |
+
+### Per-file ownership
+
+| File | Lines | Top owner | Share | Other owners |
+|---|---|---|---|---|
+| `lib/index.js` (the library itself) | 238 | Troy | 67% | 18 others, with Douglas at 9% |
+| `test/test.js` | ~731 | Douglas | 46% | Troy has 43%, and 11 others share the rest |
+| `test/example-app.js` | 81 | Troy | 83% | Douglas |
+| `test/error-response.js` | 66 | Troy | 86% | Douglas |
+| `test/issue-2.js` | 48 | Troy | 83% | Douglas |
+| `test/vary.js` | 36 | Troy | 100% | none |
+| `test/support/env.js` | 2 | Douglas | 100% | none |
+
+### Risks
+- **Activity:** Douglas hasn't committed since 2021, so the 33% he owns has no active maintainer.
+- **Activity:** Troy's last commit was about 6 months ago, which is outside the skill's 90-day "active" window. By that definition nobody who owns meaningful code is currently active. Troy is the most recent of the two, but only by a few months.
+- **`lib/index.js`:** this is the only production file, and Troy owns two-thirds of it. The other contributors to it each own a handful of lines. Anyone who could change it confidently has to be Troy or Douglas.
+- **`test/vary.js`:** Troy is the sole owner, but the file is small and low-impact.
+- **Dependents:** `lib/index.js` is exercised by every test file (5 dependents). With a single library file, importance is the same everywhere, so the dependents number doesn't separate files by risk.
+
+### Why this differs from commit counts
+Commit counts give Douglas (143 commits) and Troy (122) a similar footprint. Blame shows Troy owns almost twice as much surviving code. Troy's code is mostly the original implementation and the tests built around it. Douglas's commits were mostly maintenance and test changes. A raw commit count also credits many contributors who left almost nothing in the current files. The count for the people in the table above could shift a little if some are the same person under different git identities. I found one such pair, which I merged.
+
+### Recommendations
+1. **Immediate:** have someone currently active review `lib/index.js` line by line. Right now only Troy has deep knowledge of it, and Troy is the only one of the two still around.
+2. **Short-term:** add comments or docs on the less obvious behaviour in `lib/index.js`. Douglas's knowledge can't be recovered by asking him in practice.
+3. **Ongoing:** rotate reviewers onto changes to `lib/index.js` so the share held by anyone other than Troy and Douglas grows past ~11%.
+META cost=0.0865123 ms=28494 turns=5

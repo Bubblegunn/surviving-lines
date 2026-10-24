@@ -1,0 +1,124 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.py' | grep -v '^$' | tee /tmp/pyfiles.txt | wc -l; cat /tmp/pyfiles.txt; echo ---; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; git rev-list --count HEAD
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo TOTAL; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -15
+ - Bash: echo "== Dana commits"; git log --all --no-merges --author='Dana Kessler' --format='%h %ad %an <%ae> %s' --date=short --shortstat; echo; echo "== per-file ownership (lines)"; python3 -I - <<'E'
+import collections
+d=collections.defaultdict(collections.Counter)
+for l in open('/tmp/blame.tsv'):
+    f,a=l.rstrip('\n').split('\t',1); d[f][a]+=1
+tot=collections.Counter()
+for f,c in sorted(d.items()):
+    n=sum(c.values()); tot.update(c)
+    top=c.most_common(2)
+    print(f"{f:36} {n:5} lines  authors={len(c):2}  "+", ".join(f"{a} {v*100//n}%" for a,v in top))
+N=sum(tot.values()); print("\nTOTAL",N)
+cum=0
+for a,v in tot.most_common(6):
+    cum+=v; print(f"{a:20}{v:6} {v*100/N:5.1f}% cum {cum*100/N:
+ - Bash: head -15 colorama/_vendor/_typing_compat.py; echo ...; git show aa872f7 --stat --format='%B' | head; echo "== blame ignoring quote commit, excluding _vendor"; for f in $(git ls-files '*.py' | grep -v _vendor); do git blame -w -M -C --ignore-rev c73f380 --line-porcelain HEAD -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame2.tsv
+python3 -I - <<'E'
+import collections
+tot=collections.Counter(); pk=collections.defaultdict(collections.Counter)
+for l in open('/tmp/blame2.tsv'):
+    f,a=l.rstrip('\n').split('\t',1); a=a; tot[a]+=1
+    top=f.split('/')[0]; pk[top][a]+=1
+N=sum(tot.values()); print("TOTAL",N); c=0
+for a,v in tot.most_common(8):
+    c+=v; print(f"{a:20}{v:6} {v*100/
+ - Bash: for m in ansi ansitowin32 initialise win32 winterm _typing_compat; do echo "$m: $(grep -rlE "(import|from) .*\b$m\b" --include='*.py' . | grep -v "/$m.py" | wc -l)"; done; ls tools 2>&1 | head -3; grep -c '^def _compat_' colorama/_vendor/_typing_compat.py; sort <(grep -v '^def\|^$' colorama/_vendor/_typing_compat.py | sort -u) | wc -l
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history (405 commits) | Generated: 2026-10-24 | Scope: the 25 tracked `.py` files
+
+### Short answer
+
+Jonathan Hartley wrote most of the Python that's in the repo today. If the two biggest contributors go quiet, the exposure is moderate. It's concentrated in the core `colorama/` modules, where Hartley is the main author and Arnon Yaari is the most active maintainer.
+
+How you count "biggest contributors" changes the answer a lot.
+
+| Method | #1 | #2 | #3 |
+|---|---|---|---|
+| Commits (all history) | Hartley (85) | Yaari (64) | Smith (15) |
+| Raw surviving lines (`git blame`) | Dana Kessler 44% | Hartley 31% | Yaari 6% |
+| Surviving lines, adjusted (see below) | **Hartley 56%** | **Yaari 12%** | Smith 10% |
+
+The raw blame number for Kessler is misleading, for two reasons:
+- **Vendored file:** 1,103 of Kessler's 1,324 lines are in `colorama/_vendor/_typing_compat.py`. It carries a "Vendored from typing_extensions 4.12.2 – DO NOT EDIT" header, but it's 220 near-identical stub functions. Nothing imports it, and the `tools/vendor.sh` it refers to doesn't exist. Nobody really authored it, but it's worth asking Kessler where it came from.
+- **Quote-style commit:** `c73f380` re-quoted every Python file. I excluded it from blame, because it credits Kessler with lines that other people wrote.
+
+Kessler has 4 commits in total: NO_COLOR handling, the quote change, the vendor drop and the test move. Kessler's real authorship is small.
+
+### Project-level bus factor: 1
+
+Hartley alone owns 56% of the surviving hand-written lines (1,080 of 1,936), so losing one person leaves over half the code without its main author. Adding Yaari takes the total to about 68%.
+
+| Metric | Value |
+|---|---|
+| Python files analyzed | 25 (24 excluding the vendored shim) |
+| Largest single author, adjusted | Hartley, 56% |
+| Top 2 combined (Hartley + Yaari) | 68% |
+| Top 3 combined (adding Smith) | 78% |
+| Files where Hartley is the top author | 21 of 24 |
+| Files with only one author in blame | 4 |
+
+### Ownership by area (adjusted lines)
+
+| Area | Lines | Top authors | Bus factor |
+|---|---|---|---|
+| `colorama/` (library) | 909 | Hartley 50%, Yaari 17%, Smith 8% | 2 |
+| `tests/` | 799 | Hartley 59%, Smith 14%, Delgan 11% | 2 |
+| `demos/` | 228 | Hartley 66%, Yaari 10%, Ogden 9% | 1 |
+
+### Where the exposure is
+
+The core modules have many past authors, so they aren't single-owner files. Hartley is still the main author of nearly all of them.
+
+| File | Top author | Authors | Importers | Risk |
+|---|---|---|---|---|
+| `ansitowin32.py` (277 lines) | Hartley 50%, Yaari 15% | 13 | 6 | **HIGH**. It's the most depended-on module and the most complex. |
+| `win32.py` (193) | Hartley 58%, Finer 14% | 8 | 3 | **HIGH**. It's the Windows API layer, and only the old contributors know it. |
+| `winterm.py` (202) | Hartley 48%, Yaari 22% | 10 | 2 | MEDIUM. Yaari is a real second owner. |
+| `initialise.py` (121) | Hartley 42%, Smith 28% | 6 | 2 | MEDIUM. Smith's last commit was Nov 2022. |
+| `tests/winterm_test.py` | Hartley 89% | 4 | n/a | MEDIUM |
+| `tests/isatty_test.py` | Delgan 96% | 3 | n/a | LOW. Delgan's last commit was in 2018. |
+
+Single-owner files are all low risk:
+- `demos/demo09.py` (Ogden)
+- `tests/__init__.py`
+- the two vendored files (Kessler)
+
+### How active the key people are
+
+Dates are from the latest commit in the repo.
+
+| Person | Last commit | Status |
+|---|---|---|
+| Kessler | 2026-08-20 | Active, about 2 months ago |
+| Hartley | 2026-07-03 | **Quiet for about 4 months** |
+| Yaari | 2026-05-13 | **Quiet for about 5 months** |
+| Smith | 2022-11-01 | Inactive |
+| Delgan | 2018-10-15 | Inactive |
+
+Only 3 commits in the last 90 days, from Kessler, Priya Nair and Tomás Ibarra.
+
+Hartley and Yaari may have already stepped back. Neither has committed recently, and the people who have are minor authors of the core code. The likely scenario is that you start with little access to the two people who know the code best.
+
+### What this analysis can't tell you
+
+- **Authorship isn't understanding.** Blame shows who wrote the lines. It doesn't show who can explain why `ansitowin32.py` works the way it does.
+- **Names may be duplicated.** "Hugo" and "Hugo van Kemenade" appear as separate authors in the commit counts. Merging them would shift the rankings slightly, but not the top two.
+- **I didn't check mailmap or review history.** Review and issue-tracker knowledge (for example who triaged Windows bugs) isn't in git.
+
+### Recommendations
+
+1. **Before the handover:** ask Hartley and Yaari for a session or a written walkthrough of `ansitowin32.py` and `win32.py`. Ask what they know about the Windows console quirks, and what history sits behind the code. If they stop answering, those two files are where the new team will get stuck.
+2. **Ask Kessler** where `_typing_compat.py` came from and whether it can be deleted. It's 1,100 lines that nobody maintains and nothing uses, and it inflates every "who owns this" number.
+3. **Short-term:** have the new team make a small change in each of `winterm.py` and `initialise.py`, reviewed by whoever is still reachable. This builds a second owner for the files where Hartley's share is highest.
+4. **Ongoing:** add the `c73f380` commit to a `.git-blame-ignore-revs` file, so future ownership checks don't credit the formatting change.
+META cost=0.12303069999999999 ms=40953 turns=8

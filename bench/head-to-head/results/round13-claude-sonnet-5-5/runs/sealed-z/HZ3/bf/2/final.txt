@@ -1,0 +1,71 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor 2>/dev/null && ls scripts; cd /private/tmp/r13/final/out-F/runs/HZ3-bf-2/repo && git log --oneline | wc -l && git shortlog -sne HEAD | head
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github --cache /tmp/bf-cache.json 2>&1 | head -60; git status --short
+ - Bash: D=$(mktemp -d) && git clone -q /private/tmp/r13/final/out-F/runs/HZ3-bf-2/repo $D/r && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs $D/r --no-github --cache /tmp/bf-cache.json >/dev/null 2>&1; cat $D/r/.github/ownership.json | head -150; cd /private/tmp/r13/final/out-F/runs/HZ3-bf-2/repo; git log -1 --format=%cd; git log --format='%an|%ae|%ad' --date=short | sort -t'|' -k3 | sed -n '1p;$p'
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ3-bf-2/repo; D=$(ls -dt <tmp> | head -1); python3 -I - "$D/.github/ownership.json" <<'E'
+import json,sys
+d=json.load(open(sys.argv[1]))
+print({k:v for k,v in d.items() if k not in('authors','meta')}.keys())
+print(json.dumps(d.get('zones'),indent=1)[:3500]); print(d.get('unresolved'))
+E
+git log --no-merges --format='%ae|%an' | sort | uniq -c | sort -rn | grep -i -E 'queiss|dmitri|wen|tobias'
+for f in $(git ls-files); do echo "$f $(git log --follow --format=%an -- $f | sort | uniq -c | sort -rn | head -2 | tr '\n' ';')"; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ3-bf-2/repo; python3 -I - <<'E'
+import subprocess,collections,datetime
+out=subprocess.check_output(['git','log','--no-merges','--format=@%ae|%at','--name-only'],text=True)
+files=set(subprocess.check_output(['git','ls-files'],text=True).split())
+def who(e):
+    return 'Felix' if e in('<email redacted>','<email redacted>','<email redacted>','<email redacted>','<email redacted>') else e
+now=subprocess.check_output(['git','log','-1','--format=%at'],text=True)
+now=int(now)
+tot=collections.Counter();per=collections.defaultdict(collections.Counter);cnt=collections.Counter()
+cur=None
+for l in out.splitlines():
+    if l.startswith('@'):
+        e,t=
+FINAL ANSWER:
+**Short answer:** the main author is Felix "xq" Queißner, who wrote about 36% of the weighted history. Losing them would leave no author for a small part of the code. The code's real bus factor is low (1–2), because a few files each have only one author.
+
+I ran the busfactor script on a throwaway clone with `--no-github`, so nothing was written to your repo. It treats Felix's five git emails as five different people, so I merged them by hand and recomputed.
+
+**Concentration**
+- Across 132 commits and 13 tracked files, Felix has 48 commits, about 37%. With the tool's one-year half-life decay, that is 36%. The next three authors are Krzysztof Wolicki (13%), Tobias Ek (12%) and Wen Li (8%).
+- Most of Felix's weight is old. The 2020–21 commits are where `src/args.zig` came from, but they have mostly decayed.
+
+**What Felix owns by file (decayed share)**
+
+| File | Felix's share |
+|---|---|
+| `LICENSE`, `.gitattributes` | 100% (single author) |
+| `demo_verb.zig` | 65% |
+| `build.zig.zon` | 60% |
+| `README.md` | 49% |
+| `demo.zig` | 48% |
+
+- **If Felix stopped answering:** `LICENSE` and `.gitattributes` would have no remaining author. They are trivial files. The demos, README and `build.zig.zon` would still have secondary authors (Krzysztof Wolicki, `insolor`).
+- **The core library is not Felix-dependent:** `src/args.zig` is now 51% Dmitri Volkov and 49% Tobias Ek by recent weight.
+- **Note on activity:** the tool counts Felix as still active, with commits as recent as April 2026. The tool would show Felix as a bus-factor risk, not an orphan.
+
+**Bus factor by zone**
+- Whole repo: 3 (Felix, Tobias Ek, Wen Li together cover about 73% of the weighted history).
+- `src/` as a whole: 2 (Tobias Ek and Wen Li).
+- Single-author files, so bus factor 1 at file level:
+  - `src/help.zig` (Tobias Ek)
+  - `src/width.zig` and `src/width_table.zig` (Wen Li)
+  - `src/args.zig` is close to it, split only between two people.
+- Nothing is orphaned. Every zone has an active owner. People like Vincent Rischmann and Linus Groh have only a few commits each.
+
+**Caveats**
+- Commit volume is only a rough proxy for knowledge.
+- Emails weren't resolved to GitHub accounts, so identity merging is my manual guess. Felix's five emails clearly look like one person.
+- `help.zig` and the `width*` files are recent, single-commit-ish files. The tool's coverage there reflects who wrote them, not who understands them.
+- The newest commits are dated 2026-11-04, after today's date (2026-10-24). The tool uses the newest commit as "now", so decay is computed from that date. If those dates are wrong, the active/inactive split could be off.
+
+I can run it for real (without `--no-github`) and write `.github/CODEOWNERS` if you want.
+META cost=0.11355760000000001 ms=37000 turns=8

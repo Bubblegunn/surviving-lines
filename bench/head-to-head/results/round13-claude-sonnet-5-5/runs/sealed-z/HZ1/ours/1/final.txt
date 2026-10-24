@@ -1,0 +1,65 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node /private/tmp/r13/final/ours-src/bin/surviving-lines.js'; $SL --include '*.py'; echo ======; $SL --include '*.py' --merge-identities | head -40; echo ======; $SL --include '*.py' --without "Jonathan Hartley,Arnon Yaari"
+ - Bash: S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --include '*.py'; echo ======; node $S --include '*.py' --merge-identities | head -40; echo ======; node $S --include '*.py' --merge-identities --without "Jonathan Hartley,Arnon Yaari"
+ - Bash: S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --include '*.py' --merge-identities | sed -n 1,16p; echo '-----'; node $S --include '*.py' --merge-identities --without "Jonathan Hartley,Arnon Yaari"
+FINAL ANSWER:
+Python is where you're most exposed, and the exposure is mostly one person. Unless I say "whole repository", the numbers below are scoped to `*.py` (`--include '*.py'`). They describe the work since the 2014 import.
+
+**Size and exclusions**
+- There are 24 Python files with 1,597 non-blank lines (1,937 counting blank lines). The bus-factor line prints 1,933 for the second figure, and I don't know why the tool shows two.
+- The vendored `colorama/_vendor/_typing_compat.py` (1,103 lines) is left out of every number.
+- Two bots are not credited (`pre-commit-ci[bot]`, `dependabot[bot]`, 4 lines).
+- Commit `c73f380` ("Apply black-style string quotes…") rewrote 221 lines in 20 files, formatting only. I set it aside, and its lines went back to the earlier authors.
+
+**Who wrote the Python code (non-blank lines, then counting blank lines)**
+
+| Author | Non-blank | Share | With blank | Share |
+|---|---|---|---|---|
+| Jonathan Hartley | 843 | 52.8% | 1,065 | 55.1% |
+| Arnon Yaari (2 addresses) | 217 | 13.6% | 232 | 12.0% |
+| Nathaniel J. Smith | 169 | 10.6% | 196 | 10.1% |
+| Delgan | 88 | 5.5% | 107 | 5.5% |
+| John Szakmeister | 58 | 3.6% | 62 | 3.2% |
+
+- The rest are small: Segev Finer, Priya Nair and Florian Bruhin hold about 1.4–1.8% each. Another 44 authors hold 6.3% together.
+- Over the whole repository (all file types), the figures are:
+  - Hartley: 1,460 non-blank lines (55.6%), 1,884 with blank lines (58.7%).
+  - Yaari: 359 (13.7%), 382 (11.9%).
+  - Smith: 210 (8.0%), 246 (7.7%).
+  - Delgan: 88 (3.4%), 107 (3.3%).
+  - Szakmeister: 58 (2.2%), 62 (1.9%).
+- Arnon Yaari appears under `<email redacted>` (217 Python lines) and `<email redacted>` (0 lines, 1 commit). The merge is a guess from names and addresses, and I did not write it to `.mailmap`. Unmerged, Yaari is 217 lines (13.6%).
+- Hartley's lead depends partly on the reformat correction. Without it, Hartley holds 713 Python lines (44.6%) and the plain-count bus factor is 2.
+
+**If the two biggest contributors stop answering**
+- Hartley and Yaari together hold 1,060 of 1,597 Python lines (66.4%). They are the top owner of 19 of 24 files (1,484 lines).
+- The bus factor is 1 today (the fewest authors who together hold 50% of the lines), and it rises to 3 once they are gone. Reaching 80% takes 4 authors.
+- Eleven files (653 lines) would have nobody who knows them: the leavers hold 50% or more of each and the best remaining author holds under 10%. The largest are:
+  - `colorama/ansitowin32.py`: 234 lines, 68.8% theirs, best remaining Delgan at 7.3%.
+  - `colorama/winterm.py`: 178 lines, 71.3% theirs, best remaining Nathaniel J. Smith at 9.0%.
+  - `tests/winterm_test.py`: 106 lines, 92.5% theirs.
+  - Several demos, including `demo03.py` (100% theirs, no one else).
+- This counts lines, not understanding.
+
+**The active people are thinner than the table suggests**
+- Only 4 of 32 Python authors committed in the year before 2026-09-12, and they hold 55.9% of the lines. The other 44.1% belongs to people with no commit in that time.
+- Hartley is the only active author with a large share (last commit 2026-07-03). Priya Nair is active (2026-09-12) but holds 22 lines (1.4%).
+- Yaari's last commit was 2022-06-17, so they are already effectively gone.
+- The tool names these likely inheritors, ranked by lines in files where the leavers hold 20% or more:
+  - Nathaniel J. Smith: 169 Python lines in 11 files, last commit 2022-10-16.
+  - John Szakmeister: 58 Python lines in 4 files, last commit 2014-11-01.
+  - Delgan: 45 lines in 3 files, out of Delgan's 88 Python lines. Last commit 2018-10-15.
+- None of the three is active. In practice, Hartley is the one real dependency. If they leave, the handover has no one active to receive it.
+
+**Handover advice**
+- Get Hartley to document and walk the new team through `ansitowin32.py`, `winterm.py` and `win32.py` first, because those are the largest and least covered.
+- Check with Smith whether they're still reachable.
+
+The counts measure surviving lines, not code quality, review work or design discussion.
+META cost=0.1645167 ms=46144 turns=7

@@ -1,0 +1,35 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --since 2026-03-29 --until 2026-04-12 --merge-identities; echo ---; git log --since=2026-03-29 --until=2026-04-13 --format='%h %ad %an <%ae> %s' --date=short
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --owned-by "<email redacted>" | head -20; git show --stat 62628c0 | tail -6
+FINAL ANSWER:
+Two people committed between 2026-03-29 and 2026-04-12, once you leave out the formatting commit. The tool found no bot commits in the window.
+
+| Person | Commits in window | Lines still in the code (non-blank) | Lines still in the code (counting blank lines) |
+|---|---|---|---|
+| **Troy Goode** (2 addresses) | 2: `02afce3` "test: vary header coverage" and `b2005d9` "lib: annotate handlers", both 2026-04-10 | **649 (39.0%)** | **810 (40.8%)** |
+| **Vansh Sharma** | 1: `5317ebe` "docs: app.del() with app.delete() in README example (#411)", 2026-04-07 | **1 (0.1%)** | the tool doesn't print this figure |
+
+The line counts are for the whole repository as it stands at 2026-04-12, not just what each person wrote in these two weeks. The total is 1,662 non-blank lines (1,985 counting blank lines).
+
+**Counting each person once.** Troy Goode commits under two addresses, so I counted them as one person:
+- **troy@laptop.example:** made both commits in the window and holds 44 lines.
+- **<email redacted>:** made no commits in the window and holds 605 lines (36.4%).
+
+The tool matched these from the name and email addresses alone, so it's a guess that you should confirm. Nothing has been written to `.mailmap`; the merge was done only for this count. Troy Goode is also the top owner of the repository overall.
+
+**Left out:**
+- **The formatting commit.** `62628c0` "style: reformat js with 4-space indent and double quotes" was committed on 2026-04-12 by Fiona Formatter. It reformatted 1,016 lines in 4 files and changed whitespace and quotes only. It isn't counted as a commit, and the lines it touched stay with the people who wrote them. Without that correction, Troy Goode's merged figure would not be printed, but the unmerged gmail address alone drops from 605 lines (36.4%) to 510 (30.7%).
+- **Bots.** dependabot[bot] made no commits in this window and is excluded from all figures, along with its 10 lines.
+
+**How this was counted:**
+- Line counts come from `git blame -w -M -C`, which ignores whitespace changes and follows lines that were moved or copied. The commit column covers only the window.
+- The tool doesn't print Vansh Sharma's count including blank lines. `surviving-lines --owned-by` reports 1 non-blank line, so that's all I can give you.
+
+Surviving lines show whose code is still in the repository. They say nothing about the quality of anyone's work or any reviewing they did.
+META cost=0.212122 ms=26974 turns=5

@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ3-hist-2/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ3-hist-2/repo"}
+FINAL ANSWER:
+**Short answer:** Felix Queißner wrote about 39% of the code at HEAD and 35% of the commits, and he has been inactive since 2026-04-16. The tool's reported bus factor of 6 is overstated. Merging his identities gives about 4.
+
+**Caveat on identities.** Felix appears under three names: "Felix (xq) Queißner", "Felix "xq" Queißner" and "Felix Queißner". The tool counted them as three people because there is no `.mailmap`. I merged them by hand, and this assumes they are one person.
+
+**Commits (130 non-merge, 33 authors)**
+- Felix has 46 commits (35.4%), made up of 23, 15 and 8 under his three names.
+- Next are Linus Groh with 11, then Vincent Rischmann and jnagpaul with 7 each.
+- Felix, Linus, Vincent and jnagpaul together cover about 55%, so the bus factor is about 4. The tool's 6 comes from splitting Felix into three.
+- No directory counts as a knowledge silo.
+
+**Code with no active author (blame at HEAD, "inactive" = no commit in 6 months)**
+- **Felix:** he owns 897 of about 2,280 lines (39%).
+- **All inactive authors:** they own about 57% of the lines, and 9 of 13 files are orphaned, meaning inactive authors own more than 50% of the file.
+- **`src/args.zig`:** this is the core parser at 1,049 lines. It is about 90% inactive code, and about 64% of it is Felix's (340 + 332 lines). Its main active contributors are mochalins (6%, last commit 2025-07) and nobody else above a few lines.
+- **Root files:** these are about 94% inactive. They include `build.zig`, `build.zig.zon`, `README.md`, `LICENSE`, the demos and the CI workflow.
+- **Active code:** it is mostly recent additions by two people, Wen Li (`width.zig` and `width_table.zig`, 548 lines) and Tobias Ek (`help.zig`, 337 lines).
+
+**What this means**
+- If Felix stopped answering, about 39% of the code would have no author left to ask about it.
+- Counting everyone already gone, the figure is about 57%.
+- The parser's core logic (`args.zig`) would be left to people who did not write it.
+- Active ownership is thin. Wen Li and Tobias Ek each own whole files but little of the core, and the two together own about 39% of the lines.
+- Concentration is falling, because the recent `src/` split and the new helpers came from different people. The core is still old and Felix-written.
+
+**Data oddities.** Some "last commit" dates are later than today (2026-10-24): Wen Li at 2026-10-27 and Dmitri Volkov at 2026-11-04. These look like clock skew or rewritten history, and I didn't investigate. If they are wrong, the active-author shares may shift slightly. Adding a `.mailmap` would also make the tool's own numbers correct.
+META cost=0.0715335 ms=16736 turns=4

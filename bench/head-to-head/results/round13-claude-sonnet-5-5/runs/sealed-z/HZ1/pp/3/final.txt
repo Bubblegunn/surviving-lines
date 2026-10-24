@@ -1,0 +1,62 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.py' | grep -v '^\.' ; echo ---; git shortlog -sne --all --no-merges | head -15; echo ---; git log --format='%an' | wc -l; git log -1 --format=%cd; git log --reverse --format=%cd | head -1
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{n[$1"\t"$2]++; t[$1]++; a[$2]++; T++} END{for(k in n){split(k,p,"\t"); printf "FILE\t%s\t%s\t%d\t%d\n",p[1],p[2],n[k],t[p[1]]} for(x in a) printf "TOTAL\t%s\t%d\t%d\n",x,a[x],T}' | sort
+ - Bash: git log --author='Dana Kessler' --format='%h %ad %an <%ae> | %cn | %s' --date=short --stat | head -50; echo ---; git log --since='1 year ago' --no-merges --format='%an' | sort | uniq -c | sort -rn; echo ---; git log --since='90 days ago' --format='%h %ad %an %s' --date=short | head; echo; head -30 colorama/_vendor/_typing_compat.py
+ - Bash: ls tools 2>&1 | head -3; for a in "Jonathan Hartley" "Arnon Yaari" "Nathaniel J. Smith" "Dana Kessler" "Priya Nair" "Delgan" "Tomás Ibarra"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | head -1) (last) / $(git log --author="$a" --format=%ad --date=short | tail -1) (first)"; done; echo; sort -u <(sed -n '5,$p' colorama/_vendor/_typing_compat.py) | wc -l; grep -c '^def ' colorama/_vendor/_typing_compat.py; grep -rn "_typing_compat\|_vendor" --include=*.py --include=*.toml --include=*.cfg . | grep -v '^./colorama/_vendor' | head
+ - Bash: grep -rn "_typing_compat\|_vendor" . --include='*.py' --include='*.toml' --include='*.cfg' --include='*.in' --exclude-dir=.git | grep -v '^./colorama/_vendor/' | head; echo "exit:$?"
+FINAL ANSWER:
+I've finished the git analysis and am writing it up now.
+
+## Bus factor: who wrote the code that's in the repo today
+
+I used `git blame` (ignoring whitespace, following moves and copies) on all 25 tracked `.py` files. Commit counts alone mislead here. The percentages below leave out `colorama/_vendor/_typing_compat.py`. That file is 1,103 lines from a single commit and would otherwise swamp the numbers.
+
+**Surviving lines across all Python (1,936 lines, vendored file excluded)**
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Jonathan Hartley | 943 | 49% | 2026-07-03 |
+| Dana Kessler | 220 | 11% | 2026-08-20 |
+| Arnon Yaari | 196 | 10% | 2026-05-13 |
+| Nathaniel J. Smith | 194 | 10% | 2022-11-01 |
+| Delgan | 105 | 5% | 2018-10-15 |
+| About 25 others | ≤46 each | ~15% combined | |
+
+**Runtime package only (`colorama/*.py`, 909 lines)**
+- Hartley wrote 444 lines (49%) and Yaari 142 (16%). Together that is about 64%.
+- In `win32.py` Hartley wrote 59%. In `winterm.py` Hartley and Yaari together wrote about 71%. In `ansitowin32.py` they wrote about 66%.
+
+## How exposed you are
+
+**Short answer: moderately exposed, and less than the headline numbers suggest.** I'm assuming the "two biggest" are Hartley and Yaari, who lead on commits (85 and 63) and on surviving lines in the package.
+
+- **Both are already quiet.** Hartley's last commit was about 16 weeks ago and Yaari's about 5 months ago. In the past year, commits came from Kessler (4), Nair (2), Ibarra (1) and a few others. So you are already running without them, and losing them changes little day to day.
+- **The Windows console code is the real risk.** `win32.py` and `winterm.py` hold the ctypes calls, cursor and screen-buffer handling, and the most history. Hartley and Yaari wrote most of that code. Of the people still active, Nair has 13 lines in `win32.py` and Ibarra 15 in `winterm.py`. Ibarra has made one commit ever, in August.
+- **The package is small.** It has about 900 lines, six modules and a decent test suite. That limits the damage, and a new team can learn it quickly.
+- **No file has a single contributor** except `tests/isatty_test.py`, where Delgan wrote 55 of 57 lines. Delgan's last commit was in 2018, so no one active knows that file. `demos/demo09.py` is also single-owner (George Ogden), but it's a demo and low risk.
+
+**Who to build knowledge around:** Dana Kessler and Priya Nair are the only people who have committed to core files in the last 3 months. Check that they are part of the handover, not just the two names you mentioned.
+
+## One thing to check before handover
+
+`colorama/_vendor/_typing_compat.py` doesn't look like what its header says. The header claims it is vendored from `typing_extensions 4.12.2`, "DO NOT EDIT", and "Regenerate with tools/vendor.sh". But:
+- The file is about 220 copies of the same `value is None` helper, named `_compat_001` and so on.
+- `tools/vendor.sh` doesn't exist.
+- Nothing in the repo imports the module.
+
+It was added in one commit by Kessler on 2026-07-12. I can't tell from git whether it is a bad generation, a placeholder or something deliberate. Ask Kessler before the handover. It is 1,100 lines of dead code with a misleading provenance claim, and the new team shouldn't inherit it unexplained.
+
+## Recommendations
+
+1. **Now:** Ask Hartley and Yaari for a written walkthrough of `win32.py` and `winterm.py` (Windows console API quirks, the reasons for the workarounds). Anything not written down will be hard to recover later.
+2. **Before handover:** Have Nair and Ibarra review or pair on the next change to those two files.
+3. **Ongoing:** `git blame` can't tell you the *why* behind past decisions. Collect those reasons in a short design-notes file.
+
+I read the repo and ran git commands only. I made no changes.
+META cost=0.1260751 ms=36690 turns=8

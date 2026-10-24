@@ -1,0 +1,21 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git log --format='%h %an <%ae> %s' | head -15; git shortlog -sne | head -30; cat .mailmap 2>/dev/null
+ - Bash: git ls-files | wc -l; git rev-list --count HEAD; cat /private/tmp/claude-501/-private-tmp-r13-final-out-F-runs-E4h-hist-2-repo/aa77e721-8d83-4310-be86-9c4141c60eba/tasks/bxlm2oau4.output | head -50
+ - Bash: git shortlog -sne HEAD | head -40; git ls-files | while read f; do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author-mail' | sort | uniq -c | sort -rn | head -4; done
+ - Bash: for f in $(git ls-files); do case $f in .github/*) d=.github;; lib/*) d=lib;; test/*) d=test;; *) d=root;; esac; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author-mail' | sed "s/^/$d /"; done | grep -v 'bot\]' | sed 's/troy@laptop.example/<email redacted>/' | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{t[$2]+=$1; if(!(($2) in top)||0){} print}' > /tmp/agg.txt; awk '{t[$2]+=$1; c[NR]=$0} END{for(i=1;i<=NR;i++){split(c[i],a," "); if(!(a[2] in s)){s[a[2]]=1; printf "%s total=%d top=%d (%.0f%%) %s\n",a[2],t[a[2]],a[1],100*a[1]/t[a[2]],a[3]}}}' /tmp/agg.txt
+ - Bash: awk '{if(!($2 in s)){s[$2]=1; print $2,$1,$4}}' /tmp/agg.txt
+FINAL ANSWER:
+That notification is just the first, slow command (the combined file-count and shortlog one) being stopped at its time limit. It doesn't change the results. I re-ran the pieces I needed in later commands, and they finished. The CODEOWNERS suggestions above stand:
+
+- `/lib/ @troygoode` (67% of surviving lines)
+- `/test/ @troygoode` (54% of surviving lines)
+- `.github/` and the root files have no owner, because nobody holds half of the lines.
+
+I haven't written anything to the repo. `@troygoode` is still a guess from the commit email, so please confirm it before using it.
+META cost=0.0936687 ms=3321 turns=1

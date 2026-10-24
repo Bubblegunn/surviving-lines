@@ -1,0 +1,37 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by ext --merge-identities
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --group-by ext 2>&1 | sed -n '1,12p;/^\.md/,/^\.md/p' | head -20; git show --stat --format='%h %an %s' 62628c0 | tail -6
+FINAL ANSWER:
+Each figure below has two line counts: non-blank lines first, then lines counting blank lines. All numbers come from `surviving-lines --group-by ext --merge-identities`, run at HEAD (62628c0) across all 18 files, which is 1,662 non-blank lines (1,995 counting blank lines).
+
+| Type | Size | Top owner | Next |
+|---|---|---|---|
+| `.js` (7 files) | 1,032 / 1,202 | **Troy Goode**: 564 (54.7%) / 676 (56.2%) | Douglas Christopher Wilson: 362 (35.1%) / 394 (32.8%) |
+| `.yml` (6 files) | 314 / 375 | **Douglas Christopher Wilson**: 101 (32.2%) / 127 (33.9%) | Íñigo Marquínez Prado: 80 (25.5%) / 95 (25.3%) |
+| `.md` (2 files) | 253 / 341 | **Troy Goode**: 71 (28.1%) / 116 (34.0%) | Jon Church: 59 (23.3%) / 72 (21.1%) |
+| `.json` (1 file) | 40 (no blank lines) | **Douglas Christopher Wilson**: 20 (50.0%) | Troy Goode: 12 (30.0%) |
+| no extension (2 files, e.g. LICENSE) | 23 / 27 | **Douglas Christopher Wilson**: 21 (91.3%) / 21 (77.8%) | Troy Goode: 2 (8.7%) / 6 (22.2%) |
+
+**Things that affect these numbers:**
+- **Troy Goode's two addresses were combined, but that's a guess.** The tool matched <email redacted> and troy@laptop.example by name and address only; nothing was written to `.mailmap`. Counted separately for `.js`, the gmail address has 520 (50.4%) / 628 (52.2%) and the laptop address has 44 (4.3%) / 48 (4.0%). That still makes Troy the top `.js` owner. Every `.md` line of Troy's is from the gmail address, so that row doesn't change.
+- **The 62628c0 reformat was set aside.** That commit ("style: reformat js with 4-space indent and double quotes") rewrote 1,016 lines in 4 `.js` files. I confirmed it with `git show --stat`. Its lines are credited back to whoever wrote them before. Without this correction, the tool reports that Troy (both addresses together) would have 554 lines instead of 649 across the whole repo, and Douglas 376 instead of 551.
+- **Lines are credited to the author, not the committer.** For example, the `.yml` lines from Íñigo and Sebastian Beltran were committed by GitHub but count as theirs.
+- **Bots are excluded.** dependabot[bot] has 10 lines and 11 commits, none of them counted.
+- **One person appears under two names.** alex94puchades (30 `.js` lines) shares an address with Alejandro Caravaca Puchades, and the tool counts them as one person.
+- **Seven possibly mechanical commits were kept in the counts.** The tool flagged them but didn't set them aside, for example 739dc11 "docs: reformat license" (17 lines). I didn't re-run without them.
+
+**Concentration risk by type:** the bus factor here is the smallest number of authors who together hold 50% of the lines.
+- **`.js`:** 1. Troy alone holds over half, and he's also the only owner who committed in the last 365 days. The tool flags this as a single point of failure.
+- **`.yml`:** 2 (Douglas and Íñigo). Neither has committed in the last 365 days, and 58.0% of the lines belong to inactive people, so the tool flags `.yml` as orphaned.
+- **`.json`:** 1 (Douglas). Flagged as a single point of failure.
+- **No extension:** 1 (Douglas). Flagged as both a single point of failure and orphaned.
+- **`.md`:** 2 (Troy and Jon Church).
+
+These counts show whose lines are still there. They don't measure code quality, review work, or who actually understands the code.
+META cost=0.21806479999999998 ms=31359 turns=5

@@ -1,0 +1,30 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | xargs -0 -n1 -P8 sh -c 'f="$0"; git blame --line-porcelain -w -- "$f" 2>/dev/null | grep -a "^author " | sed "s/^author //" | sed "s|^|${f##*/}\t|"' > /tmp/blame.txt; awk -F'\t' '{n=split($1,a,"."); ext=(n>1&&a[1]!=""?"."a[n]:$1); c[ext"\t"$2]++} END{for(k in c)print k"\t"c[k]}' /tmp/blame.txt | sort -t$'\t' -k1,1 -k3,3nr | awk -F'\t' '!s[$1]++{print $1"\t"$2"\t"$3}'
+FINAL ANSWER:
+Top owner by surviving lines (`git blame -w`, which ignores whitespace-only changes), grouped by extension:
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 107 |
+| `.json` | Douglas Christopher Wilson | 20 |
+
+Files with no extension or only a dotfile name are grouped by file name:
+
+| File | Top owner | Lines |
+|---|---|---|
+| `LICENSE` | Douglas Christopher Wilson | 17 |
+| `.eslintrc.yml` | Douglas Christopher Wilson | 9 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+
+- **Parsing glitch:** The raw output had one garbled line, probably from parallel processes interleaving their output. It looks like a single line, so it shouldn't change any of the results.
+- **Name matching:** I matched owners by the author name in git, not by email. If one person has committed under more than one name, their lines are split across those names.
+- **Dotfile grouping:** `.eslintrc.yml` is listed on its own because my extension parsing treated its leading dot as part of the name. It would otherwise count under `.yml`, which would add 9 lines to that row. The total there would still be Wilson's.
+- **Reformat commit:** The most recent commit reformatted the JS to 4-space indent and double quotes. Because `-w` ignores whitespace, the indent change doesn't take lines away from the original authors. Lines where the quotes changed are still attributed to the reformat commit.
+META cost=0.0378034 ms=10905 turns=2

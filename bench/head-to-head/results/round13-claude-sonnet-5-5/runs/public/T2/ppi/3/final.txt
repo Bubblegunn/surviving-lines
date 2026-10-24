@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib && for f in lib/*.js lib/**/*.js; do [ -f "$f" ] && { echo "== $f ($(wc -l <$f) lines; importers: $(grep -rl "$(basename $f .js)" --include=*.js lib index.js 2>/dev/null | grep -v "^$f$" | wc -l))"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -5; }; done; echo; echo ALL; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn | head -15; echo; echo RECENT; git log --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; git log -1 --format=%ad
+ - Bash: git log --all --no-merges --pretty=format:"%an" -- lib | wc -l; git log --all --no-merges --pretty=format:"%an" -- lib | sort -u | wc -l; echo; git log --no-merges --pretty=format:"%an|%ad" --date=short -- lib | sort -t'|' -k1,1 -u | head -3; echo; git log -1 --format='%an %ad' --date=short -- lib; echo; for a in "Troy Goode" "Douglas Christopher Wilson" "Alejandro Caravaca Puchades"; do echo "$a last commit anywhere:"; git log --all --author="$a" -1 --format=%ad --date=short; done; echo; git log --no-merges --since=1.year.ago --pretty=format:"%an" | sort | uniq -c | sort -rn | head; echo; git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -6
+FINAL ANSWER:
+**Bus factor of `lib/`: 1.** It is only just 1, though, and the real risk is that nobody besides Troy Goode is still around.
+
+`lib/` is a single file, `lib/index.js` (238 lines). It has 65 non-merge commits from 25 authors, and no other file in the repo imports it. Treat it as the project's entry point.
+
+| Author | Commits to `lib/` | Surviving lines (blame) | Last commit in repo |
+|---|---|---|---|
+| Troy Goode | 33 (51%) | 138 (58%) | 2026-04-10, active |
+| Douglas Christopher Wilson | 4 | 18 | 2021-09-07, inactive |
+| Alejandro Caravaca Puchades | 4 | 12 | 2015-05-28, inactive |
+| Raymond Feng | 1 | 7 | not checked |
+| LuisEGR | 1 | 6 | not checked |
+| Fiona Formatter | 1 | 32 | 2026-04-12, reformat commit only |
+
+The 32 lines blamed to Fiona Formatter come from the "reformat js with 4-space indent and double quotes" commit. That is a style change, not knowledge of the code, so I left it out of the ownership figures.
+
+**How many people have to leave?**
+- **One.** If Troy leaves, nobody holds more than 50% of the file. At 51% of commits and 58% of lines, Troy is just over the threshold.
+- **Practically, also one.** Of the other contributors I checked, Wilson last committed in 2021 and Puchades in 2015. Raymond Feng and LuisEGR I did not check. No one else has made a meaningful recent change to `lib/` in the last 90 days.
+- **Counting only active people,** knowledge is effectively held by Troy alone. I ran no 90-day activity check for the other 20-odd authors. The pattern in the repo's last year of commits is dependabot bumps plus a few one-off contributors, and none of them show up as `lib/` authors.
+
+**Caveats**
+- The history looks partly rewritten or squashed: the latest commit is dated 2026-04-12, but the recent commits were authored by a formatter account. Author attribution may undercount real ownership.
+- With a single 238-line file, the bus-factor numbers say less than they would across a larger tree.
+
+**Recommendations**
+1. **Immediate:** get a second maintainer to review the next few `lib/index.js` changes, so someone other than Troy has recent context.
+2. **Short-term:** write a short architecture note covering the file's handlers and edge cases. At 238 lines, a one-page doc is cheap.
+3. **Ongoing:** make sure the test coverage in the recent "vary header coverage" commit stays strong. Tests are the best substitute for a missing maintainer's knowledge.
+
+I did a direct git analysis instead of launching the contributor-analyzer agent, because the scope was one file.
+META cost=0.0711079 ms=21385 turns=5

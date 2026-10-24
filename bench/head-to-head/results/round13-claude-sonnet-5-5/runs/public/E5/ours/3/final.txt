@@ -1,0 +1,67 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/E5-ours-3/repo; $SL -- lib/index.js; echo ----; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -40; ls lib
+ - Bash: ls /private/tmp/r13/final/ 2>&1; ls /private/tmp/r13/final/ours-src 2>&1 | head; which surviving-lines
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E5-ours-3/repo; ls /private/tmp/r13/final/ours-src/bin 2>&1; SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL -- lib/index.js 2>&1 | head -50
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E5-ours-3/repo; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js -- lib/index.js 2>&1 | head -60
+FINAL ANSWER:
+`lib/index.js` is the `cors` middleware. It now has 214 non-blank lines (238 counting blank lines), and Troy Goode wrote most of them. I got the numbers from `surviving-lines` (blame-based, with the 4-space/double-quote reformat commit `62628c0` set aside). The history comes from `git log --follow`.
+
+## Who shaped it
+
+**Troy Goode (2013–2016) built it.**
+- He wrote the first versions in October 2013.
+- He added `Access-Control-Expose-Headers` support in March 2014.
+- He did the Express 4 support and the 2.3.2 and 2.4.0 fixes in July 2014. The 2.4.0 commit also added the `pause`/`resume` handling.
+- He switched it to the `vary` module in November 2014. The next commit, `fee800f`, restored support for non-Express apps.
+- He moved it to ESLint in May 2015.
+- He published 2.8.0 in August 2016.
+
+**A long run of contributors added individual features and fixes:**
+- Igor Soarez added `Vary: origin` for specific origins in 2014.
+- Alberto Leal fixed an overridden `options.origin` callback, Typicode added PATCH to the default methods, and Shane Tomlinson normalized method names to uppercase, all in 2014.
+- Raymond Feng removed a closure from `applyHeaders` in 2015.
+- Eran Tiktin fixed `Vary` being added for `*`, and max.laverse let CORS pass the preflight request on to `next()`. DracoBlue added exposed headers to the `OPTIONS` response. All three were in 2015.
+- Alejandro Caravaca Puchades (also committing as `alex94puchades`) added RegExp and array values for `options.origin` in May 2015.
+- Hannah Wolfe named the previously anonymous middleware function in 2016.
+
+**Douglas Christopher Wilson (2017–2021) maintained it.**
+- He fixed the `Vary` headers for dynamic `allowedHeaders`.
+- He fixed a crash when an options delegate had no `methods`.
+- He cleaned up lint, and he committed LuisEGR's 2021 lint change.
+- Others contributed in this period too. Tomek Kopczuk added `Vary: Origin` for regular-expression origins. Saad Tazi fixed an error with frozen options. Benjamin Eidelman added a Safari preflight workaround. Tom Arad fixed `maxAge: 0`.
+
+**Recent history is small.**
+- Troy Goode made `b2005d9` ("annotate handlers") on 2026-04-10, under the address `troy@laptop.example`.
+- The reformat commit `62628c0` came from "Fiona Formatter". It touched the whole file but the tool doesn't count it, so it takes no ownership.
+
+## Whose code is still there
+
+| Author | Non-blank lines (share) | Counting blank lines (share) |
+|---|---|---|
+| Troy Goode (`<email redacted>`) | 132 (61.7%) | 147 (61.8%) |
+| Douglas Christopher Wilson | 20 (9.3%) | 22 (9.2%) |
+| Alejandro Caravaca Puchades | 14 (6.5%) | 16 (6.7%) |
+| Troy Goode (`troy@laptop.example`) | 12 (5.6%) | 12 (5.0%) |
+| LuisEGR | 6 (2.8%) | 6 (2.5%) |
+| Raymond Feng | 6 (2.8%) | 7 (2.9%) |
+| max.laverse | 5 (2.3%) | 6 (2.5%) |
+
+- Another 15 authors hold 5.1% together. The largest of them is Mathias Buus at 0.9%.
+- The two Troy Goode addresses look like one person, which is a guess I haven't confirmed. If they are, he holds 144 lines (67.3%).
+- Without the reformat correction, Goode would hold 111 lines (51.9%).
+- Alejandro Caravaca Puchades's 14 lines include the `alex94puchades` commits, which share one email address.
+- 11 of Caravaca Puchades's lines were committed by Troy Goode, and 6 of LuisEGR's were committed by Wilson. The tool credits them to the original authors.
+
+## Ownership risk
+
+- The bus factor is 1: Goode alone holds over half the lines.
+- Only 1 of 18 authors has committed in the last 365 days. That is Goode, and they hold 67.3% of the lines. The other 32.7% belongs to people with no commit in that time.
+- Wilson's 9.3% is the largest share held by someone who is no longer active.
+
+This measures how many lines survived, not code quality, review work, or design decisions made elsewhere. Commit `fcd2b56` ("switch to ESLint; clean up", Goode, 5 surviving lines) may be a mechanical rewrite. I didn't set it aside, so those 5 lines are credited to Goode.
+META cost=0.08310509999999999 ms=27467 turns=5

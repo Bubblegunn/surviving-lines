@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-3/repo", "file": "time.go"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-3/repo", "file": "version7.go"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-3/repo", "file": "sql.go"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-3/repo", "inactive_after": "1 year ago"}
+ - Bash: ls; git log --oneline --diff-filter=D --name-only -- 'sql*.go' | head; git log -5 --format='%h %an %ad %s' --date=short -- sql_test.go; git shortlog -sne --since='1 year ago' HEAD | head
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-3/repo", "file": "database_sql.go"}
+ - Bash: git log --format='%h %an %ad %s' --date=short -8 -- time.go; git log --format='%h %an %ad %s' --date=short --follow -3 -- database_sql.go; git log --format='%an %ad' --date=short --since='1 year ago' | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+**Short answer:** Ravi Menon is the only person clearly still active, and none of the original authors of these files are. Alexander Rowe is a possible second reviewer. Their name appears in two forms in the history, so confirm with them directly.
+
+**Who wrote each part**
+
+| Area | Original authors | Still around? |
+|---|---|---|
+| `time.go` | MikeWang (v6/v7 added, 2023-11), Youngjae Lee (v6 timestamp fix, 2024-06), Nicu Micle (V6 from custom time, 2024-11), Alexander Rowe (`UnixMillis`, 2025-02) | MikeWang last committed 2024-07, Youngjae Lee 2024-06, Nicu Micle 2024-11. Rowe is the only one still possibly active. |
+| `version7.go` | MikeWang wrote 86% of the lines. Mei Chen wrote 9%. Ravi Menon, Alex Bozhenko, Andreas Deininger and David Kaufman wrote a few lines each. | MikeWang, Mei Chen, Bozhenko, Deininger and Kaufman are all inactive for over a year. Ravi Menon's change on 2026-05-05 is the newest line in the file. |
+| SQL (now `database_sql.go`; renamed from `sql.go` by Ravi Menon in 2025-03) | Justin Overfelt (44%, 2015), Andrew Stone, Daniel Souza, David E. Wheeler, Paul Borman, Steven Kaufman (last change 2021-01) | None are active. The code is about 5 years old, and Overfelt's last commit was in 2016. |
+
+**Caveats**
+- **`time.go` blame is misleading.** It shows Sam Okafor as the author of 100% of lines, but that comes from a "Normalize line endings" commit (2025-04-22). Sam is also inactive (last commit 2025-05). I used `git log` for the real authorship above.
+- **Rowe's identity is split.** The ownership tool lists "Alex Rowe" with a last commit of 2025-06-30. `git log` shows "Alexander Rowe" committing on 2026-03-09. These look like the same person under two name forms, but I haven't confirmed that.
+- **One bad date.** A "Kofi Mensah" commit is dated 1970-01-01. This is probably bad metadata.
+
+**Who to ask**
+1. **Ravi Menon** (ravi.menon@harbor.example). They have the most recent commits (2026-05-05 and 2026-06-17). They touched `version7.go` and did the SQL file rename, so they're the strongest reviewer for all three areas.
+2. **Alexander Rowe** (alex.rowe@mailbox.example). They added `UUID.UnixMillis` for v7 in `time.go` and committed as recently as 2026-03. Check that the two name forms are the same person.
+
+Across the whole repo, 37 of 40 files are mostly owned by authors who haven't committed in over a year. Reviews of v6/v7 and SQL behavior will mostly rely on the code and tests rather than on anyone's memory of why it was written that way.
+META cost=0.0989383 ms=20378 turns=9

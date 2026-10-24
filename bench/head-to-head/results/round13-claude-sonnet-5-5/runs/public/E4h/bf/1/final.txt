@@ -1,0 +1,37 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git log --format='%h %an <%ae> %s' | head -30; git log --oneline | wc -l; git ls-files | grep -v '^\(lib\|test\|.github\)/' | head -30; ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts 2>&1 | head
+ - Bash: git ls-files | grep -v -e '^test/fixtures' > /tmp/files.txt; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author-mail /{m=$2} /^\t/{print f"\t"m}'; done > /tmp/blame.tsv; awk -F'\t' '{split($1,p,"/"); z=(index($1,"/")?p[1]:"(root)"); c[z" "$2]++; t[z]++} END{for(k in c){split(k,a," "); printf "%s %s %d/%d %.0f%%\n",a[1],a[2],c[k],t[a[1]],100*c[k]/t[a[1]]}}' /tmp/blame.tsv | sort -k1,1 -k3 -t' ' | sort -k1,1 -k4,4nr | awk '{n[$1]++; if(n[$1]<=5)print}'
+ - Bash: git log --format='%an|%ae' | sort | uniq -c | sort -rn | grep -i -e troy -e doug -e bot -e jon -e inigo; grep -c bot /tmp/blame.tsv; grep bot /tmp/blame.tsv | cut -f1 | sort | uniq -c
+FINAL ANSWER:
+Troy Goode is the only person who holds at least half of the surviving lines, and only in `lib/` and `test/`. `.github/` and the root files have no majority owner.
+
+I counted with `git blame` on the current tree, so only surviving lines count. The formatting commit (62628c0) is skipped, and `-w -M -C` ignores whitespace and moved or copied lines. I dropped dependabot's lines from the totals, about 23 in `.github/` and 2 in the root `package.json`. Troy appears under two emails (`<email redacted>` and `troy@laptop.example`), so I merged them into one person.
+
+| Area | Top holder | Share of surviving lines | Verdict |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 67% | Owner |
+| `test/` | Troy Goode | 517/966 = 54% | Owner |
+| `.github/` | Douglas Wilson | 118/351 = 34% | Nobody at 50% |
+| root files | Troy Goode | 146/415 = 35% | Nobody at 50% |
+
+In `.github/`, the next largest holders are Íñigo Marquínez (25%) and Sebastian Beltran (17%). In the root files, Douglas Wilson holds 28% and Jon Church 17%.
+
+Suggested CODEOWNERS:
+
+```
+# Nobody holds >=50% of surviving lines in .github/ or the root files, so no owner is named.
+/lib/   @<troy-github-handle>
+/test/  @<troy-github-handle>
+```
+
+- **Handle:** I used a placeholder for Troy's GitHub handle because I only have git emails. I ran no GitHub lookups.
+- **Troy's activity:** I didn't check whether he is still active. His latest commits are the two recent ones under `troy@laptop.example`, but I didn't check anything beyond that. If he has left, naming him would block reviews on every PR touching those paths.
+- **Skill not used:** I did not run the busfactor skill's script. It weights commits by age rather than counting surviving lines, so it wouldn't have answered your rule.
+- **Blame caveat:** Blame credits a line to whoever last changed it, so a past mechanical edit can inflate someone's share.
+META cost=0.079142 ms=21691 turns=6

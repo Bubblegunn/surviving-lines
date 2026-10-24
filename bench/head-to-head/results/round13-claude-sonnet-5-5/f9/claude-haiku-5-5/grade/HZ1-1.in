@@ -1,0 +1,230 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+We are handing the colorama project over to a new team next month. Who actually wrote the Python code that is in the repository today, and how exposed are we if the two biggest contributors stop answering our questions?
+
+CRITERIA:
+1. Top two owners. PASS: Jonathan Hartley is named top owner with 51-59% of surviving Python lines (truth 55.2%), and Arnon Yaari is named second as ONE person (his names/addresses merged, including wiggin15) with 9-15% (truth 12.0%). FAIL: Hartley outside 51-59%; Dana Kessler (or anyone other than Arnon Yaari) named second; Arnon's identities listed as separate people with none of them reaching 9%.
+2. Formatter, vendored code, bots. PASS: the answer's own numbers give Dana Kessler (who ran the formatter and added the vendored module) at most 3% of the lines (truth 0.7%, 14 lines), and it states or clearly implies that the vendored colorama/_vendor lines (about 1,100) and the formatter/bot rewrites were not counted as authorship. FAIL: Dana Kessler at 10% or more, or presented as a major owner; any bot (pre-commit-ci, dependabot) credited with surviving lines; the vendored module counted as someone's code without a flag.
+3. Revert/re-apply and applied patch. PASS: Priya Nair is credited with her cursor helpers and Windows Terminal helper (about 28 lines, 1.0-2.0%) although Jonathan Hartley committed the "Reapply" commit, and Tomas Ibarra is credited with the winterm clamp patch (about 15 lines) although Hartley committed it; if the answer lists contributors down to 1% it must include Priya. FAIL: Priya's lines credited to Hartley or reported as 0; Tomas Ibarra's patch credited to Hartley (committer); Priya missing from a list that goes below 1%.
+4. Bus factor and exposure. PASS: the answer says that Hartley alone holds more than half of the surviving lines, so the bus factor is 1 (a statement that the smallest set reaching 50% has one person is enough), and that the top two together hold 63-71% (truth 67.2%). FAIL: bus factor stated as 3 or more; top-two share below 60% or above 74%; Hartley and Arnon not identified as the top two.
+5. People who left. PASS: the answer names Nathaniel J. Smith (about 10%) and Delgan (about 5.5%) as no longer active (no commits for years), reports that the lines owned by people with no commit in the last 12 months are 25-35% of the code (truth 29.9%), and does not list Hartley, Arnon Yaari, Priya Nair, Tomas Ibarra or Dana Kessler as having left. FAIL: Smith or Delgan described as active; share of lines owned by departed people below 20% or above 40%; Hartley or Arnon described as having left.
+
+GROUND TRUTH (computed by a script with git blame):
+FIXTURE HEAD 475b3d409fa353502cf44201a90eb42ebb62b822
+SCOPE files 23 lines 1936 | vendored files excluded 2 lines 1104
+
+== surviving lines per person (canonical, ignoring formatter+bot revs, reapply credited to original author)
+  Jonathan Hartley          1069   55.2%
+  Arnon Yaari                232   12.0%
+  Nathaniel J. Smith         196   10.1%
+  Delgan                     107    5.5%
+  John Szakmeister            62    3.2%
+  Segev Finer                 37    1.9%
+  Priya Nair                  28    1.4%
+  hoefling                    23    1.2%
+  Florian Bruhin              23    1.2%
+  Matt Olsen                  22    1.1%
+  George Ogden                21    1.1%
+  Max Tilley                  15    0.8%
+  Tomás Ibarra                15    0.8%
+  Dana Kessler                14    0.7%
+  Zearin                      14    0.7%
+  Andy Neff                   14    0.7%
+  Hugo van Kemenade           10    0.5%
+  (people below 0.4%: 15 , together 1.8%)
+
+== naive: plain git blame, all .py incl vendored, no flags, no alias merge (author name only)
+  Dana Kessler              1324   43.6%
+  Jonathan Hartley           873   28.7%
+  Arnon Yaari                220    7.2%
+  Nathaniel J. Smith         204    6.7%
+  Delgan                     107    3.5%
+
+== commit share (humans, merged identities), top 5 of 402 commits
+  Jonathan Hartley           130   32.3%
+  Arnon Yaari                116   28.9%
+  Hugo van Kemenade           26    6.5%
+  Nathaniel J. Smith          17    4.2%
+  Jon Dufresne                13    3.2%
+
+== bus factor (>=50% of surviving lines): 1 ['Jonathan Hartley'] 55.2%
+top two: ['Jonathan Hartley', 'Arnon Yaari'] own 67.2% of surviving lines
+
+== activity: last authored commit; left = last commit before 2025-10-15
+  Jonathan Hartley         last 2026-07-03  active lines 1069 (55.2%)
+  Arnon Yaari              last 2026-05-13  active lines  232 (12.0%)
+  Nathaniel J. Smith       last 2022-11-01  LEFT   lines  196 (10.1%)
+  Delgan                   last 2018-10-15  LEFT   lines  107 (5.5%)
+  John Szakmeister         last 2014-11-01  LEFT   lines   62 (3.2%)
+  Segev Finer              last 2017-07-30  LEFT   lines   37 (1.9%)
+  Priya Nair               last 2026-09-12  active lines   28 (1.4%)
+  hoefling                 last 2018-09-11  LEFT   lines   23 (1.2%)
+  Florian Bruhin           last 2014-08-26  LEFT   lines   23 (1.2%)
+  Matt Olsen               last 2015-09-13  LEFT   lines   22 (1.1%)
+  George Ogden             last 2021-08-15  LEFT   lines   21 (1.1%)
+  Tomás Ibarra             last 2026-08-04  active lines   15 (0.8%)
+  Dana Kessler             last 2026-08-20  active lines   14 (0.7%)
+lines owned by people who left: 578 = 29.9%
+lines owned by people active in the last 12 months: 70.1%
+active owners: [('Jonathan Hartley', 1069, '55.2%'), ('Arnon Yaari', 232, '12.0%'), ('Priya Nair', 28, '1.4%'), ('Tomás Ibarra', 15, '0.8%'), ('Dana Kessler', 14, '0.7%')]
+
+== hazard specifics
+  Priya Nair: 28 lines (1.4%)
+  Dana Kessler: 14 lines (0.7%)
+  Tomás Ibarra: 15 lines (0.8%)
+  Jonathan Hartley: 1069 lines (55.2%)
+  bots owning lines: {}
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/<tool>" --include '*.py' 2>&1 | head -120
+FINAL ANSWER:
+**Short answer:** Jonathan Hartley wrote most of the Python code that survives today, and he is the only active author who holds a large share of it. If he stops answering, the handover loses its main source of knowledge. The two other large contributors have not committed in years, so they are already out of reach for maintenance, even if they still answer emails.
+
+The Python figures below come from surviving-lines run with `--include '*.py'` in the repository. The whole-repository figures come from the ownership brief computed at commit 475b3d4. The interpretation is mine.
+
+| Author | Non-blank lines | With blank lines | Share | Last commit |
+|---|---|---|---|---|
+| Jonathan Hartley | 843 | 1,065 | 52.8% | 2026-07-03 |
+| Arnon Yaari (`<email redacted>`) | 217 | 232 | 13.6% | 2020-01-25 |
+| Nathaniel J. Smith | 169 | 196 | 10.6% | 2022-10-16 |
+
+Of 1,597 attributed non-blank Python lines, these three hold 77%. Another 44 authors hold about 6%.
+
+**Exposure**
+
+- **Hartley:** Bus factor is 1. He alone holds 52.8% of the Python lines, and he is the only active author with a large share. Four authors committed in the last year, and their combined share is 55.9%. Losing him leaves almost no one who has changed the code recently. Capturing his knowledge while he is still reachable is the most important step before the handover.
+- **Arnon and Nathaniel:** Together they hold 386 lines, 24.2% of the Python code. Neither has committed in years, so the tool counts their lines as having no active owner. Whether they still answer questions is a separate matter that git history cannot show. Their questions should be asked now.
+- **Overall:** The active authors hold 892 lines (55.9%). The other 44.1% belongs to people with no commit in the last year.
+
+**Caveats**
+
+- **Survival, not understanding:** These numbers measure which lines survive and who last changed them. They say nothing about who understands the design, who reviewed the work, or what was deleted on purpose.
+- **Reformat commit:** Commit c73f380, "Apply black-style string quotes", is set aside by default, so its lines go back to earlier authors. If you count it instead, Hartley's Python share falls to 713 lines (44.6%) of the 1,597. The tool then reports a bus factor of 2, because Hartley and Dana Kessler together lead the plain count. Dana Kessler holds 14 non-blank lines (0.5%) across the whole repository, from the brief. I did not print her Python-only figure.
+- **Merges:** About a quarter of commits are merges. Their lines are credited to the authors of the merged branch commits, not to whoever merged.
+- **Arnon's identity:** This is a proposal, not a confirmed fact. The tool suggests that `<email redacted>` and `<email redacted>` are one person, based only on names and addresses. I have not applied the merge and have not confirmed it. Unmerged, the `<email redacted>` address holds 217 Python lines (13.6%) in my Python-only run. The `<email redacted>` address holds 2 lines in the whole-repository brief, and its Python-only figure was not printed. Across the whole repository, the unmerged figures are 359 lines for `<email redacted>` and 2 for `<email redacted>`. If they are one person, the proposed merged total is 361 lines (13.7%).
+- **Dates:** The tool's activity window is anchored to 2026-09-12, not today (2026-10-24). This is unlikely to change the conclusions, since the last-commit dates are well outside any window that matters.
+- **Scope:** The whole-repository brief gives Hartley 55.6%. It includes non-Python files such as `pyproject.toml` and the README, which I did not re-run separately.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: echo "== shortlog ==" && git shortlog -sne HEAD | head -30 && echo "== tracked py files ==" && git ls-files '*.py' | wc -l && git ls-files '*.py' && echo "== total commits ==" && git rev-list --count HEAD
+ - Bash: for f in $(git ls-files '*.py'); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail' ; done | sort | uniq -c | sort -rn | head -30
+ - Bash: echo "== dana/priya commits ==" && git log --author='dana.kessler\|priya.nair' --format='%h %ad %an <%ae> %s' --date=short && echo "== per-file dana lines ==" && for f in $(git ls-files '*.py'); do n=$(git blame --line-porcelain -- "$f" | grep -c '^author-mail <dana.kessler'); [ "$n" -gt 0 ] && echo "$n $f"; done && echo "== commit date range ==" && git log --format='%ad' --date=short | sed -n '1p;$p'
+ - Bash: echo "== aa872f7 (vendor) ==" && git show --stat --format='%s' aa872f7 | tail -3 && echo "== c73f380 (quotes) ==" && git show --shortstat --format='%s' c73f380 && echo "== recent commits by author, last 24 months ==" && git log --since='2024-10-24' --format='%an' | sort | uniq -c | sort -rn | head -15 && echo "== last commit per top author ==" && for a in "Jonathan Hartley" "Arnon Yaari" "Nathaniel J. Smith" "Jon Dufresne" "Hugo van Kemenade" "Dana Kessler" "Priya Nair" "wiggin15"; do echo "$a: $(git log --author="$a" -1 --format='%ad' --date=short)"; done
+ - Bash: for f in colorama/ansi.py colorama/ansitowin32.py colorama/initialise.py colorama/win32.py colorama/winterm.py colorama/__init__.py; do echo "== $f"; git blame --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+The two people you'd lose are Jonathan Hartley and Arnon Yaari. Jonathan is the bigger exposure. Your biggest raw line-count contributor, Dana Kessler, is misleading, so I'd discount that number.
+
+**Who wrote the current Python code** (`git blame` on the 25 tracked `.py` files, counting surviving lines)
+
+| Author | Surviving lines | Notes |
+|---|---|---|
+| Jonathan Hartley | 873 | Original author and current maintainer; 130 commits; last commit 2026-07-03 |
+| Arnon Yaari | ~220 | ~85 commits across two identities; last commit 2026-05-13 |
+| Nathaniel J. Smith | ~204 | Last commit 2022-11-01, so already unresponsive |
+| Dana Kessler | 1,324 (misleading) | About 1,100 lines are one vendored file (`colorama/_vendor/_typing_compat.py`, commit `aa872f7`) and ~220 lines are a quote-style reformat (`c73f380`). Her real logic work is a handful of commits, e.g. `Honour NO_COLOR in init()` |
+| Priya Nair | small | Two commits, including `Add is_windows_terminal() helper` |
+
+I'm treating the two `Arnon Yaari` identities (`<email redacted>` and `<email redacted>`) as one person based on the shared name. That's an inference, so confirm it.
+
+**Exposure by module** (top line authors)
+
+- `ansitowin32.py`: Jonathan 140, Arnon 42, Dana 25. This is the core ANSI-to-Win32 conversion layer.
+- `win32.py`: Jonathan 105, Arnon 33, Segev Finer 26.
+- `winterm.py`: Jonathan 85, Arnon 60, Nathaniel Smith 19.
+- `initialise.py`: Nathaniel Smith 40, Jonathan 38, Florian Bruhin 18.
+- `ansi.py`: John Szakmeister 38, Jonathan 20, Arnon 20, Dana 18.
+
+**How exposed you are**
+
+- **High on the Windows path.** `ansitowin32.py`, `win32.py` and `winterm.py` are where Jonathan and Arnon hold most of the knowledge. Those modules are hard to reason about from the code alone, and they're the ones most likely to need changes if Windows terminal behavior shifts.
+- **Moderate on the rest.** `ansi.py` and the demos are spread across more authors and are simpler.
+- **Already partly exposed.** Nathaniel Smith is unresponsive and still owns a fair amount of `initialise.py` and `winterm.py`.
+- **Partial safety net.** The tests in `tests/` (e.g. `ansitowin32_test.py`, `winterm_test.py`) cover these modules, so regressions should be catchable. I did not check how complete the coverage is.
+
+**Caveats**
+
+- Blame measures surviving lines, not design authority. Someone who reviewed or shaped the code without typing much won't appear here.
+- I only looked at git history. I didn't check issue trackers, mailing lists or review activity, and I can't tell whether Jonathan or Arnon are actually reachable.
+- I didn't verify where `_typing_compat.py` came from. Since it's vendored third-party code, confirm its upstream source and license before handover.
+
+**Suggested next steps before the handover**
+
+1. Ask Jonathan and Arnon for a short walkthrough of `ansitowin32.py` and `winterm.py` while they're still active.
+2. Get written notes on the Windows-specific behavior and any known edge cases.
+3. Confirm Arnon's identity mapping and the vendored file's provenance.
+
+I didn't change anything in the repo or make a commit.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "Colorama handover next month. Who wrote the Python code in the repo today, and how exposed are we if the two biggest contributors stop responding? Focus on the current Python source, not docs or CI config."}
+ - Bash: git ls-files '*.py' | grep -v -E '^(docs|\.github)/' ; echo "---"; git ls-files '*.py' | wc -l; echo "--- total commits / authors"; git shortlog -sne --all | head -30
+ - Bash: for f in $(git ls-files '*.py'); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -30; echo "--- last commit date per top author"; git log --all --format='%an %ad' --date=short | sort | awk '{print}' | tail -5
+ - Bash: git log --all --format='%h %an <%ae> %ad %s' --date=short --author='Dana Kessler' | head -20; echo "--- Dana total commits:"; git log --all --author='Dana Kessler' --oneline | wc -l; echo "--- Priya:"; git log --all --format='%h %an %ad %s' --date=short --author='Priya Nair' | head; echo "--- top-level dates"; git log --all --format='%ad' --date=short | sort | sed -n '1p;$p'; echo "--- files Dana owns (blame lines)"; for f in $(git ls-files '*.py'); do n=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep -c '^author Dana Kessler'); t=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep -c '^author '); [ "$t" -gt 0 ] && echo "$n/$t $f"; done | sort -rn | head -30
+ - Bash: for f in $(git ls-files '*.py'); do t=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep -c '^author '); echo "== $t $f"; git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done 2>/dev/null | head -150
+ - Bash: echo "--- last/first commit per author (top 12 by commits, merged by name)"; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '{ if(!($1 in first)||$2<first[$1]) first[$1]=$2; if($2>last[$1]) last[$1]=$2; c[$1]++ } END { for (a in c) printf "%d\t%s\t%s\t%s\n", c[a], a, first[a], last[a] }' | sort -rn | head -15; echo "--- total python lines (current)"; git ls-files '*.py' | xargs cat | wc -l; echo "--- Dana non-vendor lines"; for f in $(git ls-files '*.py' | grep -v _vendor); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | awk '{print}' | sort | uniq -c | sort -rn | head -6; echo "--- Dana commits touching python in last 6 months"; git log --
+ - Bash: grep -rn "_typing_compat\|_vendor" --include=*.py . | grep -v "^./colorama/_vendor/_typing_compat.py"; echo "--- Dana vendored commit"; git show --stat aa872f7 | head -20; echo "--- Priya/Dana helper ownership"; git log --all --format='%h %an %ad %s' --date=short -- colorama/ansi.py | head -5
+ - Bash: grep -rn "_typing_compat\|colorama._vendor\|from \._vendor\|from \.\_vendor" -- '*.py' | grep -v "_vendor/_typing_compat.py:" ; echo "exit=$?"
+ - Bash: git grep -n "_typing_compat\|_vendor" -- '*.py' ; echo "exit=$?"
+FINAL ANSWER:
+## Bus factor: colorama Python source (all history, English)
+
+**Short answer:** The code is spread across many people. The real exposure is narrower than the headline numbers suggest. Jonathan Hartley is the one active core maintainer, and he is effectively the single point of failure for the core library. Arnon Yaari, the second-largest contributor by commits, has not committed since June 2022.
+
+### Who wrote the code that is in the repo today
+
+I ran `git blame` over the 25 tracked `.py` files, 3,039 lines in total. Blame counts the lines that survive today, not commits.
+
+| Author | Surviving lines | Share of total | Last commit | Status |
+|---|---|---|---|---|
+| Dana Kessler | 1,324 | 44% | 2026-08-20 | Active (4 commits, Jul–Aug 2026) |
+| Jonathan Hartley | 873 | 29% | 2026-07-03 | Active |
+| Arnon Yaari | 220 | 7% | 2022-06-17 | Inactive about 4 years |
+| Nathaniel J. Smith | 204 | 7% | 2022-10-16 | Inactive |
+| Delgan | 107 | 4% | not checked | Unknown |
+| John Szakmeister | 69 | 2% | not checked | Unknown |
+| Others | about 240 | 8% | mixed | Mostly inactive |
+
+Dana's share is misleading. **1,103 of her 1,324 lines are one vendored file**, `colorama/_vendor/_typing_compat.py`, added in one commit ("Vendor typing compatibility shims", 2026-07-12). Nothing in the tracked Python imports `_typing_compat` or `_vendor`. Excluding that file, the total is 1,936 lines and Dana's share is about 11%.
+
+Commit counts tell a different story. The two largest by commits are Jonathan Hartley (85 non-merge commits) and Arnon Yaari (64, plus about 47 more under the `wiggin15` alias).
+
+### Exposure if the two biggest contributors stop answering
+
+Read as "the two people whose code is most in the repo," that is **Dana and Jonathan**. Read as "the two most prolific committers," that is **Jonathan and Arnon**. I'm reporting both.
+
+- **Jonathan Hartley:** He is the main owner of the core Windows and ANSI path. He owns about 51% of `ansitowin32.py`, 54% of `win32.py`, and 42% of `winterm.py`. He is active, so for now he is reachable. If he stops, nobody left holds the ANSI-to-Win32 translation logic in depth.
+- **Arnon Yaari:** He is inactive, so for knowledge purposes he is already gone. He wrote about 30% of `winterm.py` and about 15% of `ansitowin32.py`. Any question about why that code behaves as it does has to go to the code or to Jonathan.
+- **Dana Kessler:** Her surviving code is almost entirely an unused vendored shim. If Dana is unreachable, the open question is why the shim was added. Her four commits also include real behaviour changes, such as "Honour NO_COLOR in init()", so that answer matters too.
+
+**Core library files have no single owner above about 55%.** The most concentrated real modules are the small ones:
+- `demos/demo09.py` is 100% George Ogden (inactive since 2015).
+- `tests/isatty_test.py` is 98% Delgan.
+- `demos/demo07.py` is 77% Arnon Yaari.
+- `demos/demo08.py` is 71% Matt Olsen (inactive since 2015).
+
+These are low-risk because they are demos and a single test file.
+
+**Project-level bus factor: about 2.** If Jonathan and one other person disappear, more than half of the code that matters would have no knowledgeable owner. Jonathan plus Dana account for 73% of all surviving lines, but 56% if the vendored shim is excluded. Those are the two people whose answers matter.
+
+### Recommendations
+
+1. **Before handover:** Get a written walkthrough from Jonathan of `ansitowin32.py`, `win32.py`, and `winterm.py`. Those three files carry most of the risk.
+2. **Ask Dana** why `_typing_compat.py` was vendored, and whether it should stay. If nothing imports it, it is dead code that adds about 1,100 lines of maintenance surface. Confirm before deleting it.
+3. **Check whether Arnon can still be reached** through the `wiggin15` or Arnon Yaari addresses. If not, record his modules as unowned.
+4. **Pair on `winterm.py`** (Jonathan 42%, Arnon 30%, Nathaniel 9%) so someone outside those two learns the Windows console path.
+
+### Limits of this analysis
+
+- I did this directly, not through the contributor-analyzer subagent the skill calls for. The numbers come from `git blame` and `git log` over the tracked `.py` files.
+- I only measured dependents for the vendored shim, which has none. I did not run an import-graph count for the other files, so "critical" here is judged from file role, not from how many files import each one.
+- colorama is a published library. Its external users depend on this code, and git history cannot show that exposure.
+- I did not check whether Delgan, John Szakmeister, or Priya Nair are still reachable. Priya Nair made two commits in 2026 and is probably active.

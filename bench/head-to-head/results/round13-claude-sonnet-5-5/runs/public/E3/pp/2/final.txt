@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-pp-2/repo
+run(){ for f in $(git ls-files); do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w -M -C --line-porcelain $1 -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author /$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";if(e!=p){print e"\t"c"\t"$0;p=e}}'; }
+echo "== plain blame"; run ""
+echo "== ignoring reformat commit"; run "--ignore-rev 62628c0"
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-pp-2/repo
+git log -1 --format=%an 62628c0; git --version
+for f in $(git ls-files '*.js'); do git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- "$f" 2>&1 | grep '^author ' ; done | sort | uniq -c | sort -nr | head -5
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E3-pp-2/repo
+for f in $(git ls-files); do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author /$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";if(e!=p){print e"\t"c"\t"$0;p=e}}'
+FINAL ANSWER:
+Top owner of surviving lines for each file type, from `git blame` on every tracked file:
+
+| Extension | Top owner | Surviving lines |
+|---|---|---|
+| `.js` | Troy Goode | 676 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 127 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension (e.g. `LICENSE`) | Douglas Christopher Wilson | 17 |
+
+- **Reformat commit:** I ignored `62628c0` ("reformat js with 4-space indent and double quotes", by Fiona Formatter). Otherwise it would take credit for lines that were only restyled. With plain blame, Troy Goode's `.js` count drops from 676 to 581. They still come out on top.
+- **Other blame settings:** I also used `-w -M -C`, so whitespace changes and lines moved or copied between files don't change ownership.
+- **`.js` runner-up:** Douglas Christopher Wilson is second in `.js` with 394 lines.
+- **Method:** Counts are per line, by author name, not by email. If someone committed under more than one name, their lines are split across those names.
+META cost=0.05748879999999999 ms=16730 turns=4

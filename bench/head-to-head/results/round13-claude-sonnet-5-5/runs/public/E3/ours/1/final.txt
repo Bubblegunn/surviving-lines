@@ -1,0 +1,40 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --group-by ext --merge-identities
+FINAL ANSWER:
+Top owner of surviving lines per file type, from `surviving-lines --group-by ext --merge-identities`. The figures are non-blank lines, with the count including blank lines next to each.
+
+| Type | Files | Top owner | Non-blank lines (share) | Counting blank lines (share) |
+|---|---|---|---|---|
+| `.js` | 7 | Troy Goode (2 addresses) | 564 of 1,032 (54.7%) | 676 of 1,202 (56.2%) |
+| `.yml` | 6 | Douglas Christopher Wilson | 101 of 314 (32.2%) | 127 of 375 (33.9%) |
+| `.md` | 2 | Troy Goode | 71 of 253 (28.1%) | 116 of 341 (34.0%) |
+| `.json` | 1 | Douglas Christopher Wilson | 20 of 40 (50.0%) | not printed |
+| no extension | 2 | Douglas Christopher Wilson | 21 of 23 (91.3%) | 21 of 27 (77.8%) |
+
+Runners-up:
+- **`.js`:** Douglas Christopher Wilson has 362 (35.1%), or 394 (32.8%) counting blanks.
+- **`.yml`:** Íñigo Marquínez Prado has 80 (25.5%), or 95 (25.3%) counting blanks. Sebastian Beltran has 53 (16.9%).
+- **`.md`:** Jon Church has 59 (23.3%), or 72 (21.1%) counting blanks.
+- **`.json`:** Troy Goode has 12 (30.0%).
+
+**Caveats**
+- **Merged identity:** Troy Goode's `.js` figure merges two addresses, `<email redacted>` and `troy@laptop.example`. This is a guess from names and addresses, and nothing was written to `.mailmap`. Unmerged, the `.js` and `.md` rows are close to the merged ones. The whole-repo split is 605 lines for `<email redacted>` and 44 for `troy@laptop.example`, but I didn't get a per-type split. Troy Goode's `.md` figure is also not merged. The tool listed the merge as in memory only.
+- **Reformat commit set aside:** `62628c0` rewrote 1,016 lines in 4 files, formatting only. It is left out of every figure. Counting it would drop Douglas Christopher Wilson's whole-repo share from 551 lines (33.2%) to 376 (22.6%). The tool didn't print a per-type version of that comparison.
+- **Mechanical rewrites:** The tool examined 136 commits that hold surviving lines and set aside 1. Seven more look mechanical and were not set aside. Examples are `739dc11` (license reformat) and `fcd2b56` (ESLint switch). I did not inspect them with `git show --stat`.
+- **Left out:** `dependabot[bot]` is excluded (10 lines, 11 commits).
+- **Credit:** Some commits were committed by GitHub for another author, and the lines go to the author. The `.yml` rows for Íñigo Marquínez Prado and Sebastian Beltran come from that.
+- **Alejandro Caravaca Puchades:** The same address appears as `alex94puchades`, and the tool counts them as one person (30 `.js` lines).
+
+**Risk by type** (single point and orphaned are separate findings)
+- **`.js`:** Troy Goode alone holds 54.7%, and the active bus factor is 1. 45.3% of the lines belong to people with no commit in the last 365 days.
+- **`.yml`:** The bus factor is 2, and the tool marks it orphaned. 58.0% of the lines belong to people with no recent commit. Among active people, Sebastian Beltran and Ulises Gascón together hold the majority.
+- **`.json` and no-extension files:** Both are single points. The no-extension files are also marked orphaned, because Douglas Christopher Wilson has no commit in the last 365 days. These are very small, at 40 and 23 lines.
+
+Bus factor here is the smallest number of authors whose surviving lines reach 50%. It measures how concentrated the remaining code is, not who understands it.
+META cost=0.09824079999999999 ms=18970 turns=4

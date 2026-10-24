@@ -1,0 +1,40 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%h %an <%ae> %s' | head -50; echo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn; git ls-files | awk -F/ '{print (NF>1)?$1:"(root)"}' | sort | uniq -c; ls -a; cat .mailmap 2>/dev/null
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w -M -C --line-porcelain -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done > /tmp/blame.tsv
+awk -F'\t' '{split($1,p,"/"); d=(length(p)>1)?p[1]:"(root)"; print d"\t"$2"\t"$3}' /tmp/blame.tsv | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{print}' | head -60
+echo ---files; awk -F'\t' '{c[$1"\t"$2]++} END{for(k in c)print c[k]"\t"k}' /tmp/blame.tsv | sort -k2,2 -k1,1nr | head -60
+ - Bash: awk -F'\t' '$1!~/\// && $2!~/bot/ {n[$2]++; t++} END{for(k in n)print n[k], k; print t, "TOTAL"}' /tmp/blame.tsv | sort -rn | head -5; echo; grep -c . /tmp/blame.tsv; awk -F'\t' '$1=="package.json"{n[$2]++} END{for(k in n)print n[k],k}' /tmp/blame.tsv | sort -rn | head -5
+FINAL ANSWER:
+Only `/lib/` and `/test/` have an owner. `.github` and the root files don't, because nobody holds half of the surviving lines in either.
+
+I blamed every tracked file, skipping the formatting commit `62628c0` (`-w -M -C`). I counted each person once and left dependabot out of the totals. Troy Goode's two emails (`<email redacted>` and `troy@laptop.example`) count as one person. So do Alejandro Caravaca Puchades and `alex94puchades`, who share an email.
+
+| Path | Top holder | Share of surviving lines | Result |
+|---|---|---|---|
+| `lib/` (1 file, 238 lines) | Troy Goode | 159 (67%) | Owner |
+| `test/` (909 lines) | Troy Goode | 517 (57%) | Owner |
+| `.github/` (366 lines) | Douglas Christopher Wilson | 118 (32%) | No owner |
+| Root files (415 lines of README, HISTORY, LICENSE and others) | Troy Goode | 134 (32%) | No owner |
+
+- **`.github`:** Wilson has 118 lines, Íñigo Marquínez Prado 95, Sebastian Beltran 63, Ulises Gascón 45 and Ignacio Mangas 44.
+- **Root:** Troy Goode has 134 lines, Wilson 115, Jon Church 72 and Linus Unnebäck 26. At the file level, Wilson leads `package.json` (20 of 39 non-bot lines, roughly half), `LICENSE` and `.eslintrc.yml`. Troy Goode leads `README.md` with 116 of 277 lines, which is 42%.
+
+Here is a suggested CODEOWNERS. I only have names from git history, so replace the placeholders with real GitHub handles:
+
+```
+# Owners only where one person holds >= 50% of surviving lines
+/lib/    @troygoode
+/test/   @troygoode
+
+# No single owner (top contributor below 50%):
+#   /.github/  - Wilson 32%, with Marquínez, Beltran, Gascón and Mangas each 12-26%
+#   root files - Troy Goode 32%, Wilson 28%, Church 17%
+```
+
+If you want CI and root files to have a reviewer anyway, a team entry such as `/.github/ @your-org/maintainers` would do that. I left it out because it isn't a single person.
+META cost=0.10211490000000001 ms=25109 turns=4

@@ -1,0 +1,49 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git show --stat --format='%h %an %s' 62628c0 | tail -5; echo ---; git ls-files | grep -vE '^(node_modules)/' | wc -l; ls -a
+ - Bash: cat > /tmp/own.sh <<'EOF'
+#!/bin/zsh
+# usage: own.sh [extra blame args]
+for f in $(git ls-files | grep -E '\.(js|md|json|yml|yaml|ts)$|^[^.]*$' ); do
+  [ -f "$f" ] && git blame -w -M -C --line-porcelain "$@" -- "$f" 2>/dev/null | grep '^author ' 
+done | sort | uniq -c | sort -rn
+EOF
+chmod +x /tmp/own.sh
+echo "== raw (-w only, no ignore-rev) =="; /tmp/own.sh | head -15
+echo "== ignoring reformat commit =="; /tmp/own.sh --ignore-rev 62628c0 | head -15
+ - Bash: for p in lib test; do echo "== $p =="; for f in $(git ls-files $p); do git blame -w -M -C --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6; done; echo; git show --stat --format='%h %an %s' b2005d9 | tail -4
+FINAL ANSWER:
+Troy Goode owns the most surviving code, and Douglas Christopher Wilson is second. I counted lines still in the tree with `git blame`, not commits.
+
+The most recent commit (`62628c0`, by "Fiona Formatter") reindented and re-quoted about 1,000 lines across `lib/` and `test/`. A plain blame gives her 291 lines, which is formatting rather than authorship. I used `-w -M -C` to ignore whitespace and track moved or copied lines, and `--ignore-rev 62628c0` to skip that commit. I counted lines in all tracked JS, JSON, YAML and Markdown files plus extensionless files like `LICENSE`.
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 809 |
+| Douglas Christopher Wilson | 625 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+The long tail is smaller still: Eric di Domenico 16, Alberto Leal 15, and a handful of others at 10 or fewer.
+
+The split by area:
+- **`lib/` (the library itself):** Troy Goode has 159 lines, Douglas Christopher Wilson 22, and Alejandro Caravaca Puchades 12. Troy owns most of the library code.
+- **`test/`:** Troy has 517 lines and Douglas 374. Douglas's share is much larger here than in `lib/`.
+
+These counts have some limits:
+- A blame count shows who last touched a line. Lines that were mechanically edited, like Troy's `b2005d9` "annotate handlers", are credited to the editor rather than the original author.
+- With `-w`, some lines changed only in whitespace stay credited to the original author. That is the behavior I wanted here.
+- Lines from squashed or rewritten history appear under whoever committed them.
+
+I can run the same count per directory or per file, or for a bus-factor view of which files depend on a single person.
+META cost=0.0579036 ms=17488 turns=4

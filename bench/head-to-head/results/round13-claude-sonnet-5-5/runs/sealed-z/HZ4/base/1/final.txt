@@ -1,0 +1,50 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-1/repo; git log --format='%an' | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files lib/grape_entity | head -50; echo; git ls-files | grep -i deleg; echo --- exposure; git log --format='%an' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | sort | uniq -c | sort -rn; echo --- deleg; git log --all --format='%an' -- '*delegator*' | sort | uniq -c | sort -rn
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-1/repo; echo "--- recency exposure+delegator"; git log --format='%ad|%an' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators | awk -F'|' '{if(!($2 in l))l[$2]=$1; f[$2]=$1; c[$2]++} END{for(a in c)print l[a], f[a], c[a], a}' | sort -r; echo "--- blame all lib"; for f in $(git ls-files lib); do git blame -w -M -C --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | head -10; echo "--- blame exposure+deleg"; for f in $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators); do git
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-1/repo; git log --format='%ad|%an' --date=short | grep -E 'Kochnev|Madsen|Tsepelev|McCarthy|Yunin|Marco|Doubrovkine|dblock|^.*\|dB$' | awk -F'|' '!($2 in l){l[$2]=$1} END{for(a in l)print l[a],a}' | sort -r; echo; git log --format='%ad|%an|%s' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb | head -12; git shortlog -sne | head -8; git blame -w --line-porcelain lib/grape_entity/*.rb | grep '^author ' | sort | uniq -c | sort -rn | head -3
+FINAL ANSWER:
+**Short answers**
+
+- **Reviewer for `lib/grape_entity/exposure` and the delegator code:** Marco Silva. Vladimir Kochnev wrote most of it but left in 2015.
+- **Who has effectively left:** Kochnev, Mark Madsen, Dmitry Tsepelev, James McCarthy, Alexander Yunin, LeFnord and Paul Padier.
+- **Most commits vs. most code:** They are different people.
+
+**Best reviewer**
+
+- **Marco Silva** is the only active person with substantial surviving code there. They own 147 of the lines in exposure and delegator code, second only to Kochnev. Their last commit to the repo was 2026-09-15, and they renamed `delegator/` to `delegators/` on 2026-07-21.
+- **Lena Brandt** (30 surviving lines) and **Anna Kowalczyk** (last touched exposure on 2026-08-10) are active secondary reviewers. Their changes there look incidental, such as the copyright headers, so treat them as backups.
+- **Daniel Doubrovkine (dB)**, the maintainer, is a reasonable final approver. Their last commit was 2026-04-11, but they have almost no code in these paths.
+
+**Effectively gone**
+
+My cutoff is no commits in several years. These are last-commit dates for the repo as a whole:
+
+| Person | Last commit | Surviving lines in exposure/delegator code |
+|---|---|---|
+| Vladimir Kochnev | 2015-09-18 | 493 |
+| Mark Madsen | 2013-01-20 | none (265 lines in `lib/` overall) |
+| Alexander Yunin | 2016-07-07 | 59 |
+| James McCarthy | 2017-04-05 | 68 |
+| Dmitry Tsepelev | 2018-01-29 | 66 |
+| LeFnord | 2019 (exposure last touched 2019-03-15) | 11 |
+| Paul Padier | 2023-12-13 | 20 |
+
+Kochnev is the largest case. They extracted the exposures and delegating logic in July 2015, and no one with that context is left.
+
+**Commits vs. code ownership**
+
+- **Most commits:** Daniel Doubrovkine, about 117 across their name variants (54 + 42 + 16 + 5). Peter Scholz is next at 35.
+- **Most code:** Kochnev owns 758 surviving lines in `lib/`, and 493 in exposure and delegator code. That comes from a handful of refactor commits. Kochnev has only 16 commits overall.
+- **Why they differ:** Doubrovkine's commits are mostly maintenance, releases and merges, so little of their code survives in `lib/`.
+
+**Caveats**
+
+- The blame numbers use `git blame -w -M -C` (whitespace changes ignored, moved and copied lines followed back to their origin). The Marco Silva and Lena Brandt counts could still be inflated by the rename and the copyright-header commit.
+- I merged the Doubrovkine and Andrey/Andrei Subbota name variants by hand. I did not use a `.mailmap`.
+- My blame run didn't cover `lib/grape_entity/*.rb` outside the exposure and delegator paths.
+META cost=0.0708078 ms=20652 turns=4

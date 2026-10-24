@@ -1,0 +1,35 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | grep -vE '(package-lock\.json|yarn\.lock|\.(png|jpg|gif|ico|woff2?)$)' | while read -r f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -20; echo; git log --format='%ae' | sort | uniq -c | sort -rn | head -5; git rev-list --count HEAD; git log --reverse --format='%ad' --date=short | head -1
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/T1-bf-2/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: git log -1 --format='%an <%ae> %ad' 62628c0; git log -1 --format='%an <%ae> %ad' b2005d9; git ls-files | grep -vE '(package-lock\.json|yarn\.lock|\.(png|jpg|gif|ico|woff2?)$)' | while read -r f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -12; echo; for e in <email redacted> <email redacted> <email redacted>; do echo "$e last: $(git log --author=$e -1 --format=%ad --date=short)"; done
+FINAL ANSWER:
+**Troy Goode and Doug Wilson (`<email redacted>`) own most of the code that's still here, but neither has committed recently.**
+
+I used `git blame` across all tracked files. I excluded lockfiles and binary assets, and I ignored the 2026-04-12 reformat commit (62628c0, "reformat js with 4-space indent and double quotes"). That commit rewrote the quote style on about 290 lines, and without ignoring it `fiona@formatter.example` showed up as the third-largest owner. I also counted this by blame lines, so a surviving line of any age counts the same.
+
+| Surviving lines | Author | Last commit |
+|---|---|---|
+| 762 | Troy Goode (`<email redacted>`) | 2019-05-27 |
+| 48 | Troy Goode (`troy@laptop.example`, likely the same person) | 2026-04-10 |
+| 629 | Doug Wilson (`<email redacted>`) | 2021-09-07 |
+| 95 | inigomarquinez | not checked |
+| 72 | Jon Church (`<email redacted>`) | not checked |
+| 67 | bjohansebas | not checked |
+| 52 | ulisesgascongonzalez | 2026-01-22 |
+| 44 | ignaciomangas | not checked |
+
+- **Troy and Doug:** Together they account for roughly two-thirds of the surviving lines. Counting both of Troy's emails, he is at about 810. Neither has committed for years, apart from Troy's April 2026 commit under the laptop email. Most of the code in the repo has no author who has touched it recently.
+- **Current maintainers:** Most of the recent maintenance comes from a small group, each with a small share: inigomarquinez, Jon Church, bjohansebas, ulisesgascongonzalez and ignaciomangas. Their activity (other than ulisesgascongonzalez's) is a guess from blame counts, since I didn't check their last-commit dates.
+- **Merging identities:** I assumed the two Troy emails are one person. That's a guess from the name.
+- **Excluded from the table:** The remaining authors each have 34 lines or fewer, and dependabot has 10.
+
+I also ran the busfactor plugin's script with `--dry-run --no-github`, so nothing was written to the repo. Its output was cut off at the first rules, so I can't give you its full ownership picture. It weights commits by recency, so it measures who has been active lately rather than whose code survives. It did name `fiona@formatter.example` as a top fallback owner, which looks like the reformat commit skewing it. It also flagged the history as imported, because the first commit has 8 files. I haven't verified that, so don't treat it as established.
+
+I can generate the full CODEOWNERS and orphaned-zone report, excluding the reformat commit. That would write files into `.github/`.
+META cost=0.0756144 ms=22233 turns=6

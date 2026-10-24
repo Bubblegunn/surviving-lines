@@ -1,0 +1,346 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}], "D": [{"n": 1, "reason": "...", "pass": true}], "E": [{"n": 1, "reason": "...", "pass": true}], "F": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+I need to route code reviews for grape-entity. Who is the best reviewer for lib/grape_entity/exposure and for the delegator code, who in that history has effectively left, and is the person with the most commits also the person who owns the most code?
+
+CRITERIA:
+1. Commits versus lines. PASS: Daniel Doubrovkine (dblock, "Daniel Doubrovkine (dB.) @dblockdotorg", "dB" and the other spellings merged) is identified as the person with the most commits, 28-36% of human commits (truth 31.8%), but with only 3-8% of surviving lines (truth 5.6%, 4th place); Vladimir Kochnev is identified as the largest line owner with 21-29% (truth 24.7%) and as having left (last commit 2015). FAIL: the answer says the person with the most commits is also the top line owner; Doubrovkine's names not merged (commit share below 20%); Kochnev not named top by lines.
+2. Reviewer for lib/grape_entity/exposure. PASS: the answer says Vladimir Kochnev wrote 62-76% of the directory (truth 69%), that the next authors (James McCarthy, Alexander Yunin) also left, and that people with a commit in the last 12 months own at most 8% of it (truth 2.6%), so no active person is a real code expert there; any recommended reviewer is presented as a stand-in. FAIL: an active person is said to have written most of exposure/; Kochnev, McCarthy or Yunin listed as available.
+3. Delegator code after the rename. PASS: the answer follows lib/grape_entity/delegators (renamed from delegator) back to its original authors: Vladimir Kochnev 68-82% (truth 75%), nobody active owns any line (0%), and Marco Silva, who did the rename, is not credited with the code. FAIL: Marco Silva credited with 10% or more of the delegator code; an active person named as owner of it.
+4. Copied file and applied patch. PASS: Marco Silva (two addresses, marco.silva@kestrel.example and <email redacted>, merged) is credited with at most 2% of the repository (truth 0.7%, 37 lines); the 141-line grouped_exposure.rb is credited mostly to the author of nesting_exposure.rb it was copied from (Vladimir Kochnev, about 100 lines, 60-80%); if Anna Kowalczyk's inspect/error-message patch is mentioned it is credited to Anna, not to Marco who committed it. FAIL: Marco Silva at 3% or more; grouped_exposure.rb credited mostly to Marco; Anna's patch credited to Marco.
+5. Mechanical lines, bots, departed share. PASS: Lena Brandt (copyright-header commit) is credited with 0 attributable lines (at most 1%) and the header lines are excluded or flagged; dependabot owns nothing; the answer says people with no commit in the last 12 months own 79-90% of the lines (truth 84.6%) and that Peter Scholz (LeFnord, merged, about 4%) has left while Andrey Subbota (Andrei/Andrey merged, about 3.3%) is active. FAIL: Lena Brandt above 1% or presented as an owner; a bot credited with lines; the departed share below 75%.
+
+GROUND TRUTH (computed by a script with git blame):
+FIXTURE HEAD 0217c80f31c1afd3ef976a6cda20bd5fd92e2c56
+SCOPE 41 ruby files, 5120 attributable lines; 70 mechanical lines excluded (copyright headers etc.)
+
+== surviving lines per person (>=1.5 pct) vs commit share (humans only: 374 commits; bots 8)
+  Vladimir Kochnev       lines  1265  24.7%   commits  16   4.3%   last 2015-09-18 LEFT
+  Mark Madsen            lines   746  14.6%   commits  11   2.9%   last 2013-01-20 LEFT
+  Marc Rohloff           lines   289   5.6%   commits   1   0.3%   last 2026-06-02 active
+  Daniel Doubrovkine     lines   286   5.6%   commits 119  31.8%   last 2026-04-11 active
+  Brian van de Boogaard  lines   258   5.0%   commits   1   0.3%   last 2018-01-25 LEFT
+  Peter Scholz           lines   207   4.0%   commits  45  12.0%   last 2024-04-10 LEFT
+  Dmitry Tsepelev        lines   197   3.8%   commits   4   1.1%   last 2018-01-29 LEFT
+  Andrey Subbota         lines   170   3.3%   commits  18   4.8%   last 2026-06-05 active
+  James McCarthy         lines   166   3.2%   commits   2   0.5%   last 2017-04-05 LEFT
+  Jared Wyatt            lines   108   2.1%   commits   4   1.1%   last 2014-01-11 LEFT
+  Alexander Yunin        lines    98   1.9%   commits   3   0.8%   last 2016-07-07 LEFT
+  justfalter             lines    95   1.9%   commits   8   2.1%   last 2014-06-11 LEFT
+  Estevão Mascarenhas    lines    91   1.8%   commits   2   0.5%   last 2015-03-20 LEFT
+  Ji Zhou                lines    89   1.7%   commits   1   0.3%   last 2015-07-09 LEFT
+most commits: Daniel Doubrovkine 119 (31.8%) -> owns 286 lines (5.6%), rank by lines # 4
+most surviving lines: Vladimir Kochnev 24.7%
+bus factor (>=50%): 4 ['Vladimir Kochnev', 'Mark Madsen', 'Marc Rohloff', 'Daniel Doubrovkine'] 50.5%
+lines owned by people who left: 4333 = 84.6%; by active people: 15.4%
+
+== directory owners (>=5% of directory lines)
+-- lib/grape_entity/exposure/ (718 lines)
+     Vladimir Kochnev        496  69.1%  last 2015-09-18 LEFT
+     James McCarthy           68   9.5%  last 2017-04-05 LEFT
+     Alexander Yunin          57   7.9%  last 2016-07-07 LEFT
+     lines owned by active people: 19 (2.6%)
+     best active reviewer: ('Marco Silva', 12)
+-- lib/grape_entity/delegators/ (67 lines)
+     Vladimir Kochnev         50  74.6%  last 2015-09-18 LEFT
+     James McCarthy            8  11.9%  last 2017-04-05 LEFT
+     Paul Padier               4   6.0%  last 2023-12-13 LEFT
+     lines owned by active people: 0 (0.0%)
+     best active reviewer: None
+-- lib/grape_entity/condition/ (110 lines)
+     Vladimir Kochnev         96  87.3%  last 2015-09-18 LEFT
+     James McCarthy            8   7.3%  last 2017-04-05 LEFT
+     lines owned by active people: 0 (0.0%)
+     best active reviewer: None
+-- lib/grape_entity/ (1902 lines)
+     Vladimir Kochnev        855  45.0%  last 2015-09-18 LEFT
+     Mark Madsen             264  13.9%  last 2013-01-20 LEFT
+     Dmitry Tsepelev         136   7.2%  last 2018-01-29 LEFT
+     James McCarthy          111   5.8%  last 2017-04-05 LEFT
+     Peter Scholz             99   5.2%  last 2024-04-10 LEFT
+     lines owned by active people: 124 (6.5%)
+     best active reviewer: ('Marc Rohloff', 40)
+
+== hazard specifics
+  Lena Brandt: 0 lines (0.00%), commits 1
+  Marco Silva: 37 lines (0.72%), commits 3
+  Anna Kowalczyk: 5 lines (0.10%), commits 1
+  grouped_exposure.rb owners: [('Vladimir Kochnev', 100), ('James McCarthy', 12), ('Marco Silva', 12), ('Dmitry Tsepelev', 12)] of 141
+  base.rb Anna lines: 5
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__blame_summary,mcp__tool__repo_summary", "max_results": 10}
+ - Bash: ls lib/grape_entity lib/grape_entity/exposure; grep -rli delegator lib
+ - mcp__tool__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-1/repo/lib/grape_entity/exposure"}
+ - mcp__tool__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-1/repo/lib/grape_entity/delegators"}
+ - mcp__tool__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-1/repo", "top": 15}
+ - mcp__tool__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-1/repo"}
+FINAL ANSWER:
+**Reviewers**
+
+- **`lib/grape_entity/exposure`:** Marco Silva is the best choice, but only for part of it. They own 100% of `grouped_exposure.rb` (143 lines) and last committed 2026-09-15. They are the only active person with real ownership there. For the other nine files, the active names are Lena Brandt (18 lines) and Anna Kowalczyk (5 lines, last commit 2026-08-10). Use Marco as the primary reviewer and Lena as a second.
+- **Delegator code** (`lib/grape_entity/delegators/*`): Lena Brandt is the only active contributor, and with 8 of 75 lines (about 11%) they know it only slightly. Treat it as having no real owner. `delegator.rb` and `exposure/delegator_exposure.rb` aren't in that count. In `delegator_exposure.rb`, Lena has 2 of 15 lines.
+
+**Who has effectively left**
+
+I counted anyone with no commit since 2026-04-24 as gone.
+
+- **Vladimir Kochnev:** last commit 2015-09-18. They are the main owner of 8 of the 10 exposure files and all 4 delegator files (66.7% of the delegator lines).
+- **Alexander Yunin:** last commit 2016-07-07. They own `nesting_exposure/output_builder.rb` (78%).
+- **James McCarthy:** last commit 2017-04-05. They own a few lines in nearly every file.
+- **Dmitry Tsepelev:** last commit 2018-01-29. They own parts of `nesting_exposure.rb` and `options.rb`.
+- **Others with small shares:** LeFnord (2020), peter scholz (2024) and Paul Padier (2023).
+
+Nine of the 10 exposure files and all four delegator files are orphaned. That means inactive authors own more than 50% of their lines. `grouped_exposure.rb` is the only exposure file that isn't.
+
+**Does the top committer own the most code?**
+
+No. By commit count the top author is dblock (38 commits), but they own 577 lines (8.5%). The top line owner is Vladimir Kochnev, with 1,170 lines (17.2%), and they have only 11 commits.
+
+Caveats:
+- **Commit counts are split across aliases.** dblock also appears as "Daniel Doubrovkine (dB.) @dblockdotorg" (8 commits), "dB" and others. Andrei Subbota and Andrey Subbota (9 commits each) look like one person. The mailmap doesn't merge them. Even if you merge the aliases, dblock's total commits stay well above Kochnev's.
+- **Line ownership also splits dblock.** Their lines are spread over several names, but I don't expect merging them to pass Kochnev's 1,170 lines. I didn't add them up.
+- **Both numbers describe the old code.** dblock left in 2016 and Kochnev in 2015. The only active people who own much code are Marc Rohloff, Andrei Subbota (the last two commits for both are 2026-06-02) and Marco Silva. Marc and Andrei don't appear in the exposure or delegator ownership lists.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-pp-1/repo; echo "== exposure commits"; git log --format='%aN' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | sort | uniq -c | sort -rn; echo "== delegator commits"; git log --format='%aN' -- lib/grape_entity/delegator lib/grape_entity/delegator.rb | sort | uniq -c | sort -rn; echo "== last commit per author (all)"; git log --format='%aN|%aI' | awk -F'|' '!s[$1]++' | sort -t'|' -k2 -r | head -40; echo "== overall commits"; git shortlog -sn HEAD | head -10; ls lib/grape_entity lib/grape_entity/exposure lib/grape_entity/delegator 2>&1
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-pp-1/repo; echo "== delegator commits"; git log --format='%aN' -- lib/grape_entity/delegator.rb lib/grape_entity/delegators | sort | uniq -c | sort -rn
+echo "== recent (since 2025-01) on exposure+delegator"; git log --since=2025-01-01 --format='%aN|%aI|%s' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators
+echo "== last touch per author exposure+delegator"; git log --format='%aN|%aI' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators | awk -F'|' '!s[$1]++'
+echo "== emails"; git log --format='%aN <%aE>' | sort -u | grep -iE 
+FINAL ANSWER:
+**Short answer:** Marco Silva is the best reviewer for both areas, with Anna Kowalczyk or Lena Brandt as a second reviewer. Vladimir Kochnev wrote the most code but left long ago. The person with the most commits is not the person who owns the most code.
+
+I used `git log` for commits and `git blame -w -M -C` for surviving lines. Authors who appear under several names are merged where the emails match.
+
+**Best reviewer**
+- **Marco Silva** is the primary reviewer for `lib/grape_entity/exposure` and the delegator code.
+  - They own 147 surviving lines in those areas.
+  - Their last commit in the repo was 2026-09-15.
+  - They added `GroupedExposure` (2026-08-03) and renamed `delegator/` to `delegators/` (2026-07-21).
+  - Note that `lib/grape_entity/delegator/` no longer exists. The code is now `delegator.rb` and `delegators/`.
+- **Anna Kowalczyk** (last change 2026-08-10) and **Lena Brandt** (2026-07-14) are the only other recent contributors to these paths. Use them as second reviewers.
+  - They own few lines in these paths (5 and 30), so treat them as backup rather than deep owners.
+  - Lena's one commit there only added copyright headers.
+- The maintainers who are still active in the repo are dblock (last commit 2026-04) and Andrei/Andrey Subbota (2026-06). Neither has touched these paths recently, so they are better for design questions than for line-level review.
+
+**Effectively gone**
+Everyone below last touched these paths in 2024 or earlier. Their last commit anywhere in the repo is the same or later, with two exceptions. Peter Scholz committed elsewhere until 2024-04. Paul Padier committed in 2023-12 with no later commit.
+- Vladimir Kochnev (2015 on exposure; 493 lines still in these paths)
+- James McCarthy (2017)
+- Alexander Yunin (2016)
+- Dmitry Tsepelev (2018)
+- Brian van de Boogaard (2018)
+- Peter Scholz / LeFnord (2020 on these paths)
+- Paul Padier (2023)
+- Daniel Dao (2023)
+- Fabien Loup (2023)
+- The single-commit delegator contributors: Dmitriy Nesteryuk (2020), Joakim Antman (2019) and Mikael Henriksson (2019)
+
+The code with the most surviving lines has an inactive author. Kochnev's 493 lines are about 3.4 times Marco's 147, so Marco is a reviewer rather than the deep owner. For anything in the original exposure design, expect to rely on the code and history instead of a person.
+
+**Commits versus ownership**
+- **Across the repo**, dblock has the most commits. Their three name variants (all `<email redacted>`) add up to about 112 or more, and Peter Scholz is next with 35. But dblock doesn't appear among the top blame owners of `lib/`.
+  - Kochnev has 758 lines in `lib/`, Mark Madsen 265, and Marco 147.
+  - Kochnev has only 16 commits, so line ownership and commit count point to different people.
+- **In `exposure/`**, Kochnev has the most commits under a single name (5). Peter Scholz (3) and LeFnord (3) share the email `<email redacted>`, so merged they have 6. They own only about 18 lines. So the commit leader there is a different person from the owner by blame.
+- **In the delegator code**, there is no commit leader. Seven authors have one commit each.
+
+I did not merge `Vladimir` (one commit, 2020) with Vladimir Kochnev. They have different emails and I couldn't confirm they are the same person.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib/grape_entity/exposure and delegator code"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-1/repo; echo TOTAL; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -8; echo EXPOSURE; git log --all --no-merges --pretty='%an' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | sort | uniq -c | sort -rn; echo LASTDATE; git log --all --no-merges --pretty='%an|%ad' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | awk -F'|' '!s[$1]++'; echo DELEGATOR; ls lib/grape_entity; git log --all --no-merges --pretty='%an' -- lib/grape_entity/delegator lib/grape_entity/delegator.rb | sort | uniq -c | sort -rn; git log --all --no-merges --pretty='%an|%ad' --date=short -- lib/grape_entity/delegator li
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-1/repo; for f in lib/grape_entity/exposure/*.rb lib/grape_entity/exposure.rb lib/grape_entity/delegator/*.rb lib/grape_entity/delegator.rb; do [ -f $f ] && git blame -w --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | sed "s|^|$f |"; done | awk '{c[$1]=c[$1]" "$2" "$3" "$4}END{for(f in c)print f":"c[f]}' | head -40; echo; echo LINES; for d in "lib/grape_entity/exposure lib/grape_entity/exposure.rb" "lib/grape_entity/delegator lib/grape_entity/delegator.rb"; do echo $d; for f in $(git ls-files $d); do git blame -w --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-1/repo; echo EXPO; for f in $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb); do git blame -w --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | head; echo DELEG; for f in $(git ls-files lib/grape_entity/delegator.rb lib/grape_entity/delegators); do git blame -w --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo DELEGCOMMITS; git log --all --no-merges --pretty='%an|%ad' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegators | awk -F'|' '{n[$1]++; if(!d[$1])d[$1]=$2}END{for(k in n)print n[k],k,d[k]}' | sort -rn; git ls-files lib/grape_entity/delegators
+FINAL ANSWER:
+**Reviewers**
+
+| Area | Primary reviewer | Backup |
+|---|---|---|
+| `lib/grape_entity/exposure*` | Marco Silva: 143 surviving lines, the most of anyone still active, and last commit 2026-09-15. | Lena Brandt: 20 lines, last commit 2026-07-14. |
+| Delegator code (`delegator.rb`, `delegators/*`) | Lena Brandt or Marco Silva. They have the two most recent delegator commits (July 2026), but each owns only a small share (10 and 4 of about 102 lines). | The other of the two. |
+
+Anna Kowalczyk is also active (2026-08-10), but she has only one commit in `exposure`, so I wouldn't route to her first.
+
+**Who has effectively left**
+
+I treated an author as gone if their last commit to these paths was years ago. For Kochnev, I also checked that they don't appear among the 15 most recent authors repo-wide.
+
+- **Vladimir Kochnev:** last touched `exposure` in 2015-09 and `delegator` in 2015-07.
+- **Alexander Yunin:** 2016.
+- **James McCarthy:** 2017.
+- **Dmitry Tsepelev:** 2018.
+- **Mikael Henriksson, Joakim Antman, Dmitriy Nesteryuk:** 2019–2020.
+- **Paul Padier:** 2021 on `delegator`, 2023-12 on `exposure`.
+- **Daniel Dao:** 2023-02.
+
+peter scholz is not on that list. Their last commit overall was 2024-04 and last on `exposure` was 2020-12, so treat them as dormant rather than confirmed gone.
+
+**Is the top committer also the top owner?**
+
+- **`exposure`:** Yes, it's the same person, and they've gone. Kochnev has the most commits (5) and the most surviving lines (431 of roughly 800+, about half or more). Their last commit was in 2015. This is the main bus-factor risk here: about half of that code has no active author behind it. Marco Silva owns the next-largest share (143 lines).
+- **Delegator code:** No. Every author has exactly one commit, so there's no commit leader. Line ownership is concentrated anyway: Kochnev has 60 of about 102 lines (about 59%), and they left in 2015.
+- **Whole repo:** dblock has the most commits (38) but doesn't appear in either path. Commit count across the repo says little about who owns these two areas.
+
+**Caveats**
+
+- Author names are not de-duplicated. "Vladimir" (2020) and "Vladimir Kochnev" may be the same person, and "Andrey Subbota" and "Andrei Subbota" almost certainly are. This could shift the `exposure` counts slightly, but not the conclusions.
+- Ownership is from `git blame -w`, which ignores whitespace-only changes.
+- I did not run the importance or dependents cross-check from the skill. `exposure` and the delegators are core to `Entity`, so I'd treat them as high importance.
+
+**Suggestion:** have Marco Silva review `exposure` PRs and pair Lena Brandt with them, so the knowledge spreads beyond one active person. For delegator PRs, use Lena Brandt and Marco Silva as a pair, since neither owns much of that code.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/<tool>"; cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; $SL -- lib/grape_entity/exposure; echo ======; $SL --for-diff HEAD -- lib/grape_entity/exposure 2>&1 | head -30; echo =====; ls lib/grape_entity; grep -ril delegator lib | head
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; SL() { node /private/tmp/r13/final/ours-src/bin/<tool> "$@"; }; SL -- lib/grape_entity/exposure; echo ======; ls lib/grape_entity lib/grape_entity/delegator 2>&1; grep -ril delegator lib
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; grep -ril delegator lib; ls lib/grape_entity; SL() { node /private/tmp/r13/final/ours-src/bin/<tool> "$@"; }; SL -- lib/grape_entity/delegator.rb lib/grape_entity/delegator
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; node /private/tmp/r13/final/ours-src/bin/<tool> -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb | head -30; node /private/tmp/r13/final/ours-src/bin/<tool> --identities | grep -i -E "marco|padier"
+FINAL ANSWER:
+**Short answer:** Vladimir Kochnev wrote the most of both areas, but they left in 2015. The people you can actually ask are Marco Silva and Anna Kowalczyk, and Marco's numbers need a caveat (below).
+
+All counts come from surviving-lines (git blame based), as of 2026-10-05.
+
+**`lib/grape_entity/exposure` (609 non-blank lines, 732 counting blank lines)**
+- Vladimir Kochnev has 331 lines (54.4%), or 400 counting blank lines (54.6%). His last commit was 2015-09-18.
+- Marco Silva appears as 117 lines (19.2%), or 143 counting blank lines (19.5%). His last commit was 2026-08-03. All 117 lines are `grouped_exposure.rb`, committed under `<email redacted>`. The tool calls that address a placeholder identity that "cannot be attributed to a person". It proposes treating it as the same person as `marco.silva@kestrel.example`. That is only a proposal from names and addresses, it is unconfirmed, and I have not applied it. The two addresses stay separate in the figures below.
+- Alexander Yunin has 55 lines (9.0%), last commit 2016. James McCarthy has 48 lines (7.9%), last commit 2017.
+- Anna Kowalczyk has only 4 lines (0.7%), but her last commit was 2026-08-10, so she is the other active person.
+- Only 2 of the 18 authors have committed in the last 365 days, and they hold 19.9% of the lines.
+
+**Best reviewer for `exposure`:** Marco Silva for `grouped_exposure.rb`, with Anna Kowalczyk as a second reviewer. For the rest of the directory nobody active holds much, so pick a maintainer. peter scholz has 14 lines (2.3%) and 5 commits, but his last commit was 2024-04-10, which is outside the 365-day window.
+
+**Delegator code (`delegator.rb`, `delegators/`, `exposure/delegator_exposure.rb`; 97 non-blank lines, 109 counting blank lines)**
+- Vladimir Kochnev has 69 lines (71.1%), or 73 counting blank lines (67.0%). He is gone.
+- Paul Padier has 11 lines (11.3%), or 12 counting blank lines (11.0%). His last commit was 2021-10-15, so he is also inactive. The tool also proposes merging his two addresses, which is likewise unconfirmed and not applied.
+- James McCarthy has 6 lines (6.2%), last commit 2017.
+- Marco Silva has 4 lines (4.1%), last commit 2026-09-15. He is the only author active in the last year.
+- 95.9% of these lines belong to people with no commit in the last 365 days.
+
+**Best reviewer for the delegator code:** Marco Silva, because he is the only active person who has touched it. He holds just 4 lines there, so expect a reviewer who knows it loosely. Consider a second reviewer from the maintainers.
+
+**Marco Silva: merged and unmerged figures**
+- Unmerged, repo-wide, as the tool lists them: `<email redacted>` has 117 lines (143 counting blank lines) from 1 commit, and `marco.silva@kestrel.example` has 23 lines (29 counting blank lines) from 2 commits.
+- If they are one person, the merged total is about 140 lines, 2.6% of the repo. The 117 lines under the laptop address are `grouped_exposure.rb`. The merge does not change the delegator figure of 4 lines.
+- Whether they are one person is unconfirmed. Ask Marco before relying on it.
+
+**Who has effectively left**
+- Vladimir Kochnev: last commit 2015. He holds 54% of `exposure`, 71% of the delegator code, and 18.7% of the whole repo.
+- Mark Madsen: 13.5% of the repo, and the top owner of `entity.rb` and `entity_spec.rb`.
+- Alexander Yunin, James McCarthy, Dmitry Tsepelev and Paul Padier have also had no commits in the last year.
+- Repo-wide, 89.3% of lines belong to people with no commit in the last 365 days. 49 of 56 files (96.5% of lines) are orphaned, meaning the top owner is inactive and nobody active holds 20% or more.
+
+**Is the top committer also the top owner? No.**
+- dblock has the most commits: 52 (18.2% of all commits). But they hold 565 non-blank lines (10.4%), or 725 counting blank lines (10.8%), which is third place.
+- Vladimir Kochnev holds the most lines: 1,010 (18.7%), or 1,180 counting blank lines (17.6%). That comes from only 11 commits (3.8%).
+- peter scholz is second on commits (34, 11.9%) but fifth on lines: 427 (7.9%), or 586 counting blank lines (8.7%).
+- Many of peter scholz's commits were merges or committer-only actions. For example, he committed Brian van de Boogaard's 276 lines in "Add expose_nil option (#293)", and those lines are credited to Brian.
+
+**Caveats**
+- Surviving lines measure what is left in the code. They don't measure review skill, design knowledge, or deleted code.
+- All figures above are printed by surviving-lines. The delegator totals come from the command `surviving-lines -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb`. That grouping of files is my own choice of what counts as "the delegator code". I made no `.mailmap` changes.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> && node scripts/<plugin> /private/tmp/r13/final/out-F/runs/HZ4-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log -1 --format=%ci && echo "--- all" && git shortlog -sne --no-merges HEAD && for p in lib/grape_entity/exposure lib/grape_entity/delegator lib/grape_entity/delegators; do echo "--- $p"; git shortlog -sne --no-merges HEAD -- $p; git log --no-merges --format='%ae %ad' --date=short -- $p | awk '{l[$1]=(l[$1]==""?$2:l[$1]); f[$1]=$2} END{for(k in l) print k, "last="l[k], "first="f[k]}'; done; echo "--- lines surviving"; git ls-files lib | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep '^author-mail'; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** Lena Brandt and Marco Silva are the only people who can review these areas today. The top committer, dblock, doesn't own the most code.
+
+I ran the busfactor script with `--no-github`, so people are identified by git email, not GitHub handle. Marco appears under two emails (`marco.silva@kestrel.example` and `<email redacted>`). I merged them by hand and assumed they're the same person.
+
+## Who to route to
+
+| Area | Best reviewers | Notes |
+|---|---|---|
+| `lib/grape_entity/exposure/` | **Lena Brandt**, then **Anna Kowalczyk** and **Marco Silva** | Each has made a single commit here (Jul–Aug 2026), and Marco's was the laptop email. |
+| Delegator code (`delegator.rb` and `delegators/`) | **Marco Silva**, then **Lena Brandt** | Marco made the only commit in `delegators/` (2026-07-21). |
+
+All three are recent but thin. Between them they have 1–2 commits in these areas. They are the only active reviewers, not deep experts.
+
+The script flags both delegators and `spec/grape_entity/exposure/` as bus factor 1. In practice, Marco and Lena cover each other, so a single absence stalls reviews rather than leaving nobody who can approve.
+
+## Who has effectively left
+
+The repo history runs to 2026-10-05, and I treated anyone with no commit since about October 2025 as gone. Most of the historical authors fall in that group.
+
+- **Vladimir Kochnev** (`<email redacted>`) wrote the original exposure and delegator code in 2015. His last commit is 2015-09-18. He still has about 756 surviving lines in `lib/`, by far the most.
+- **Peter Scholz / LeFnord** (`<email redacted>`) was the longest-running exposure contributor. His last commit is 2020-12-26.
+- **Dmitry Tsepelev** (2018), **Alexander Yunin** (2016), **James McCarthy** (2017) and **Mikael Henriksson** (2019) are also gone.
+- The other past contributors to these areas, from 2016–2023, have likewise been inactive for years.
+
+Don't request reviews from any of these people. GitHub would block PRs on someone who can't respond.
+
+## Does the top committer own the most code?
+
+No, on either measure.
+
+- **Most commits:** dblock, with 38 under that email and about 60 across his aliases. Most of that is maintenance and releases.
+- **Most surviving code in `lib/`:** Vladimir Kochnev (about 756 lines), who has been gone since 2015. Next are Mark Madsen (237) and Marco Silva (143, laptop email). dblock has only about 34.
+- **Active ownership:** Marco and Lena are the only people active in the last 12 months.
+
+So the most-committing author owns little of the live code, and the person with the most surviving code left over a decade ago.
+
+## Caveats
+
+- **Imported history:** The script reports the repo as imported, with a bulk first commit of 18 files in 2013. Early ownership is therefore unreliable.
+- **Commits are a proxy:** Commit counts don't measure who actually understands the code.
+- **No files written:** I used `--dry-run`, so no CODEOWNERS file was written.
+
+I can write `.github/CODEOWNERS` and the ownership JSON if you want, or build the HTML risk report.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-1/repo; git log --format='%an' | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files lib/grape_entity | head -50; echo; git ls-files | grep -i deleg; echo --- exposure; git log --format='%an' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | sort | uniq -c | sort -rn; echo --- deleg; git log --all --format='%an' -- '*delegator*' | sort | uniq -c | sort -rn
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-1/repo; echo "--- recency exposure+delegator"; git log --format='%ad|%an' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators | awk -F'|' '{if(!($2 in l))l[$2]=$1; f[$2]=$1; c[$2]++} END{for(a in c)print l[a], f[a], c[a], a}' | sort -r; echo "--- blame all lib"; for f in $(git ls-files lib); do git blame -w -M -C --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | head -10; echo "--- blame exposure+deleg"; for f in $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators); do git
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-1/repo; git log --format='%ad|%an' --date=short | grep -E 'Kochnev|Madsen|Tsepelev|McCarthy|Yunin|Marco|Doubrovkine|dblock|^.*\|dB$' | awk -F'|' '!($2 in l){l[$2]=$1} END{for(a in l)print l[a],a}' | sort -r; echo; git log --format='%ad|%an|%s' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb | head -12; git shortlog -sne | head -8; git blame -w --line-porcelain lib/grape_entity/*.rb | grep '^author ' | sort | uniq -c | sort -rn | head -3
+FINAL ANSWER:
+**Short answers**
+
+- **Reviewer for `lib/grape_entity/exposure` and the delegator code:** Marco Silva. Vladimir Kochnev wrote most of it but left in 2015.
+- **Who has effectively left:** Kochnev, Mark Madsen, Dmitry Tsepelev, James McCarthy, Alexander Yunin, LeFnord and Paul Padier.
+- **Most commits vs. most code:** They are different people.
+
+**Best reviewer**
+
+- **Marco Silva** is the only active person with substantial surviving code there. They own 147 of the lines in exposure and delegator code, second only to Kochnev. Their last commit to the repo was 2026-09-15, and they renamed `delegator/` to `delegators/` on 2026-07-21.
+- **Lena Brandt** (30 surviving lines) and **Anna Kowalczyk** (last touched exposure on 2026-08-10) are active secondary reviewers. Their changes there look incidental, such as the copyright headers, so treat them as backups.
+- **Daniel Doubrovkine (dB)**, the maintainer, is a reasonable final approver. Their last commit was 2026-04-11, but they have almost no code in these paths.
+
+**Effectively gone**
+
+My cutoff is no commits in several years. These are last-commit dates for the repo as a whole:
+
+| Person | Last commit | Surviving lines in exposure/delegator code |
+|---|---|---|
+| Vladimir Kochnev | 2015-09-18 | 493 |
+| Mark Madsen | 2013-01-20 | none (265 lines in `lib/` overall) |
+| Alexander Yunin | 2016-07-07 | 59 |
+| James McCarthy | 2017-04-05 | 68 |
+| Dmitry Tsepelev | 2018-01-29 | 66 |
+| LeFnord | 2019 (exposure last touched 2019-03-15) | 11 |
+| Paul Padier | 2023-12-13 | 20 |
+
+Kochnev is the largest case. They extracted the exposures and delegating logic in July 2015, and no one with that context is left.
+
+**Commits vs. code ownership**
+
+- **Most commits:** Daniel Doubrovkine, about 117 across their name variants (54 + 42 + 16 + 5). Peter Scholz is next at 35.
+- **Most code:** Kochnev owns 758 surviving lines in `lib/`, and 493 in exposure and delegator code. That comes from a handful of refactor commits. Kochnev has only 16 commits overall.
+- **Why they differ:** Doubrovkine's commits are mostly maintenance, releases and merges, so little of their code survives in `lib/`.
+
+**Caveats**
+
+- The blame numbers use `git blame -w -M -C` (whitespace changes ignored, moved and copied lines followed back to their origin). The Marco Silva and Lena Brandt counts could still be inflated by the rename and the copyright-header commit.
+- I merged the Doubrovkine and Andrey/Andrei Subbota name variants by hand. I did not use a `.mailmap`.
+- My blame run didn't cover `lib/grape_entity/*.rb` outside the exposure and delegator paths.

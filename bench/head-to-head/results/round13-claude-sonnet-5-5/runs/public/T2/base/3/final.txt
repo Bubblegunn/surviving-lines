@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%aN' -- lib | sort | uniq -c | sort -rn | head -20; echo ---; for f in lib/*; do echo "$f: $(git log --format='%aN' -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done; echo ---; git log --since='12 months ago' --format='%aN' -- lib | sort | uniq -c | sort -rn
+ - Bash: ls lib; wc -l lib/*; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head; echo ---; git blame -w -M -C --line-porcelain lib/index.js -- 2>/dev/null | grep -c . >/dev/null; git log -3 --format='%h %aN %ad %s' --date=short -- lib
+FINAL ANSWER:
+**The bus factor is 1.** `lib` is a single file, `lib/index.js` (238 lines), and Troy Goode is the only person who clearly understands it.
+
+- **Commits:** Troy Goode made 34 of the roughly 60 commits that touched `lib`. Next are Douglas Christopher Wilson and Alejandro Caravaca Puchades with 4 each, and Simon Mansfield with 3. Everyone else made 1 or 2.
+- **Surviving lines (`git blame`, ignoring whitespace):**
+  - Troy Goode: 138 of 238 lines (58%).
+  - Fiona Formatter: 32 lines (14%). That's the 2026-04-12 reformat, so those lines don't show real knowledge of the code.
+  - Douglas Christopher Wilson: 18 lines.
+  - Alejandro Caravaca Puchades: 12 lines.
+  - Raymond Feng: 7 lines.
+  - Everyone else: 6 lines or fewer each.
+  - Setting the reformat aside, Troy owns about 67% of the real content.
+- **Recent activity:** In the last 12 months, `lib` has had one real change, Troy's "annotate handlers" commit on 2026-04-10, plus the reformat. Before that, the previous change was in 2021 (LuisEGR, a lint fix). Nobody else has touched it recently.
+
+**How many departures it takes:** if Troy leaves, nobody remaining has recent or substantial context. Douglas Christopher Wilson and Alejandro Caravaca Puchades are the fallback, and their last contributions to `lib` are old. Losing Troy plus those two would leave only people with small, scattered patches. So it takes one to hurt badly and about three to lose nearly all the context.
+
+**Caveats:**
+- Git authorship only approximates understanding. Reviewers, issue discussions, and people who read the code but never committed to it don't show up here.
+- The risk is lower than the numbers suggest because 238 lines in one file is quick for a new maintainer to learn. Troy's recent handler annotations have also probably made it easier to read.
+- The 12-month window has almost no history to draw on.
+
+I can check whether the tests or docs are covered by a wider group of people if you'd like.
+META cost=0.0458404 ms=13814 turns=3

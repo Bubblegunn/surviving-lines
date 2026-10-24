@@ -1,0 +1,70 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "Colorama handover next month. Who wrote the Python code in the repo today, and how exposed are we if the two biggest contributors stop responding? Focus on the current Python source, not docs or CI config."}
+ - Bash: git ls-files '*.py' | grep -v -E '^(docs|\.github)/' ; echo "---"; git ls-files '*.py' | wc -l; echo "--- total commits / authors"; git shortlog -sne --all | head -30
+ - Bash: for f in $(git ls-files '*.py'); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -30; echo "--- last commit date per top author"; git log --all --format='%an %ad' --date=short | sort | awk '{print}' | tail -5
+ - Bash: git log --all --format='%h %an <%ae> %ad %s' --date=short --author='Dana Kessler' | head -20; echo "--- Dana total commits:"; git log --all --author='Dana Kessler' --oneline | wc -l; echo "--- Priya:"; git log --all --format='%h %an %ad %s' --date=short --author='Priya Nair' | head; echo "--- top-level dates"; git log --all --format='%ad' --date=short | sort | sed -n '1p;$p'; echo "--- files Dana owns (blame lines)"; for f in $(git ls-files '*.py'); do n=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep -c '^author Dana Kessler'); t=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep -c '^author '); [ "$t" -gt 0 ] && echo "$n/$t $f"; done | sort -rn | head -30
+ - Bash: for f in $(git ls-files '*.py'); do t=$(git blame --line-porcelain -- "$f" 2>/dev/null | grep -c '^author '); echo "== $t $f"; git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done 2>/dev/null | head -150
+ - Bash: echo "--- last/first commit per author (top 12 by commits, merged by name)"; git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '{ if(!($1 in first)||$2<first[$1]) first[$1]=$2; if($2>last[$1]) last[$1]=$2; c[$1]++ } END { for (a in c) printf "%d\t%s\t%s\t%s\n", c[a], a, first[a], last[a] }' | sort -rn | head -15; echo "--- total python lines (current)"; git ls-files '*.py' | xargs cat | wc -l; echo "--- Dana non-vendor lines"; for f in $(git ls-files '*.py' | grep -v _vendor); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | awk '{print}' | sort | uniq -c | sort -rn | head -6; echo "--- Dana commits touching python in last 6 months"; git log --
+ - Bash: grep -rn "_typing_compat\|_vendor" --include=*.py . | grep -v "^./colorama/_vendor/_typing_compat.py"; echo "--- Dana vendored commit"; git show --stat aa872f7 | head -20; echo "--- Priya/Dana helper ownership"; git log --all --format='%h %an %ad %s' --date=short -- colorama/ansi.py | head -5
+ - Bash: grep -rn "_typing_compat\|colorama._vendor\|from \._vendor\|from \.\_vendor" -- '*.py' | grep -v "_vendor/_typing_compat.py:" ; echo "exit=$?"
+ - Bash: git grep -n "_typing_compat\|_vendor" -- '*.py' ; echo "exit=$?"
+FINAL ANSWER:
+## Bus factor: colorama Python source (all history, English)
+
+**Short answer:** The code is spread across many people. The real exposure is narrower than the headline numbers suggest. Jonathan Hartley is the one active core maintainer, and he is effectively the single point of failure for the core library. Arnon Yaari, the second-largest contributor by commits, has not committed since June 2022.
+
+### Who wrote the code that is in the repo today
+
+I ran `git blame` over the 25 tracked `.py` files, 3,039 lines in total. Blame counts the lines that survive today, not commits.
+
+| Author | Surviving lines | Share of total | Last commit | Status |
+|---|---|---|---|---|
+| Dana Kessler | 1,324 | 44% | 2026-08-20 | Active (4 commits, Jul–Aug 2026) |
+| Jonathan Hartley | 873 | 29% | 2026-07-03 | Active |
+| Arnon Yaari | 220 | 7% | 2022-06-17 | Inactive about 4 years |
+| Nathaniel J. Smith | 204 | 7% | 2022-10-16 | Inactive |
+| Delgan | 107 | 4% | not checked | Unknown |
+| John Szakmeister | 69 | 2% | not checked | Unknown |
+| Others | about 240 | 8% | mixed | Mostly inactive |
+
+Dana's share is misleading. **1,103 of her 1,324 lines are one vendored file**, `colorama/_vendor/_typing_compat.py`, added in one commit ("Vendor typing compatibility shims", 2026-07-12). Nothing in the tracked Python imports `_typing_compat` or `_vendor`. Excluding that file, the total is 1,936 lines and Dana's share is about 11%.
+
+Commit counts tell a different story. The two largest by commits are Jonathan Hartley (85 non-merge commits) and Arnon Yaari (64, plus about 47 more under the `wiggin15` alias).
+
+### Exposure if the two biggest contributors stop answering
+
+Read as "the two people whose code is most in the repo," that is **Dana and Jonathan**. Read as "the two most prolific committers," that is **Jonathan and Arnon**. I'm reporting both.
+
+- **Jonathan Hartley:** He is the main owner of the core Windows and ANSI path. He owns about 51% of `ansitowin32.py`, 54% of `win32.py`, and 42% of `winterm.py`. He is active, so for now he is reachable. If he stops, nobody left holds the ANSI-to-Win32 translation logic in depth.
+- **Arnon Yaari:** He is inactive, so for knowledge purposes he is already gone. He wrote about 30% of `winterm.py` and about 15% of `ansitowin32.py`. Any question about why that code behaves as it does has to go to the code or to Jonathan.
+- **Dana Kessler:** Her surviving code is almost entirely an unused vendored shim. If Dana is unreachable, the open question is why the shim was added. Her four commits also include real behaviour changes, such as "Honour NO_COLOR in init()", so that answer matters too.
+
+**Core library files have no single owner above about 55%.** The most concentrated real modules are the small ones:
+- `demos/demo09.py` is 100% George Ogden (inactive since 2015).
+- `tests/isatty_test.py` is 98% Delgan.
+- `demos/demo07.py` is 77% Arnon Yaari.
+- `demos/demo08.py` is 71% Matt Olsen (inactive since 2015).
+
+These are low-risk because they are demos and a single test file.
+
+**Project-level bus factor: about 2.** If Jonathan and one other person disappear, more than half of the code that matters would have no knowledgeable owner. Jonathan plus Dana account for 73% of all surviving lines, but 56% if the vendored shim is excluded. Those are the two people whose answers matter.
+
+### Recommendations
+
+1. **Before handover:** Get a written walkthrough from Jonathan of `ansitowin32.py`, `win32.py`, and `winterm.py`. Those three files carry most of the risk.
+2. **Ask Dana** why `_typing_compat.py` was vendored, and whether it should stay. If nothing imports it, it is dead code that adds about 1,100 lines of maintenance surface. Confirm before deleting it.
+3. **Check whether Arnon can still be reached** through the `wiggin15` or Arnon Yaari addresses. If not, record his modules as unowned.
+4. **Pair on `winterm.py`** (Jonathan 42%, Arnon 30%, Nathaniel 9%) so someone outside those two learns the Windows console path.
+
+### Limits of this analysis
+
+- I did this directly, not through the contributor-analyzer subagent the skill calls for. The numbers come from `git blame` and `git log` over the tracked `.py` files.
+- I only measured dependents for the vendored shim, which has none. I did not run an import-graph count for the other files, so "critical" here is judged from file role, not from how many files import each one.
+- colorama is a published library. Its external users depend on this code, and git history cannot show that exposure.
+- I did not check whether Delgan, John Szakmeister, or Priya Nair are still reachable. Priya Nair made two commits in 2026 and is probably active.
+META cost=0.009435279999999999 ms=43740 turns=11

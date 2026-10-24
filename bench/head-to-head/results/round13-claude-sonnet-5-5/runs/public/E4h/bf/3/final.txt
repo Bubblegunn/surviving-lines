@@ -1,0 +1,33 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E4h-bf-3/repo; git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git shortlog -sne HEAD | head -30; git log --format='%h %an <%ae> %s' | grep -iE 'format|style|prettier|lint|reindent' | head; ls -a .git-blame-ignore-revs 2>&1 | head -1
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E4h-bf-3/repo; git ls-files | while read f; do d=${f%%/*}; [ "$d" = "$f" ] && d="(root)"; git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed "s/^author /$d\t/"; done | grep -viE 'bot\]|dependabot' | awk -F'\t' '{c[$1"\t"$2]++; t[$1]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d\t%d\t%.0f%%\n",a[1],a[2],c[k],t[a[1]],100*c[k]/t[a[1]]}}' | sort -t$'\t' -k1,1 -k3,3nr | awk -F'\t' '{n[$1]++; if(n[$1]<=4)print}'
+FINAL ANSWER:
+Only `lib` has an owner under your rule. Troy Goode holds 67% of the surviving lines there. I attributed with `git blame -w`, ignored the reformat commit `62628c0` (Fiona Formatter), and excluded dependabot. Troy's two emails (`<email redacted>` and `troy@laptop.example`) count as one person.
+
+| Path | Top author | Share of surviving lines | Result |
+|---|---|---|---|
+| `lib/` | Troy Goode | 67% (159 of 238) | owner |
+| `test/` | Troy Goode | 47% | nobody (Douglas Christopher Wilson has 41%) |
+| `.github/` | Douglas Christopher Wilson | 30% | nobody (Íñigo Marquínez Prado has 26%) |
+| root files | Troy Goode | 32% | nobody (Douglas Christopher Wilson has 28%) |
+
+Suggested CODEOWNERS:
+
+```
+# No single owner holds >=50% of surviving lines in test/, .github/ or the root files, so they get no rule.
+/lib/   @troygoode
+```
+
+- **GitHub handle:** `@troygoode` is a guess from the git name. I didn't look up GitHub accounts, so please confirm it.
+- **`test/`:** Troy is only 3 points short of the line, so it's borderline.
+- **Small sample:** `lib` has 1 tracked file and `test` has 7. A single file can swing these percentages a lot.
+- **Activity:** I didn't check whether Troy is still active. If they have left, `lib` is orphaned rather than owned, and naming them would block reviews.
+
+I used blame instead of the skill's script because the script weights commits with a time decay and your rule asks for surviving lines. I haven't written any files.
+META cost=0.06801149999999999 ms=18526 turns=5

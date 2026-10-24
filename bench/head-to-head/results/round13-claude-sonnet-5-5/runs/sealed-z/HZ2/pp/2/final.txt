@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-pp-2/repo; for f in time.go version7.go sql.go; do echo "== $f"; git shortlog -sne HEAD -- $f; echo "last commit:"; git log -1 --format='%ad %an' --date=short -- $f; done; echo "== recent overall (since 2024)"; git shortlog -sne --since=2024-01-01 HEAD; ls; cat CODEOWNERS .github/CODEOWNERS MAINTAINERS* 2>/dev/null
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-pp-2/repo; echo "== sql files"; for f in database_sql.go null.go sql.go; do echo "-- $f"; git shortlog -sne HEAD -- $f; git log -1 --format='%ad %an' --date=short -- $f; done; echo "== last commit per author"; git log --format='%ae|%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -40; echo "== owners/docs"; ls -a .github 2>/dev/null; grep -n -i -E "maintain|review|owner" CONTRIBUTING.md README.md | head; git log --format='%h %ad %an %s' --date=short -8 -- time.go version7.go database_sql.go
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-pp-2/repo; cat .github/CODEOWNERS; echo ---; git log --format='%h %ad %an <%ae> %s' --date=short --author="Kofi" ; echo ---; git log --follow --format='%ad %an' --date=short -- database_sql.go | head -12; echo; git log --format='%an' --since=2026-01-01 | sort | uniq -c; head -30 CONTRIBUTORS | grep -i -E "borman|wheeler"
+FINAL ANSWER:
+Git history can't tell you who the right reviewers are. It also can't confirm that the original authors are still around, because it only shows when they last committed.
+
+**Who owns what**
+- `.github/CODEOWNERS` has one line, `* @google/go-uuid-contributors`. There are no per-file owners. I can't see that team's membership from here, so check it on GitHub.
+- There is no `sql.go` any more. It was renamed to `database_sql.go` in cfc4a55 (2025-03-10), and `git log` for that file lists Ravi Menon as the only author.
+
+**Who wrote the code and when they were last active**
+
+| Area | Original authors | Last commit by them | Recent maintainers |
+|---|---|---|---|
+| `time.go` | Paul Borman (6 commits), plus Bryan Matsuo, Martin Lindhe, MikeWang, Youngjae Lee, Nicu Micle | Youngjae Lee, 2024-06; Nicu Micle, 2024-11 | Sam Okafor (2025-04), Alexander Rowe (2025-02) |
+| `version7.go` | MikeWang (2), David Kaufman, Alex Bozhenko, Andreas Deininger | MikeWang, 2024-07; Bozhenko, 2024-07 | Mei Chen (2025-08), Ravi Menon (2026-05) |
+| SQL (`database_sql.go`, formerly `sql.go`) | David E. Wheeler, Andrew Stone, Justin Overfelt, Daniel Souza, Paul Borman, Steven Kaufman | Kaufman, 2021-01; Borman, 2021-07 | Ravi Menon, rename only |
+| `null.go` | Paul Borman, Samuel Roth | 2021-07 | none |
+
+**Are the original authors still around?**
+- The SQL code was written in 2015–2021 by contributors who haven't committed since. Paul Borman's last commit under his own address was in 2021-07. A `bormanp` account committed on 2023-10-26, so he may still be involved.
+- I can't tell whether any of them would respond.
+- `time.go` and `version7.go` were written by occasional contributors, and none of them has committed since 2024 (the `time.go` authors) or mid-2025 (`version7.go`).
+- Ravi Menon is the most active person in the history: 7 commits since 2024, the latest on 2026-06-17.
+- Alexander Rowe is also active (latest commit 2026-03-09). The history shows this person under several identities: Alexander Rowe, Alex Rowe and `arowe`. I'm assuming those are one person, but I haven't confirmed it.
+- Noor Haddad (2025-07), Mei Chen (2025-08) and Sam Okafor (2025-05) have gone quiet in the last year.
+
+**My suggestion**
+- Ask **Ravi Menon** first for all three areas. They have touched every one of them and are the most recent committer. For `time.go` and `version7.go`, add **Alexander Rowe**, who added `UnixMillis` for v7.
+- For SQL, nobody active wrote the code, so Ravi Menon is the best reviewer, not a domain expert. Treat Paul Borman as someone to consult on the original design, not as a reviewer.
+
+**Oddities**
+- Kofi Mensah's commit d97a7fa has a 1970-01-01 timestamp. That's a bad date, and they don't show up elsewhere in the history. It may be worth checking where that commit came from.
+- Earlier authors of `time.go` and the SQL code mostly used personal addresses, so I'd need GitHub to see who's active in other ways, like issues, PR reviews and merges. `gh` could check that if you want me to.
+META cost=0.0799456 ms=24203 turns=4

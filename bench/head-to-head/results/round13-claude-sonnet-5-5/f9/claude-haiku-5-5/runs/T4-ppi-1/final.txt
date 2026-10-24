@@ -1,0 +1,23 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "--- all-time authors ---" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "--- last 6 months ---" && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "--- last commit per author ---" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!seen[$1]++' && echo && echo "--- commits touching file ---" && git log --all --no-merges --oneline -- lib/index.js | head -30 && echo && echo "--- dependents ---" && grep -rl "lib/index\|require(.*lib')\|from '\.\./lib\|require('\.\./lib\|require(\"\.\./lib" --include
+FINAL ANSWER:
+**Recommended reviewer: Troy Goode.** Ownership of `lib/index.js` is spread out, but Troy is the strongest candidate.
+
+- **Troy Goode:** 29 of 62 non-merge commits (about 47%), last commit 2026-04-10.
+- **Fiona Formatter:** last commit 2026-04-12, but it was the 4-space and double-quote reformat, so it's not a good signal for review of logic changes.
+- **Everyone else:** 23 other authors, mostly with one or a few commits, and none active since 2021.
+
+Bus factor for this file is not 1. No one has more than 80% of the commits, so the file is not single-owner. The concern is different: nobody has committed to `lib/index.js` in about six months (last commit 2026-04-12, today is 2026-10-24). Both Troy and Fiona are past the 90-day activity window, so confirm that either one is still reachable before relying on them.
+
+Other notes:
+- I used the default all-time period because no `--period` flag was given. The last 6 months returned no commits.
+- I did this directly with git rather than launching the contributor-analyzer agent, since it's one file.
+- The repo has no CODEOWNERS file, so nothing enforces a reviewer. Adding one that names Troy would make this explicit.
+- `package.json` sets `main` to `lib/index.js`, so the real dependents are external npm users. Inside the repo, only the tests in `test/` require it.
+META cost=0.00419879 ms=14987 turns=4

@@ -1,0 +1,476 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}], "D": [{"n": 1, "reason": "...", "pass": true}], "E": [{"n": 1, "reason": "...", "pass": true}], "F": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+We are about to hand ramsey/collection to another team. Which people really wrote the code in src/ and in tests/ as it stands today, and who would be the main loss if Ben Ramsey left?
+
+CRITERIA:
+1. Ben Ramsey's share. PASS: Ben Ramsey (<email redacted> and <email redacted> merged) is named the largest owner with 61-72% of src/ (truth 65.9%) and 48-58% of tests/ (truth 52.6%), or 55-63% overall (truth 58.8%). FAIL: Ben outside those ranges; someone else named the largest owner; Ben's two addresses treated as different people whose separate shares would put neither above 50%.
+2. Squash-merge authorship. PASS: the lines of src/Grouping.php and tests/GroupingTest.php (about 150 lines, 2.2% of all lines, accept 1.5-3%) are credited to Katarzyna Nowak (the person named in the "Original authorship" line of the squash commit, also appearing as Kasia Nowak), or the answer explicitly says they are hers although the commit author field is Ben Ramsey. FAIL: those lines credited to Ben Ramsey without comment; Katarzyna Nowak absent from an answer that lists contributors down to 2%.
+3. Mechanical and generated changes. PASS: Tomasz Wrona (Tomasz Wrona and "T. Wrona" merged) is credited with 0.8-2.5% (truth 1.5%, 104 lines), the Tool-to-Support rename and the php-cs-fixer commit are not counted as authorship, src/Support remains attributed mainly to Ben Ramsey, Carlos C Soto and icanhazstring, and the generated TypeMap (about 290 lines) is excluded. FAIL: Tomasz Wrona at 4% or more; src/Support credited to Tomasz; github-actions or dependabot credited with lines; the generated TypeMap counted as authored code.
+4. Loss if Ben Ramsey left. PASS: the answer gives the bus factor as 1, says Ben's loss would remove the author of about 59% of all lines (src 66%, tests 53%), and says that the other main owners are gone so that 90-98% of all lines would have no author still active (truth about 96%); people who left own 33-42% of lines (truth 37.4%). FAIL: bus factor of 2 or more; Carlos C Soto, icanhazstring or Kevin Gomez described as active; no mention that most other owners left.
+5. Commit share versus line share. PASS: the answer states that icanhazstring has a line share (about 11.7%, accept 9-14%) well above their commit share (about 5%), names Carlos C Soto (7.1% of lines, last commit 2016) and Kevin Gomez (7.0%, last 2018) as having left, and does not count bot commits as a person. FAIL: icanhazstring below 8% of lines; Carlos or Kevin described as active; a bot listed among contributors with lines.
+
+GROUND TRUTH (computed by a script with git blame):
+FIXTURE HEAD b607d9020e7f35aeb6c794f8ef111bb1bd19822a
+SCOPE 64 php files; generated excluded: ['src/Generated/TypeMap.php']
+
+== src/: 3175 lines; owners >= 1.5 pct
+  Ben Ramsey              2093  65.9%  commits 171  last 2026-08-05 active
+  Carlos C Soto            275   8.7%  commits  30  last 2016-05-27 LEFT
+  zf2timo                  225   7.1%  commits  10  last 2016-05-29 LEFT
+  icanhazstring            202   6.4%  commits  15  last 2019-01-06 LEFT
+  Kévin Gomez              145   4.6%  commits   5  last 2018-10-02 LEFT
+  Katarzyna Nowak           93   2.9%  commits   1  last 2026-05-20 active
+  Tomasz Wrona              51   1.6%  commits   3  last 2026-07-14 active
+  lines owned by people who left: 938 = 29.5%   by active people: 70.5%
+  if Ben Ramsey left: 2093 lines (65.9%) lose their author; lines with no active author = 95.5%
+  bus factor (>=50%): 1 ['Ben Ramsey'] 65.9%
+
+== tests/: 3625 lines; owners >= 1.5 pct
+  Ben Ramsey              1907  52.6%  commits 171  last 2026-08-05 active
+  icanhazstring            596  16.4%  commits  15  last 2019-01-06 LEFT
+  Kévin Gomez              329   9.1%  commits   5  last 2018-10-02 LEFT
+  Carlos C Soto            208   5.7%  commits  30  last 2016-05-27 LEFT
+  zf2timo                  174   4.8%  commits  10  last 2016-05-29 LEFT
+  Simone Todaro            113   3.1%  commits  13  last 2020-08-02 LEFT
+  peter279k                 91   2.5%  commits   2  last 2021-12-02 LEFT
+  Katarzyna Nowak           59   1.6%  commits   1  last 2026-05-20 active
+  lines owned by people who left: 1606 = 44.3%   by active people: 55.7%
+  if Ben Ramsey left: 1907 lines (52.6%) lose their author; lines with no active author = 96.9%
+  bus factor (>=50%): 1 ['Ben Ramsey'] 52.6%
+
+== ALL: 6800 lines; owners >= 1.5 pct
+  Ben Ramsey              4000  58.8%  commits 171  last 2026-08-05 active
+  icanhazstring            798  11.7%  commits  15  last 2019-01-06 LEFT
+  Carlos C Soto            483   7.1%  commits  30  last 2016-05-27 LEFT
+  Kévin Gomez              474   7.0%  commits   5  last 2018-10-02 LEFT
+  zf2timo                  399   5.9%  commits  10  last 2016-05-29 LEFT
+  Katarzyna Nowak          152   2.2%  commits   1  last 2026-05-20 active
+  Simone Todaro            142   2.1%  commits  13  last 2020-08-02 LEFT
+  Tomasz Wrona             104   1.5%  commits   3  last 2026-07-14 active
+  lines owned by people who left: 2544 = 37.4%   by active people: 62.6%
+  if Ben Ramsey left: 4000 lines (58.8%) lose their author; lines with no active author = 96.2%
+  bus factor (>=50%): 1 ['Ben Ramsey'] 58.8%
+
+== commit share (humans 287, bots 12): Ben Ramsey 171 (59.6%), Carlos C Soto 30 (10.5%), icanhazstring 15 (5.2%), Simone Todaro 13 (4.5%)
+
+== hazard specifics
+  src/Grouping.php: {'Katarzyna Nowak': 93}  tests/GroupingTest.php: {'Katarzyna Nowak': 59}
+  naive author of the squash commit lines: Ben Ramsey (author field)
+  src/Support (renamed from Tool): [('Ben Ramsey', 163), ('Tomasz Wrona', 51), ('Carlos C Soto', 50), ('icanhazstring', 27)]
+  Tomasz Wrona src lines: 51  tests lines: 53
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: cat .mailmap; git log --oneline | wc -l; for d in src tests; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn; done; echo; git shortlog -sne HEAD
+ - Bash: git ls-files src tests | xargs wc -l | sort -rn | head -15; git show --stat --format='%h %an %s' 3eac4de 3b40daf | head -30; git log -3 --format='%h %an %ad %s' --date=short -- src/Tool 2>/dev/null | head
+ - Bash: echo "== src excl Generated"; git ls-files src | grep -v Generated | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo "== Tomasz by file"; git ls-files src | xargs -n1 -I{} sh -c 'n=$(git blame -w -M -C --line-porcelain HEAD -- {} | grep -c "^author Tomasz Wrona"); [ $n -gt 0 ] && echo "$n {}"'; git show --stat --format='%h %an %s' c3611fa | tail -5; echo "== files Ben alone touched / bus factor"; for f in $(git ls-files src | grep -v Generated); do echo "$(git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -1 | sed 's/^ *//') $f"; done | awk '{print}' | grep -v "Ben Ramsey" 
+FINAL ANSWER:
+Ben Ramsey wrote most of the code, and Carlos C Soto is the most substantial of the other contributors. These figures come from `git blame -w -M -C` on HEAD, which counts lines that still exist today rather than commit counts. I applied the repo's `.mailmap` and set aside the machine-generated and mechanical lines described below.
+
+**`src/` (about 3,170 lines, excluding generated code)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 2,171 | ~68% |
+| Carlos C Soto | 270 | ~9% |
+| zf2timo | 223 | ~7% |
+| icanhazstring | 199 | ~6% |
+| Kévin Gomez | 145 | ~5% |
+| Tomasz Wrona | 63 | ~2% |
+| Others (Simone Todaro, Raphael Tomé Santana, and about ten more) | under 30 each | ~3% combined |
+
+**`tests/` (about 3,630 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 1,964 | ~54% |
+| icanhazstring | 594 | ~16% |
+| Kévin Gomez | 329 | ~9% |
+| Carlos C Soto | 204 | ~6% |
+| zf2timo | 174 | ~5% |
+| Simone Todaro | 113 | ~3% |
+| peter279k | 91 | ~3% |
+| Tomasz Wrona | 61 | ~2% |
+| Others | under 30 each | ~2% combined |
+
+**Counts that overstate who wrote the code**
+- **Tomasz Wrona:** the raw `src/` count of 358 is misleading. 295 of those lines are `src/Generated/TypeMap.php`, a generated file. A few more are the mechanical `Tool` → `Support` rename (1–3 lines per file). That leaves about 51 lines of hand-written code, which is all of `ChunkTrait.php`.
+- **github-actions[bot]:** its 12 lines are php-cs-fixer formatting.
+
+**If Ben Ramsey left**
+- **Core design:** Ben wrote most of the library's core, which you'd be inheriting:
+  - `AbstractCollection`
+  - the collection and queue interfaces
+  - `AbstractMap`
+  - `AbstractArray`
+  - most of the support traits
+- **Maintainer role:** he also made 171 of the 299 commits. Nobody else has more than 30, so he is the only person who knows how the whole library fits together.
+- **Test suite:** Ben wrote just over half of the tests, including the two largest files, `CollectionManipulationTest` and `DoubleEndedQueueTest`. icanhazstring is the only other major test author.
+
+**Areas where someone else holds the knowledge**
+- **Carlos C Soto:** wrote most of the typed-map and set code (`TypedMap`, `TypedMapInterface`, `AbstractTypedMap`, `Set`, `AbstractSet`) and `ValueToStringTrait`.
+- **Kévin Gomez:** wrote most of `DoubleEndedQueue`.
+- **zf2timo:** wrote most of `Queue` and the exception classes.
+- **Tomasz Wrona:** wrote `ChunkTrait`.
+
+Nobody else has deep knowledge of the core. Most of the others are likely one-off contributors, and I didn't check whether they're still active. Before the handover, find out whether Carlos, Kévin and icanhazstring are reachable. They are the only people who could answer questions about the typed maps, `DoubleEndedQueue` and the tests.
+
+FILE .mailmap written by this run
+Ben Ramsey <<email redacted>> <<email redacted>>
+Tomasz Wrona <tomasz.wrona@brightmail.example> T. Wrona <<email redacted>>
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> && ls; node scripts/<plugin> /private/tmp/r13/final/out-F/runs/HZ5-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: cat .mailmap; git log --format='%an <%ae>' | sort | uniq -c | sort -rn; for d in src tests; do echo "== $d (blame lines, current)"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain 2>/dev/null | grep '^author-mail' | sort | uniq -c | sort -rn; done; git log -1 --format=%ad; git log --reverse --format='%ad %an' | head -1; cat .github/ownership.json 2>/dev/null | head -5
+ - Bash: git log --no-merges --since=2025-09-01 --format='%aN' -- src tests | sort | uniq -c | sort -rn; echo; git log --format='%aN|%as' -- src tests | awk -F'|' '!s[$1]++' | head -12; echo; git ls-files tests/Support; git log --format='%aN %as' -- tests/Support
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote most of both directories. Almost everyone else who contributed is gone, so he is the one real loss. Tomasz Wrona is the only other person still working on the code.
+
+I counted surviving lines with `git blame -w -M -C` on the current tree. The `.mailmap` folds Ben's two emails and Tomasz's two identities into one person each. I also ran the busfactor script with `--no-github`, so it shows raw emails. I used it only as a cross-check.
+
+**`src/`, about 3,470 lines**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 2,171 | ~63% |
+| Tomasz Wrona | 358 | ~10% |
+| Carlos C Soto | 270 | ~8% |
+| zf2timo | 223 | ~6% |
+| icanhazstring | 199 | ~6% |
+| Kévin Gomez | 145 | ~4% |
+
+The remaining ~3% is spread over about a dozen one-off contributors.
+
+**`tests/`, about 3,630 lines**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 1,964 | ~54% |
+| icanhazstring | 594 | ~16% |
+| Kévin Gomez | 329 | ~9% |
+| Carlos C Soto | 204 | ~6% |
+| zf2timo | 174 | ~5% |
+| Simone Todaro | 113 | ~3% |
+| peter279k | 91 | ~3% |
+| Tomasz Wrona | 61 | ~2% |
+
+**Who is still around:** In the last 12 months, `src/` and `tests/` got commits from Tomasz Wrona (3), Ben Ramsey (2), Kasia Nowak (1) and github-actions (1). The other big contributors have no commits in `src/` or `tests/` in that window.
+
+**If Ben leaves**
+- You lose the author of over half of both directories, and the only active person who knows most of the original design.
+- Tomasz is the only plausible successor. He has about 10% of `src/`, and he is the sole author of the newest code in `tests/Support/`, which holds the chunk, value-extractor and value-to-string trait tests. That area is a bus factor of 1 on its own.
+- The script fell back to Ben as the repo-wide owner (`*`). Once he's gone, nothing in `CODEOWNERS` names a replacement.
+- Carlos, icanhazstring, zf2timo and Kévin together wrote a large share of the code, but their recent activity is nil, so they can't be treated as reviewers. I didn't check whether they're still reachable outside the repo.
+
+**Caveats**
+- Line counts measure who wrote the code, not who understands it. A reviewer who never commits looks like a stranger here.
+- Rename and move handling in blame is good but not perfect.
+- I didn't check whether the activity window fits Kasia Nowak, who has a single commit.
+
+If you want, I can write the `CODEOWNERS` and a fuller risk report. The script would put `.github/CODEOWNERS` and `ownership.json` into the repo, so I'm leaving those files alone until you say so.
+
+FILE .mailmap written by this run
+Ben Ramsey <<email redacted>> <<email redacted>>
+Tomasz Wrona <tomasz.wrona@brightmail.example> T. Wrona <<email redacted>>
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk,mcp__tool__blame_summary", "max_results": 5}
+ - mcp__tool__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-1/repo/src", "top": 20}
+ - mcp__tool__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-1/repo/tests", "top": 20}
+ - mcp__tool__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-1/repo"}
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote about two thirds of the code that survives today. If they left, the loss would be the maintainer role itself, because most of the original authors are gone. The numbers come from line ownership at HEAD (git blame).
+
+**`src/` (33 files, about 3,470 lines)**
+
+| Author | Lines owned | Share | Notes |
+|---|---|---|---|
+| Ben Ramsey | 2,302 | 66% | Main owner of 22 files, last commit 2026-08-05 |
+| Tomasz Wrona | 358 | 10% | Active, last commit 2026-07-14, main owner of 2 files |
+| Carlos C Soto | 262 | 8% | Original author of the Set and TypedMap code; last commit 2016 |
+| icanhazstring | 172 | 5% | Last commit 2019; wrote much of `AbstractCollection` and `CollectionInterface` |
+| Kévin Gomez | 152 | 4% | Wrote most of `DoubleEndedQueue`; last commit 2018 |
+| zf2timo | 134 | 4% | Original `Queue` code; last commit 2016 |
+
+Everyone else owns under 1% each.
+
+**`tests/` (32 files, about 3,620 lines)**
+
+| Author | Lines owned | Share | Notes |
+|---|---|---|---|
+| Ben Ramsey | 2,381 | 66% | Main owner of 25 files, including 100% of `tests/types/*` |
+| icanhazstring | 480 | 13% | Last commit 2019 |
+| Carlos C Soto | 200 | 5.5% | Last commit 2016 |
+| Kévin Gomez | 179 | 5% | Last commit 2018 |
+| Simone Todaro | 108 | 3% | Last commit 2020 |
+| Tomasz Wrona | 61 | 1.7% | Active |
+
+**If Ben Ramsey left**
+- **Bus factor:** it is 2 across all 253 non-merge commits. Ben has 126 of them (50%), and the next author, Carlos C Soto, has 29.
+- **Nobody else is active in the code:** Tomasz Wrona is the only other active contributor with meaningful ownership. Kasia Nowak is also active, but owns about 2 lines.
+- **Orphaned files:** 9 files in `src/` and 8 in `tests/` are already mostly owned by people with no commits in six months. These are `TypedMap`, `AbstractSet`, `Set`, `Queue`, `DoubleEndedQueue`, the value-to-string trait and the `NoSuchElementException` class. Ben is the only active person who owns the rest of those files.
+- **Files that depend entirely on Ben:**
+  - `AbstractCollection`, `CollectionInterface`, `QueueInterface` and `DoubleEndedQueueInterface` are 69–80% Ben.
+  - `NamedParameterMap` is 94% Ben.
+  - `ArrayInterface` is 94% Ben.
+  - The static-analysis type tests in `tests/types/` are 100% Ben.
+- **Outside `src/` and `tests/`:** `bin/` has a single author, Ben. `.github` is 66% Ben and the repo root is 65% Ben.
+
+**Caveats**
+- Blame credits the last person to touch a line. The recent commits (php-cs-fixer, the generated type map, the PHP 8.2 bump) may have moved some lines to Ben that were originally written by others, so the 66% probably overstates Ben's original authorship.
+- Tomasz Wrona's 358 lines in `src/` are probably mostly `src/Generated`, which has 295 lines, but I didn't confirm that.
+- The "active" labels use a six-month cutoff (2026-04-24).
+
+I can run `blame_summary` on specific files, or check whether Tomasz Wrona's lines really are the generated code, if you want either.
+
+FILE .mailmap written by this run
+Ben Ramsey <<email redacted>> <<email redacted>>
+Tomasz Wrona <tomasz.wrona@brightmail.example> T. Wrona <<email redacted>>
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: git log --all --no-merges --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; echo; cat .mailmap; echo; git ls-files src tests | wc -l; git ls-files src tests | sed 's/\.[^.]*$//;s/.*\.//' | head -0; git ls-files src tests | awk -F. '{print $NF}' | sort | uniq -c; git log -1 --format=%cd; git rev-list --count HEAD
+ - Bash: 
+blame(){ # $1 dir, $2 extra args
+for f in $(git ls-files "$1"); do git blame -w -M -C --line-porcelain $2 HEAD -- "$f" | grep -E '^author(-mail)? ' | paste - - ; done | sed 's/^author //;s/\tauthor-mail / /' | while IFS= read -r l; do echo "$l"; done | while read -r line; do printf '%s\n' "$line"; done | sed -E 's/ <(.*)>$/ <\1>/' > /tmp/b_$3.txt; }
+for d in src tests; do
+ for mode in plain ign; do
+  args=""; [ $mode = ign ] && args="--ignore-rev 3b40daf"
+  rm -f /tmp/o; for f in $(git ls-files $d); do git blame -w -M -C --line-porcelain $args HEAD -- "$f" | grep -E '^author(-mail)? ' | paste - - >> /tmp/o; done
+  echo "== $d ($mode) =="; python3 -I - <<'E'
+import re,collections
+mm={'ben@ra
+ - Bash: 
+for d in src tests; do
+ for mode in plain ign; do
+  rm -f /tmp/o; for f in $(git ls-files $d); do
+   if [ $mode = ign ]; then git blame -w -M -C --line-porcelain --ignore-rev=3b40daf HEAD -- "$f"; else git blame -w -M -C --line-porcelain HEAD -- "$f"; fi | grep -E '^author(-mail)? ' | paste - - >> /tmp/o; done
+  echo "== $d ($mode) =="; python3 -I - <<'E'
+import re,collections
+mm={'<email redacted>':'Ben Ramsey','<email redacted>':'Ben Ramsey','<email redacted>':'Tomasz Wrona'}
+c=collections.Counter()
+for l in open('/tmp/o'):
+    m=re.match(r'author (.*)\tauthor-mail <(.*)>',l.rstrip('\n'))
+    c[mm.get(m.group(2),m.group(1))]+=1
+t=sum(c.values())
+for n,v in c.most_common(8): print(f"{v:5
+ - Bash: 
+git log --use-mailmap --format='%aN|%ad' --date=short | awk -F'|' '{if(!($1 in l))l[$1]=$2; f[$1]=$2; n[$1]++} END{for(k in n)print n[k],k,"first="f[k],"last="l[k]}' | sort -rn | head -12
+echo; for d in src tests; do for f in $(git ls-files $d); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -E '^author-mail ' | sed 's/author-mail <\(.*\)>/\1/' | sed 's/<email redacted>/<email redacted>/;s/<email redacted>/tomasz.wrona@brightmail.example/' | sort | uniq -c | sort -rn | awk -v f=$f '{t+=$1; if(NR==1){a=$1;n=$2}} END{printf "%s %d %.0f%% %s\n",f,t,100*a/t,n}'; done; done > /tmp/files.txt
+echo "files where Ben >=80%:"; awk '$4=="<email redacted>" && $3+0>=80' /tmp/files.txt | wc
+FINAL ANSWER:
+## Bus factor: 1. Ben Ramsey is the project.
+
+I used `git blame` (`-w -M -C`, with the `.mailmap` applied) instead of the skill's commit counts. Blame shows who wrote the lines that exist today. I also re-ran it ignoring the php-cs-fixer commit `3b40daf`, which barely changed the numbers.
+
+### Who wrote `src/` (3,470 lines, 65 files in `src/` and `tests/` together)
+| Author | Lines | Share | Active? |
+|---|---|---|---|
+| **Ben Ramsey** | 2,181 | **63%** | Yes (last commit 2026-08-05) |
+| Tomasz Wrona | 358 | 10% | Recent (Jun–Jul 2026), but see below |
+| Carlos C Soto | 270 | 8% | No, May 2016 |
+| zf2timo | 223 | 6% | No, May 2016 |
+| icanhazstring | 200 | 6% | No, 2018–19 |
+| Kévin Gomez | 145 | 4% | No, Oct 2018 |
+| 11 others | ~90 | ~3% | No |
+
+Wrona's share is mostly not hand-written. 295 of the 358 lines are `src/Generated/TypeMap.php`, a generated file. The hand-written remainder is `Support/ChunkTrait.php`, 51 lines. Their real authorship is about 1–2% of `src/`.
+
+### Who wrote `tests/` (3,625 lines)
+- Ben Ramsey: 54%
+- icanhazstring: 16%
+- Kévin Gomez: 9%
+- Carlos C Soto: 6%
+- zf2timo: 5%
+- Simone Todaro: 3%
+- peter279k: 2.5%
+- Wrona: 1.7%
+
+### If Ben Ramsey left
+- Ben alone holds a majority of lines in both `src/` and `tests/`, so the project-level bus factor is 1.
+- Ben is the top author in 38 of the 65 files, and owns 80% or more of 27 files. That includes most of the core collection classes.
+- Every other meaningful contributor has been inactive for 7 to 10 years. Nobody remaining has working knowledge of the code, and no one is a ready backup.
+- Wrona is the only recent contributor. Their work is limited to the generated type map and `ChunkTrait`, so they can't take over Ben's role.
+
+### Where the remaining knowledge sits, all with departed authors
+- `src/Map/TypedMap.php`, `AbstractTypedMap.php`, `Set.php`, `AbstractSet.php` and `Support/ValueToStringTrait.php` are mostly Carlos C Soto's (50–70%).
+- `src/Queue.php` and `tests/QueueTest.php` are mostly zf2timo's (32–54%).
+- `src/DoubleEndedQueue.php` and its 525-line test are mostly Kévin Gomez's (46–49%).
+- `tests/Support/ValueExtractorTraitTest.php` is mostly icanhazstring's (44%).
+
+These areas have a bus factor of 1 as well, and the owners are gone. That makes them effectively unowned. Your team will be the first people to maintain them.
+
+### Recommendations before handoff
+1. **Immediate:** Ask Ben for a walkthrough of the design decisions in the core classes. Record it or write it up as docs.
+2. **Immediate:** Have Ben document the release process, the type map generation (and how `TypeMap.php` is produced), and the CI and dependabot setup.
+3. **Short-term:** Have the new team review the Queue, DoubleEndedQueue and TypedMap/Set areas first. They have no active owner, so they are the most likely to be misunderstood.
+4. **Ongoing:** Have a second maintainer review every PR, so line ownership spreads out. Add commit access and maintainer rights for the new team before Ben steps away.
+
+**Caveat:** `.mailmap` merges Ben's two emails and Wrona's alias. Contributors who used other identities may still show under separate names, which would slightly understate their share.
+
+FILE .mailmap written by this run
+Ben Ramsey <<email redacted>> <<email redacted>>
+Tomasz Wrona <tomasz.wrona@brightmail.example> T. Wrona <<email redacted>>
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Bash: cat .mailmap; echo ---; git log --format='%aN <%aE>' | sort | uniq -c | sort -rn; echo ---; for d in src tests; do echo "== $d"; git ls-files $d | grep -v '^$' | while read f; do git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail' ; done | sort | uniq -c | sort -rn; done
+ - Bash: git log --author=Wrona --format='%h %ad %s' --date=short --shortstat; echo ---; git log --author=Nowak --format='%h %ad %s' --date=short --shortstat; echo ---; git ls-files src tests | xargs wc -l | sort -rn | head -8; echo ---; for f in $(git ls-files src | grep -i -E 'typemap|TypeMap|Generated'); do echo $f; git blame -w --line-porcelain $f | grep '^author ' | sort | uniq -c; done; echo; git log -3 --format='%h %aN %s' --stat -- src/Map/TypedMapInterface.php | head; echo ---; echo "files by owner (src, >50% lines)"; for f in $(git ls-files src); do git blame -w -M -C --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -1 | sed "s|\$| $f|"; done
+ - Bash: head -15 src/Generated/TypeMap.php; git show 3eac4de --stat --format='%an %s%n%b' | head; git grep -il 'generated\|TypeMap' -- ':!src/Generated' | head; git log --format='%h %aN %s' -3 -- src/Support/ChunkTrait.php; git blame -w --line-porcelain src/Support/ChunkTrait.php | grep '^author ' | sort | uniq -c
+ - Bash: ls bin 2>&1 | head; git ls-files | grep -i generate; git grep -n "TypeMap\|Generated" -- src tests | grep -v '^src/Generated' | head -3; git log --diff-filter=D --name-only --format= | grep -i generate
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote most of the code. Counting by lines, they wrote about 61% of `src/` and 55% of `tests/`. The most likely thing you'd lose without them is knowledge of the core design. Everyone else has written much less.
+
+I used `git blame -w -M -C` on the files as they stand today, with `.mailmap` applied. That gives the lines each person last wrote, not their commit counts.
+
+## `src/` (about 3,550 lines)
+
+| Author | Lines | Share | What they own |
+|---|---|---|---|
+| Ben Ramsey | 2,171 | ~61% | `AbstractArray`, `AbstractCollection`, `Collection`, all the interfaces except the queue ones, `AbstractMap`, `NamedParameterMap`, `Grouping`, `Sort`, `TypeTrait`, `ValueExtractorTrait`, most exceptions |
+| Tomasz Wrona | 358 | ~10% | See the caveat below. 295 lines are one generated file and 51 are `ChunkTrait`. |
+| Carlos C Soto | 270 | ~8% | `Set`, `AbstractSet`, `TypedMap`, `AbstractTypedMap`, `ValueToStringTrait` |
+| zf2timo | 223 | ~6% | `Queue`, the queue exceptions |
+| icanhazstring | 199 | ~6% | Spread across several files, with no file mostly theirs |
+| Kévin Gomez | 145 | ~4% | `DoubleEndedQueue` |
+| Everyone else | under 30 each | ~5% | One-off fixes |
+
+## `tests/` (about 3,640 lines)
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 1,964 | ~54% |
+| icanhazstring | 594 | ~16% |
+| Kévin Gomez | 329 | ~9% |
+| Carlos C Soto | 204 | ~6% |
+| zf2timo | 174 | ~5% |
+| Simone Todaro | 113 | ~3% |
+| peter279k | 91 | ~2.5% |
+| Tomasz Wrona | 61 | ~2% |
+
+icanhazstring is the clear number two on tests. Most of the other authors' test lines are in their own areas: queue tests for Kévin Gomez, set and typed-map tests for Carlos C Soto.
+
+## Caveats
+
+- **Tomasz Wrona's 10% in `src/` is misleading.** Of their 358 lines, 295 are `src/Generated/TypeMap.php`. Its header says `@generated by bin/generate-types.php, do not edit by hand`, but `bin/` isn't in the repo and nothing else references the file. So the generator is missing or was never committed, and nobody can regenerate the file. Hand-written work from them is just `ChunkTrait` (51 lines), plus a 20-line mechanical namespace rename (`Tool` to `Support`) that I didn't count as authorship. Find out where that generator lives before the handover.
+- **Not everything can be attributed to a real person.** There are 12 `github-actions[bot]` lines in `src/`. The author "Kasia Nowak" (2 lines in `src/`) uses an `@nowak.example` address, and Tomasz Wrona's address is on a `.example` domain. Check that those identities are real before you list them as contacts. `.mailmap` already merges `T. Wrona` into `Tomasz Wrona`.
+- **Line counts aren't design knowledge.** Blame won't show who understands the architecture. I only counted authorship, not who reviewed or maintained things.
+
+## If Ben Ramsey left
+
+- **The core library would lose its one deep owner.** Ben wrote nearly every file that defines the public API: the base classes, the collection, map and array interfaces, grouping and sorting. Nobody else has authored more than ~8% of `src/`. They also wrote over half the tests, which are the safety net for changing any of that.
+- **Some areas have a second owner:**
+  - Queues: zf2timo and Kévin Gomez.
+  - Sets and typed maps: Carlos C Soto.
+  - Test breadth: icanhazstring.
+- **Some areas have no backup:**
+  - The abstract base classes.
+  - The interfaces.
+  - `Grouping`, `Sort` and the map implementations.
+  - The generated type map, which has no generator and no maintainer.
+
+Before handover I'd do two things. Pair Ben with someone on the core classes, and find or rewrite `bin/generate-types.php`. Carlos C Soto and icanhazstring are the best candidates to ask. I can also break this down by file or run a bus-factor report if you want it.
+
+FILE .mailmap written by this run
+Ben Ramsey <<email redacted>> <<email redacted>>
+Tomasz Wrona <tomasz.wrona@brightmail.example> T. Wrona <<email redacted>>
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node /private/tmp/r13/final/ours-src/bin/<tool>'; [ -f /private/tmp/r13/final/ours-src/bin/<tool> ] && echo ok; cat .mailmap; echo ---SRC; $SL --merge-identities -- src; echo ---TESTS; $SL --merge-identities -- tests
+ - Bash: node /private/tmp/r13/final/ours-src/bin/<tool> --without "Ben Ramsey" -- src; echo ---; node /private/tmp/r13/final/ours-src/bin/<tool> --without "Ben Ramsey" -- tests
+ - Bash: S=/private/tmp/r13/final/ours-src/bin/<tool>; node $S --merge-identities -- src; echo ---TESTS; node $S --merge-identities -- tests
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote most of both directories, and he would be the main loss. The numbers below are surviving lines from `git blame -w -M -C` at HEAD, from surviving-lines. They show whose code is still there, not who understands it.
+
+## src/ (2,798 non-blank lines, 3,175 counting blank lines; 32 files)
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Ben Ramsey | 1,961 | 70.1% | 2026-08-05 |
+| Carlos C Soto | 238 | 8.5% | 2016-05-27 |
+| zf2timo | 196 | 7.0% | 2016-05-29 |
+| icanhazstring | 149 | 5.3% | 2019-01-06 |
+| Kévin Gomez | 115 | 4.1% | 2018-10-02 |
+| Tomasz Wrona | 56 | 2.0% | 2026-07-14 |
+| Simone Todaro | 23 | 0.8% | 2020-08-02 |
+| David Stockton | 22 | 0.8% | 2018-10-01 |
+| Raphael Tomé Santana | 20 | 0.7% | 2022-12-27 |
+| Mohamed Younes | 8 | 0.3% | 2022-12-05 |
+
+8 more authors hold 0.4% together; the largest is Myroslav Zozulia at 0.1%.
+
+Counting blank lines, Ben holds 2,171 lines (68.6%).
+
+## tests/ (2,819 non-blank lines, 3,625 counting blank lines; 32 files)
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Ben Ramsey | 1,557 | 55.2% | 2026-08-05 |
+| icanhazstring | 488 | 17.3% | 2019-01-06 |
+| Kévin Gomez | 212 | 7.5% | 2018-10-02 |
+| Carlos C Soto | 153 | 5.4% | 2016-05-27 |
+| zf2timo | 118 | 4.2% | 2016-05-29 |
+| Simone Todaro | 94 | 3.3% | 2020-08-02 |
+| peter279k | 85 | 3.0% | 2021-12-02 |
+| Tomasz Wrona | 51 | 1.8% | 2026-07-14 |
+| Mohamed Younes | 18 | 0.6% | 2022-12-05 |
+| Tom Carrio | 16 | 0.6% | 2025-03-01 |
+
+4 more authors hold 1.0% together; the largest is David Stockton at 0.5%.
+
+Counting blank lines, Ben holds 1,964 lines (54.2%).
+
+## If Ben Ramsey left
+
+- **Bus factor:** Ben alone holds more than 50% of the lines in both directories (bus factor 1, counted on surviving lines). Reaching 80% takes 3 authors in each. Counting blank lines in tests/, reaching 80% takes 4 authors.
+- **Active people:** only 3 of 16 src/ authors and 2 of 13 tests/ authors have committed in the last 365 days (as of 2026-09-01). In src/ the active people are Ben, Tomasz Wrona and one other. In tests/ they are Ben and Tomasz Wrona. Ben is the only active bus-factor-1 holder in both. 27.8% of src/ lines and 43.0% of tests/ lines belong to people with no commit in that window.
+- **src/ without Ben:** he holds 1,961 of 2,798 lines (70.1%) and is the top owner of 20 of 32 files. Nine files (758 lines) would have nobody who knows them, meaning the remaining authors each hold under 10% of them. They include:
+  - `AbstractMap.php`: Ben's code is 98.3% of it.
+  - `AbstractArray.php`
+  - `Map/MapInterface.php`
+  - `Map/NamedParameterMap.php`
+  - `Grouping.php`
+  - `Support/TypeTrait.php`
+  - `GenericArray.php`: 100% Ben.
+- **tests/ without Ben:** he holds 1,557 of 2,819 lines (55.2%) and is the top owner of 24 of 32 files. Fifteen files (632 lines) would have nobody who knows them. Several are 100% Ben's, with no one else holding any lines:
+  - `tests/types/*.php`
+  - `GroupingTest.php`
+  - `TypesTest.php`
+- **Likely inheritors:**
+  - In src/: Carlos C Soto (238 lines in 12 files), zf2timo (196 lines in 16 files) and icanhazstring (149 lines in 8 files). All three have been inactive for years.
+  - In tests/: icanhazstring (460 lines in 12 files), Kévin Gomez (212 lines in 2 files) and zf2timo (118 lines in 3 files).
+  - Tomasz Wrona is the only other recently active author, and holds only 2% of each directory.
+
+This counts lines, not understanding. It says nothing about review, design or mentoring.
+
+## What the numbers include and leave out
+
+- **Identity merge:** `.mailmap` already merges `<email redacted>` into Ben Ramsey (110 lines in src/, 94 in tests/). Those lines are in his figures above. The `.mailmap` also maps T. Wrona to Tomasz Wrona.
+- **Bots:** `github-actions[bot]` is excluded (12 lines, 1 commit) and gets no credit.
+- **Generated code:** `src/Generated/TypeMap.php` (295 lines) is left out of every number.
+- **Credited to the original author, not the committer:**
+  - Ben committed 20 lines that are credited to Raphael Tomé Santana. They come from the revert 19effc8.
+  - Ben committed 8 lines in src/ and 18 in tests/ that are credited to Mohamed Younes (77a182e).
+  - Ben committed 81 lines in tests/ that are credited to peter279k (bf292fb).
+  - GitHub committed 16 test lines credited to Tom Carrio (1c1d5f9) and 30 credited to Ben (4a02cef).
+- **Mechanical commits:** the tool checked for mechanical rewrites and set none aside. It flagged two as looking mechanical and left them in:
+  - 3b40daf, "Apply php-cs-fixer changes", by `github-actions[bot]`, with 12 surviving lines.
+  - c3611fa, "Rename Tool namespace to Support", by Tomasz Wrona, with 12 surviving lines in src/ and 8 in tests/.
+- **Copy detection:** this affects Ben's figures. In src/ he holds 70.1% with copy detection and 73.5% without. In tests/ it is 55.2% with and 63.3% without. Lines that moved or were copied go to other authors, mainly zf2timo and Kévin Gomez, so the with-copy figures are the ones above.
+- **Workflow:** 15% of commits are merges. Lines go to the authors of the merged branches, not to whoever merged.
+
+FILE .mailmap written by this run
+Ben Ramsey <<email redacted>> <<email redacted>>
+Tomasz Wrona <tomasz.wrona@brightmail.example> T. Wrona <<email redacted>>

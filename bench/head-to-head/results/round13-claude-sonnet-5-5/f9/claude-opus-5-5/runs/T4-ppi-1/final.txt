@@ -1,0 +1,53 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4-ppi-1/repo; find . -type f -name "*.js" -not -path "*/node_modules/*" -not -path "./.git/*" | head -50; echo ---; git log --no-merges --pretty=format:"%h %ad %an <%ae> %s" --date=short -- lib/index.js | head -40; echo; echo ---; git log --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -20; echo ---; git log -1 --date=short --pretty=%ad
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4-ppi-1/repo; git show --stat b2005d9 62628c0 | head -30; git show b2005d9 | head -60; echo ---BLAME; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---BLAME-ignore; git blame -w --ignore-rev 62628c0 --ignore-rev b2005d9 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; wc -l lib/index.js; ls .github; cat .github/CODEOWNERS 2>/dev/null; git log --since=2025-01-01 --pretty="%ad %an %s" --date=short | head -20; grep -rl "lib/index\|require('\.\./lib\|require(\"\.\./lib\|\"main\"" --include=*.js --include=package.json . | grep -v node_modules
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4-ppi-1/repo; for a in "Douglas Christopher Wilson" "Troy Goode" "Ulises Gascón" "Jon Church" "Ignacio Mangas"; do echo "$a: $(git log --author="$a" -1 --date=short --pretty='%ad %ae %s')  total=$(git log --author="$a" --oneline | wc -l)"; done; git log --author="Troy Goode" --pretty='%ae' | sort | uniq -c; grep -nE '"(author|contributors|maintainers|main)"' -A4 package.json; grep -rln "require(.\.\./lib\|require(.\.\./\?.)" test
+FINAL ANSWER:
+## 🚌 Bus Factor: `lib/index.js`
+Period: all history | Generated: 2026-10-24
+
+### Who should review
+
+1. **Troy Goode (primary, required).** Original author and package author. Once you exclude the reformat commit, Troy wrote **157 of 238 lines (66%)**, and 29 of the file's ~60 commits are Troy's.
+2. **Douglas Christopher Wilson (secondary, domain expert).** He wrote 22 lines himself, and those are the subtle CORS fixes: the `Vary: Access-Control-Request-Headers` logic, the missing-`methods` delegate fix, and the lint cleanups. He's also the top committer to the repo overall (143 commits). His last commit was in **Sept 2021**, so he may not respond.
+3. **A current maintainer: Ulises Gascón or Jon Church.** Neither has touched `lib/index.js`, but they cut the 2.8.6 release (Jan 2026) and are the most recently active humans. Add one so someone who is around can merge.
+
+If you want someone who knows a specific area: **Alejandro Caravaca Puchades** (12 lines) wrote the array/RegExp `origin` matching, and **Raymond Feng** (9 lines) wrote the `applyHeaders` optimization.
+
+### ⚠️ Plain `git blame` gives the wrong answer here
+
+| Method | Top "owner" of lib/index.js |
+|---|---|
+| Raw `git blame` | **Fiona Formatter: 214/238 lines (90%)** |
+| Blame ignoring `62628c0` and `b2005d9` (whitespace-insensitive) | **Troy Goode: 157/238 (66%)** |
+
+- `62628c0` ("style: reformat… 4-space indent and double quotes") rewrote all 428 changed lines of the file. It's whitespace and quote changes only. Fiona has no other commits, so she isn't a meaningful reviewer.
+- `b2005d9` ("lib: annotate handlers") only adds `// checked` comments to function signatures. It's attributed to Troy Goode, but with the email `troy@laptop.example`. Troy's other 120 commits use `<email redacted>`. I can't confirm it's the same person. Either way it doesn't change the recommendation, because Troy's ownership comes from the 2013–2016 history, not this commit.
+
+To keep blame from being skewed again, add a `.git-blame-ignore-revs` containing `62628c0`.
+
+### Risk summary
+
+| Metric | Value |
+|---|---|
+| Lines / distinct historical authors | 238 / 25 |
+| Primary owner share (adjusted blame) | Troy Goode 66% |
+| Effective bus factor | **1–2** (Troy, plus Doug for the CORS edge cases) |
+| Owners active in last 90 days | **None.** The repo's last commit was 2026-04-12 |
+| Importance | **CRITICAL.** It's the package `main`, and all 5 test files depend on it |
+
+```
+lib/index.js  [███████░░░] 🔴 Bus Factor: 1–2 (Troy 66%, Doug 9%), no recent lib authors
+```
+
+### Recommendations
+1. **Now:** Request Troy plus a current maintainer (Ulises or Jon) as reviewers, and CC Doug if your change touches `Vary` or preflight handling.
+2. **Short-term:** Add a `CODEOWNERS` file. There isn't one in `.github/`. Also add `.git-blame-ignore-revs` so future reviewer lookups are accurate.
+3. **Ongoing:** Nobody active has worked on the core middleware. Use this review to pair a current maintainer with Troy so the knowledge spreads.
+META cost=0.20411220000000002 ms=43406 turns=6

@@ -1,0 +1,53 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "Who owns the code that is still present today (surviving lines at HEAD, not commit counts). Report current ownership by surviving lines per file/directory, and flag single-maintainer areas."}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/ 2>&1; ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts 2>&1; cd /private/tmp/r13/final/f9/claude-haiku-5-5/runs/T1-bf-1/repo && git rev-parse --show-toplevel && git ls-files | wc -l && git log --oneline | wc -l
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -150
+ - Bash: for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; echo ---; git ls-files | sed 's|/[^/]*$||' | sort | uniq -c
+ - Bash: git log -1 --format='%H %an <%ae> %ad %s' 62628c0 && git show --stat --format= 62628c0 | tail -3 && echo --- && git blame --line-porcelain --ignore-rev 62628c0 -- $(git ls-files) 2>/dev/null | grep '^author-mail ' | sort | uniq -c | sort -rn | head -20; echo --- per-area; for f in $(git ls-files); do d=$(dirname "$f"); git blame --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep '^author-mail ' | sed "s|^|$d |"; done | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{c[$2]=c[$2]" "$1"x"$3"("$4")"} END{for(k in c) print k": "c[k]}'
+ - Bash: git blame --ignore-rev 62628c0 -- lib/index.js 2>&1 | head -3; echo; git blame --line-porcelain --ignore-rev 62628c0 -- lib/index.js 2>&1 | grep '^author-mail' | sort | uniq -c | sort -rn | head; echo; git ls-files | grep -v '^test/' | head -30
+ - Bash: git show --stat --format='%h %an %s' 62628c0 | head -8; echo ---; for f in $(git ls-files); do git blame --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep '^author-mail ' | sed "s|^|$f\t|"; done > /tmp/blame_ign.tsv; awk -F'\t' '{print $2}' /tmp/blame_ign.tsv | sort | uniq -c | sort -rn; echo "total lines: $(wc -l < /tmp/blame_ign.tsv)"; echo --- per file top owner; awk -F'\t' '{k=$1" "$2; c[k]++; t[$1]++} END{for(k in c){split(k,a," "); f=a[1]; } } ' /tmp/blame_ign.tsv; awk -F'\t' '{c[$1"\t"$2]++; t[$1]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d/%d\n", a[1], a[2], c[k], t[a[1]]}}' /tmp/blame_ign.tsv | sort -t$'\t' -k1,1 -k3,3rn | awk -F'\t' '!seen[$1]++'
+FINAL ANSWER:
+Surviving code is spread across several people, and the biggest owners are not the same as the biggest committers. Counts are from `git blame` at HEAD over the 18 tracked files (about 1,995 lines). I ignored the 2026-04-12 "reformat js" commit (`62628c0`), which rewrote 1,016 lines of whitespace and quotes under `Fiona Formatter`. Without that, she would look like the top owner by a wide margin.
+
+**Surviving lines by author (reformat ignored)**
+
+| Author (email) | Lines | Share |
+|---|---|---|
+| <email redacted> | 595 | ~30% |
+| <email redacted> | 564 | ~28% |
+| fiona@formatter.example | 237 | ~12% |
+| 25435858+inigomarquinez (GitHub) | 94 | ~5% |
+| <email redacted> | 72 | ~4% |
+| Everyone else | ~430 | ~21% |
+
+I haven't confirmed that `troy@laptop.example` is the same person as `troygoode`, or that `doug@` is one person across all commits. Treat those merges as likely, not verified.
+
+**By area**
+
+- **`lib/index.js`** (238 lines): troygoode 98, fiona 57, doug 36, others the rest. No single owner holds a majority. The 57 lines attributed to Fiona survive even after ignoring the reformat, so they probably carry real edits I haven't traced.
+- **`test/test.js`** (731 lines): doug 270 (~37%), the largest single file. Her share is the main concentration point in the codebase.
+- **`README.md`** (277 lines): troygoode 104 (~38%).
+- **`package.json`**: doug 20 of 42.
+- **Sole-owner files** (one author holds effectively all surviving lines):
+  - `.github/dependabot.yml`: ulisesgascongonzalez, 15/15
+  - `test/vary.js`: troy@laptop.example, 36/36
+  - `.github/workflows/codeql.yml`: bjohansebas, 63/66
+  - `.github/workflows/scorecard.yml`: inigomarquinez, 68/73
+  - `.github/workflows/ci.yml`: doug, 108 of 220 (about half; the rest is split)
+- **Small files** (`.eslintrc.yml`, `LICENSE`, `.gitignore`, `test/support/env.js`, `test/.eslintrc.yml`): doug, almost entirely.
+
+**Single-maintainer risk:** Doug holds the largest share of `test/test.js`, `package.json`, `HISTORY.md`, `LICENSE`, and the lint and CI config. Troy holds `lib/index.js` and `README.md`, which are the core library and its docs. Those two people account for most of the code that is still here.
+
+**Caveats**
+
+- "Still here" is not "still around." I did not check whether these authors have been active recently. The busfactor script can answer that, but it writes `ownership.json` into the repo, so I ran it in `--dry-run` mode to avoid changing your tree.
+- The script's dry-run output reports that the history begins with a bulk import of 8 files on 2013-01-31, so the 2013 code may have been written by people not in this history. I haven't verified that claim.
+- The script's CODEOWNERS output is commit-weighted, not surviving-line-weighted, so I didn't use it for the figures above.
+
+I haven't written any files in the repo. If you want the active-author check, a `.github/ownership.json` generated in a scratch copy, or the HTML report, tell me which and I'll do it.
+META cost=0.00845575 ms=36251 turns=9

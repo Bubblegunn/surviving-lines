@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -60; echo ---; ls -a; cat .mailmap 2>/dev/null
+ - Bash: git shortlog -sne --all | sed -n '61,200p'; echo ---; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{print tolower($1)"|"tolower($2)}' | sort > /tmp/ids.txt; wc -l /tmp/ids.txt; echo --- same email diff names; git log --all --format='%ae|%an' | sort -u | awk -F'|' '{c[tolower($1)]++; n[tolower($1)]=n[tolower($1)]" / "$2} END{for(e in c) if(c[e]>1) print e n[e]}'; echo --- same name diff emails; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{k=tolower($1); c[k]++; n[k]=n[k]" / "$2} END{for(e in c) if(c[e]>1) print e n[e]}'
+ - Bash: git log --all --format='%h %ad %an <%ae> | %cn <%ce> | %s' --date=short --author='laptop.example' --author='alex94puchades' --author='Fiona' --author='Efe' ; echo; git log --all --format='%cn <%ce>' | sort | uniq -c | sort -rn | head
+ - Bash: cat > .mailmap <<'EOF'
+Alejandro Caravaca Puchades <<email redacted>>
+Troy Goode <<email redacted>> <troy@laptop.example>
+EOF
+git shortlog -sne --all | head -5; git log --all --format='%cN <%cE>' | sort | uniq -c | sort -rn | head -3
+FINAL ANSWER:
+Yes, two people were showing up under more than one identity:
+
+| Person | Variants | Commits before → after |
+|---|---|---|
+| **Troy Goode** | `<email redacted>` (120) and `troy@laptop.example` (2, the commits `02afce3` and `b2005d9`) | 120 → **122** |
+| **Alejandro Caravaca Puchades** | the same email under two names: "Alejandro Caravaca Puchades" (4) and "alex94puchades" (1) | 4 → **5** |
+
+I fixed this with a `.mailmap` file at the repo root, which is git's standard way to merge identities. History stays as it is, and `git shortlog`, `git log --use-mailmap`, `git blame` and GitHub all count each person once:
+
+```
+Alejandro Caravaca Puchades <<email redacted>>
+Troy Goode <<email redacted>> <troy@laptop.example>
+```
+
+**The top author is still Douglas Christopher Wilson, with 143 commits.** Troy Goode is second with 122 after the merge. Merging didn't change the ranking. The same holds for committers: Douglas 161, Troy 119.
+
+- **Troy's merge is a judgment call.** It's the same name, and `troy@laptop.example` looks like a machine-default email, so I treated them as one person. The two match only by name, though, so remove that line if you know they're different people.
+- **No other duplicates turned up.** I checked for names and emails that match regardless of letter case. The rest of the list is all distinct people.
+- **`.mailmap` isn't committed yet.** It already takes effect locally. Tell me if you want it committed so it applies for everyone.
+META cost=0.1379276 ms=26595 turns=5

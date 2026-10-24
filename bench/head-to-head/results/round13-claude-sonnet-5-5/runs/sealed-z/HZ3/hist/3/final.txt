@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ3-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ3-hist-3/repo"}
+FINAL ANSWER:
+**Short answer:** Ownership is concentrated in one person, Felix Queißner. If Felix stopped answering, about 39% of current lines would have no author left. The commit-based bus factor is about 4, not the 6 the tool reports.
+
+**Felix appears under three author names.** The tool lists them separately: "Felix (xq) Queißner", `Felix "xq" Queißner` and "Felix Queißner". Merging them gives:
+- **Commits:** 46 of 130, or 35%. The next author, Linus Groh, has 11 (8.5%).
+- **Lines at HEAD:** 897 of about 2,280, or 39% (413 + 386 + 98).
+- **Bus factor:** Felix, Linus Groh, Vincent Rischmann and jnagpaul together pass 50% of commits. The tool reports 6 only because it counts Felix's three names as separate people.
+
+**Felix is already inactive by the tool's definition.** Their last commit is 2026-04-16, which is before the 6-month cutoff of 2026-04-24. So this is closer to a description of the present than a hypothetical.
+
+**Where the code sits:**
+- **`src/args.zig`:** This is the core file at 1,049 lines. Felix wrote about 64% of it, and 90% of it is owned by people inactive for 6+ months. The other main contributor to it is mochalins (6%, last commit 2025-07).
+- **Orphaned files:** 9 of 13 tracked files have more than 50% of their lines owned by inactive authors. These are `args.zig`, `build.zig`, `build.zig.zon`, `demo.zig`, `demo_verb.zig`, the README, the LICENSE, `.gitattributes` and the cross-build workflow.
+- **All inactive authors combined:** About 57% of all lines belong to inactive authors. Felix is most of that.
+- **Active code:** The newer files have active owners.
+  - Wen Li owns `width.zig` and `width_table.zig` outright (548 lines, 24%).
+  - Tobias Ek owns `help.zig` outright (340 lines, 15%).
+
+  Each of these two is a single-owner file, so they are also one-person risks, though a smaller one. Everything else active is small: Krzysztof Wolicki 1.7%, Linus Groh 1.4%, Dmitri Volkov 0.7%.
+
+**Caveats:**
+- The history has 33 authors across 130 commits, with a long tail of one-off contributors. That is why the commit-based bus factor looks healthier than the line ownership does.
+- Some "last commit" dates (Wen Li 2026-10-27, Dmitri Volkov 2026-11-04) are after today's date of 2026-10-24. That may be clock skew or odd timestamps, so I wouldn't trust those two dates.
+- The tool counts commits and surviving lines. It can't tell you who understands the parser design, which may differ from who typed the lines.
+
+A `.mailmap` entry merging Felix's three identities would make future runs accurate.
+META cost=0.0724335 ms=17694 turns=4

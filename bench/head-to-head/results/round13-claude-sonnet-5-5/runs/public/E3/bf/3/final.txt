@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: run() { git ls-files | while read -r f; do [ -f "$f" ] || continue; e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; esac; git blame -w -M -C --line-porcelain $1 -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //;s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;if(e!=p){print;p=e}}'; }; echo "== plain (-w)"; run ""; echo "== ignoring 62628c0"; run "--ignore-rev 62628c0"
+ - Bash: git blame --ignore-rev 62628c0 -- index.js 2>&1 | head -3; git ls-files | head -20
+ - Bash: git blame --ignore-rev 62628c0 -- lib/index.js 2>&1 | head -3
+ - Bash: git ls-files | while read -r f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; esac; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author ' | sed "s/^author //;s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{e=$2;if(e!=p){print;p=e}}'
+FINAL ANSWER:
+Top owner of surviving lines per extension, from `git blame` at HEAD. I ignored whitespace changes and detected moved or copied lines:
+
+| Type | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 676 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 127 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| `LICENSE` (no extension) | Douglas Christopher Wilson | 17 |
+
+- **Reformat commit:** The latest commit, `62628c0`, reformatted all the JS to 4-space indent and double quotes. I excluded it from blame so it doesn't take credit for lines it only restyled. Troy Goode's `.js` count is 676 with it excluded and 581 with it included. He is the top owner either way.
+- **Counts:** These are line counts per author, not shares of each type, so I haven't shown how close the runner-up is.
+META cost=0.0545229 ms=17713 turns=5

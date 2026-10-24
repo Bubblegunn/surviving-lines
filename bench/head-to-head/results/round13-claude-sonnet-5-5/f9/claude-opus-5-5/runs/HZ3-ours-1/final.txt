@@ -1,0 +1,54 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL='node /private/tmp/r13/final/ours-src/bin/surviving-lines.js'; $SL --merge-identities 2>&1 | head -60; echo ======; $SL --merge-identities --without "<email redacted>,<email redacted>,<email redacted>,<email redacted>" 2>&1 | head -80
+ - Bash: SL=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $SL --merge-identities 2>&1 | head -70; echo "-----"; node $SL --merge-identities --without "<email redacted>,<email redacted>,<email redacted>,<email redacted>" 2>&1 | head -80
+ - Bash: SL=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $SL --merge-identities --without "<email redacted>,<email redacted>,<email redacted>,<email redacted>,<email redacted>" 2>&1 | head -12; echo ----; node $SL --without "<email redacted>,<email redacted>,<email redacted>" 2>&1 | head -12
+FINAL ANSWER:
+Ownership is heavily concentrated in one person. Felix Queißner, who commits under five addresses, holds **721 of 1,535 non-blank lines (47.0%)**. If they stopped answering, the core parser, `src/args.zig`, would have no remaining author holding more than 7% of it. The bus factor is **3** when Felix's addresses are counted separately, and probably **2** if they are one person.
+
+All figures come from `surviving-lines`, which counts the lines still in the code at HEAD (bd73202) with `git blame -w -M -C`. The repository has 1,535 non-blank lines (1,795 counting blank lines). One generated file, `src/width_table.zig` (484 lines), is left out of every number.
+
+### Who holds the code
+Felix shows up under several names and addresses. The tool counts them separately unless told otherwise:
+
+| Identity | Non-blank lines | Counting blank lines | Last commit |
+|---|---|---|---|
+| Felix (xq) Queißner `<<email redacted>>` | 384 (25.0%) | 471 (26.2%) | 2021-08-11 |
+| Felix "xq" Queißner (2 addresses) | 284 (18.5%) | 343 (19.1%) | 2023-05-28 |
+| Felix Queißner (2 addresses) | 53 (3.5%) | 68 (3.8%) | **2026-04-16** |
+| jnagpaul | 146 (9.5%) | 188 (10.5%) | 2023-07-26 |
+| Vincent Rischmann | 114 (7.4%) | 132 (7.4%) | 2025-03-01 |
+
+- **Merging is a guess from names and addresses, and nothing is written to `.mailmap`.** The tool rates the first two rows as a strong match, which would make them one person with 668 lines (43.5%). I also included the third row (`<email redacted>`, `<email redacted>`), because that address appears under both names. All five together give the 721 lines (47.0%) above.
+- **Felix is not fully gone:** the `Felix Queißner` identity made a commit on 2026-04-16. The older identities, which hold most of the code, have had no commit since 2021 and 2023.
+- **Most of the code belongs to people who have stopped committing:** "as of 2026-11-04: 9 of 29 authors committed in the last 365 days and hold 21.0% of the non-blank lines; 79.0% of the lines belong to people with no commit in that time."
+
+### What if Felix stopped answering (`--without` with all five addresses)
+- **Lines they hold:** 721 of 1,535 (47.0%).
+- **Files where Felix is the top owner:** 7 of 12. These include `src/args.zig` (898 lines), `README.md`, `demo.zig`, the CI workflow and `LICENSE`.
+- **Files nobody remaining would know:** 4 files, 940 lines, which is most of the code. Here Felix holds at least half and no one else holds 10%:
+  - `src/args.zig`: Felix holds 64.6%; the next author, Vincent Rischmann, holds 6.6%.
+  - `.github/workflows/cross-build.yml`: Felix holds 91.7%; the next author, Krzysztof Wolicki, holds 4.2%.
+  - `LICENSE` and `.gitattributes`: Felix holds 100%.
+- **Most likely to inherit:** Vincent Rischmann (61 lines in 2 files), mochalins (60 lines in 3 files) and Wen Li (40 lines in 1 file). These are small holdings compared with Felix's.
+
+If you treat only the two strongly matched identities as leaving, the result is 668 lines (43.5%), and 2 files (899 lines) are left with no one who knows them.
+
+### Bus factor
+This is the smallest number of authors whose lines together reach 50% of the code:
+- **Tool's figure:** 3 (the two large Felix identities plus jnagpaul). They hold 53.0% of non-blank lines, or 55.8% counting blank lines. Reaching 80% takes 9 authors.
+- **If Felix is one person:** the tool doesn't print this. By my own arithmetic, Felix's 47.0% plus jnagpaul's 9.5% passes 50%, so the bus factor is **2**. This is the figure to take seriously, because the headline 3 makes the risk look smaller than it is.
+- **Among active people only:** 3 (Dhole, Wen Li and Krzysztof Wolicki). This is counted on the 322 lines held by the 9 people active in the last year, not on all the code.
+- **Among those left after Felix:** 5, counted on their lines only. Their remaining code is spread thinly; no one stands out as a successor.
+
+### Caveats
+- These numbers count lines, not understanding. Reviews, design work and mentoring leave no lines behind.
+- **Reformat check:** two commits that look like pure reformats were kept in the counts: `038215e` (Felix, 24 lines) and `9cf8d73` "Run zig fmt" (Linus Groh, 4 lines). Neither would change the picture.
+- **Committed for others:** Felix committed several commits written by others, such as jnagpaul's `9270d43`. Those lines are credited to the people who wrote them.
+- **Who to ask:** Felix is the main source of knowledge and, through the `Felix Queißner` identity, still occasionally active (last commit 2026-04-16). Next is Wen Li (66 lines, 4.3%, last commit 2026-10-27), but Wen Li's main file is `src/width.zig`, not the parser.
+META cost=0.2693568 ms=45064 turns=6

@@ -1,0 +1,332 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+Suggest CODEOWNERS lines for this repo's top-level directories (lib, test, .github) and the root files. Only name an owner where one person holds at least half of the surviving lines; ignore bots and formatting-only commits and count each person once. Where nobody holds half, say so.
+
+CRITERIA:
+1. Assigns lib/ to Troy Goode.
+2. Assigns test/ to Troy Goode (his two addresses together hold just over half; one address alone is under half).
+3. Gives .github/ no owner and says that nobody holds half of its lines.
+4. Gives the root files no owner and says that nobody holds half of their lines.
+5. Writes CODEOWNERS-syntax lines (a path followed by an owner) for lib/ and test/.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: ls -A && git ls-files | head -50 && git log --format='%h %an <%ae> %s' | head -40 && git log --format='%an <%ae>' | sort | uniq -c | sort -rn && cat .mailmap 2>/dev/null; ls .github; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git show --stat 62628c0 b2005d9 02afce3 | cat; git show -w --format= 62628c0 | sed 's/"/'"'"'/g' | grep -E '^[+-][^+-]' | head -60
+ - Bash: for f in lib/index.js test/error-response.js test/example-app.js test/test.js; do diff <(git show 62628c0^:$f | tr -d ' \t' | tr '"' "'") <(git show 62628c0:$f | tr -d ' \t' | tr '"' "'") >/dev/null && echo "$f fmt-only" || echo "$f CHANGED"; done; git show b2005d9 | cat; git show --stat f038e77 | cat
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");a=$0} /^author-mail /{print f"\t"a"\t"$2}'; done > /tmp/blame.tsv; wc -l /tmp/blame.tsv; cut -f2,3 /tmp/blame.tsv | sort | uniq -c | sort -rn
+ - Bash: cd /tmp && awk -F'\t' '$2!~/\[bot\]/{p=$2; if(p=="alex94puchades")p="Alejandro Caravaca Puchades"; split($1,a,"/"); g=(length(a)>1)?a[1]"/":"(root)"; print g"\t"p; print $1"\t"p}' blame.tsv | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{c=$1;$1="";sub(/^ /,"");split($0,x,"\t"); k=x[1]; tot[k]+=c; if(!(k in top)){top[k]=x[2];tc[k]=c} else if(!(k in sec)){sec[k]=x[2];sc[k]=c}} END{for(k in tot) printf "%-28s total=%4d top=%s %d (%.1f%%) | 2nd=%s %d\n",k,tot[k],top[k],tc[k],100*tc[k]/tot[k],sec[k],sc[k]}' | sort; grep bot blame.tsv | cut -f1 | sort | uniq -c
+ - Bash: python3 -I - <<'EOF'
+from collections import Counter, defaultdict
+alias={"alex94puchades":"Alejandro Caravaca Puchades"}
+g=defaultdict(Counter)
+for l in open("/tmp/blame.tsv",encoding="utf-8"):
+    f,a,m=l.rstrip("\n").split("\t")
+    if "[bot]" in a: continue
+    a=alias.get(a,a)
+    top=f.split("/")[0]+"/" if "/" in f else "(root)"
+    g[top][a]+=1
+    if top=="(root)": g[f][a]+=1
+for k in sorted(g):
+    c=g[k]; t=sum(c.values())
+    print(f"{k:16} total={t:4} " + ", ".join(f"{a} {n} ({100*n/t:.1f}%)" for a,n in c.most_common(3)))
+EOF
+FINAL ANSWER:
+Only `lib/` has a clear owner, Troy Goode. `test/`, `.github/` and the root files as a group have nobody at half or more. A few individual root files do.
+
+| Path | Surviving lines | Top holders | Owner? |
+|---|---|---|---|
+| `lib/` | 238 | Troy Goode 159 (66.8%), Douglas Christopher Wilson 22 (9.2%) | **Troy Goode** |
+| `test/` | 966 | Troy Goode 453 (46.9%), Douglas Christopher Wilson 400 (41.4%) | No one. Troy is 30 lines short of half. |
+| `.github/` | 366 | Douglas Christopher Wilson 108 (29.5%), Íñigo Marquínez Prado 95 (26.0%), Sebastian Beltran 63 (17.2%) | No one |
+| Root files together | 415 | Troy Goode 134 (32.3%), Douglas Christopher Wilson 115 (27.7%), Jon Church 72 (17.3%) | No one |
+| `HISTORY.md` | 64 | Douglas Christopher Wilson 78.1% | Douglas |
+| `LICENSE` | 22 | Douglas Christopher Wilson 77.3% | Douglas |
+| `.eslintrc.yml` | 7 | Douglas Christopher Wilson 100% | Douglas |
+| `.gitignore` | 5 | Douglas Christopher Wilson 80% | Douglas |
+| `package.json` | 40 | Douglas Christopher Wilson 20 (exactly 50.0%) | Douglas, just at the threshold |
+| `README.md` | 277 | Troy Goode 41.9%, Jon Church 26.0% | No one |
+
+Suggested CODEOWNERS:
+
+```
+# Top-level directories
+/lib/            <email redacted>
+# /test/     no owner: Troy Goode 46.9%, Douglas Christopher Wilson 41.4%
+# /.github/  no owner: top holder is Douglas Christopher Wilson at 29.5%
+
+# Root files (as a group nobody holds half: Troy Goode 32.3% is the top share)
+/HISTORY.md      <email redacted>
+/LICENSE         <email redacted>
+/package.json    <email redacted>
+/.eslintrc.yml   <email redacted>
+/.gitignore      <email redacted>
+# /README.md no owner: Troy Goode 41.9%, Jon Church 26.0%
+```
+
+The owners are listed by commit email because the repo doesn't show GitHub usernames. Swap in `@handles` if you know them. CODEOWNERS accepts either form.
+
+How I counted:
+- **Formatting:** I counted `git blame -w` with `--ignore-rev 62628c0`, the "style: reformat" commit. I checked that it's formatting-only: after removing whitespace and treating both quote styles as the same, the before and after versions of every file it touched are identical. Its author doesn't own any surviving lines.
+- **Not formatting:** `b2005d9` ("lib: annotate handlers") adds `// checked` comments to 12 lines in `lib/index.js`. That's new content, so I counted it. Leaving it out would still give Troy about 65% of `lib/`.
+- **Bots:** I removed dependabot's 10 lines from both the counts and the totals.
+- **One person, two identities:**
+  - Troy Goode commits as both `<email redacted>` and `troy@laptop.example`. I counted these as one person; it adds 48 lines but doesn't push them over half in `test/`.
+  - "alex94puchades" and "Alejandro Caravaca Puchades" share an email, so I merged them as well.
+
+`package.json` sits exactly on the threshold, so one more line from anyone else drops Douglas below half. You may want to leave it unowned. No CODEOWNERS file was written or committed; if you want one, I can add it as `.github/CODEOWNERS`.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: SL='node /private/tmp/r13/final/ours-src/bin/<tool>'; $SL --group-by dir --suggest-codeowners --merge-identities 2>&1
+ - Bash: node /private/tmp/r13/final/ours-src/bin/<tool> --group-by dir --suggest-codeowners --merge-identities 2>&1
+ - Bash: node /private/tmp/r13/final/ours-src/bin/<tool> --identities 2>&1 | head -40; ls -la .mailmap 2>&1
+ - Bash: git show --stat --format='%h %an %s' 62628c0 | cat && printf '# proposed by <tool>, confirm before relying on them\nTroy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n' > .mailmap && node /private/tmp/r13/final/ours-src/bin/<tool> --group-by dir --suggest-codeowners 2>&1 | grep -E '^(test|lib|\.|\.github) |^(Troy|Douglas|alex|Alejandro)|^#|^/|bus factor|mailmap|top:'
+ - Bash: mv .mailmap /tmp/mm.bak && node /private/tmp/r13/final/ours-src/bin/<tool> --group-by dir 2>&1 | grep -E '^(test|lib) |^Troy'; mv /tmp/mm.bak .mailmap; git status --short
+FINAL ANSWER:
+I'd add two CODEOWNERS lines: `/lib/` and `/test/` go to Troy Goode. For the root files and `.github/`, nobody holds half the lines. All figures come from `surviving-lines --group-by dir --suggest-codeowners` at `62628c0`.
+
+```
+# Proposed from surviving lines; reviewers, not authorship, should decide final ownership.
+/lib/   <email redacted>   # Troy Goode: 144 of 214 non-blank lines (67.3%), 159 of 238 counting blank lines (66.8%)
+/test/  <email redacted>   # Troy Goode: 420 of 820 non-blank lines (51.2%), 517 of 966 counting blank lines (53.5%)
+# /.github/: nobody holds half. Top is Douglas Christopher Wilson, 92 lines (30.2%) / 118 counting blank lines (32.2%)
+# Root files: nobody holds half. Douglas Christopher Wilson 95 (29.4%) / 115 (27.7%); Troy Goode 85 (26.3%) / 134 (32.3%)
+```
+
+Replace the email with Troy's GitHub handle if you have it.
+
+**How the rules were applied:**
+- **Same person counted once:** I treated two of Troy's addresses as one person, `<email redacted>` and `troy@laptop.example`. The tool rates this a strong match on name and address, but it's still a guess.
+  - The `/test/` line depends on this merge. Without it, Troy's main address holds 388 lines (47.3%), 481 counting blank lines (49.8%). That's just under half, so `/test/` would get no owner.
+  - Without the merge, `/lib/` still clears half: 132 lines (61.7%), 147 counting blank lines (61.8%).
+- **Formatting commits:** commit `62628c0` ("style: reformat js…", by Fiona Formatter) rewrote 1,016 lines in 4 files. I checked it with `git show --stat`. Those lines are credited back to whoever wrote them before. The tool flagged 7 other commits as possibly mechanical but kept them; the largest is `739dc11` "docs: reformat license", with 17 lines. Setting it aside would only move lines in the root files, where nobody comes close to half anyway.
+- **Bots:** dependabot[bot] is left out (10 lines, 11 commits).
+
+**Things to know before using this:**
+- **`.github/` has no active owner.** The two biggest holders there, Douglas Christopher Wilson and Íñigo Marquínez Prado, have no commit in the year before 2026-04-12. That's the date of the last commit, not today. No one who is active holds 20% of `.github/`.
+- **Root files:** the tool won't suggest a pattern for these, because it would also match every directory.
+- **Troy is the only active person in `lib/` and `test/`.** If he leaves, nobody active has written code there.
+- **Douglas Christopher Wilson:** he holds 344 lines (42.0%) / 374 counting blank lines (38.7%) of `test/`. He's below half and inactive, so he isn't named.
+- **What the counts measure:** they show whose code is still there. They don't show review work or who understands the code.
+
+**One file added:** because you asked to count each person once, I wrote a `.mailmap` with a "confirm before relying on them" comment and re-ran the tool. The results matched the in-memory merge.
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+```
+The second line covers the same address under two names; it doesn't change any owner. The file isn't committed. Please confirm both merges are correct, or delete the file.
+
+FILE .mailmap written by this run
+# proposed by surviving-lines, confirm before relying on them
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: ls -a && git ls-files | head -50 && git log --format='%h %an <%ae> %s' | head -40 && git shortlog -sne --all | head -40 && cat .mailmap 2>/dev/null; ls .git-blame-ignore-revs 2>/dev/null
+ - Bash: git show --stat 62628c0 b2005d9 02afce3 | cat && git show 62628c0 -w --ignore-blank-lines | head -60 && git show b2005d9 02afce3 | head -80
+ - Bash: git log --format='%h %an %s' -i -E --grep='format|style|indent|whitespace|lint|prettier|semicolon|quote|tabs|spaces' | cat
+ - Bash: for f in $(git ls-files); do git blame --line-porcelain --ignore-rev 62628c0 -- "$f" | awk -v f="$f" '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author /{sub(/^author /,"");a=$0} /^\t/{print f"\t"c"\t"a}'; done > /tmp/blame.tsv; cut -f2,3 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -40
+ - Bash: git show 62628c0 | grep '^@@' | awk '{split($2,a,",");split($3,b,","); if (a[2]!=b[2]||substr(a[1],2)!=substr(b[1],2)) print "MISMATCH",$0}' | head; echo done; for c in 555f180 3a39e99 739dc11 815c7c6 fcd2b56 4f13c63; do echo "=== $c"; git show --stat --format='%an %s' $c | cat; git show -w $c --format= | grep -c '^[+-][^+-]'; done
+ - Bash: git show -w 555f180 --format= | grep '^[+-][^+-]' | head -30; echo ====; git show 739dc11 --format= | cat; echo ===; git show 815c7c6 --format= | head -40; echo; git show -w 3a39e99 --format= | grep '^[+-][^+-]' | head -20
+ - Bash: git show 739dc11 --format= | cat; echo '----'; git show 815c7c6 --format= | head -40
+ - Bash: mkdir -p /tmp/co && cat > /tmp/co/blame.py <<'EOF'
+import subprocess, sys, re, collections
+IGN = ["62628c0","739dc11","815c7c6"]
+def git(*a): return subprocess.run(["git",*a],capture_output=True,text=True,check=True).stdout
+full = {c: git("rev-parse",c).strip() for c in IGN}
+def blame(rev, path, line=None):
+    args=["blame","-w","--line-porcelain"]+sum((["--ignore-rev",c] for c in IGN),[])
+    if line: args+=["-L",f"{line},{line}"]
+    out=git(*args, rev, "--", path)
+    res=[]; cur=None
+    for l in out.split("\n"):
+        m=re.match(r"^([0-9a-f]{40}) (\d+) (\d+)",l)
+        if m: cur={"sha":m[1],"orig":int(m[2])}
+        elif l.startswith("author-mail "): cur["mail"]=l[12:]
+        elif 
+ - Bash: cat > /tmp/co/agg.py <<'EOF'
+import sys, collections
+alias={"alex94puchades":"Alejandro Caravaca Puchades"}
+groups=collections.defaultdict(collections.Counter)
+for l in open(sys.argv[1]):
+    f,sha,a,m=l.rstrip("\n").split("\t")
+    if "[bot]" in a: groups_key=None; continue
+    a=alias.get(a,a)
+    top=f.split("/")[0]
+    key=top+"/" if "/" in f else f
+    groups[key][a]+=1
+    if "/" not in f: groups["(all root files)"][a]+=1
+for k,c in sorted(groups.items()):
+    t=sum(c.values()); top=c.most_common(3)
+    print(f"{k:20} total={t:4} "+"; ".join(f"{a} {n} ({100*n/t:.1f}%)" for a,n in top))
+EOF
+python3 -I /tmp/co/agg.py /tmp/co/out.tsv; grep -c 'bot\]' /tmp/co/out.tsv; grep 'bot\]' /tmp/co/
+ - Bash: cd /tmp/co && awk -F'\t' '$3 ~ /Troy/ {split($1,p,"/"); k=(p[2]?p[1]"/":$1); print k"\t"$4}' out.tsv | sort | uniq -c; awk -F'\t' '$1=="README.md"' out.tsv | cut -f2,3 | sort | uniq -c | sort -rn | head
+FINAL ANSWER:
+Here are the suggested lines. Only **lib/** and five root files have someone holding at least half the surviving lines. **test/**, **.github/**, and the root files taken as one group don't.
+
+```
+# CODEOWNERS (later rules take precedence)
+
+# test/    no owner: Troy Goode 46.9%, Douglas Christopher Wilson 41.4%
+# .github/ no owner: Douglas Christopher Wilson 29.5%, Íñigo Marquínez Prado 26.0%, Sebastian Beltran 17.2%
+
+/lib/           @troygoode
+/README.md      @troygoode
+/LICENSE        @troygoode
+/HISTORY.md     @dougwilson
+/package.json   @dougwilson
+/.eslintrc.yml  @dougwilson
+/.gitignore     @dougwilson
+```
+
+| Path | Surviving lines | Top holder | Share | Result |
+|---|---|---|---|---|
+| lib/ | 238 | Troy Goode | 66.8% (next: Wilson 9.2%) | owner |
+| test/ | 966 | Troy Goode | 46.9% (Wilson 41.4%) | **nobody holds half** |
+| .github/ | 366 | Douglas Christopher Wilson | 29.5% | **nobody holds half** |
+| All root files together | 415 | Troy Goode | 42.7% (Wilson 23.6%, Jon Church 17.3%) | **nobody holds half** |
+| README.md | 277 | Troy Goode | 51.3% (Jon Church 26.0%) | owner, just barely |
+| LICENSE | 22 | Troy Goode | 100% | owner |
+| HISTORY.md | 64 | Douglas Christopher Wilson | 78.1% | owner |
+| package.json | 40 | Douglas Christopher Wilson | 50.0% exactly | owner, right at the line |
+| .eslintrc.yml | 7 | Douglas Christopher Wilson | 100% | owner |
+| .gitignore | 5 | Douglas Christopher Wilson | 80% | owner |
+
+**How I counted:**
+- **Blame:** I ran `git blame -w` on every tracked file at HEAD, so whitespace-only changes didn't count. This mattered for Troy's old "jslint"/"lint"/"whitespace" commits, which mostly re-indented code.
+- **Formatting-only commits skipped:**
+  - `62628c0` (Fiona Formatter, the 4-space/double-quote reformat): git couldn't trace 237 lines past this commit because the quotes changed. Its edits replace lines one-for-one, so I traced each of those lines back to the commit before it.
+  - `815c7c6` (Linus Unnebäck, restyled the README code examples).
+  - `739dc11` (Douglas Christopher Wilson, re-wrapped the LICENSE text).
+
+  After that, no surviving line is credited to any of these three commits.
+- **Kept:** `b2005d9` ("lib: annotate handlers") adds `// checked` comments, so it's a content change, not formatting.
+- **One person, one count:** Troy Goode commits as both `<email redacted>` and `troy@laptop.example`, so I merged the two (48 lines from the laptop address). I assumed they're the same person because the name matches; please confirm. I also merged `alex94puchades` with Alejandro Caravaca Puchades, since they share an email address.
+- **Bots:** I left dependabot's 10 lines out of the totals (in `.github/` and `package.json`).
+
+**Borderline results:**
+- **package.json** is at exactly 50%. If dependabot's 2 lines in it counted, Wilson would drop to 47.6% and the file would have no owner.
+- **README.md** is at 51.3% only because the Linus style commit is skipped. I didn't re-run the count with that commit included. It holds 37 README lines that would otherwise mostly go to Troy, so Troy would probably fall below half.
+- **test/** stays under half for Troy (46.9%) even with both of his addresses merged.
+
+**Check before using:** `@troygoode` and `@dougwilson` are my guesses at their GitHub usernames; git history only records names and emails. Also, a lot of the surviving lines come from people who may no longer be active, so you may want to treat this as a starting point rather than a final assignment.

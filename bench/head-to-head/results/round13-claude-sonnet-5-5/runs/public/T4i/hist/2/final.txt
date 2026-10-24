@@ -1,0 +1,20 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 3}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4i-hist-2/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4i-hist-2/repo", "file": "lib/index.js", "limit": 30}
+FINAL ANSWER:
+**Troy Goode** is the best reviewer. **Douglas Christopher Wilson** is a good second, especially for the Vary and preflight logic.
+
+The blame summary lists Fiona Formatter as the owner of 90% of the file. That's misleading. Commit `62628c0` reformatted the whole file (214 lines added and 214 deleted), so blame credits her with lines she only re-indented. The repo's `.git-blame-ignore-revs` covers that commit, but the tool I used doesn't apply it. Fiona is not a useful reviewer for the logic.
+
+Looking at the file history instead:
+- **Troy Goode** is the original author and maintainer, with commits from 2013 to 2026. He wrote the original middleware structure and the `vary` module integration. He also made the most recent substantive change, `b2005d9`, on 2026-04-10.
+- **Douglas Christopher Wilson** made the fixes to the subtle parts. These were the dynamic `Vary: Access-Control-Request-Headers` header (`075c4b5`), the missing-`methods` options-delegate error (`d603fdc`), and lint and build cleanups.
+
+I only have commit history, so I can't tell who is currently active or available. Check that before you request a review. If your change touches origin matching (the regexp and array support from Alejandro Caravaca Puchades) or the Safari preflight workaround, it's worth reading those commits first. Their authors haven't been active in the file for years.
+META cost=0.0557834 ms=9688 turns=4

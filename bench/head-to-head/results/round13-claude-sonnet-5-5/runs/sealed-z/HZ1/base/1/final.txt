@@ -1,0 +1,58 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.py' && echo --- && git shortlog -sne --all | head -20 && echo --- && git log --format='%an' | wc -l
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: git log --author='Dana Kessler' --format='%h %ad %an <%ae> %s' --date=short --shortstat; echo ---; git log -5 --format='%h %ad %an | %cn | %s' --date=short
+ - Bash: for f in $(git ls-files 'colorama/*.py' 'tests/*.py'); do echo "== $f ($(wc -l <$f) lines)"; git blame -w -M -C --line-porcelain "$f" | grep -a '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3; done
+ - Bash: head -30 colorama/_vendor/_typing_compat.py; grep -rn "_vendor\|_typing_compat" --include=*.py --include=*.toml --include=*.cfg --include=*.md --include=*.rst --include=*.txt . | grep -v '^./colorama/_vendor/_typing_compat.py' | head; git show aa872f7 --stat --format='%B'
+ - Bash: count(){ for f in "$@"; do git blame -w -M -C --ignore-rev c73f380 --line-porcelain "$f" | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -8; }; echo "## colorama/ (excl. vendor)"; count $(git ls-files 'colorama/*.py' | grep -v _vendor); echo "## tests/"; count $(git ls-files 'tests/*.py'); echo "## all non-vendor py"; count $(git ls-files '*.py' | grep -v _vendor)
+ - Bash: ls tools 2>&1 | head; echo "--- refs:"; grep -rIn "_vendor\|_typing_compat" . --exclude-dir=.git --exclude=_typing_compat.py | head; echo "--- distinct _compat bodies:"; grep -c '^def _compat_' colorama/_vendor/_typing_compat.py; grep -v '^def _compat_\|^$' colorama/_vendor/_typing_compat.py | sort | uniq -c | sort -rn | head -6; echo "--- aliases:"; git log --format='%an' | sort | uniq -c | sort -rn | grep -i 'wiggin\|arnon\|hugo\|jon\b'; echo "--- last 12 months active:"; git log --since=2025-10-24 --format='%an' | sort | uniq -c | sort -rn; echo "--- first/last commit per top person:"; for a in "Jonathan Hartley" "Arnon Yaari" "wiggin15" "Nathaniel J. Smith"; do echo "$a: $(git log --auth
+ - Bash: for f in $(git ls-files '*.py' | grep -v _vendor); do git blame -w -M -C --ignore-rev c73f380 --line-porcelain "$f" | grep -a '^author '; done | sed 's/^author //' | awk '{c[$0]++;t++} END{for(k in c) if(k ~ /wiggin|Arnon|Hartley|Smith/) print c[k],k; print t,"TOTAL"}'; echo; for f in $(git ls-files 'colorama/*.py' | grep -v _vendor); do git blame -w -M -C --ignore-rev c73f380 --line-porcelain "$f" | grep -a '^author '; done | sed 's/^author //' | awk '{c[$0]++;t++} END{for(k in c) if(k ~ /wiggin|Arnon|Hartley|Smith/) print c[k],k; print t,"TOTAL (colorama/ only)"}'
+FINAL ANSWER:
+The two biggest contributors are Jonathan Hartley and Arnon Yaari, and Hartley alone is a serious exposure. Don't read the raw `git blame` ranking at face value, because it puts Dana Kessler first.
+
+## Why the raw ranking misleads
+
+Blame gives Dana Kessler 1,324 lines, but only 14 of those are real hand-written library code. The rest comes from three commits:
+- **`aa872f7` (2026-07-12) added 1,103 lines in `colorama/_vendor/_typing_compat.py`.** The header says it was vendored from typing_extensions 4.12.2 and must not be edited. In fact it is 220 copies of the same three-line `if value is None: return default` function, and nothing in the repo imports it. The header also points to `tools/vendor.sh`, which doesn't exist.
+- **`c73f380` (2026-07-10) was a black-style quote change across 20 files.** This touches 221 lines, so I excluded it from the numbers below.
+- **`994fda9` (2026-08-20) moved the tests out of the package** with no content change.
+
+## Who wrote the code today
+
+I excluded the vendored file and the quote-reformat commit. That leaves 1,936 lines of Python across the library, tests and demos.
+
+| Author | Lines | Share | Active |
+|---|---|---|---|
+| Jonathan Hartley | 1,080 | 56% | 2014 to 2026-07 |
+| Arnon Yaari (also commits as `wiggin15`) | 232 | 12% | 2014 to 2026-05 |
+| Nathaniel J. Smith | 196 | 10% | Autumn 2022 only |
+| Delgan | 107 | 6% | |
+| John Szakmeister | 62 | 3% | |
+| Segev Finer | 37 | 2% | |
+| Everyone else | ~220 | ~11% | |
+
+In `colorama/` alone, excluding tests and demos, the library is 909 lines. Hartley wrote 456 (50%), Arnon 158 (17%) and Smith 73 (8%). Arnon's count may be slightly low because some lines are under the `wiggin15` name.
+
+## How exposed you are
+
+- **Hartley and Arnon together wrote about 67% of the code and 67% of the `colorama/` library.** Hartley is the one that matters most.
+  - He wrote about 80% of `win32.py` (113 of 193 lines) and about half of `winterm.py` (97 of 202 lines).
+  - He also wrote about half of `ansitowin32.py` (140 of 277 lines), and most of the tests.
+  - The Windows console code is the hardest part to reason about.
+- **Both are close to inactive.** Hartley's last commit was 2026-07-03 and Arnon's was 2026-05-13. Arnon has one commit in the past 12 months and Hartley has two.
+- **Smith's knowledge is effectively gone.** He wrote about 10% of the code, but all of it in 2022, and his commits stop that November. He is a bus-factor risk you already have.
+- **The people committing recently are not the people who know this code.** Dana Kessler, Priya Nair, Brian Wing and Tomás Ibarra have the recent commits, but each has only a few lines of library code. Tomás's `cursor_adjust` fix touched `winterm.py`, and Hartley committed it, so he is still the reviewer for Windows changes.
+
+## What I'd do before the handover
+
+1. **Get recorded walkthroughs from Hartley and Arnon now**, while they still answer. Focus on `win32.py`, `winterm.py` and the Windows console and ANSI-conversion logic in `ansitowin32.py`.
+2. **Ask Dana to explain `_vendor/_typing_compat.py`** and the missing `tools/vendor.sh`. As it stands, the file is dead code that claims to be a vendored third-party library but isn't one. Before the handover, either delete it or confirm what it is. The "DO NOT EDIT" header will mislead the new team.
+3. **Add a `.mailmap`** so `wiggin15` maps to Arnon Yaari and `Hugo` maps to Hugo van Kemenade. Without it, every future contributor report will split their numbers.
+
+Blame measures who last touched each line, not who understands the code. Hartley's share is also probably understated for design decisions, since many later edits build on his structure.
+META cost=0.1059029 ms=38946 turns=9

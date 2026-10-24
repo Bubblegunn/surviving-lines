@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29T00:00:00 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=iso --no-merges; echo; git log -1 --format='%h %ad' --date=iso; git log --all --oneline | wc -l
+ - Bash: git log --since=2026-03-29 --format='%h|%an|%ae|%cn|%ad' --date=iso | head -20; git shortlog -sne | head -30; cat .mailmap 2>/dev/null; git show --stat --format=%h 62628c0 | tail -15
+ - Bash: git shortlog -sne HEAD | grep -iE 'troy|vansh'; for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- $f 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -20; echo; git ls-files | wc -l
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -w --line-porcelain -- $f 2>/dev/null | grep '^author '; done | grep -E 'Vansh|Fiona'; git show 5317ebe --stat --format=%h | tail -3
+FINAL ANSWER:
+Two people committed in the 14-day window (2026-03-29 to 2026-04-12), outside formatting-only commits and bots.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| **Troy Goode** | 2: `02afce3` (test: vary header coverage), `b2005d9` (lib: annotate handlers), both 2026-04-10 | 746 |
+| **Vansh Sharma** | 1: `5317ebe` (docs: app.del() → app.delete() in the README example, #411), 2026-04-07 | 1 |
+
+- **Left out:** `62628c0` by Fiona Formatter was a formatting-only commit. It re-indented and re-quoted 4 JS files, with 1,016 insertions and 1,016 deletions. I didn't count Fiona. No bot commits fell in the window.
+- **Troy Goode, one person:** Troy's commits use two emails, `troy@laptop.example` and `<email redacted>`. I counted them once, by name.
+- **How I counted lines:** I ran `git blame --ignore-rev 62628c0 -w` over every tracked file. That attributes lines the formatting commit rewrote back to their original authors instead of to Fiona.
+- **Troy's line count covers all of Troy's work:** The 746 includes lines from before the window. I didn't split out only the lines from the two window commits.
+META cost=0.0535031 ms=18436 turns=5

@@ -1,0 +1,166 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+Run a bus factor analysis of this project. Which parts of the codebase depend on a single contributor, and who is that person?
+
+CRITERIA:
+1. Names Troy Goode as the single contributor that lib/ depends on, with a share between 60% and 72% or between 150 and 170 lines.
+2. Reports the result per directory or module (at least lib/ and test/), not only one number for the whole repository.
+3. Does not name the formatter (Fiona Formatter) or a bot as an owner of lib/ or test/.
+4. States the definition and the unit of the bus factor it reports (lines or commits, and the threshold or rule).
+5. Does not rank dependabot as a person who holds knowledge of the code.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+FINAL ANSWER:
+**The bus factor is 2 by line ownership, but only 1 among people who are still active. That one person is Troy Goode, as the tool counts him.**
+
+I didn't re-run anything. These figures come from the surviving-lines brief for HEAD 62628c0. It counts lines that survive in `git blame`, excludes merges and bots, and sets aside the 4-space reformat commit so it doesn't take over ownership.
+
+**A caveat on Troy Goode's figures:** the tool counts `<email redacted>` and `troy@laptop.example` as separate authors. Treating them as one person is only a proposal, based on matching names and addresses. It is unconfirmed, and I haven't applied it.
+- Unmerged, `<email redacted>` holds 605 non-blank lines (36.4%) with 93 commits. `troy@laptop.example` holds 44 lines with 2 commits.
+- If they are the same person, he holds 649 lines (39.0%).
+- The figures below use the unmerged 605 lines for Troy Goode. The only activity figure that depends on the other address is the active-only bus factor of 1, which counts him on those 605 lines.
+
+**Whole repository (1,662 non-blank lines, 1,985 counting blank lines)**
+- Troy Goode (`<email redacted>`) holds 605 non-blank lines (36.4%), or 762 counting blank lines (38.4%). He has 93 commits.
+- Douglas Christopher Wilson holds 551 non-blank lines (33.2%), or 629 counting blank lines (31.7%). He has 143 commits.
+- Those two together pass 50% of the lines, so the bus factor is 2. Reaching 80% takes 5 people.
+
+**Activity**
+- Only 9 of 44 people committed in the last 365 days, and they hold 51.7% of the lines.
+- The other 48.3% belongs to people with no commit in that window. The largest of these is Douglas Christopher Wilson (33.2%).
+- Counting only active people, the bus factor is 1: Troy Goode.
+- The brief is dated 2026-04-12 and today is 2026-10-24, so the active window has moved on. Re-run it to refresh.
+
+**Where single-person dependence shows up**
+- **`lib/`** (214 lines, 12.9% of the repo): Troy Goode owns 61.7%.
+- **`test/`** (820 lines, 49.3%): Troy Goode owns 47.3%. `test/vary.js` is 90% or more his, at 32 lines.
+- **`.github/`** (305 lines): Douglas Christopher Wilson owns 30.2%. Two workflow files are almost entirely one person's:
+  - `scorecard.yml` (61 lines) is by Íñigo Marquínez Prado. The name is garbled in the tool output.
+  - `codeql.yml` (53 lines) is by Sebastian Beltran.
+  - GitHub committed both on their behalf, but the lines are credited to the authors.
+- **Root files** (323 lines): Douglas Christopher Wilson owns 29.4%.
+
+**Orphaned files**
+- 6 of 18 files, holding 7.8% of the lines, have an inactive top owner, and no active person holds 20% or more.
+- The largest are `.github/workflows/scorecard.yml` (Íñigo Marquínez Prado, 61 lines), `HISTORY.md` (Douglas Christopher Wilson, 41) and `LICENSE` (Douglas Christopher Wilson, 18).
+
+**Takeaway:** Troy Goode is the main risk, because he owns most of the active code in `lib/` and `test/`. Douglas Christopher Wilson's code is the largest block with no active maintainer, mostly in the root files, `.github/` and the history and license docs. The two CI workflows each depend on one author.
+
+I can run the per-directory tree or the `--without` simulation for Troy Goode if you want more detail.

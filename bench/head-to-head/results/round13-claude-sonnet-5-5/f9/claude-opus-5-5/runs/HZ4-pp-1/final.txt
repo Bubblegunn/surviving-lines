@@ -1,0 +1,91 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-pp-1/repo; ls lib/grape_entity lib/grape_entity/exposure; git log --format='%aN <%aE>' | sort | uniq -c | sort -rn | head -20; echo; git log -1 --format=%ad; git rev-list --count HEAD; cat .mailmap 2>/dev/null
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-pp-1/repo
+norm(){ sed -E 's/.*<<email redacted>>.*/dblock/; s/.*(<email redacted>|<email redacted>).*/LeFnord (Peter Scholz)/; s/.*<email redacted>.*/Andrei Subbota/; s/ <.*//'; }
+echo "== merged commits (all)"; git log --format='%aN <%aE>' | norm | sort | uniq -c | sort -rn | head -12
+echo "== first/last per identity"; git log --format='%ad|%aN <%aE>' --date=short | while IFS='|' read d a; do echo "$d|$(echo "$a"|norm)"; done | sort | awk -F'|' '{if(!($2 in f))f[$2]=$1; l[$2]=$1; c[$2]++} END{for(k in f) printf "%4d %s  %s .. %s\n",c[k],k,f[k],l[k]}' | sort -rn | head -15
+echo "== blame lines, lib/"; git ls-files lib | xargs -
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-pp-1/repo
+norm(){ sed -E 's/.*<<email redacted>>.*/dblock/; s/.*(<email redacted>|<email redacted>).*/LeFnord (Peter Scholz)/; s/.*<email redacted>.*/Andrei Subbota/; s/ <.*//'; }
+bl(){ for f in $(git ls-files "$@"); do git blame --line-porcelain -w HEAD -- "$f"; done | grep -E '^author-mail|^author ' | paste - - | sed 's/^author //; s/\tauthor-mail / /' | norm | sort | uniq -c | sort -rn | head -8; }
+echo "== exposure blame"; bl lib/grape_entity/exposure lib/grape_entity/exposure.rb
+echo "== delegator blame"; bl lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb
+echo "== l
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-pp-1/repo
+echo "== exposure log"; git log --format='%ad %aN <%aE> | %s' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | head -25
+echo "== delegator log"; git log --format='%ad %aN <%aE> | %s' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb | head -15
+echo "== recent authors (since 2025-10)"; git log --since=2025-10-24 --format='%aN <%aE>' | sort | uniq -c | sort -rn
+for n in "Marco Silva" "James McCarthy" "Lena Brandt" "Vladimir Kochnev" "Alexander Yunin" "Paul Padier"; do echo "$n: $(git log --author="$n" --format=%ad --date=short | sort | 
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-pp-1/repo
+git log --since=2026-06-01 --format='%h %ad %aN <%aE> | %s' --date=short; echo; git log --author="Marco Silva" --format='%h %ad%n%B' --date=short --stat | head -60; grep -ril -E 'maintainer|codeowner' --include='*' . 2>/dev/null | grep -v '^./.git/' | head
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-pp-1/repo
+git show --stat --format='%h %s' 1f536e4 | tail -5
+echo "== grouped_exposure with -C (copy detection)"; git blame -w -C -C --line-porcelain HEAD -- lib/grape_entity/exposure/grouped_exposure.rb | grep '^author ' | sort | uniq -c | sort -rn
+echo "== exposure with -C -M"; for f in $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb); do git blame -w -M -C -C --line-porcelain HEAD -- $f; done | grep '^author ' | sort | uniq -c | sort -rn | head -6
+cat CONTRIBUTING.md | grep -i -n -E 'maintain|owner' 
+FINAL ANSWER:
+**Short version:** Vladimir Kochnev wrote most of both areas, but his last commit was in September 2015. So the real owner is gone and neither area has an active expert. The person with the most commits (dblock) owns no lines in `lib/`, so the answer to your last question is no.
+
+All of this comes from `git log` and `git blame -w`, with name variants of the same person merged (details at the end).
+
+## 1. `lib/grape_entity/exposure`
+
+Line ownership, with copied code credited to whoever first wrote it (`blame -M -C -C`):
+
+| Author | Lines | Last commit |
+|---|---|---|
+| Vladimir Kochnev | 537 | 2015-09 |
+| Dmitry Tsepelev | 75 | 2018-01 |
+| James McCarthy | 70 | 2017-04 |
+| Alexander Yunin | 57 | 2016-07 |
+
+Plain blame puts Marco Silva second with 143 lines. That's misleading: all 143 come from `grouped_exposure.rb`, which his own commit describes as a "copy of NestingExposure with a group name." With copy detection, only 12 of those lines are his; 100 are Vladimir's.
+
+**Recommendation:** Marco Silva as reviewer. He's the only active contributor with recent hands-on work here (GroupedExposure on 2026-08-03 and its spec on 2026-09-15). Anna Kowalczyk made one change too (2026-08-10, the inspect/error message). Add a maintainer for approval (see below). Also, because GroupedExposure duplicates NestingExposure, a fix to one probably needs to go into the other. Reviewers should check for that.
+
+## 2. Delegator code (`delegator.rb`, `delegators/`, `exposure/delegator_exposure.rb`)
+
+- Vladimir Kochnev owns 71 lines out of about 120. Everyone else has 12 or fewer.
+- The last real logic change was Paul Padier's in 2021, and Paul hasn't committed since 2023-12.
+- The 2026 commits here are cosmetic: Lena Brandt added copyright headers and Marco Silva renamed `delegator/` to `delegators/`. Neither shows knowledge of the logic.
+- The closest relevant active person is **Marc Rohloff**. His fix #406 (2026-06-02) handled `&:` with delegated and `method_missing` methods, though that change was in `entity.rb`, not in these files.
+
+**Recommendation:** treat this area as having no active owner. Route reviews to a maintainer, and use Marc Rohloff for anything about how delegation behaves. It's worth deliberately giving someone ownership of this code.
+
+**Active maintainers:** Andrei Subbota (18 commits from 2025-05 to 2026-06, cut the 1.1.0 release) and dblock (most recent commit 2026-04).
+
+## 3. Who has effectively left
+
+Here "left" means no commits in more than 12 months, as of the last commit (2026-10-05):
+
+- **Vladimir Kochnev** (last commit 2015-09): biggest owner of `lib/` (756 lines) and of the whole repo (1,193 lines).
+- **Mark Madsen** (2013-01): second biggest in `lib/` (237 lines).
+- **Dmitry Tsepelev** (2018), **James McCarthy** (2017), **Alexander Yunin** (2016).
+- **Peter Scholz / LeFnord** (last commit 2024-04): second most commits overall (45) and a long-time maintainer. This is the most notable departure in recent years.
+- **Paul Padier** (2023-12).
+
+Lena Brandt and Anna Kowalczyk each have only one commit, both in 2026, so it's too early to say. Lena's blame lines are almost all copyright headers, so they don't mean she owns the code.
+
+## 4. Most commits vs. most code
+
+| | Commits | `lib/` lines | Repo lines |
+|---|---|---|---|
+| dblock | **119** | **0** | 698 (3rd) |
+| Vladimir Kochnev | 16 | **756 (1st)** | **1,193 (1st)** |
+
+dblock's commits are mostly merges, releases, changelog and docs. The code itself was mostly written by people who are no longer active.
+
+**How I merged identities:**
+- dblock: four name spellings, all with the email `<email redacted>`.
+- Andrey and Andrei Subbota: same email.
+- Marco Silva: two emails, one of them a laptop hostname.
+- Peter Scholz: `<email redacted>`, `<email redacted>` and the LeFnord handle. The sage.com address is merged on the name alone, so it's an assumption.
+- "Vladimir \<<email redacted>\>" is a different email, so I kept him separate from Vladimir Kochnev.
+
+The repo has no CODEOWNERS file to check these against.
+META cost=0.2694768 ms=67503 turns=7

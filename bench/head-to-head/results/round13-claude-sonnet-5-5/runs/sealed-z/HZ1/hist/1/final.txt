@@ -1,0 +1,54 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 5}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-1/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-1/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-1/repo"}
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo "== all python"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn | head -8; echo "total: $(wc -l < /tmp/blame.tsv)"; echo "== by file"; for f in $(git ls-files '*.py'); do echo "$f: $(grep -c "^$f	" /tmp/blame.tsv) lines; top: $(grep "^$f	" /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -3 | awk '{c=$1;$1="";printf "%s(%d),",$0,c}')"; done; echo "== package only"; grep '^colorama/' /tmp/blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -6; git log --format='%an %ad' --date=short -3 --author='Kessler'; git log --format=
+ - Bash: cd /tmp && grep -v '_vendor' blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -6; echo total $(grep -v _vendor blame.tsv | wc -l); echo "== core 5 modules"; grep -E '^colorama/(ansi|ansitowin32|initialise|win32|winterm)\.py' blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -5; echo total $(grep -E '^colorama/(ansi|ansitowin32|initialise|win32|winterm)\.py' blame.tsv | wc -l); cd /private/tmp/r13/final/out-F/runs/HZ1-hist-1/repo; git log --format='%an' --since='2026-04-24' --no-merges | sort | uniq -c | sort -rn; head -5 colorama/_vendor/_typing_compat.py
+FINAL ANSWER:
+**Short answer:** Jonathan Hartley wrote the most of the Python that's in the repo today. Arnon Yaari matters less than the commit counts suggest. The biggest gap is the Windows console code.
+
+**Who the "two biggest" are depends on how you count**
+- **By commits** (non-merge, 304 total), the top two are Hartley (85, 28%) and Yaari (64, 21%). The git-historian bus factor is 3, meaning three authors cover more than 50% of commits.
+- **By surviving Python lines**, Dana Kessler looks like the #2 author with 1,324 of 3,040 lines. That is misleading, because 1,103 of those lines are one vendored file, `colorama/_vendor/_typing_compat.py`. Its header says "DO NOT EDIT", so it's generated rather than written code.
+
+**Hand-written Python at HEAD** (vendored file excluded, 1,936 lines)
+
+| Author | Lines | Share |
+|---|---|---|
+| Jonathan Hartley | 943 | 49% |
+| Dana Kessler | 220 | 11% |
+| Arnon Yaari | 196 | 10% |
+| Nathaniel J. Smith | 194 | 10% |
+| Delgan | 105 | 5% |
+
+**The five core modules** (`ansi`, `ansitowin32`, `initialise`, `win32`, `winterm`, 902 lines)
+- Hartley owns 440 lines (49%).
+- Yaari owns 141 (16%).
+- Smith owns 72 (8%).
+- Kessler owns 52 (6%).
+
+**Exposure if Hartley and Yaari go quiet**
+- **Hartley is the real risk.** They are the main owner of every core module except `initialise.py` (where they hold 52 lines and Smith 35). They also wrote most of the tests in `ansitowin32_test.py` and `winterm_test.py`. About 65% of the core modules' lines come from these two people together.
+- **Yaari is a smaller risk.** They are a minority author in each core module. Their knowledge is concentrated in `winterm.py` (46 lines) and `win32.py` (26), plus `demos/demo07.py`. Their last commit was 2026-05-13.
+- **The people who would remain** are Kessler, Priya Nair, Tomás Ibarra and Brian Wing. They are active but have little core ownership. Kessler has authored 4 of the 12 commits since April 24, but those were mostly quote reformatting, vendoring, moving the tests, and the `NO_COLOR` change. They haven't had to maintain the Windows console logic.
+- **No directory is a formal silo.** The tool flags none, because contributions are spread across 29 or more authors per directory. That reflects commit counts, though, and not who understands the Win32 console-API code.
+- **Orphaned files:** 9 files are mostly owned by authors inactive since April 24. Few are Python. `tests/isatty_test.py`, `tests/utils.py` and `demos/demo09.py` are. `colorama/initialise.py` is the only core module affected. The rest is packaging and CI (`pyproject.toml`, the GitHub workflows, `tox.ini`), whose owners left in 2021–2025.
+
+**Recommendations before handover**
+1. Get Hartley to document `win32.py`, `winterm.py` and `ansitowin32.py`. Cover the ctypes and console-API quirks, and why the code is shaped as it is.
+2. Have Yaari write up `winterm.py` and `win32.py` too, or review the write-up.
+3. Pair someone on the new team with Hartley for a real change to the Windows code path.
+4. Check that `tools/vendor.sh`, which the vendored file's header says regenerates it, exists. I didn't check.
+5. Assign owners for CI and packaging, since the original authors are gone.
+
+**Caveats**
+- Authorship is by `git blame` with whitespace and move detection, and author names are mailmap-resolved.
+- A recent formatting commit by Kessler, "Apply black-style string quotes to all python files", could mean some lines were credited to Kessler that were originally written by others. I used `-w -M -C` to reduce this, but it isn't perfect.
+- I haven't shown commit-level activity for Hartley after 2026-07-03, when their last commit landed. They may already be less available than their ownership suggests.
+META cost=0.11229270000000001 ms=28361 turns=7

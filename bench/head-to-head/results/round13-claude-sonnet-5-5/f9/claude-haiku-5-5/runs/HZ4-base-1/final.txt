@@ -1,0 +1,39 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: echo "== shortlog ==" && git shortlog -sne --all | head -40 && echo "== exposure files ==" && git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb && echo "== delegator files ==" && git ls-files | grep -i deleg && echo "== last commit date per author ==" && git log --all --format='%an|%ae|%ad' --date=short | sort -t'|' -k3 | awk -F'|' '{last[$1]=$3; if(!($1 in first)) first[$1]=$3} END{for(a in last) print a" first="first[a]" last="last[a]}'
+ - Bash: ls .mailmap 2>/dev/null; echo "== blame lines: exposure/ ==" && git ls-files lib/grape_entity/exposure | xargs -I{} git blame --line-porcelain {} | grep '^author ' | sort | uniq -c | sort -rn | head -12; echo "== blame lines: delegator files ==" && git ls-files lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb | xargs -I{} git blame --line-porcelain {} | grep '^author ' | sort | uniq -c | sort -rn | head -12; echo "== commits touching exposure/ (top) ==" && git log --format='%an' -- lib/grape_entity/exposure | sort | uniq -c | sort -rn | head -12; echo "== commits touching delegators (top) ==" && git log --format='%an' -- lib/grape_enti
+ - Bash: echo "== last activity per top contributor for exposure/ and delegators ==" && for a in "Daniel Doubrovkine" "dblock" "peter scholz" "LeFnord" "Vladimir Kochnev" "Mark Madsen" "Konstantin Shabanov" "Michael Bleigh" "Andrei Subbota" "Andrey Subbota" "Marco Silva" "Lena Brandt" "Yuri Zubov" "Marc Rohloff" "Anna Kowalczyk" "Olivier Bellone" "Paul Padier" "ouyangjinting" "justfalter" "Malte Rohde" "Joakim Antman"; do echo "$a: $(git log --author="$a" --format='%ad' --date=short -- lib/grape_entity/exposure lib/grape_entity/delegator.rb lib/grape_entity/delegators | sort | sed -n '1p;$p' | tr '\n' ' ') commits=$(git log --author="$a" --oneline -- lib/grape_entity/exposure lib/grape_entity/delegat
+FINAL ANSWER:
+**Short answer:** Marco Silva is the best reviewer for `lib/grape_entity/exposure`, and Lena Brandt or Marco Silva for the delegator code. The person with the most commits, Daniel Doubrovkine (dblock), is not a significant owner of either area. Most of the code is owned by Vladimir Kochnev, who has not committed since 2015.
+
+**Recommended routing (ownership = surviving lines in `git blame` at HEAD, activity from commit dates)**
+
+| Area | Owner by lines | Recently active? |
+|---|---|---|
+| `exposure/` | Vladimir Kochnev 394, Marco Silva 143, James McCarthy 55, Alexander Yunin 55, Dmitry Tsepelev 33, Lena Brandt 18 | Marco Silva: commits 2026-07-21 to 2026-09-15. Lena Brandt: 2026-07-14. |
+| Delegators (`delegator.rb`, `delegators/`, `delegator_exposure.rb`) | Vladimir Kochnev 70, Lena Brandt 12, James McCarthy 12, Paul Padier 11, Marco Silva 4 | Lena Brandt: 2026-07-14. Marco Silva: 2026-07 to 2026-09. Paul Padier: last 2023-12. |
+
+Marco Silva is the best fit for exposure because they own the second-largest block of current lines and are the most recently active owner. For delegators, Lena Brandt has the most surviving lines among active people, so route there first, with Marco Silva as backup.
+
+**Owners who have effectively left**
+- **Vladimir Kochnev**: largest owner of both areas (394 and 70 lines), but all commits are from July to September 2015.
+- **James McCarthy**: 55 exposure lines and 12 delegator lines, but a single commit in 2017.
+- **Alexander Yunin**: 55 exposure lines, last active in 2016.
+- **Dmitry Tsepelev**: 33 exposure lines, last active in 2018.
+- **Paul Padier**: 11 delegator lines, last active in 2023.
+
+Their code is still in place, so they are good background for questions about why something is written a certain way. They are not good first reviewers.
+
+**Most commits vs. most owned code**
+
+No. The most commits belong to Daniel Doubrovkine (dblock), with roughly 119 commits across several name variants that share the `<email redacted>` email. But dblock does not appear among the top owners by surviving lines in either area. Commit count reflects general repo activity, not ownership of these files.
+
+**Caveats**
+- Blame line counts measure surviving code, not review expertise. Someone with fewer lines may still know the area well.
+- Commit counts were grouped by name and email as they appear in git. There is no `.mailmap`, so I merged the dblock identities by hand. Other people may also have multiple identities, such as Peter Scholz and LeFnord, that I did not merge.
+- "Left" here means no commits in roughly the past two years. It does not confirm whether the person is still with the project. Check with the maintainers before routing.
+META cost=0.00576237 ms=25833 turns=4

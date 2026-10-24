@@ -1,0 +1,39 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | while read f; do if git grep -Iq . -- "$f" 2>/dev/null; then git blame --line-porcelain --ignore-revs-file .git-blame-ignore-revs -- "$f" 2>/dev/null | grep '^author '; fi; done | sort | uniq -c | sort -rn; echo "---files---"; git ls-files | wc -l; echo "---raw blame without ignore-revs---"; git ls-files | while read f; do if git grep -Iq . -- "$f" 2>/dev/null; then git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author '; fi; done | sort | uniq -c | sort -rn
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short | head -50; echo "---"; git log --format='%an' | sort | uniq -c | sort -rn; echo "---"; cat .git-blame-ignore-revs
+ - Bash: git ls-files | while read f; do n=$(git blame --line-porcelain --ignore-revs-file .git-blame-ignore-revs -- "$f" 2>/dev/null | grep -c '^author Fiona Formatter'); t=$(git blame --line-porcelain --ignore-revs-file .git-blame-ignore-revs -- "$f" 2>/dev/null | grep -c '^author '); [ "$t" -gt 0 ] && echo "$n/$t $f"; done; echo; git blame --ignore-revs-file .git-blame-ignore-revs -- $(git ls-files | grep -m1 '\.js$') | head -5
+FINAL ANSWER:
+**Short answer:** Troy Goode and Douglas Christopher Wilson own most of the code that survives today, with Troy slightly ahead. Neither is a close second to the other by much, and the long tail of contributors owns comparatively little.
+
+I measured this with `git blame` over the 19 tracked text files at HEAD, counting the lines each author wrote that are still present. I used `.git-blame-ignore-revs` so the 2026 reformatting commit (`62628c0`, by Fiona Formatter) doesn't take credit for lines it only re-quoted or re-indented.
+
+Surviving lines, with the reformat ignored:
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 642 |
+| Douglas Christopher Wilson | 564 |
+| Fiona Formatter | 239 |
+| Íñigo Marquínez Prado | 94 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ignacio Mangas | 54 |
+| Ulises Gascón | 52 |
+| Linus Unnebäck | 37 |
+| Alejandro Caravaca Puchades | 26 |
+| Alberto Leal | 25 |
+| dependabot[bot] | 10 |
+
+About 40 other people account for the rest, mostly single-digit line counts.
+
+**Caveats:**
+- **Fiona's 239 lines are formatting, not authorship.** The reformat changed quote style as well as whitespace, and `git blame --ignore-revs-file` only fully skips whitespace-only changes. Most of that 239 is in `test/test.js` (178) and `lib/index.js` (57). Their real original authors are probably Troy or Douglas. Without the reformat, Fiona would show about 0 lines.
+- **Line counts are a rough proxy.** A 1-line fix and a 200-line module count the same. `lib/index.js` and `test/test.js` hold most of the logic and most of the lines, so Troy and Douglas dominate there in particular.
+- **Ownership isn't the same as authorship of the design.** Blame shows who last wrote each line, not who designed the approach. Some surviving lines may be old code that was moved or re-indented.
+- **"Efe"** appears with 6 surviving lines, under a commit email that doesn't match the one I have for you. I haven't assumed that's you.
+META cost=0.00498983 ms=20639 turns=4

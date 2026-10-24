@@ -1,0 +1,45 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="/private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/HZ1-ours-2/repo && node $SL --include '*.py' 2>&1 | head -60; echo ----; node $SL --help 2>&1 | grep -iE 'include|without' | head
+ - Bash: SL="/private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/HZ1-ours-2/repo && node $SL --include '*.py' --without "Jonathan Hartley,Arnon Yaari" 2>&1 | head -40
+FINAL ANSWER:
+The Python code is concentrated in two people, and the exposure is high. I counted surviving lines with `git blame`, limited to `*.py` files. That covers 24 files and 1,597 non-blank lines, or 1,937 counting blank lines. I left out the vendored, generated `colorama/_vendor/_typing_compat.py` (1,103 lines).
+
+**Who wrote it** (non-blank lines, share, then lines counting blank lines)
+
+| Author | Lines | Share | With blanks | Last commit |
+|---|---|---|---|---|
+| Jonathan Hartley | 843 | 52.8% | 1,065 (55.1%) | 2026-07-03 |
+| Arnon Yaari | 217 | 13.6% | 232 (12.0%) | 2020-01-25 |
+| Nathaniel J. Smith | 169 | 10.6% | 196 (10.1%) | 2022-10-16 |
+| Delgan | 88 | 5.5% | 107 (5.5%) | 2018-10-15 |
+| John Szakmeister | 58 | 3.6% | 62 (3.2%) | 2014-11-01 |
+
+- **Everyone else:** 44 more authors hold 6.3% between them.
+- **Arnon Yaari:** the tool flags `<email redacted>` and `<email redacted>` as probably the same person. I have not merged them. The 13.6% figure uses the first address only.
+- **Reformat commit:** `c73f380` only changed string quotes, so I set it aside and gave those lines back to the earlier authors. Counted as a plain `git blame` would, Hartley holds 713 lines (44.6%) and Yaari 181 (11.3%). The bus factor then becomes 2, not 1.
+
+**Exposure if Hartley and Yaari stop answering**
+
+- **Lines lost:** they hold 1,060 of 1,597 lines (66.4%).
+- **Files lost:** one of them is the top owner of 19 of the 24 files (1,484 lines). That includes `colorama/ansitowin32.py`, `colorama/winterm.py`, `colorama/win32.py` and `colorama/initialise.py`.
+- **Files nobody else knows:** 11 files (653 lines) have 50% or more of their lines written by the two of them, and no remaining author holds 10% or more. The largest are:
+  - `colorama/ansitowin32.py` (234 lines; best remaining author Delgan at 7.3%)
+  - `colorama/winterm.py` (178 lines; best remaining author Nathaniel J. Smith at 9.0%)
+  - `tests/winterm_test.py` (106 lines)
+  - several demo scripts
+- **Bus factor:** it is 1 now, and 3 without them. That is how concentrated the lines are, not who understands them.
+- **Likely inheritors:** Nathaniel J. Smith (169 lines in 11 files), John Szakmeister (58 lines in 4 files) and Delgan (45 lines in 3 files). None of them has committed since 2022.
+
+**The two are not equally exposed**
+
+- **Hartley** is the only one of the two who is active. Four of the 32 Python authors committed in the last 365 days, and they hold 55.9% of the lines. Within that group Hartley alone holds more than half. He is the single point of failure for the live code.
+- **Yaari** has not committed since January 2020. Their 13.6% is already effectively unmaintained. Losing access to them costs you context, not current maintenance.
+- **Other people at risk:** 44.1% of Python lines belong to people with no commit in the past year. These are the people you would ask about the older code.
+
+These numbers measure who wrote the surviving lines. They don't show who understands the code, who did the reviews, or any design decisions kept outside the repository. Hartley's share is very likely an undercount of what he knows. Before the handover, get him to document the Windows console and ANSI-conversion code (`ansitowin32.py`, `winterm.py`, `win32.py`).
+META cost=0.07687540000000001 ms=23740 turns=3

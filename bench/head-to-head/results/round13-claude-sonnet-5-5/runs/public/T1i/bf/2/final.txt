@@ -1,0 +1,39 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/T1i-bf-2/repo --dry-run --no-github 2>&1 | head -80; cd /private/tmp/r13/final/out-F/runs/T1i-bf-2/repo && git status --short | head
+ - Bash: cat .git-blame-ignore-revs; git ls-files | wc -l; for f in $(git ls-files | grep -Ev 'lock|\.(png|jpg|ico|svg)$'); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+Most of the surviving code belongs to two people: Troy Goode and Doug (somethingdoug.com).
+
+I ran `git blame` on every tracked file, which attributes each line that exists now to the commit that last changed it. I used `-w -M -C` so whitespace changes and moved lines don't take over a line's attribution. I also applied the repo's `.git-blame-ignore-revs`, so the 4-space/double-quote reformat commit (62628c0) doesn't hand every line to whoever ran it. I skipped lockfiles and image files.
+
+| Author | Lines still present |
+|---|---|
+| Troy Goode (`<email redacted>`) | 762 |
+| Doug (`<email redacted>`) | 629 |
+| inigomarquinez | 95 |
+| Jon Church | 72 |
+| bjohansebas | 67 |
+| ulisesgascongonzalez | 52 |
+| Troy Goode (`troy@laptop.example`) | 48 |
+| ignaciomangas | 44 |
+| alex94puchades | 34 |
+| <email redacted> | 26 |
+| about 15 others | 20 or fewer lines each |
+
+- **Troy:** Troy appears under two emails, which I assume are the same person. Together that's about 810 lines, roughly 40% of the code.
+- **Doug:** Doug holds about 30%.
+- **Everyone else:** The remaining contributors hold small slices.
+- **Gaps in the data:** I didn't confirm the 19 lines with a blank author. I also didn't merge `ulisesgascongonzalez` and `ignaciomangas` with any other emails.
+- **Merges:** I'm treating `troygoode` and `troy@laptop.example` as one person only because of the name, so please confirm.
+- **Active vs. departed:** Blame can't tell you who is still around. The history ends 2026-04-12, so Troy and Doug may well have moved on. The busfactor skill's roster check would show that.
+
+I also ran the busfactor skill, and its output answers a different question. It weights commits by recency, so it favours recent contributors, and it flagged the history as an import from a bulk first commit of 8 files. I didn't write anything to the repo (`--dry-run`).
+
+I can run the full bus-factor report with active and inactive authors if you want it. That would write `.github/CODEOWNERS` and `.github/ownership.json` into the repo, so I'd check with you first.
+META cost=0.0660497 ms=18550 turns=5

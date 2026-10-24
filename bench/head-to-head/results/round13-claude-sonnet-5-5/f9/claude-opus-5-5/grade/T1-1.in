@@ -1,0 +1,257 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+Who actually owns the code in this repo? I want to know whose code is still here today, not who has made the most commits.
+
+CRITERIA:
+1. Names Troy Goode as top owner by surviving lines with a count between 780 and 840 (both addresses counted as one person).
+2. Names Douglas Christopher Wilson second with a count between 600 and 660.
+3. The reformatter (Fiona Formatter) is NOT shown with more than 100 lines.
+4. dependabot is not ranked as an author (absent, or stated as excluded).
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "Who owns the code that survives today (blame-based line ownership, not commit counts)"}
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short | head -20 && git log --oneline | wc -l && git ls-files | head -50 && git ls-files | wc -l && git show --stat 62628c0 | tail -5 && git show --stat b2005d9 | tail -5
+ - Bash: ls .git-blame-ignore-revs 2>/dev/null; git show b2005d9 | head -40; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -15
+ - Bash: for mode in naive ignore; do echo "== $mode"; args=""; [ $mode = ignore ] && args="--ignore-rev 62628c0"; for f in $(git ls-files); do git blame -w --line-porcelain $args -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{for(i=1;i<=NR;i++){split(c[i],a," "); printf "%6.1f%% %s\n", 100*a[1]/t, c[i]} print "total",t}' | head -12; done
+echo "== per file (ignoring reformat)"; for f in $(git ls-files); do echo "-- $f"; git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3; done
+ - Bash: pct(){ sort | uniq -c | sort -rn | awk '{n=$1; $1=""; c[NR]=n; s[NR]=$0; t+=n} END{for(i=1;i<=NR&&i<=10;i++) printf "%6.1f%% %5d %s\n",100*c[i]/t,c[i],s[i]; print "  total lines",t}'; }
+echo "== all files, ignoring reformat"; for f in $(git ls-files); do git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author ' | sed 's/^author //'; done | pct
+echo "== lib/index.js"; git blame -w --line-porcelain --ignore-rev 62628c0 -- lib/index.js | grep '^author ' | sed 's/^author //' | pct
+echo "== test/*"; for f in $(git ls-files test); do git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author ' | sed 's/^author //'; done | pct
+echo "== README.md"; git blame -w --l
+FINAL ANSWER:
+Mostly **Troy Goode**. Douglas Christopher Wilson owns most of the rest.
+
+I measured this with `git blame` on all 18 tracked files: each line that exists today is credited to whoever last changed it in a meaningful way.
+
+**Whole repo (1,995 surviving lines)**
+
+| Person | Lines | Share |
+|---|---|---|
+| Troy Goode | 746 | 37.4% |
+| Douglas Christopher Wilson | 645 | 32.3% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| everyone else | | each under 3% |
+
+**By area**
+- **`lib/index.js` (the library itself, 238 lines):** Troy wrote 66.8%. Next are Doug at 9.2% and Alejandro Caravaca Puchades at about 6.7% (he committed under two names). No one else has more than 3%.
+- **`test/` (966 lines):** Troy 46.9% and Doug 41.4%, close to even.
+- **`README.md`:** Troy 42%, Jon Church 26%, Linus Unnebäck 9%.
+
+**Three things I corrected for:**
+1. **The latest commit reformatted the whole codebase.** Fiona Formatter's "style: reformat js…" (`62628c0`) changed indentation and quotes on over 1,000 lines. A plain blame credits Fiona with 14.6% of the repo even though she wrote none of the logic. I skipped that commit (`--ignore-rev 62628c0`) and ignored whitespace-only changes (`-w`). If you add that hash to a `.git-blame-ignore-revs` file, GitHub's blame view will skip it too.
+2. **Troy uses two emails.** About 12 of his lines in lib come from `troy@laptop.example`, and his total includes both. That commit ("annotate handlers") only added `// checked` comments to existing lines. So his real share of lib is slightly lower than 67%, but he's still clearly the main author.
+3. **Commit counts point the other way.** Doug has the most commits (143 vs Troy's 120), but many were small maintenance commits, so Troy has more surviving lines. That's the gap you suspected.
+
+**Risk:** Doug's last commit was in **September 2021**, so about a third of the surviving code belongs to someone who hasn't been active for five years. Troy is the only top owner still committing (last commit April 2026). For `lib/` in practice, that makes him a single point of failure.
+
+**Caveat:** blame shows who last changed each line, not who understands it. Code someone moved or rewrote counts as theirs.
+
+The busfactor skill wasn't the right tool here: it weights commits by how recent they are, not lines still in the code, so I didn't run its script. If you want a `CODEOWNERS` file or a per-directory report on who's still active, I can run it as a second step.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short -12 && echo && git ls-files | head -50 && git ls-files | wc -l && ls -a && cat .git-blame-ignore-revs 2>/dev/null; git show --stat 62628c0 b2005d9 02afce3 | head -60
+ - Bash: cat .mailmap 2>/dev/null; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; echo; git show b2005d9 | head -40
+blame(){ for f in $(git ls-files); do git blame -w -M -C --line-porcelain "$@" -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; }
+echo "== raw"; blame | head -12
+echo "== ignoring style commit"; blame --ignore-rev 62628c0 | head -12
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --line-porcelain --ignore-rev 62628c0 --ignore-rev b2005d9 -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");a=$0} /^\t/{print f"\t"a}'; done | sed 's/Troy Goode.*/Troy Goode/' | awk -F'\t' '{c=($1~/^lib\//)?"lib":($1~/^test\//)?"test":($1~/\.md$|LICENSE/)?"docs":"config"; n[$2]++; k[$2"\t"c]++; t++; tc[c]++} END{print "TOTAL",t; for(c in tc)print " ",c,tc[c]; for(a in n)print n[a]"\t"a > "/tmp/own_all"; for(x in k)print k[x]"\t"x > "/tmp/own_cat"}'; sort -rn /tmp/own_all | head -10; echo; for c in lib test docs config; do echo "-- $c"; grep -P "\t$c$" /tmp/own_cat 2>/dev/null || awk -F'\t' -v c=$c '$3==c' /tmp/own_cat | sort -rn | head -5
+FINAL ANSWER:
+Going by the lines that survive in the current tree, **Troy Goode owns the most code, followed by Douglas Christopher Wilson.** Between them they account for about 72% of the repo.
+
+I ran `git blame` on every tracked file at HEAD (1,995 lines), ignoring whitespace changes and following code that moved or was copied.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| **Troy Goode** | 808 | 40.5% |
+| **Douglas Christopher Wilson** | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| ~40 others | the rest | each under 2% |
+
+**By area:**
+- **Library code (`lib/index.js`, 238 lines):** Troy owns 157 lines (66%). Douglas owns 22 (9%) and Alejandro Caravaca Puchades 16. The rest is spread thinly across about 15 people.
+- **Tests (966 lines):** Troy owns 517 (54%) and Douglas 374 (39%).
+- **Docs (README, HISTORY, LICENSE, 363 lines):** Troy has 121, Douglas 84 and Jon Church 72.
+- **Config and CI (`package.json`, workflows, eslint, 428 lines):** Douglas has 149, Íñigo 95, Sebastian Beltran 67, Ulises 46 and Ignacio 44. This is mostly recent maintainers' work.
+
+This is the reverse of the commit counts, where Douglas leads 143 to 120. His commits were many small maintenance changes, while Troy wrote most of the code that's still there.
+
+**Three adjustments, because a plain `git blame` gets this wrong:**
+1. **I skipped the latest commit, `62628c0`.** It's a reformat by "Fiona Formatter" that switched to 4-space indents and double quotes, touching about 1,000 lines. Ignoring whitespace doesn't catch quote changes, so without skipping it Fiona shows up third with 291 lines she didn't write. You may want to add that commit to a `.git-blame-ignore-revs` file.
+2. **I skipped `b2005d9` ("lib: annotate handlers").** It only appends `// checked` comments to existing lines, so it would reassign them without any real authorship.
+3. **I merged Troy's two email addresses.** `<email redacted>` and `troy@laptop.example` are counted as one person (48 lines are under the second address). There's no `.mailmap` in the repo, so tools that group by email would split him in two.
+
+Line count measures what survives, not how important it is. The core logic in `lib/` is clearly Troy's, while the build, CI and packaging setup belongs mostly to the current maintainers.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: node /private/tmp/r13/final/ours-src/bin/<tool> --merge-identities
+ - Bash: git show --stat --format='%h %an %ad %s' 62628c0 | head
+FINAL ANSWER:
+Two people own most of the code: **Troy Goode** and **Douglas Christopher Wilson**. Together they hold 72.2% of the lines still in the repo. All figures come from running `surviving-lines`, which uses `git blame -w -M -C` at HEAD (62628c0) to credit each line still in the code to the person who last changed it. The code totals 1,662 non-blank lines, or 1,985 counting blank lines.
+
+| Author | Lines (non-blank) | Lines (with blank) | Commits | Last commit |
+|---|---|---|---|---|
+| Troy Goode (2 addresses) | 649 (39.0%) | 810 (40.8%) | 95 (30.2%) | 2026-04-10 |
+| Douglas Christopher Wilson | 551 (33.2%) | 629 (31.7%) | 143 (45.4%) | 2021-09-07 |
+| Íñigo Marquínez Prado | 80 (4.8%) | 95 (4.8%) | 2 (0.6%) | 2024-05-14 |
+| Jon Church | 59 (3.5%) | 72 (3.6%) | 3 (1.0%) | 2026-01-16 |
+| Sebastian Beltran | 57 (3.4%) | 67 (3.4%) | 2 (0.6%) | 2025-07-23 |
+| Ulises Gascón | 46 (2.8%) | 52 (2.6%) | 3 (1.0%) | 2026-01-22 |
+| Ignacio Mangas | 38 (2.3%) | 44 (2.2%) | 2 (0.6%) | 2025-12-01 |
+| Alejandro Caravaca Puchades | 30 (1.8%) | 34 (1.7%) | 5 (1.6%) | 2015-05-28 |
+| Linus Unnebäck | 26 (1.6%) | 26 (1.3%) | 1 (0.3%) | 2016-11-07 |
+| Ollie Buck | 14 (0.8%) | 17 (0.9%) | 1 (0.3%) | 2019-06-05 |
+
+The other 52 authors hold 6.7% between them; the largest is Eric di Domenico with 0.7%.
+
+**The tool's summary line:** "Troy Goode (2 addresses) holds 649 non-blank lines (39.0%), 810 counting blank lines (40.8%)".
+
+**Commits vs. code still here:** Douglas Christopher Wilson made the most commits (45.4%). But Troy Goode has more lines still in the code. Douglas Christopher Wilson's last commit was in 2021.
+
+**Things that change the numbers:**
+- **One reformat commit is not counted.** Commit 62628c0 ("style: reformat js…", by Fiona Formatter) rewrote 1,016 lines in 4 files, changing only whitespace and quotes. I checked it with `git show --stat`. The figures above give those lines back to whoever wrote them before. If the commit were counted:
+  - Douglas Christopher Wilson would drop to 376 lines (22.6%).
+  - Troy Goode would drop to 554 lines (33.3%).
+  - Fiona Formatter would look like a major owner when they only reformatted.
+- **Troy Goode's two addresses are merged, but that's a guess.** The tool counted <email redacted> (605 lines, 93 commits) and troy@laptop.example (44 lines, 2 commits) as one person, based only on the matching name. Counted separately, Troy Goode has 605 lines (36.4%) and 762 with blank lines (38.4%), and is still the top owner. Nothing has been written to `.mailmap`.
+- **One person appears under two names.** Alejandro Caravaca Puchades also commits as "alex94puchades" from the same address, and is already counted once.
+- **Some code was committed by someone else.** 19 commits were committed by GitHub or another person, and their lines are credited to the actual authors. For example, 60 lines of de19afc belong to Íñigo Marquínez Prado and 53 lines of 14cefd4 belong to Sebastian Beltran.
+- **Left out entirely:** dependabot[bot] (10 lines, 11 commits). No files were dropped; all 18 were counted.
+- **Other possible formatting commits are still counted.** The tool flagged 7 more commits that look mechanical, all small. The largest is 739dc11 "docs: reformat license" (17 lines). These are still in the numbers.
+- **Older work goes to whoever imported it.** The history starts on 2013-01-30 with a commit that added 44% of the files. Lines older than that are credited to whoever made that commit.
+
+**Risk:**
+- **Bus factor is 2.** The bus factor is the smallest number of people who together hold 50% of the lines. Troy Goode and Douglas Christopher Wilson hold 72.2% of non-blank lines (72.5% with blank lines). It takes 4 people to reach 80%. If the reformat commit were counted, the bus factor would still be 2, at 56.0%.
+- **Among active people, the bus factor is 1.** Counting only the 860 lines held by the 9 people with a commit in the last 365 days, Troy Goode alone holds half.
+- **Activity is measured from the last commit (2026-04-12), not from today.** As of that date, 9 of 44 authors had committed in the past year, and they hold 51.7% of the lines. The other 48.3% belongs to people with no recent commit, including Douglas Christopher Wilson (33.2%).
+- **6 of 18 files are orphaned.** Their top owner is inactive and no active person holds 20% or more. They make up 7.8% of the lines; examples are `.github/workflows/scorecard.yml`, `HISTORY.md` and `LICENSE`.
+
+**Who to ask:** Troy Goode is the top owner and is still active, so they are both the main source of knowledge and the practical contact. Douglas Christopher Wilson is the second-largest owner, but they have had no commit since 2021.
+
+These numbers show whose code is still here. They don't show the quality of that code, review or design work, or code that was deleted on purpose.

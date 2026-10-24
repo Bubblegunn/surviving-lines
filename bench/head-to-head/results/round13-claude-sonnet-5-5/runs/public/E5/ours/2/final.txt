@@ -1,0 +1,50 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/E5-ours-2/repo && $SL -- lib/index.js; echo ----; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -50; echo; git log --follow --oneline -- lib/index.js | wc -l
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js -- lib/index.js
+FINAL ANSWER:
+**Short version:** `lib/index.js` is Troy Goode's file, and most of what survives is still theirs. Douglas Christopher Wilson did the most maintenance on it in later years. A long tail of small contributors patched in features and fixes. Numbers below come from `surviving-lines` on `lib/index.js` at HEAD (62628c0).
+
+## Who holds the lines today
+The file has 214 non-blank lines (238 counting blank lines).
+
+| Author | Non-blank lines (share) | Counting blank lines (share) |
+|---|---|---|
+| Troy Goode (`<email redacted>`) | 132 (61.7%) | 147 (61.8%) |
+| Douglas Christopher Wilson | 20 (9.3%) | 22 (9.2%) |
+| Alejandro Caravaca Puchades | 14 (6.5%) | 16 (6.7%) |
+| Troy Goode (`troy@laptop.example`) | 12 (5.6%) | 12 (5.0%) |
+| LuisEGR | 6 (2.8%) | 6 (2.5%) |
+| Raymond Feng | 6 (2.8%) | 7 (2.9%) |
+| max.laverse | 5 (2.3%) | 6 (2.5%) |
+
+- **Troy Goode may be counted twice.** Two addresses, `<email redacted>` and `troy@laptop.example`, look like the same person, but only you can confirm that. If they are one person, they hold 144 lines (67.3%). I haven't applied any `.mailmap` change.
+- **The tail is long.** 15 more authors hold 5.1% together. The largest of them is Mathias Buus at 0.9%.
+- **Alejandro Caravaca Puchades also appears as `alex94puchades`.** It's the same email address, and the tool counts it as one person.
+- **Some lines are credited to the author, not the committer.** 11 lines of `e64e854` (the array of matching conditions for `options.origin`) go to Alejandro, though Troy committed them. 6 lines of `f038e77` go to LuisEGR, though Wilson committed them.
+
+## How the file was shaped
+The file has 62 commits in its history, and the repository history begins with a 2013-01-30 import.
+
+1. **2013, the origin.** Troy Goode wrote the core: the early `Origin` checks, the `origin` callback, and Connect support without Express. Other contributors gave early help in this period, including Simon Mansfield, Eric di Domenico and Mathias Buus.
+2. **2014, API growth.** Troy added `Access-Control-Expose-Headers` and Express 4 support. Contributors added `PATCH` to the default methods, a fix so the `origin` callback isn't overridden, and uppercase method normalization. Troy also brought in the `vary` module and added `Vary: Origin` for specific origins.
+3. **2015, feature contributions.** Alejandro Caravaca Puchades added regexp and array `origin` matching. Raymond Feng removed a closure in `applyHeaders`. max.laverse made preflight pass through to `next()`. DracoBlue exposed headers on `OPTIONS`. Troy moved the project to ESLint.
+4. **2016–2018, maintenance.** Hannah Wolfe named the anonymous middleware. Troy shipped 2.8.0. Wilson fixed the `Vary` headers and the missing `methods` option. Others fixed frozen options, a Safari preflight issue and `maxAge: 0`.
+5. **2017–2021, lint cleanups.** These came from Wilson, Chima Alaebo and LuisEGR.
+6. **April 2026, the latest changes.** Troy's `lib: annotate handlers` added 12 lines under the `troy@laptop.example` address. Then `62628c0` reformatted the file to 4-space indents and double quotes.
+
+## Reformat caveat
+The reformat touched 1,016 lines in 4 files, and the tool sets it aside so it doesn't take over ownership. With it set aside, Troy holds 132 lines (61.7%). Counted as ordinary work, Troy would hold 111 (51.9%). Wilson would drop from 20 (9.3%) to 16 (7.5%).
+
+One more commit looks mechanical and was not set aside: `fcd2b56`, the ESLint switch, which holds 5 surviving lines.
+
+## Bus factor and activity
+- **Bus factor is 1.** Troy alone holds over half of the lines. Reaching 80% takes 4 authors.
+- **Only one author is active.** Of the 18 authors, only Troy has committed in the last 365 days (as of 2026-04-12), and they hold 67.3% of the lines. The other 32.7% belongs to people with no recent commit, including Wilson's 20 lines and Alejandro's 14.
+
+These figures measure which lines survived. They don't measure quality, review work, design done outside the code, or code that was deliberately deleted.
+META cost=0.0748089 ms=22573 turns=3

@@ -1,0 +1,61 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ1-ours-1/repo; SL='node /private/tmp/r13/final/ours-src/bin/surviving-lines.js'; $SL --include '*.py' 2>&1; echo ======; $SL --include '*.py' --merge-identities 2>&1 | head -40
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ1-ours-1/repo; sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; sl --include '*.py' 2>&1; echo '#####'; sl --include '*.py' --merge-identities 2>&1
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ1-ours-1/repo; sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; git show --stat --format='%h %an <%ae> %ad %s' c73f380 | tail -5; echo '#####'; sl --include '*.py' --merge-identities --without "Jonathan Hartley,Arnon Yaari" 2>&1; echo '#####'; sl --include '*.py' --orphans 2>&1 | head -40
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ1-ours-1/repo; git log -1 --format='%h %an %ad' c73f380; head -8 colorama/_vendor/_typing_compat.py; git log --format='%h %an %ad %s' -- colorama/_vendor | head
+FINAL ANSWER:
+## Who wrote the Python code
+
+All figures come from `surviving-lines --include '*.py'` at HEAD (475b3d4, dated 2026-09-12). The tool runs `git blame -w -M -C` over all 24 Python files and attributes 1,597 non-blank lines (1,937 counting blank lines).
+
+| Author | Non-blank lines (share) | Counting blank lines (share) | Commits (share) | Last commit |
+|---|---|---|---|---|
+| Jonathan Hartley | 843 (52.8%) | 1,065 (55.1%) | 85 (28.1%) | 2026-07-03 |
+| Arnon Yaari (2 addresses, merged)* | 217 (13.6%) | 232 (12.0%) | 64 (21.2%) | 2022-06-17 |
+| Nathaniel J. Smith | 169 (10.6%) | 196 (10.1%) | 15 (5.0%) | 2022-10-16 |
+| Delgan | 88 (5.5%) | 107 (5.5%) | 3 (1.0%) | 2018-10-15 |
+| John Szakmeister | 58 (3.6%) | 62 (3.2%) | 4 (1.3%) | 2014-11-01 |
+| Segev Finer | 28 (1.8%) | 37 (1.9%) | 2 (0.7%) | 2017-07-30 |
+| Priya Nair | 22 (1.4%) | 28 (1.4%) | 2 (0.7%) | 2026-09-12 |
+| Florian Bruhin | 22 (1.4%) | 23 (1.2%) | 1 (0.3%) | 2014-08-26 |
+| hoefling | 19 (1.2%) | 23 (1.2%) | 3 (1.0%) | 2018-09-11 |
+| George Ogden | 16 (1.0%) | 21 (1.1%) | 1 (0.3%) | 2021-08-15 |
+| Matt Olsen | 15 (0.9%) | 22 (1.1%) | 4 (1.3%) | 2015-09-13 |
+
+The other 42 authors hold 6.3% between them. The largest of them is Max Tilley at 0.9%.
+
+\*Arnon Yaari's two addresses (<email redacted> and <email redacted>) are merged in memory only. That's a guess from the matching name, and nothing was written to `.mailmap`. The line count is the same either way, because the Apple address holds 0 lines. Unmerged, the infinidat address has 63 commits, last on 2020-01-25. John Szakmeister's two addresses are only weakly linked, so his figure above is unmerged.
+
+**Adjustments in these numbers:**
+- **Reformat commit set aside.** The commit c73f380, "Apply black-style string quotes to all python files", rewrote 221 lines in 20 files and only changed formatting. Those lines go back to whoever wrote them before. If the commit were counted, Hartley would drop from 843 lines (52.8%) to 713 (44.6%). The bus factor would also rise to 2, because the commit's author would join Hartley at the top. That author is Dana Kessler, who also added the vendored file below.
+- **Vendored file excluded.** `colorama/_vendor/_typing_compat.py` (1,103 lines) is left out of every number. Its header says it was vendored from typing_extensions and is not to be edited.
+- **Bots excluded.** pre-commit-ci[bot] and dependabot[bot] held 4 lines and are not credited.
+- **Lines credited to the person who wrote them, not the one who committed them.** Hartley re-applied 13 lines of 40d1e25 that Priya Nair wrote, and he committed 13 lines of e222dd2 that Tomás Ibarra wrote.
+- **Early history is an import.** The history starts on 2014-04-17 with a commit that added 59% of the files. Lines older than that are credited to whoever imported them.
+
+For the whole repository, not just Python, Hartley holds 1,460 non-blank lines (55.6%) and 1,884 counting blank lines (58.7%).
+
+## How exposed you are if the top two stop answering
+
+The top two by surviving lines are Hartley and Yaari, and they're also the top two by commits. Together they hold **1,060 of 1,597 lines (66.4%)** (`--without "Jonathan Hartley,Arnon Yaari"`).
+
+- **The top two are two different kinds of risk.**
+  - Hartley is the single point of failure. The bus factor is 1 on both bases: he alone holds 52.8% of the non-blank lines and 55.1% counting blank lines. It takes 4 authors to reach 80%. The active bus factor is also 1, counted only on the 892 lines held by the 4 people active in the last 365 days.
+  - Yaari is effectively gone already. His last commit was in 2022.
+- **They'd take most of the core with them.**
+  - They're the top owners of 19 of the 24 files (1,484 lines), including `colorama/ansitowin32.py` (234), `colorama/winterm.py` (178), `colorama/win32.py` (165), `colorama/ansi.py` (90) and `colorama/initialise.py` (90).
+  - 11 files (653 lines) would be left with nobody holding even 10% of them, for example `ansitowin32.py` (best remaining: Delgan at 7.3%), `winterm.py` (Nathaniel J. Smith at 9.0%) and `tests/winterm_test.py` (Tomás Ibarra at 6.6%).
+- **The bus factor goes from 1 to 3** without them, counted on the lines the remaining authors hold.
+- **The people who'd inherit the most aren't active.** Nathaniel J. Smith (169 lines in 11 affected files), John Szakmeister (58 lines in 4) and Delgan (45 lines in 3) have no commits since 2022, 2014 and 2018.
+- **Some code already has nobody active.** As of 2026-09-12, 4 of the 32 authors committed in the last year and hold 55.9% of the lines. The other 44.1% belongs to people with no commit in that time. 5 files (8.3% of the lines) are already orphaned: their top owner is inactive and no active person holds 20%. They are `tests/isatty_test.py`, `tests/utils.py`, `demos/demo07.py`, `demos/demo09.py` and `demos/demo08.py`.
+
+**In practice:** your exposure is really to Hartley. He's the main source of knowledge, the only big owner who's still active, and the person to sit down with before the handover. The priority files are `ansitowin32.py`, `winterm.py`, `win32.py` and their tests. Priya Nair is the other recently active contributor, but she holds only 22 lines (1.4%), so she can't stand in for him.
+
+**Limits:** these numbers count lines that survive, not who understands the code. Review work, design discussions and deliberately deleted code leave no trace in them. The orphaned files are a list to check, not proof that nobody knows them.
+META cost=0.39947679999999997 ms=70523 turns=8

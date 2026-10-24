@@ -1,0 +1,82 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files | grep -E '\.(js|ts|jsx|tsx|py|go|rb|json|md|yml)$' | grep -v node_modules | wc -l; git log --no-merges --format='%an' | sort | uniq -c | sort -rn | head -5; git show --stat --format=%H 62628c0 | tail -3; git ls-files '*.js' | grep -v node_modules | head -50
+ - Bash: echo "62628c0" > /tmp/ignore-revs && for f in $(git ls-files | grep -E '\.(js|json|md|yml)$'); do git blame -w -C -M --ignore-revs-file /tmp/ignore-revs --line-porcelain -- $f 2>/dev/null | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo TOTAL by author; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo; echo BY FILE; awk -F'\t' '{c[$1" | "$2]++} END{for(k in c)print c[k]"\t"k}' /tmp/blame.tsv | sort -k2,2 -k1,1nr; echo; git log -1 --format=%ad; for a in "Douglas Christopher Wilson" "Troy Goode" "Ulises Gascón" "Alejandro Caravaca Puchades"; do echo "$a: $(git log --author="$a" -1 --format=%ad)"; done
+ - Bash: git ls-files | head -30; git blame -w -C -M --ignore-revs-file /tmp/ignore-revs --line-porcelain -- lib/index.js 2>&1 | head -5
+ - Bash: git rev-parse 62628c0 > /tmp/ignore-revs && git rev-parse 62628c0 && for f in $(git ls-files | grep -E '\.(js|json|md|yml)$'); do git blame -w -C -M --ignore-revs-file /tmp/ignore-revs --line-porcelain -- $f 2>&1 | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo TOTAL; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo; echo BY FILE; awk -F'\t' '{c[$1" | "$2]++} END{for(k in c)print k"\t"c[k]}' /tmp/blame.tsv | sort
+ - Bash: cd /tmp && echo ALL; cut -f2 blame.tsv | wc -l; echo CODE lib+test; grep -E '^(lib|test)/' blame.tsv | cut -f2 | sort | uniq -c | sort -rn | head -6; grep -cE '^(lib|test)/' blame.tsv; echo LIB; grep -E '^lib/' blame.tsv | wc -l
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis (surviving-code ownership)
+Period: all history | Generated: 2026-10-24
+
+I used `git blame` instead of the skill's per-file commit counts. It counts the lines that exist today and who last meaningfully wrote them. I ignored whitespace changes and moved or copied lines. I also excluded the latest commit (`62628c0`, the 4-space and double-quote reformat). That commit rewrote about 1,000 lines across `test/test.js` and the other test files and would otherwise have been credited with them. I did not run the contributor-analyzer agent or the importance step, because the repo is only 18 tracked files.
+
+### Project-level bus factor: 2
+
+Troy Goode and Douglas Christopher Wilson together own 72% of all lines (1,412 of 1,968) and 90% of the code in `lib/` and `test/` (1,072 of 1,204). Losing those two would leave most of the code without a maintainer who wrote it.
+
+### Who owns what today
+
+| Author | Surviving lines (all files) | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 804 | 41% | 2026-04-10 |
+| Douglas Christopher Wilson | 608 | 31% | **2021-09-07** |
+| Íñigo Marquínez Prado | 95 | 5% | not checked |
+| Jon Church | 72 | 4% | not checked |
+| Sebastian Beltran | 67 | 3% | not checked |
+| Ulises Gascón | 52 | 3% | 2026-01-22 |
+| Ignacio Mangas | 44 | 2% | not checked |
+| About 40 others | 226 | 11% | not checked |
+
+Most of the smaller owners hold CI config (Íñigo, Sebastian, Ignacio, Ulises) or README text (Jon Church).
+
+### Ownership by file
+
+| File | Primary owner | Share | Notes |
+|---|---|---|---|
+| `lib/index.js` (the only runtime code) | Troy Goode | 67% (159 of 238 lines) | Douglas owns 9%, and about 17 others own the rest. |
+| `test/test.js` | Douglas 39%, Troy 36% | — | About 10 other contributors. |
+| `test/vary.js`, `test/issue-2.js`, `test/example-app.js`, `test/error-response.js` | Troy Goode | 83–100% | Douglas owns the remainder. |
+| `package.json`, `HISTORY.md`, `.eslintrc.yml` | Douglas Christopher Wilson | 56–100% | |
+| `.github/workflows/*`, `dependabot.yml` | Íñigo, Sebastian, Ulises, Ignacio | — | Spread across them, with no single owner. |
+| `README.md` | Troy Goode | 22% | Widely spread. |
+
+### Risk areas
+
+| Area | Sole or primary owner | Active? | Risk |
+|---|---|---|---|
+| `lib/index.js` | Troy Goode (67%) | ✅ Active (April 2026) | **HIGH**. It is the only runtime file and has one dominant author. |
+| `test/vary.js`, `test/issue-2.js`, `test/example-app.js`, `test/error-response.js` | Troy Goode (83–100%) | ✅ Active | MEDIUM |
+| `package.json`, `HISTORY.md`, `.eslintrc.yml` | Douglas Christopher Wilson | ❌ Inactive since 2021 | MEDIUM. This is release and config knowledge held by someone who has left. |
+| `test/test.js` | Douglas 39%, Troy 36% | Troy active, Douglas not | MEDIUM. Troy is the only active large owner. |
+| CI workflows | Several people | Partly | LOW |
+
+### Heat map
+
+```
+repo/
+├── lib/       [███████░░░] 🔴 Bus factor 1 (Troy 67%)
+├── test/      [██████░░░░] 🟡 Bus factor 2 (Troy 56%, Douglas 33%, Douglas inactive)
+├── .github/   [███░░░░░░░] 🟢 Bus factor 3+ (spread across four people)
+├── README.md  [██░░░░░░░░] 🟢 Widely distributed
+└── package.json, HISTORY.md [█████░░░░░] 🟡 Mostly Douglas (inactive)
+```
+
+### Recommendations
+
+1. **Immediate:** Have someone besides Troy review changes to `lib/index.js`, and document why it works the way it does. It is small (238 lines), so this is cheap.
+2. **Short-term:** Record Douglas's release and `package.json` conventions somewhere, since they're no longer around to ask.
+3. **Ongoing:** Pair Troy with another maintainer on the `test/` helper files that only Troy has touched.
+
+### Caveats
+
+- Blame credits the last author to touch a line. If a line was reworded by someone else, the original author loses credit.
+- Authors are counted by name, so the same person under two names (for example "Alejandro Caravaca Puchades" and "alex94puchades") is counted as two.
+- I checked last-commit dates only for the top four authors. Whether Íñigo, Jon, Sebastian and Ignacio are still active is unknown.
+- Troy Goode's last commit is dated 2026-04-10, so "active" means active within about six months. That is outside the skill's 90-day window, and by that stricter standard Troy would also count as inactive.
+META cost=0.1058825 ms=33324 turns=8

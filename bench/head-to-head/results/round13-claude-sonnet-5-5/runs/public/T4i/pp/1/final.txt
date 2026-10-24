@@ -1,0 +1,21 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T4i-pp-1/repo; ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>&1 | grep -v 'No such'; echo ---; git log --format='%an <%ae>' -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log -8 --format='%h %an %ad %s' --date=short --follow -- lib/index.js
+FINAL ANSWER:
+There's no CODEOWNERS file in the repo, so nobody is formally assigned. Git history is the best guide.
+
+**Suggested reviewer: Troy Goode** (<email redacted>)
+- They made 29 of the commits to `lib/index.js`, far more than anyone else.
+- They also made the most recent substantive change, `b2005d9 lib: annotate handlers` (2026-04-10).
+
+**Backup: Douglas Christopher Wilson** (<email redacted>). They have 4 commits, including lint and build changes in 2017.
+
+- The latest commit, `62628c0`, is a bulk reformat by Fiona Formatter. I left it out because it doesn't show who knows the logic. If you run `git blame` on the file, add `--ignore-revs-file .git-blame-ignore-revs` to skip it.
+- Most of the history is old. Check that Troy is still active on the project before you request their review.
+
+If you tell me what the change touches, I can narrow this to whoever last worked on those lines. I can also run the `project-pilot:bus-factor` skill for a broader view of ownership.
+META cost=0.0413994 ms=8264 turns=2

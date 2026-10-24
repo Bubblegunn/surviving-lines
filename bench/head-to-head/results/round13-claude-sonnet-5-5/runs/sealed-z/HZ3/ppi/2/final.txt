@@ -1,0 +1,62 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.zig' | head -50; echo ---; git shortlog -sne --all --no-merges | head -20; echo ---; git log --all --no-merges --pretty='%an' | wc -l; git log -1 --format=%cd; echo ---; for f in $(git ls-files '*.zig'); do git blame --line-porcelain -w -M -C HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{c[$1"\t"$2]++; t[$2]++; tot++} END{for(k in c)print "FILE\t"k"\t"c[k]; for(a in t)print "TOTAL\t"a"\t"t[a]; print "ALL\t"tot}' | sort
+ - Bash: for p in "Queißner" "Wen Li" "jnagpaul"; do echo "$p: $(git log --all --no-merges --author="$p" -1 --format='%cd' --date=short)"; done; git log --all --no-merges -5 --format='%ad %an' --date=short; head -5 src/width_table.zig
+FINAL ANSWER:
+## Bus factor for zig-args
+
+**Project bus factor: 2.** The main author is Felix Queißner ("xq"). The scope is the 7 `.zig` files (2,120 lines). The skill's default file list leaves out `.zig`, so I ran `git blame` on current lines instead of counting commits.
+
+Felix committed under 4 name and email variants. I merged them for the figures below.
+
+### Current line ownership
+
+| Author | Lines | Share of all code | Share excluding generated table |
+|---|---|---|---|
+| Felix Queißner (4 identities) | 758 | 36% | 46% |
+| Wen Li | 552 | 26% | 4% (68 lines) |
+| jnagpaul | 188 | 9% | 11% |
+| Vincent Rischmann | 130 | 6% | 8% |
+| ~23 others | 492 | 23% | — |
+
+`src/width_table.zig` is a generated file (484 lines, "DO NOT EDIT"), and git credits all of it to Wen Li. That inflates their share, so I show both views.
+
+### If Felix stopped answering
+
+- **Orphaned code:** 758 lines (36%) would have no author left. That is 46% of the hand-written code.
+- **The core:** `src/args.zig`, the actual parser, is 67% Felix (705 of 1,049 lines). For that file the bus factor is 1.
+- **Everything else:** the other lines have a spread of authors. The next-largest contributors on `args.zig` are Vincent Rischmann (64), mochalins (60) and Wen Li (40).
+
+### Why the project figure is 2
+
+Felix alone holds 36% of the code (46% of hand-written code), so removing them doesn't leave more than half the code orphaned. Removing Felix plus Wen Li takes out 62% of all code. Excluding the generated table, Felix plus jnagpaul takes out 58%.
+
+### Per-file risk
+
+| File | Top owner | Share | Risk |
+|---|---|---|---|
+| `src/args.zig` (core) | Felix | 67% | **High** |
+| `demo.zig` | Felix | 38 of 63 lines | Low, since it's example code |
+| `src/help.zig` | jnagpaul | 166 of 337 lines (49%) | **Medium**: jnagpaul's last commit was 2023-07, so they're inactive. |
+| `src/width.zig`, `width_table.zig` | Wen Li | 100% | Low: the table is generated, and `width.zig` is only 24 lines. |
+| `demo_verb.zig` | Vincent Rischmann | 48 of 83 lines | Low |
+
+### Activity
+
+- **Felix:** the last commit was 2026-04-17, about 6 months before today's date of 2026-10-24. That is past the skill's 90-day "active" cutoff, so Felix looks dormant already.
+- **Wen Li:** active, with commits in October 2026.
+- **Dmitri Volkov and Tobias Ek:** also active. They own only 16 and 5 lines each so far.
+
+### Recommendations
+
+1. **Immediate:** have Wen Li, Vincent Rischmann or mochalins review `args.zig` and take ownership of the parser internals. These three already hold the most lines there after Felix.
+2. **Short-term:** write down the design intent behind `args.zig`, such as the comptime option-struct handling and the error paths. That knowledge currently lives with Felix.
+3. **Ongoing:** route `help.zig` changes through an active reviewer, since its main author has been gone for over 3 years. Add a `.mailmap` file so Felix's four identities count as one person in future analyses.
+
+The last commit date in the repo is 2026-11-04, which is after today's date. That is probably a clock quirk in the data and doesn't change the results.
+META cost=0.0845412 ms=23773 turns=5

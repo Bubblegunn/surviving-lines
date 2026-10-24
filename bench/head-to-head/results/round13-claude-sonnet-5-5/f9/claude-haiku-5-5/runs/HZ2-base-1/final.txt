@@ -1,0 +1,33 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls && echo --- && git log --format='%h %an <%ae> %ad %s' --date=short -- time.go | head -20 && echo --- && git log --format='%h %an <%ae> %ad %s' --date=short -- version7.go | head -20 && echo --- && git ls-files | grep -iE '\.sql$|sql' ; echo ---; git ls-files | grep -iE 'sql|\.go$' | head -50
+ - Bash: git blame --date=short -- time.go | awk '{print $2,$3,$4}' | sort | uniq -c | sort -rn | head; echo ---; git blame --date=short -- version7.go | awk '{print $2,$3,$4}' | sort | uniq -c | sort -rn | head; echo ---; git log --format='%an <%ae> %ad' --date=short | sort -u -k1,1 | head -30; echo ---; ls -la; find . -path ./.git -prune -o -type f -print | grep -iE 'sql|codeowners|maintain|contributors' 
+ - Bash: echo "== CODEOWNERS"; cat .github/CODEOWNERS; echo "== CONTRIBUTORS"; cat CONTRIBUTORS; echo "== MAILMAP"; cat .mailmap; echo "== CONTRIBUTING"; cat CONTRIBUTING.md; echo "== time.go blame"; git blame -e --date=short time.go | sed -E 's/^[^(]*\(([^)]*)\).*/\1/' | awk '{ $NF=""; print }' | sort | uniq -c | sort -rn | head; echo "== version7.go blame"; git blame -e --date=short version7.go | sed -E 's/^[^(]*\(([^)]*)\).*/\1/' | awk '{ $NF=""; print }' | sort | uniq -c | sort -rn | head; echo "== sql blame"; git blame -e --date=short database_sql.go | sed -E 's/^[^(]*\(([^)]*)\).*/\1/' | awk '{ $NF=""; print }' | sort | uniq -c | sort -rn | head; git log --format='%h %an <%ae> %ad %s' --date=sh
+ - Bash: git blame -e --date=short --ignore-rev c50c42f time.go | sed -E 's/^[^(]*\(([^)]*)\).*/\1/' | awk '{ $NF=""; print }' | sort | uniq -c | sort -rn | head; echo; git blame -e --date=short --ignore-rev c50c42f version7.go | sed -E 's/^[^(]*\(([^)]*)\).*/\1/' | awk '{ $NF=""; print }' | sort | uniq -c | sort -rn | head -4; echo; git log -1 --format='%an %ad' --date=short; git log -1 --format='%an %ad' --date=short -- time.go ; git log --format='%an %ad' --date=short -3 -- time.go
+FINAL ANSWER:
+**Short answer:** Ask Ravi Menon first. They are the most recent committer on `version7.go` and `database_sql.go`. The git history can't tell you whether anyone is still around, though. It only shows when they last committed.
+
+**Who wrote each area (from `git blame`, ignoring the line-ending commit in `time.go`):**
+
+| Area | Main authors | Last activity in history |
+|---|---|---|
+| `time.go` | Paul Borman (2011–2016, most lines), Sam Okafor (2025, ~18 lines), MikeWang (2023, ~15), Alexander Rowe (2025, ~10), Nicu Micle (2024, ~8) | Sam Okafor 2025-04-22; Alexander Rowe 2025-02-18; Nicu Micle 2024-11-14 |
+| `version7.go` | MikeWang (most lines, 2023–2024), Mei Chen (11 lines, 2025), Ravi Menon (2 lines, 2026) | Ravi Menon 2026-05-05; Mei Chen 2025-08-02; MikeWang 2024-07-02 |
+| SQL (`database_sql.go`, `sql_test.go`) | Justin Overfelt (2015–2016, most lines), Andrew Stone (2017), David Wheeler (2015–2016), Bryan Matsuo, Paul Borman | Ravi Menon renamed the file 2025-03-10; the most recent substantive change was kotaro.yamazaki 2024-02-23 |
+
+Two points about the blame:
+- `time.go` looks like it was written by Sam Okafor only because of a line-ending commit. The real authorship is spread across the people above.
+- The SQL code is mostly 2015–2017 work by people with no commits since then.
+
+**Who to ask:**
+- **Ravi Menon** (`ravi.menon@harbor.example`) is the most recent and active contributor to `version7.go` and the SQL file. Start here for v7 and SQL questions.
+- **Mei Chen** wrote the `Time7` accessor, and **Alexander Rowe** added `UnixMillis` for v7. Both are worth asking about v7 time behaviour, though neither has committed in a while.
+- **Paul Borman** wrote the original `time.go` and most of the early code. Their last commit was in 2016, so they are unlikely to be active.
+- `.github/CODEOWNERS` assigns every file to the team `@google/go-uuid-contributors`, not to individuals. That team is the formal review group, but it doesn't say who is responsive.
+
+**Whether they're still around:** I can't confirm that from the repo. Last commit dates suggest Ravi is active, Mei and Alexander have been quiet for 9–14 months, and Sam, MikeWang, Nicu, and the older authors have been quiet for longer. To check, look at their GitHub activity and org membership, for example `gh api orgs/google/teams/go-uuid-contributors/members`, and ask Ravi directly whether they can still review.
+META cost=0.00569131 ms=20240 turns=5

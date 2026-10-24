@@ -1,0 +1,71 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E1-pp-2/repo; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head; echo; git log -1 --format=%cd; echo; for f in $(git ls-files | grep -E '\.(js|ts)$' | grep -v node_modules); do n=$(git log --all --no-merges --pretty='%an' -- $f | sort | uniq -c | sort -rn); tot=$(echo "$n"|awk '{s+=$1}END{print s}'); u=$(echo "$n"|wc -l); top=$(echo "$n"|head -1|sed 's/^ *//'); echo "$f|$u|$tot|$top"; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E1-pp-2/repo; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a: $(git log --all --no-merges --author="$a" --format='%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done; git ls-files | grep -v node_modules | head -30; git log --all --no-merges --format='%an' --since=1y | sort | uniq -c | sort -rn
+FINAL ANSWER:
+## Bus Factor Analysis
+
+Period: all history. The repo has 6 source files and about 280 commits.
+
+### Project-level bus factor: 2
+
+Two people account for about 85% of non-bot commits:
+
+- **Douglas Christopher Wilson**: 143 commits, from 2017-03 to 2021-09.
+- **Troy Goode**: 95 commits, from 2013-01 to 2026-04-10.
+
+Losing both would leave almost no one with deep knowledge of the code. Wilson has no commits since 2021, so in practice he is already gone. That leaves **Troy Goode** as the only recently active person with deep knowledge.
+
+Everyone else has 11 or fewer commits. Dependabot has 11, and the other eight contributors have 2–4 each.
+
+### Files by contributor count
+
+| File | Contributors | Commits | Top contributor | Dependents |
+|---|---|---|---|---|
+| `lib/index.js` | 25 | 62 | Troy Goode (29, 47%) | entry point |
+| `test/test.js` | 4 | 11 | Wilson (8, 73%) | 0 |
+| `test/example-app.js` | 3 | 13 | Goode (10, 77%) | 0 |
+| `test/error-response.js` | 3 | 8 | Goode (4, 50%) | 0 |
+| `test/issue-2.js` | 2 | 12 | Goode (10, 83%) | 0 |
+| `test/vary.js` | 1 | 1 | Goode | 0 |
+| `test/support/env.js` | 1 | 1 | Wilson | 0 |
+
+### Critical risk areas
+
+- **`lib/index.js` is not a bus-factor risk.** It is the only runtime file, with 25 contributors. Goode has the largest share at 47%, and no one else holds a majority. Knowledge of the core logic is well spread, though much of it comes from past contributors who may no longer be active.
+- **The single-owner files are all low risk.** `test/vary.js` and `test/support/env.js` each have one author and one commit. Nothing imports them, and they are trivial.
+- **`test/issue-2.js` and `test/example-app.js` are the closest to a concentration risk.** Goode wrote 83% and 77% of their commits.
+- **`test/test.js` leans on Wilson (73%).** He has been inactive since 2021, so its history is the least likely to have a living owner.
+
+### Knowledge heat map
+
+```
+repo/
+├── lib/                   🟢 Bus factor: many (25 contributors, top 47%)
+├── test/
+│   ├── test.js            🟡 Wilson 73% (inactive since 2021)
+│   ├── issue-2.js         🟡 Goode 83%
+│   ├── example-app.js     🟡 Goode 77%
+│   ├── error-response.js  🟢 Goode 50%
+│   ├── vary.js            🟡 single author, 1 commit
+│   └── support/env.js     🟡 single author (Wilson), 1 commit
+└── .github/, config, docs 🟡 maintained by a few people plus Dependabot
+```
+
+### Caveats
+
+- The "owners" here are people who have made the most commits. Commit counts don't measure who understands the code.
+- I didn't check the CI, config and docs files for ownership, because they aren't source files.
+- A `--since=1y` query returned no commits. The repo's latest commit is dated 2026-04-12, so the most recent activity in the repo may fall outside a window measured from today (2026-10-24). I treated Goode as active based on his 2026-04-10 commit, but that is six months old.
+
+### Recommendations
+
+1. **Short-term:** Get a second maintainer to review or co-own `lib/index.js` changes, since Goode is the only recently active person with deep knowledge of it.
+2. **Ongoing:** Add short comments or tests documenting intent for the `issue-2` regression and the example-app behaviour, which are mostly Goode's work.
+3. **Low priority:** The single-commit test files need no action.
+META cost=0.069092 ms=19635 turns=5

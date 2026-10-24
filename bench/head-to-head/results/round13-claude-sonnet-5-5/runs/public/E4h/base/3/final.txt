@@ -1,0 +1,38 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%h|%an|%ae|%s' | head -50; git log --oneline | wc -l; ls -a
+ - Bash: cat .mailmap 2>/dev/null; git ls-files | grep -v '^$' | head -50; for d in lib test .github .; do echo "== $d"; for f in $(git ls-files $( [ $d = . ] && echo "" || echo $d ) | awk -v d=$d 'd!="."||index($0,"/")==0'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' ; done | sort | uniq -c | sort -rn; done
+FINAL ANSWER:
+Only `lib` and `test` have an owner. `.github` and the root files have no one at half or more.
+
+I ran `git blame` on each area's files at HEAD, with `-w -M -C` and `--ignore-rev 62628c0` to skip Fiona Formatter's reindent commit. I left out dependabot. I treated `alex94puchades` and Alejandro Caravaca Puchades as one person in `lib`. Percentages are of surviving non-bot lines.
+
+| Area | Top author | Share | Result |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159 of 238 (67%) | owner |
+| `test/` | Troy Goode | 517 of 966 (54%) | owner |
+| `.github/` | Douglas Christopher Wilson | 118 of 366 (32%) | no majority |
+| root files | Troy Goode | 134 of 415 (32%) | no majority |
+
+In `.github/`, Íñigo Marquínez Prado has 26%, Sebastian Beltran 17%, and Ulises Gascón and Ignacio Mangas about 12% each.
+
+In the root files, Douglas Christopher Wilson has 28% and Jon Church 17%.
+
+`.mailmap` doesn't exist, and I matched people by blame author name. I don't have GitHub handles, so replace the placeholder below with Troy's real one.
+
+```
+# CODEOWNERS
+/lib/    @troy-goode-handle
+/test/   @troy-goode-handle
+
+# No one holds >= 50% of surviving lines, so no owner is suggested:
+# /.github/
+# /*  (root files: README.md, package.json, LICENSE, HISTORY.md, .eslintrc.yml, .gitignore)
+```
+
+Troy's lead in `test/` is only a few points over half. Most of that lead comes from his recent "vary header coverage" commit.
+META cost=0.064775 ms=19396 turns=3

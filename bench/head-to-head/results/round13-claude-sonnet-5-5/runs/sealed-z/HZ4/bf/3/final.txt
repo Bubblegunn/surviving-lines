@@ -1,0 +1,44 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ4-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log --no-merges --format='%ad %ae' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | awk '{print $2}' | sort | uniq -c | sort -rn; echo ---; git log --no-merges --format='%ad %ae' --date=short -- lib/grape_entity/delegator lib/grape_entity/delegators lib/grape_entity/delegator.rb | awk '{print $2}' | sort | uniq -c | sort -rn; echo ---; git log --no-merges --format='%ae' | sort | uniq -c | sort -rn; echo; git log --no-merges --format='%ae %ad' --date=short | awk '{if(!($1 in l))l[$1]=$2}END{for(k in l)print l[k],k}' | sort -r; git ls-files lib/grape_entity | head -30; git log --reverse --format='%h %ad %s' --date=short | head -2; git rev-list --count HEAD
+ - Bash: for p in lib/grape_entity/exposure lib/grape_entity/delegators; do echo $p; git log --no-merges --format='%ae|%ad' --date=short --numstat -- $p | awk -F'|' '/\|/{a=$1;next} NF>=3{s[a]+=$1+$2}END{for(k in s)print s[k],k}' | sort -rn; done; echo total; git log --no-merges --format='%ae' --numstat | awk 'NF==1{a=$1;next} NF>=3&&$1~/^[0-9]+$/{s[a]+=$1+$2}END{for(k in s)print s[k],k}' | sort -rn; git ls-files | wc -l
+FINAL ANSWER:
+**Short version:** for both areas, route to Lena Brandt first. Marco Silva is the second reviewer for the delegators, and subbota is the repo-level fallback. The top committer is not the top owner.
+
+I ran the busfactor script in `--dry-run --no-github` mode, so nothing was written to the repo. I also checked the history with `git log`. That mode skips GitHub lookups, so I haven't confirmed that the two Marco emails are one person. The history also begins with an 18-file bulk commit (about a third of today's 57 files). The script treats that as an import, so ownership reflects work since then.
+
+**`lib/grape_entity/exposure/`**
+- The script emits no rule for this path, so it falls under the repo default: <email redacted> and lena.brandt@kestrel.example.
+- By raw commit count the top names are pscholz.le (6) and <email redacted> (5), but neither is active.
+- Among active people, Lena Brandt, Marco (via `<email redacted>`) and Anna K. each have one commit there.
+- Nobody active has deep history here, so I'd send reviews to Lena, with subbota as the maintainer backstop.
+
+**Delegators (`lib/grape_entity/delegators/`)**
+- The script marks this as bus factor 1, with owners marco.silva@kestrel.example and lena.brandt@kestrel.example.
+- Each of them has one commit there. The other nine or so contributors (such as mhenrixon, dmitriy.nesteryuk and hashtable) are long gone.
+- Send reviews to Marco, with Lena second.
+
+**Effectively gone** (last commit, judged against the 12-month active window ending at the newest commit on 2026-10-05):
+- `pscholz.le`: April 2024, and the second-highest committer overall with 34 commits.
+- `<email redacted>`: September 2015, with 11 commits and the second-largest line churn.
+- `dblock`: November 2016, with the most commits (52) and the most line churn.
+- `<email redacted>` and `zhangyaning1985`: 2013 and 2016, both heavy contributors.
+- Still active: subbota, Lena, Marco, Anna K., <email redacted>, <email redacted>, yury.zubau, and dependabot.
+
+**Does the top committer own the most code?** No.
+- dblock has the most commits and the most churn, but the last of that work was in 2016.
+- The script weights each commit with a 365-day half-life and counts only active authors as owners. On that basis the owners are the active people: subbota, Lena and Marco.
+- subbota has 18 commits and Lena and Marco are recent, so the owners are not the largest committers by lifetime count.
+
+**Caveats**
+- The dry run printed only CODEOWNERS, not `ownership.json`. I haven't seen explicit orphaned-zone verdicts or the unresolved-email list. The two zones above came out as bus factor 1, and I saw no orphan comments.
+- Once the Marco emails are merged, his share may rise, because the two emails currently split his weight.
+
+I can write `.github/CODEOWNERS` and `ownership.json` into the repo, or build the HTML risk report, if you want either.
+META cost=0.104696 ms=29551 turns=6

@@ -1,0 +1,42 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: echo "commits:" && git log --no-merges --pretty='%an' | sort | uniq -c | sort -rn && echo && echo "files:" && git ls-files | grep -E '\.zig$' && echo && echo "surviving lines by author (blame, .zig):" && for f in $(git ls-files | grep -E '\.zig$'); do git blame --line-porcelain -w -M -C HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn && echo && echo "last commit per author:" && git log --no-merges --pretty='%an|%ad' --date=short | awk -F'|' '!s[$1]++'
+FINAL ANSWER:
+**The bus factor is 2.** Ownership is moderately concentrated, and the largest owner has been inactive for about 6 months.
+
+I measured this with `git blame` on the 7 `.zig` files at HEAD, about 2,120 surviving lines. Felix Queißner appears under three name spellings, which I merged.
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Felix Queißner (3 aliases) | 758 | 35.8% | 2026-04-16 |
+| Wen Li | 552 | 26.0% | 2026-10-27 |
+| jnagpaul | 188 | 8.9% | 2023-07 |
+| Vincent Rischmann | 130 | 6.1% | 2025-03 |
+| mochalins | 77 | 3.6% | 2025-07 |
+| Dhole | 75 | 3.5% | 2026-03 |
+| Everyone else (22 people) | about 340 | about 16% | mixed |
+
+**If Felix stopped answering questions:**
+- About 36% of the current code would have no author left to ask.
+- Felix is also the largest committer, with 46 of 127 non-merge commits (36%).
+- No single person is above 50%, so the project doesn't depend entirely on one person.
+
+**Why the bus factor is 2:** Felix and Wen Li together own about 62% of the code. Losing both leaves under half with a knowledgeable author. Losing only one doesn't.
+
+**Other risks:**
+- **Orphaned code:** Several contributors with sizeable shares are long gone. jnagpaul (9%) last committed in 2023, Vincent Rischmann (6%) in March 2025, and Bob Farrell (2%) in 2024. That is roughly 20% of the code whose authors are effectively unreachable, on top of Felix's share.
+- **Active maintainers:** Only Wen Li, Tobias Ek and Dmitri Volkov have committed in the last 90 days. Wen Li is the only one of them with a large share of the code.
+- **Dates:** One commit by Dmitri Volkov is dated 2026-11-04, which is after today's date (2026-10-24). That is probably a rebased or odd author date. It doesn't change the conclusion.
+
+**Limits of this analysis:**
+- I did not break ownership down per file or module. I also didn't cross-check how many files import each one, which the bus-factor skill's template calls for. The skill's file search also doesn't include `.zig`, so I ran the git commands directly.
+- Blame credits whoever last touched a line, so mechanical changes can shift credit. The "Rename allocator to gpa" and "Move library sources to src/" commits are examples. I used `-w -M -C` to reduce this, but it isn't eliminated.
+- `src/width_table.zig` is probably generated or table data, and it could skew line counts heavily. Say so if you want it excluded and I'll rerun.
+
+I can do the per-module breakdown if you want it.
+META cost=0.0698739 ms=18801 turns=4

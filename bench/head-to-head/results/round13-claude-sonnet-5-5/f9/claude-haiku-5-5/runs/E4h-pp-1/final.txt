@@ -1,0 +1,98 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | awk -F/ '{ if (NF>1) print $1"/"; else print $1 }' | sort | uniq -c && echo --- && git ls-files -- .github | head -50 && echo --- && git ls-files | grep -v / && echo --- && git ls-files lib test | wc -l && git log --format='%an <%ae>' | sort | uniq -c | sort -rn
+ - Bash: git log --format='%h|%an|%ae|%s' --numstat | head -400 | awk 'length>0' | grep -v '^[0-9-]*\s[0-9-]*\s' | head -300; echo; git log --oneline | wc -l
+ - Bash: git show --stat --format='%h %s' 62628c0 | tail -20; echo ---; git show -w --format= 62628c0 | grep -c '^[+-][^+-]'; echo ---; git show --format='%h %s' b2005d9 --stat | tail -5; git show --format='%h %s' 02afce3 --stat | tail -5; echo ---; git show --format='%h %s' f038e77 --stat | tail -3; git show --format='%h %s' 848e2bd --stat | tail -3
+ - Bash: run(){ for f in "$@"; do git blame --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" 2>/dev/null; done | awk '/^author-mail /{m=$2} /^author /{ $1=""; a=substr($0,2)} /^\t/{ print a" "m }'; }
+for g in lib test .github ROOT; do
+ if [ $g = ROOT ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files -- "$g"); fi
+ echo "== $g"; run $files | sort | uniq -c | sort -rn
+done
+ - Bash: git ls-files -- test | head -3; git blame --line-porcelain --ignore-rev 62628c0 HEAD -- test/vary.js 2>&1 | head -5; echo ---; git blame --ignore-rev 62628c0 HEAD -- lib/index.js | grep -c 'Fiona' ; git blame HEAD -- lib/index.js | grep -c Fiona; echo ---; git blame -e --ignore-rev 62628c0 HEAD -- lib/index.js | grep -i fiona | head -3
+ - Bash: FULL=$(git rev-parse 62628c0) && echo $FULL && bash -c '
+run(){ for f in "$@"; do git blame --line-porcelain --ignore-rev '"$FULL"' HEAD -- "$f" 2>/dev/null; done | awk "/^author-mail /{m=\$2} /^author /{ \$1=\"\"; a=substr(\$0,2)} /^\t/{ print a\" \"m }"; }
+for g in lib test .github ROOT; do
+ if [ $g = ROOT ]; then mapfile -t files < <(git ls-files | grep -v /); else mapfile -t files < <(git ls-files -- "$g"); fi
+ echo "== $g (${#files[@]} files)"; run "${files[@]}" | sort | uniq -c | sort -rn
+done'
+ - Bash: mkdir -p /tmp/codeowners-scan && cat > /tmp/codeowners-scan/scan.sh <<'EOF'
+#!/bin/bash
+# usage: scan.sh <repo> <ignore-rev-full>
+cd "$1" || exit 1
+REV="$2"
+blame_group() {
+  while IFS= read -r f; do
+    git blame --line-porcelain --ignore-rev "$REV" HEAD -- "$f"
+  done | awk '/^author-mail /{m=$2} /^author /{ $1=""; a=substr($0,2)} /^\t/{ print a" "m }'
+}
+for g in lib test .github ROOT; do
+  if [ "$g" = ROOT ]; then list=$(git ls-files | grep -v /); else list=$(git ls-files -- "$g"); fi
+  echo "== $g ($(printf '%s\n' "$list" | grep -c .) files)"
+  printf '%s\n' "$list" | blame_group | sort | uniq -c | sort -rn
+done
+EOF
+chmod +x /tmp/codeowners-scan/scan.sh && /tmp/codeowners-scan/scan.sh /p
+ - Bash: which python3 && python3 --version && cat > /tmp/codeowners-scan/scan.py <<'EOF'
+# Usage: scan.py <repo> <reformat_sha>
+# Tallies surviving HEAD lines per author. Lines last touched by the reformat
+# commit are re-attributed to their pre-reformat author (matched on
+# whitespace/quote-normalized content). Bots are excluded.
+import subprocess, sys, difflib, re, collections
+
+repo, REF = sys.argv[1], sys.argv[2]
+PARENT = REF + "^"
+BOT = re.compile(r"\[bot\]|dependabot", re.I)
+ALIAS = {  # same person, different identities
+    "troy@laptop.example": "<email redacted>",
+    "<email redacted>": "<email redacted>",
+}
+
+def git(*a, check=True):
+    r = subprocess.run(["git", "-C", r
+ - Bash: cd /tmp/codeowners-scan && sed 's/^totals = {}/totals = {}\nimport os\nif os.environ.get("PERFILE"):\n    for f in groups()["ROOT"]:\n        pass/' scan.py > /dev/null; python3 -I - /private/tmp/r13/final/f9/claude-haiku-5-5/runs/E4h-pp-1/repo 62628c04a1b16306a0285b3e26645acfa1c21687 <<'EOF'
+import sys, runpy, types
+src = open("/tmp/codeowners-scan/scan.py").read().split("totals = {}")[0]
+g = {}
+sys.argv = ["x", sys.argv[1], sys.argv[2]]
+exec(src, g)
+import collections
+for f in g["git"]("ls-files").splitlines():
+    if "/" in f: continue
+    # reuse the per-file logic by faking groups()
+    g["groups"] = (lambda f=f: {"ROOT": [f], "lib": [], "test": [], ".github": []})
+    exec(open("/tmp/c
+FINAL ANSWER:
+Here are CODEOWNERS suggestions based on blame at HEAD. Ownership is shown only where one person holds at least half of the surviving non-bot lines.
+
+```
+# Suggested CODEOWNERS. Owners are listed only where one person holds >= 50% of surviving lines.
+/lib/           <email redacted>     # 150 of 238 lines (63.0%)
+/test/          <email redacted>     # 486 of 966 lines (50.3%); margin is 3 lines
+/.eslintrc.yml  <email redacted>  # 7 of 7 lines (100%)
+/.gitignore     <email redacted>  # 4 of 5 lines (80%)
+/HISTORY.md     <email redacted>  # 50 of 64 lines (78%)
+/LICENSE        <email redacted>  # 17 of 22 lines (77%)
+/package.json   <email redacted>  # 20 of 40 lines (50%), exactly at threshold
+```
+
+Where nobody reaches half:
+
+- **`.github/`**: no owner. Top is Douglas Christopher Wilson at 108 of 366 (29.5%), then Íñigo Marquínez Prado at 25.7%.
+- **Root files, pooled**: no owner. Top is Troy Goode at 122 of 415 (29.4%).
+- **`README.md`**: no owner. Troy Goode holds 104 of 277 (37.5%).
+
+The email addresses are placeholders. CODEOWNERS needs either a GitHub `@handle` or an email verified on a GitHub account, so substitute the handles if you prefer those.
+
+Method:
+- I ran `git blame` on HEAD and tallied the author of each surviving line.
+- Fiona Formatter's `62628c0` reformatted 1,016 lines (indentation and quotes), so `git blame --ignore-rev` could not skip it. I attributed each line it touched back to its pre-reformat author, matching lines after normalizing whitespace and quotes.
+- Bot lines (dependabot) are excluded from both the count and the total.
+- Identities are merged for Troy Goode (`<email redacted>` and `troy@laptop.example`) and for Alejandro Caravaca Puchades (same email as the `alex94puchades` name).
+- Blank lines count as lines.
+
+The `/test/` and `package.json` owners are at the threshold, so they would flip if the line counting changed. I haven't written the CODEOWNERS file or committed anything. The tally script is in `/tmp/codeowners-scan/scan.py`, outside the repo.
+META cost=0.01609922 ms=75349 turns=10

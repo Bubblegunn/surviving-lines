@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%ad|%s' --date=short --no-merges; echo; git log -1 --format='%h %ad %an' --date=iso
+ - Bash: git log --since="2026-03-28" --format='%h|%an|%ae|%cn|%ad' --date=short | head; echo; git shortlog -sne HEAD; echo; git blame --line-porcelain HEAD -- . 2>/dev/null | grep '^author-mail' | sort | uniq -c; git show --stat --format='%h %s' b2005d9 02afce3 5317ebe | cat
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author-mail'; done | sort | uniq -c | grep -E 'troy|vansh|formatter'
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12) after I set aside the formatting-only commit and bots.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | `b2005d9` "lib: annotate handlers" (2026-04-10), `02afce3` "test: vary header coverage" (2026-04-10) | 47 |
+| Vansh Sharma | `5317ebe` "docs: app.del() with app.delete() in README example (#411)" (2026-04-07) | 1 |
+
+- **Troy Goode:** Git lists them under two emails, `troy@laptop.example` and `<email redacted>`. I counted them as one person. The 47 lines are the ones blamed to the laptop address, which is the identity on both window commits. Those commits added about 48 lines (12 in `lib/index.js`, 36 in `test/vary.js`), so nearly all survive. I did not count the 595 lines under `<email redacted>`, since those come from commits outside the window.
+- **Vansh Sharma:** The commit changed one line in `README.md`, and that line is still there.
+- **Excluded:** Fiona Formatter's `62628c0` (2026-04-12) is a pure reformat. The dependabot commits are bots, and the most recent one I looked at, `ee714bd`, falls before the window.
+
+I computed surviving lines with `git blame`, skipping the reformat commit so it doesn't take credit for everyone's lines.
+META cost=0.0569041 ms=16672 turns=4

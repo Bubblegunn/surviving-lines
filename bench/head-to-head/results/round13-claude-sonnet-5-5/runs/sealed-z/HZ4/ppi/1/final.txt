@@ -1,0 +1,48 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/grape_entity/exposure and delegator code"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-1/repo; echo TOTAL; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -8; echo EXPOSURE; git log --all --no-merges --pretty='%an' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | sort | uniq -c | sort -rn; echo LASTDATE; git log --all --no-merges --pretty='%an|%ad' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | awk -F'|' '!s[$1]++'; echo DELEGATOR; ls lib/grape_entity; git log --all --no-merges --pretty='%an' -- lib/grape_entity/delegator lib/grape_entity/delegator.rb | sort | uniq -c | sort -rn; git log --all --no-merges --pretty='%an|%ad' --date=short -- lib/grape_entity/delegator li
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-1/repo; for f in lib/grape_entity/exposure/*.rb lib/grape_entity/exposure.rb lib/grape_entity/delegator/*.rb lib/grape_entity/delegator.rb; do [ -f $f ] && git blame -w --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | sed "s|^|$f |"; done | awk '{c[$1]=c[$1]" "$2" "$3" "$4}END{for(f in c)print f":"c[f]}' | head -40; echo; echo LINES; for d in "lib/grape_entity/exposure lib/grape_entity/exposure.rb" "lib/grape_entity/delegator lib/grape_entity/delegator.rb"; do echo $d; for f in $(git ls-files $d); do git blame -w --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-1/repo; echo EXPO; for f in $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb); do git blame -w --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn | head; echo DELEG; for f in $(git ls-files lib/grape_entity/delegator.rb lib/grape_entity/delegators); do git blame -w --line-porcelain $f | grep '^author '; done | sort | uniq -c | sort -rn; echo DELEGCOMMITS; git log --all --no-merges --pretty='%an|%ad' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegators | awk -F'|' '{n[$1]++; if(!d[$1])d[$1]=$2}END{for(k in n)print n[k],k,d[k]}' | sort -rn; git ls-files lib/grape_entity/delegators
+FINAL ANSWER:
+**Reviewers**
+
+| Area | Primary reviewer | Backup |
+|---|---|---|
+| `lib/grape_entity/exposure*` | Marco Silva: 143 surviving lines, the most of anyone still active, and last commit 2026-09-15. | Lena Brandt: 20 lines, last commit 2026-07-14. |
+| Delegator code (`delegator.rb`, `delegators/*`) | Lena Brandt or Marco Silva. They have the two most recent delegator commits (July 2026), but each owns only a small share (10 and 4 of about 102 lines). | The other of the two. |
+
+Anna Kowalczyk is also active (2026-08-10), but she has only one commit in `exposure`, so I wouldn't route to her first.
+
+**Who has effectively left**
+
+I treated an author as gone if their last commit to these paths was years ago. For Kochnev, I also checked that they don't appear among the 15 most recent authors repo-wide.
+
+- **Vladimir Kochnev:** last touched `exposure` in 2015-09 and `delegator` in 2015-07.
+- **Alexander Yunin:** 2016.
+- **James McCarthy:** 2017.
+- **Dmitry Tsepelev:** 2018.
+- **Mikael Henriksson, Joakim Antman, Dmitriy Nesteryuk:** 2019–2020.
+- **Paul Padier:** 2021 on `delegator`, 2023-12 on `exposure`.
+- **Daniel Dao:** 2023-02.
+
+peter scholz is not on that list. Their last commit overall was 2024-04 and last on `exposure` was 2020-12, so treat them as dormant rather than confirmed gone.
+
+**Is the top committer also the top owner?**
+
+- **`exposure`:** Yes, it's the same person, and they've gone. Kochnev has the most commits (5) and the most surviving lines (431 of roughly 800+, about half or more). Their last commit was in 2015. This is the main bus-factor risk here: about half of that code has no active author behind it. Marco Silva owns the next-largest share (143 lines).
+- **Delegator code:** No. Every author has exactly one commit, so there's no commit leader. Line ownership is concentrated anyway: Kochnev has 60 of about 102 lines (about 59%), and they left in 2015.
+- **Whole repo:** dblock has the most commits (38) but doesn't appear in either path. Commit count across the repo says little about who owns these two areas.
+
+**Caveats**
+
+- Author names are not de-duplicated. "Vladimir" (2020) and "Vladimir Kochnev" may be the same person, and "Andrey Subbota" and "Andrei Subbota" almost certainly are. This could shift the `exposure` counts slightly, but not the conclusions.
+- Ownership is from `git blame -w`, which ignores whitespace-only changes.
+- I did not run the importance or dependents cross-check from the skill. `exposure` and the delegators are core to `Entity`, so I'd treat them as high importance.
+
+**Suggestion:** have Marco Silva review `exposure` PRs and pair Lena Brandt with them, so the knowledge spreads beyond one active person. For delegator PRs, use Lena Brandt and Marco Silva as a pair, since neither owns much of that code.
+META cost=0.0895498 ms=27879 turns=6

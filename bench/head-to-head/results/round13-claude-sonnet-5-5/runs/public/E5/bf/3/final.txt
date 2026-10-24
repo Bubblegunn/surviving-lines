@@ -1,0 +1,46 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -80; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo; wc -l lib/index.js
+ - Bash: git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git blame -w -M -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+`lib/index.js` is mostly Troy Goode's code, with Douglas Christopher Wilson as the second most significant contributor. I used `git log --follow` and `git blame -w -M -C -C`, with the 4-space reformat commit (`62628c0`) ignored. Line counts below are from the file's 238 lines.
+
+**Who shaped it**
+- **Troy Goode** created it on 2013-01-30 (`bcd03d9`, "first commit") and wrote about 29 of the roughly 60 commits that touched it. He drove the early design:
+  - case-insensitive header lookup;
+  - `origin: false` disabling CORS;
+  - request pause/resume for async middleware;
+  - Express 4 support;
+  - `Access-Control-Expose-Headers`;
+  - the move to the `vary` module;
+  - the 2015 ESLint switch.
+- **2013 contributors:** Simon Mansfield (origin-header checks, credentials header placement), Damien Klinnert (methods header only on OPTIONS), Eric di Domenico (`origin` as a callback) and Mathias Buus (Connect support without Express).
+- **2014–2015 contributors:** Igor Soarez and Eran Tiktin (`Vary: Origin`), Typicode (PATCH as a default method), Alberto Leal and Shane Tomlinson (bug fixes), Raymond Feng (removing a closure in `applyHeaders`), and max.laverse (passing preflight to `next()`). DracoBlue added exposed headers on OPTIONS. Alejandro Caravaca Puchades, working with alex94puchades, added regexp and array `origin` matching.
+- **2016–2018 maintenance:** Douglas Christopher Wilson (the Express maintainer) added `Vary: Access-Control-Request-Headers` and fixed the missing-`methods` error. He also did lint and build upkeep. Others in this period: Benjamin Eidelman (Safari preflight workaround), Tomek Kopczuk (`Vary` for regexps), Saad Tazi (frozen options), Hannah Wolfe (named middleware) and Tom Arad (`maxAge: 0`).
+- **Recent commits:** LuisEGR (2021, lint cleanup), Troy Goode (2026-04-10, "annotate handlers") and the 2026-04-12 reformat by "Fiona Formatter".
+
+**Whose code is still there**
+
+Counts are from `git blame` with the reformat ignored:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 (~67%) |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| LuisEGR | 6 |
+| max.laverse | 6 |
+| alex94puchades | 4 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Plain `git blame` credits "Fiona Formatter" with 32 lines, because the reformat commit rewrote them. Those lines really belong to the people above. The ignored-reformat count gives a truer picture.
+
+Some contributors from the log, such as DracoBlue, Typicode, Tomek Kopczuk and Damien Klinnert, no longer have any surviving lines. Their changes were rewritten or removed later.
+META cost=0.057603400000000006 ms=14715 turns=3

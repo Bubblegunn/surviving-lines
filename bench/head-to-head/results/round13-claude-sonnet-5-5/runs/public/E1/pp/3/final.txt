@@ -1,0 +1,61 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '{c[$1]++; if(!($1 in l))l[$1]=$2; f[$1]=$2} END{for(a in c)print c[a],a,"last:",l[a],"first:",f[a]}' | sort -rn | head -15; echo ---; git ls-files | grep -E '\.(js|ts)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts)$' | head -80
+ - Bash: for f in $(git ls-files | grep -vE 'package-lock'); do echo "== $f"; git log --all --no-merges --follow --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn | head -3; done; echo; for f in lib/index.js; do grep -rl "require(.*lib\|\.\./lib" test | wc -l; done; git log -1 --pretty=%an%x20%ad; git log --pretty=format:"%an" -1 --format=%an -- lib/index.js; git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+# Bus Factor Analysis (all history)
+
+**Project-level bus factor: 2.** Troy Goode and Douglas Christopher Wilson account for nearly all the meaningful history. Without those two, almost nobody else has touched the core code.
+
+## Overview
+The project is tiny: 7 JS files, with the runtime code in one file, `lib/index.js`. I counted commits per file with `git log --follow`. I excluded the "Fiona Formatter" reformat commits from ownership. I didn't run the contributor-analyzer agent, because this repo is small enough to count directly.
+
+| Contributor | Commits | Active period | Status |
+|---|---|---|---|
+| Douglas Christopher Wilson | 143 | 2017 – Sep 2021 | ❌ Inactive (~5 years) |
+| Troy Goode | 95 | 2013 – Apr 2026 | ✅ Active |
+| dependabot[bot] | 11 | 2025 – 2026 | bot |
+| Everyone else (about 20 people) | 1–4 each | scattered | mostly one-off |
+
+## Single-contributor files
+| File | Sole owner | Notes | Risk |
+|---|---|---|---|
+| `test/vary.js` | Troy Goode | Only 1 commit, from a recent "vary header coverage" change. | LOW |
+| `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js` | Douglas Wilson | 1 commit each. Config and helpers, and he is inactive. | LOW |
+| `.github/dependabot.yml` | Ulises Gascón | 1 commit. | LOW |
+
+## Core files (not strictly single-owner, but concentrated)
+| File | Top owners | Dependents | Risk |
+|---|---|---|---|
+| `lib/index.js` (the whole library) | Troy 29 commits, and 138 of ~230 surviving lines (about 60%); Wilson 4 commits | 3 test files | **HIGH** |
+| `test/test.js` | Troy 21 commits, Wilson 15 commits | none | MEDIUM |
+| `README.md` | Troy 37 of 46 commits (about 80%) | none | MEDIUM |
+| `package.json` | Wilson 68, Troy 37 | none | MEDIUM |
+| `.github/workflows/*` | Wilson 10 commits on `ci.yml`; the rest is Gascón, Mangas and bots | none | LOW |
+
+## Knowledge heat map
+```
+repo/
+├── lib/            [██████░░░░] 🔴 Bus factor 1–2 (Troy ~60% of surviving lines)
+├── test/           [███████░░░] 🟡 Bus factor 2 (Troy + Wilson)
+├── .github/        [███░░░░░░░] 🟢 Bus factor 3+ (Wilson, Gascón, Mangas, bots)
+├── package.json    [██████░░░░] 🟡 Bus factor 2 (Wilson, Troy)
+└── README.md       [████████░░] 🔴 Troy ~80% of commits
+```
+
+## Conclusions
+- **Troy Goode is the key person.** He is active (last commit April 2026) and is the main author of `lib/index.js`, the tests and the README. If he left, the library would have no active maintainer who knows the core code.
+- **Douglas Wilson is a historical dependency.** He has been inactive since 2021, but he is the top owner of `package.json` and `ci.yml` and wrote many of the tests. Most of that knowledge is no longer held by anyone active.
+- **Recent contributors are shallow.** Gascón, Church, Beltran and Mangas have 1–3 commits each, mostly CI, dependency and docs work. None has touched the core logic in `lib/index.js`.
+- The commit data can't tell me whether the three test files that depend on `lib/index.js` are the only consumers.
+
+## Recommendations
+1. **Immediate:** Have a second active contributor review every change to `lib/index.js`, starting with Gascón or Church, who are already active in the repo.
+2. **Short-term:** Document the intent of the core handlers in `lib/index.js` and in `test/test.js`. Wilson's knowledge of the tests and release setup is the part most at risk, because he is inactive.
+3. **Ongoing:** Rotate PR authorship and review across at least 3 people. Make sure `package.json` and release or CI changes are reviewed by someone other than the author.
+META cost=0.0725367 ms=19217 turns=5

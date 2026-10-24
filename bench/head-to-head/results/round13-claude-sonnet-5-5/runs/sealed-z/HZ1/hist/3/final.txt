@@ -1,0 +1,47 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 5}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-3/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-3/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-3/repo", "path": "colorama"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-3/repo", "path": "tests"}
+FINAL ANSWER:
+Two people wrote most of the hand-written Python, and you would be exposed on the Windows console code if both left. This comes from commit and `git blame` data, so it shows who wrote the code but not who understands it.
+
+**Who wrote the Python at HEAD**
+
+| Scope | Jonathan Hartley | Arnon Yaari | Dana Kessler |
+|---|---|---|---|
+| Commits (non-merge, all time) | 85 (28%) | 64 (21%) | 4 |
+| Lines in the 6 hand-written `colorama/*.py` modules (909 lines) | 392 (43%) | 163 (18%) | about 26 (3%) |
+| Lines in `tests/` (799 lines) | 367 (46%) | 37 (5%) | 124 (16%) |
+
+- **Dana Kessler's large share is vendored code.** `colorama/_vendor/_typing_compat.py` has 1,103 lines, all from Dana, which is why they own 57% of `colorama/` by lines. The file name suggests it is vendored third-party code, but I didn't read it.
+- **Hartley is the main owner of 4 of the 6 hand-written modules.** Those are `ansitowin32.py` (50%), `winterm.py` (42%), `win32.py` (54%) and `__init__.py`.
+- **Yaari is the second-largest author of `winterm.py` (30%) and `win32.py` (17%).** They also hold 15% of `ansitowin32.py`.
+- **The rest of the history is mostly gone.** Nathaniel J. Smith (last commit 2022), John Szakmeister (2014), Segev Finer (2017) and others account for the remainder.
+
+**How exposed you are**
+
+- **Windows console core: high.** `ansitowin32.py`, `winterm.py` and `win32.py` are the ctypes and Windows console logic. Hartley and Yaari together wrote about 60–70% of each, and nobody else has more than 13%. The only other active people have almost no lines there: Dana 9% of `ansitowin32.py`, Priya Nair and Tomás Ibarra under 1%.
+- **`initialise.py`: already orphaned.** Its main authors are Smith (33%), Hartley (31%) and Florian Bruhin (15%). Smith and Bruhin have been inactive for years, so Hartley is the only author left on that file.
+- **`ansi.py`: moderate.** It is spread across Szakmeister (inactive), Yaari and Hartley, with about 47% from inactive authors.
+- **Tests: concentrated in Hartley.** `winterm_test.py` is 87% Hartley and `ansitowin32_test.py` is 47%. `isatty_test.py` and `utils.py` are orphaned, written by Delgan in 2018.
+- **The tool's overall bus factor is 3.** That is the number of authors whose commits cover more than half of all commits. It flags no directory as a knowledge silo.
+
+**Caveats**
+
+- **Activity is already thin.** There were no commits from October 2025 through April 2026, then 13 in the 5 months since. Yaari's last commit was 2026-05-13 and Hartley's was 2026-07-03. Both count as active under the tool's 6-month cutoff, but Yaari is close to it.
+- **The data can't see everything.** Git history doesn't show review knowledge, who holds PyPI or GitHub admin rights, or who understands Windows console quirks without having edited the file. Ask both of them about those before they go quiet.
+
+**Before the handover**
+
+- Get written walkthroughs of the three Windows modules from Hartley and Yaari.
+- Confirm who holds release and publishing credentials.
+- Have Dana Kessler, Priya Nair or Tomás Ibarra review and own those modules, since they are the active contributors who aren't one of the two.
+META cost=0.1167581 ms=21827 turns=7

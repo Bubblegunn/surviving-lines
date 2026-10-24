@@ -1,0 +1,69 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "Focus on current code ownership by surviving lines (git blame), not commit counts."}
+ - Bash: git log --oneline | wc -l && git show --stat --oneline 62628c0 | tail -3 && git ls-files | grep -E '\.(js|mjs|cjs|ts)$' | grep -v node_modules | wc -l
+ - Bash: git ls-files | grep -E '\.(js|mjs|cjs|ts)$' > /tmp/files.txt; cat /tmp/files.txt
+echo "--- blame ignoring 62628c0 and whitespace, by file"
+for f in $(cat /tmp/files.txt); do echo "## $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -5; done
+echo "--- total"
+for f in $(cat /tmp/files.txt); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -10
+echo "--- last commit date per author"
+git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -10
+ - Bash: for f in $(cat /tmp/files.txt); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep -c '^author '; done | paste -sd+ | bc
+git log --format='%an|%ad' --date=short | grep -E 'Douglas|Troy' | awk -F'|' '!s[$1]++'
+ - Bash: for f in $(cat /tmp/files.txt); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep -c '^author '; done | awk '{s+=$1} END{print s}'
+FINAL ANSWER:
+## Bus Factor Analysis: surviving-line ownership
+
+Method: `git blame -w -M -C --ignore-rev 62628c0` on all 7 tracked JS files, 1,202 lines in total. That ignores whitespace changes, tracks moved and copied lines, and skips the 4-space/double-quote reformat commit. Without that, the reformat would own most of the repo. I didn't use commit counts.
+
+### Project-level bus factor: 2
+
+Troy Goode and Douglas Christopher Wilson together own 1,070 of 1,202 lines (89%). Losing those two would leave about 89% of the code without a maintainer who wrote it.
+
+### Who owns the code today
+
+| Author | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 676 | 56% | 2026-04-10 (active) |
+| Douglas Christopher Wilson | 394 | 33% | 2021-09-07 (inactive about 5 years) |
+| Alejandro Caravaca Puchades | 30 | 2.5% | not checked |
+| Eric di Domenico | 16 | 1.3% | not checked |
+| Alberto Leal | 15 | 1.2% | not checked |
+| Everyone else (about 6 people) | about 71 | about 6% | not checked |
+
+### Per-file ownership
+
+| File | Main owner | Lines | Second owner | Bus factor |
+|---|---|---|---|---|
+| `lib/index.js` (the core) | Troy Goode | 159 of about 206 (77%) | Douglas 22, Alejandro 12 | 1 to 2 |
+| `test/test.js` | Douglas 339, Troy 317 | about 1,000 lines in total | Alejandro 18 | 2 |
+| `test/example-app.js` | Troy | 67 of 81 (83%) | Douglas 14 | 1 |
+| `test/error-response.js` | Troy | 57 of 66 (86%) | Douglas 9 | 1 |
+| `test/issue-2.js` | Troy | 40 of 48 (83%) | Douglas 8 | 1 |
+| `test/vary.js` | Troy | 36 of 36 (100%) | none | 1 |
+| `test/support/env.js` | Douglas | 2 of 2 | none | 1 (trivial) |
+
+### Risk assessment
+
+- **Troy Goode owns the core.** `lib/index.js` is 77% Troy's, and Troy is the only active major owner. Troy also committed most recently (April 2026), so this is a concentration risk rather than an abandoned-code risk.
+- **Douglas Christopher Wilson owns about a third of the code, mostly in `test/test.js`.** Douglas has been inactive since 2021, so that knowledge is effectively orphaned. It is test code, which lowers the impact.
+- **The remaining roughly 11% is spread thinly across about 8 people.** None of them owns more than 3% of the lines.
+- **The most recent committers own almost none of the code.** Fiona Formatter, Vansh Sharma, dependabot, Ulises Gascón and others have recent commits but few or no surviving lines. Recent activity is mostly CI, dependency and docs maintenance, not code ownership.
+
+### Recommendations
+
+1. **Immediate:** Have a second person review and co-own `lib/index.js`. Right now only Troy is both active and knowledgeable about it.
+2. **Short-term:** Spread `test/vary.js` and the `issue-2`, `error-response` and `example-app` tests beyond Troy.
+3. **Ongoing:** Treat Douglas's lines in `test/test.js` as unowned, and document the intent of those tests.
+
+### Caveats
+
+- Only 7 JS files were analyzed. Docs, config and the README were excluded.
+- `-M -C` follows moved code, but lines rewritten by the reformat that also changed content may still be credited to the reformatter. I saw no sign of that in the results.
+- I didn't check last-commit dates for authors below the top two.
+META cost=0.08371959999999999 ms=30689 turns=7

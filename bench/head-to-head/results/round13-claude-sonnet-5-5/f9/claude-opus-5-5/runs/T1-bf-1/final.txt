@@ -1,0 +1,48 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "Who owns the code that survives today (blame-based line ownership, not commit counts)"}
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short | head -20 && git log --oneline | wc -l && git ls-files | head -50 && git ls-files | wc -l && git show --stat 62628c0 | tail -5 && git show --stat b2005d9 | tail -5
+ - Bash: ls .git-blame-ignore-revs 2>/dev/null; git show b2005d9 | head -40; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -15
+ - Bash: for mode in naive ignore; do echo "== $mode"; args=""; [ $mode = ignore ] && args="--ignore-rev 62628c0"; for f in $(git ls-files); do git blame -w --line-porcelain $args -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{for(i=1;i<=NR;i++){split(c[i],a," "); printf "%6.1f%% %s\n", 100*a[1]/t, c[i]} print "total",t}' | head -12; done
+echo "== per file (ignoring reformat)"; for f in $(git ls-files); do echo "-- $f"; git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3; done
+ - Bash: pct(){ sort | uniq -c | sort -rn | awk '{n=$1; $1=""; c[NR]=n; s[NR]=$0; t+=n} END{for(i=1;i<=NR&&i<=10;i++) printf "%6.1f%% %5d %s\n",100*c[i]/t,c[i],s[i]; print "  total lines",t}'; }
+echo "== all files, ignoring reformat"; for f in $(git ls-files); do git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author ' | sed 's/^author //'; done | pct
+echo "== lib/index.js"; git blame -w --line-porcelain --ignore-rev 62628c0 -- lib/index.js | grep '^author ' | sed 's/^author //' | pct
+echo "== test/*"; for f in $(git ls-files test); do git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" | grep '^author ' | sed 's/^author //'; done | pct
+echo "== README.md"; git blame -w --l
+FINAL ANSWER:
+Mostly **Troy Goode**. Douglas Christopher Wilson owns most of the rest.
+
+I measured this with `git blame` on all 18 tracked files: each line that exists today is credited to whoever last changed it in a meaningful way.
+
+**Whole repo (1,995 surviving lines)**
+
+| Person | Lines | Share |
+|---|---|---|
+| Troy Goode | 746 | 37.4% |
+| Douglas Christopher Wilson | 645 | 32.3% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| everyone else | | each under 3% |
+
+**By area**
+- **`lib/index.js` (the library itself, 238 lines):** Troy wrote 66.8%. Next are Doug at 9.2% and Alejandro Caravaca Puchades at about 6.7% (he committed under two names). No one else has more than 3%.
+- **`test/` (966 lines):** Troy 46.9% and Doug 41.4%, close to even.
+- **`README.md`:** Troy 42%, Jon Church 26%, Linus Unnebäck 9%.
+
+**Three things I corrected for:**
+1. **The latest commit reformatted the whole codebase.** Fiona Formatter's "style: reformat js…" (`62628c0`) changed indentation and quotes on over 1,000 lines. A plain blame credits Fiona with 14.6% of the repo even though she wrote none of the logic. I skipped that commit (`--ignore-rev 62628c0`) and ignored whitespace-only changes (`-w`). If you add that hash to a `.git-blame-ignore-revs` file, GitHub's blame view will skip it too.
+2. **Troy uses two emails.** About 12 of his lines in lib come from `troy@laptop.example`, and his total includes both. That commit ("annotate handlers") only added `// checked` comments to existing lines. So his real share of lib is slightly lower than 67%, but he's still clearly the main author.
+3. **Commit counts point the other way.** Doug has the most commits (143 vs Troy's 120), but many were small maintenance commits, so Troy has more surviving lines. That's the gap you suspected.
+
+**Risk:** Doug's last commit was in **September 2021**, so about a third of the surviving code belongs to someone who hasn't been active for five years. Troy is the only top owner still committing (last commit April 2026). For `lib/` in practice, that makes him a single point of failure.
+
+**Caveat:** blame shows who last changed each line, not who understands it. Code someone moved or rewrote counts as theirs.
+
+The busfactor skill wasn't the right tool here: it weights commits by how recent they are, not lines still in the code, so I didn't run its script. If you want a `CODEOWNERS` file or a per-directory report on who's still active, I can run it as a second step.
+META cost=0.20403519999999997 ms=52599 turns=7

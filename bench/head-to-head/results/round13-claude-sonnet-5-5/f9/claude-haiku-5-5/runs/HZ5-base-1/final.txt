@@ -1,0 +1,41 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: echo "== src files: $(git ls-files src | wc -l), tests files: $(git ls-files tests | wc -l)" && cat .mailmap && echo "== surviving lines by author (src)" && git blame -w -M -C --line-porcelain HEAD -- src | grep '^author ' | sort | uniq -c | sort -rn && echo "== surviving lines by author (tests)" && git blame -w -M -C --line-porcelain HEAD -- tests | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git log --use-mailmap --format='%an <%ae>' -- src tests | sort | uniq -c | sort -rn | head -30 && echo "== commit count by author (all history, mailmap)" && git shortlog -sne --use-mailmap HEAD | head -30
+ - Bash: for d in src tests; do echo "== surviving lines by author ($d), mailmap applied"; git ls-files "$d" | while IFS= read -r f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; done; echo "== per-file top author (src)"; git ls-files src | while IFS= read -r f; do top=$(git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail ' | sort | uniq -c | sort -rn | head -1); echo "$f :: $top"; done | head -40
+ - Bash: git log --format='%ad|%an' --date=short -- src tests | awk -F'|' '{ if(!($2 in first)) first[$2]=$1; last[$2]=$1; n[$2]++ } END { for (a in n) printf "%4d commits  %s .. %s  %s\n", n[a], first[a], last[a], a }' | sort -rn | head -15; echo "== total commits touching src/tests: $(git log --oneline -- src tests | wc -l)"; echo "== HEAD date: $(git log -1 --format=%ad --date=short)"
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote the majority of what's in `src/` and `tests/` today, and his departure would be the biggest knowledge loss. Most of the remaining code is from contributors who haven't touched the repo in years, so the handoff risk is concentrated in Ben.
+
+**Surviving lines at HEAD** (`git blame -w -M -C`, which follows moved code back to its original author; `.mailmap` applied):
+
+| Author | src/ lines | tests/ lines | Last activity in src/tests |
+|---|---|---|---|
+| Ben Ramsey | 2,171 (~63%) | 1,964 (~54%) | Aug 2026 |
+| Tomasz Wrona | 358 | 61 | Jul 2026 |
+| Carlos C Soto | 270 | 204 | 2016 |
+| Timo Tewes | 223 | 174 | 2016 |
+| icanhazstring | 199 | 594 | 2018–19 |
+| Kévin Gomez | 145 | 329 | 2018 |
+| Simone Todaro | 29 | 113 | 2020 |
+| Others (Raphael Tomé Santana, David Stockton, peter279k, etc.) | under 30 each | under 100 each | 2018–2025 |
+
+Ben accounts for about 58% of the surviving lines across both trees (4,135 of 7,095). Commit counts tell the same story: 67 of 140 commits touching `src/` or `tests/`.
+
+**Who is at risk if Ben leaves:**
+
+- **Core interfaces and base classes.** Ben wrote `CollectionInterface`, `AbstractCollection`, `AbstractArray`, `QueueInterface`, `DoubleEndedQueueInterface`, `Map/MapInterface`, `Map/AbstractMap`, `Grouping`, and `Map/NamedParameterMap`. Most of the public API surface sits here.
+- **Most of the test suite.** Ben wrote about 1,960 of the roughly 3,600 surviving test lines, and he is the most recently active author.
+- **Smaller areas with a single owner who is no longer active.** Carlos C Soto wrote `Set`, `AbstractSet`, `TypedMap`, and `TypedMapInterface`. Timo Tewes wrote `Queue` and some exceptions. Kévin Gomez wrote `DoubleEndedQueue`. Their code is still live, but none of them has committed in years, so the team would have to read it cold.
+- **Generated code.** `src/Generated/TypeMap.php` (295 lines) is attributed to Tomasz Wrona, but it's generated output, so the real source of truth is whatever generator produces it. Confirm that tool and its owner before the handoff.
+
+**Caveats:**
+
+- This measures authorship in git history. It doesn't capture who understands the code best, who reviewed it, or undocumented design decisions. Ask Ben for a walkthrough of the core interfaces before he goes.
+- Bot and automated commits (`github-actions[bot]`) are a small share and don't change the picture.
+- I measured only the current HEAD. Code that was rewritten or deleted doesn't count.
+META cost=0.00565247 ms=27028 turns=5

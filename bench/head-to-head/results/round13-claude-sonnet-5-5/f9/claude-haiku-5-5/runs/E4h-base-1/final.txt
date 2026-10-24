@@ -1,0 +1,100 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | sed -n '1,200p' && echo --- && git shortlog -sne HEAD | head -50 && echo --- && git log --format='%h %an <%ae> %s' | head -80
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v F="$f" '/^author /{sub(/^author /,""); a=$0} /^\tiu/{} /^\t/{print F"\t"a}' ; done > /tmp/blame_lines.tsv; wc -l /tmp/blame_lines.tsv; echo; echo "== per-file, per-author counts =="; awk -F'\t' '{print $1"\t"$2}' /tmp/blame_lines.tsv | sort | uniq -c | sort -k2,2 -k1,1nr
+ - Bash: mkdir -p /tmp/cod && cat > /tmp/cod/remap.py <<'EOF'
+import subprocess, sys, re
+REPO = sys.argv[1]
+FMT = "62628c0"
+def git(*a):
+    return subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True, check=False).stdout
+
+def norm(s):
+    return re.sub(r"\s+", "", s).replace("'", '"')
+
+def blame(rev, path, ignore=None):
+    args = ["blame", "--line-porcelain"]
+    if ignore: args += ["--ignore-rev", ignore]
+    args += [rev, "--", path]
+    out = git(*args).split("\n")
+    res = []  # (author, content)
+    author = None
+    for line in out:
+        if line.startswith("author ") and not line.startswith("author-"):
+            author = line[7:]
+        elif line.startswith("\t"):
+   
+ - Bash: cd /tmp/cod && awk -F'\t' '
+$2=="dependabot[bot]"{next}
+{ g=$1; if (g ~ /^lib\//) g="lib/"; else if (g ~ /^test\//) g="test/"; else if (g ~ /^\.github\//) g=".github/"; else g="root:" $1;
+  if (g ~ /^root:/) { sub(/^root:/,"",g); g="root:" g }
+  tot[g]++; cnt[g"\t"$2]++ }
+END { for (k in cnt) { split(k,p,"\t"); printf "%s\t%s\t%d\n", p[1], p[2], cnt[k] } ; for (g in tot) printf "TOTAL\t%s\t%d\n", g, tot[g] }' lines.tsv | sort -t$'\t' -k1,1 -k3,3nr | awk -F'\t' '
+$1=="TOTAL"{t[$2]=$3; next}
+{ rows[$2]=rows[$2] sprintf("  %-28s %5d  (%.1f%%)\n", $2, $3, 0) ; c[$2]++; cnt[$2,$3]=$3 ; names[$2]=names[$2] "|" $3 "\t" $2 }
+END{}' ; awk -F'\t' '$2=="dependabot[bot]"{next} {g=$1; if (g ~ /^lib\//) g
+ - Bash: cat > /tmp/cod/tally.py <<'EOF'
+import sys, collections
+rows = [l.rstrip("\n").split("\t", 2) for l in open(sys.argv[1], encoding="utf-8")]
+def group(path):
+    if path.startswith("lib/"): return "lib/"
+    if path.startswith("test/"): return "test/"
+    if path.startswith(".github/"): return ".github/"
+    return "root"
+per = collections.defaultdict(collections.Counter)
+for path, author, _ in rows:
+    if author == "dependabot[bot]" or author.startswith("UNMAPPED"):
+        continue
+    per[group(path)][author] += 1
+for g in ["lib/", "test/", ".github/", "root"]:
+    c = per[g]; tot = sum(c.values())
+    print(f"== {g}  surviving non-bot lines: {tot}")
+    for a, n in c.most_common(5):
+    
+ - Bash: cd /tmp/cod && python3 -I -c "
+import collections
+rows=[l.rstrip('\n').split('\t',2) for l in open('lines.tsv',encoding='utf-8')]
+per=collections.defaultdict(collections.Counter)
+for p,a,_ in rows:
+    if a=='dependabot[bot]' or '/' in p: continue
+    per[p][a]+=1
+for p in sorted(per):
+    c=per[p]; t=sum(c.values())
+    a,n=c.most_common(1)[0]
+    print(f'{p:<18} total={t:<4} top={a} {n} ({100*n/t:.1f}%)')
+"; echo; cd /private/tmp/r13/final/f9/claude-haiku-5-5/runs/E4h-base-1/repo && git log --format='%an <%ae>' -- lib test .github | sort | uniq -c | sort -nr | head -5; git ls-files | grep -i codeowners; echo "codeowners-check-exit=$?"
+FINAL ANSWER:
+I didn't write a file, since you asked for suggestions. Here are the CODEOWNERS lines, based on who wrote the lines that survive at HEAD.
+
+```
+# lib/: Troy Goode holds 149 of 238 surviving lines (62.6%)
+/lib/            @<troy-handle>
+
+# test/: Troy Goode holds 483 of 966 (exactly 50.0%), so this is borderline
+/test/           @<troy-handle>
+
+# .github/: nobody reaches half (top is Douglas Christopher Wilson at 29.5%), so no line
+
+# Root files, one line each:
+/.eslintrc.yml   @<doug-handle>    # 7 of 7 (100%)
+/.gitignore      @<doug-handle>    # 4 of 5 (80%)
+/HISTORY.md      @<doug-handle>    # 50 of 64 (78.1%)
+/LICENSE         @<doug-handle>    # 17 of 22 (77.3%)
+/package.json    @<doug-handle>    # 20 of 40 (exactly 50.0%), borderline
+# /README.md: nobody reaches half (top is Troy Goode at 37.5%, 104 of 277), so no line
+```
+
+Notes:
+
+- **Handles:** The history only has names and emails, so I didn't guess GitHub usernames. Fill in `<troy-handle>` for Troy Goode (<email redacted>) and `<doug-handle>` for Douglas Christopher Wilson (<email redacted>).
+- **Method:** I ran `git blame` on HEAD and counted surviving lines per author.
+  - The formatting-only commit 62628c0 (Fiona Formatter) is excluded. Its reformatted lines are credited to whoever wrote the code before it, matched by content.
+  - Dependabot lines are left out of both the counts and the totals.
+  - Troy Goode appears under two emails (<email redacted> and troy@laptop.example). I counted them as one person.
+- **Threshold:** I read "at least half" as 50% or more. Two lines are exactly 50.0%: `/test/` and `/package.json`. If you mean strictly more than half, drop both.
+- **No line for `.github/` or `README.md`:** CODEOWNERS can't express "no owner" for a path, so those paths are left unlisted.
+META cost=0.01016334 ms=44325 turns=7

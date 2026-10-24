@@ -1,0 +1,53 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.zig' | while read f; do git blame --line-porcelain -w -M -C -- "$f" | grep '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.tsv; echo files: $(cut -f1 /tmp/blame.tsv | sort -u | wc -l); echo "== total lines by author"; cut -f2 /tmp/blame.tsv | sort | uniq -c | sort -rn; echo "== commits"; git shortlog -sn --no-merges --all; echo "== last commit per author"; git log --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++'; echo "== per file"; awk -F'\t' '{c[$1" | "$2]++; t[$1]++} END{for(k in c){split(k,a," \\| "); printf "%s\t%d\t%d\n",k,c[k],t[a[1]]}}' /tmp/blame.tsv | sort -t$'\t' -k1,1 -k2,2nr
+FINAL ANSWER:
+## Bus Factor Analysis for zig-args
+Period: all history | Generated: 2026-10-24
+
+The skill's file scan doesn't include `.zig`, so I ran `git blame` directly (`-w -M -C`) on all 7 tracked `.zig` files, 2,120 surviving lines. I merged the three spellings of Felix's name: `Felix (xq) Queißner`, `Felix "xq" Queißner` and `Felix Queißner`.
+
+### Project-level bus factor: 2
+
+The author of most of it is **Felix Queißner (xq)**, with 758 of 2,120 lines (35.8%).
+
+- **If Felix stopped answering:** 35.8% of the current code would have no author left. That is below the 50% line, so Felix alone is not the bus factor.
+- **If Felix and Wen Li both left:** 61.8% would be orphaned (1,310 lines), which crosses the line. So the bus factor is 2.
+
+### Ownership by file
+
+| File | Lines | Top author | Share | Distinct authors |
+|---|---|---|---|---|
+| `src/args.zig` (the core parser) | 1049 | Felix | 67% (704 lines) | 23 |
+| `src/width_table.zig` | 484 | Wen Li | 100% | 1 |
+| `src/help.zig` | 337 | jnagpaul | 49% | 10 |
+| `demo_verb.zig` | 83 | Vincent Rischmann | 58% | 8 |
+| `build.zig` | 80 | Vincent Rischmann | 23% | 9 |
+| `demo.zig` | 63 | Felix | 52% | 10 |
+| `src/width.zig` | 24 | Wen Li | 100% | 1 |
+
+### Who has orphaned or at-risk code
+
+- **Felix:** Felix last committed on 2026-04-16, about 6 months ago. That makes the largest share of the core parser's authorship effectively inactive.
+- **Wen Li:** They have 26% of the code, but 484 of those 552 lines are `width_table.zig` and the rest is `width.zig`. The table looks like generated Unicode width data. If it is generated, the real risk is whether anyone knows how to regenerate it.
+- **jnagpaul:** They wrote 166 lines of `help.zig` (49%) and last committed in 2023-07, so that code has no active author.
+- **Vincent Rischmann:** They wrote most of `demo_verb.zig` and last committed in 2025-03.
+- **Long tail:** About 20 other contributors have a handful of lines each. Most of them are inactive.
+
+If you exclude `width_table.zig`, Felix's share rises to 46.3% of 1,636 lines. Adding jnagpaul takes it to 57.8%, so the bus factor is still 2.
+
+### Caveats
+- Blame counts surviving lines, not commit counts. By commits, Felix has 46 of about 120 non-merge commits, and Linus Groh is second with 11.
+- Antoine and Antoine Gagniere are probably the same person. I left them separate, and it's only 12 lines.
+- A few "last commit" dates (Wen Li 2026-10-27, Dmitri Volkov 2026-11-04) are later than today's date. They are probably clock or timezone issues in the commit metadata, so check them before relying on activity status.
+
+### Recommendations
+1. **Immediate:** Have an active maintainer review `src/args.zig` closely, since two-thirds of it traces to someone who has been gone about 6 months. Add or confirm test coverage for it.
+2. **Short-term:** Document how `width_table.zig` is generated, or add the generator script to the repo, so Wen Li isn't the only one who can update it.
+3. **Ongoing:** Spread `help.zig` and the width code across more reviewers. Linus Groh and Tobias Ek are recent contributors who already touch several files.
+META cost=0.0809771 ms=22974 turns=4

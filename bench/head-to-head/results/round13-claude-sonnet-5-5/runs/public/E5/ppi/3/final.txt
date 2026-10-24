@@ -1,0 +1,56 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -40; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo BLAME; git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; git log --follow --format='%ad' --date=short -- lib/index.js | tail -1
+FINAL ANSWER:
+## 🔍 Code History: `lib/index.js`
+
+### Quick Context
+> This is the `cors` middleware. It was written by Troy Goode in 2013 and extended by about 25 contributors since. Most of the logic is still his.
+
+### Decision Timeline
+| Date | Who | Change and reason |
+|---|---|---|
+| 2013-01-30 | Troy Goode | First commit of the file. |
+| 2013-10 to 2014-03 | Troy Goode | JSLint cleanup, a fix for #13, and support for `Access-Control-Expose-Headers` (#15). |
+| 2014-05 | Typicode, Alberto Leal | Added `PATCH` to the default methods. Stopped the middleware from overriding the `options.origin` callback. |
+| 2014-06 | Shane Tomlinson | Method names are uppercased before comparison. |
+| 2014-07 | Troy Goode | Express 4+ support (2.3.2), then fixes for #6, #19 and #20 (2.4.0). |
+| 2014-10 to 11 | Igor Soarez, Troy Goode | `Vary: Origin` for specific origins. Switched to the `vary` module (#30). Restored non-Express support that #30 had broken (#33). |
+| 2015-01 to 04 | Raymond Feng, Eran Tiktin, max.laverse, DracoBlue | Removed a closure in `applyHeaders`. Stopped sending `Vary: Origin` for `*`. Added the option to pass preflight requests to `next()`. Exposed headers are now sent on OPTIONS responses. |
+| 2015-05 | Alejandro Caravaca Puchades, Troy Goode | RegExp and array values for `options.origin`. Moved to ESLint (#42). |
+| 2015-06 | jordandenison | Strict-mode fix in the middleware wrapper. |
+| 2016-05 to 08 | Hannah Wolfe, Troy Goode | Named the anonymous middleware function. Fixed #66 and #73 and published 2.8.0. |
+| 2017-02 to 07 | Saad Tazi, Tomek Kopczuk, Douglas Christopher Wilson, Benjamin Eidelman | Frozen-options fix. `Vary: Origin` for RegExp origins. `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders`. Fix for a missing `methods` option. Safari preflight workaround. |
+| 2017-07 to 10 | Wilson, Chima Alaebo | Lint changes: ESLint upgrade, removal of an unreachable branch, parenthesis spacing. |
+| 2018-11 | Tom Arad | Fixed `maxAge: 0`. |
+| 2021-07 | LuisEGR | Lint: removed unused function parameters. |
+| 2026-04-10 | Troy Goode | "annotate handlers". |
+| 2026-04-12 | Fiona Formatter | Reformatted to 4-space indent and double quotes. |
+
+### Narrative
+Troy Goode created the file and wrote its core: origin matching, preflight handling, and the headers for credentials, exposed headers and `maxAge`. Contributors then added specific behaviours to it. These were mostly correctness fixes around `Vary` headers, the other kinds of `origin` value (RegExp, array, callback), and Express and non-Express compatibility.
+
+Douglas Christopher Wilson did the 2017 round of `Vary` and options-handling fixes. After that, changes were mostly lint upkeep or one-line fixes. The most recent edits are the "annotate handlers" commit and the formatting commit.
+
+### Key Takeaways
+1. **Troy Goode shaped it most.** He made 29 of the 62 commits and wrote 138 of the 238 lines.
+2. **Wilson and Caravaca Puchades are the next biggest contributors to the surviving code**, with 18 and 12 lines. Wilson's lines are mostly the `Vary` and options-delegate fixes. Caravaca Puchades's are the RegExp and array origin matching. Raymond Feng's `applyHeaders` optimization (7 lines) also survives.
+3. **Blame is misleading for the newest commit.** The formatting commit (Fiona Formatter) shows as the author of 32 lines, but it only changed whitespace and quotes. The original authors of those lines are hidden. `git blame -w` ignores whitespace-only changes, but it can't see through the quote swap. To see the true origin of those lines, run `git blame` on `62628c0^`.
+
+### Metrics
+| Metric | Value |
+|---|---|
+| Total commits | 62 (following renames) |
+| Contributors | About 25 (top by commits: Troy Goode 29, Douglas Christopher Wilson 4, Alejandro Caravaca Puchades 4, Simon Mansfield 3) |
+| Lines surviving by author | Troy Goode 138, Fiona Formatter 32, Wilson 18, Caravaca Puchades 12, Feng 7, LuisEGR 6, max.laverse 5, 10 others 1–3 each (238 lines total) |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Low, with a burst of activity from 2014 to 2017 and only occasional lint or format commits since 2018 |
+
+I ran the git commands myself rather than launching the git-archaeologist agent, because this was a single-file shallow lookup.
+META cost=0.0726534 ms=19780 turns=4

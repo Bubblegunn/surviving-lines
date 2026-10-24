@@ -1,0 +1,45 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f6r/HZ4-pp-2/runs/HZ4-pp-2/repo; echo "== exposure commits"; git log --format='%aN|%ad' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | awk -F'|' '{c[$1]++; if(!l[$1])l[$1]=$2; f[$1]=$2} END{for(a in c)print c[a],a,"last="l[a],"first="f[a]}' | sort -rn; echo "== delegator commits"; git ls-files | grep -i deleg; git log --format='%aN|%ad' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegator | awk -F'|' '{c[$1]++; if(!l[$1])l[$1]=$2; f[$1]=$2} END{for(a in c)print c[a],a,"last="l[a],"first="f[a]}' | sort -rn; echo "== overall"; git log --format='%aN' | sort | uniq -c | sort -rn | head -8; git log -1 --format=%ad --date=shor
+ - Bash: cd /private/tmp/r13/final/f6r/HZ4-pp-2/runs/HZ4-pp-2/repo; echo "== blame lines whole repo lib"; for f in $(git ls-files lib); do git blame -w -M -C --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -8; echo "== blame exposure"; for f in $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb); do git blame -w -M -C --line-porcelain "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6; echo "== blame delegator"; for f in $(git ls-files lib/grape_entity/delegator lib/grape_entity/delegator.rb); do git blame -w -M -C --line-porcelain "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6
+ - Bash: cd /private/tmp/r13/final/f6r/HZ4-pp-2/runs/HZ4-pp-2/repo; git log --format='%aN|%aE|%ad' --date=short | awk -F'|' '{c[$1]++; if(!l[$1]){l[$1]=$3;e[$1]=$2}} END{for(a in c)print c[a],a,e[a],l[a]}' | sort -rn | grep -E 'Kochnev|Tsepelev|McCarthy|Yunin|Silva|Brandt|Padier|scholz|Kowalczyk|dblock|Doubrovkine|LeFnord|Madsen'; ls .mailmap 2>&1
+FINAL ANSWER:
+**Short answer:** Marco Silva is the best reviewer for both areas. The person with the most commits (dblock) is not the person who owns the most code (Vladimir Kochnev).
+
+I ran `git log` and `git blame -w -M -C` over `lib/grape_entity/exposure*` and the delegator files. The delegator code is `delegator.rb`, `delegators/*` and `exposure/delegator_exposure.rb`.
+
+**Best reviewers**
+- **`lib/grape_entity/exposure`:**
+  - Marco Silva is the first choice. They own 143 of the current lines, the second most after Kochnev, and last touched the area on 2026-08-03.
+  - Lena Brandt is the second choice (20 lines, 2026-07-14).
+  - Anna Kowalczyk has one recent commit (2026-08-10), so use them as a backup.
+- **Delegator code:**
+  - Marco Silva again (4 lines, 2026-07-21).
+  - Lena Brandt is the second choice (2 lines, 2026-07-14).
+  - The delegator code is small. Kochnev wrote 10 of its lines and nobody currently active has much history there, so treat any reviewer as a generalist.
+
+**Effectively left** (last commit anywhere in the repo)
+
+| Person | Last commit |
+|---|---|
+| Vladimir Kochnev | 2015-09 |
+| Mark Madsen | 2013 |
+| Alexander Yunin | 2016 |
+| James McCarthy | 2017 |
+| Dmitry Tsepelev | 2018 |
+| Paul Padier | 2023-12 |
+| peter scholz / LeFnord | 2024-04 |
+
+Peter scholz and LeFnord are the same person: they share the email <email redacted>. Don't route to any of these people.
+
+**Commits versus code ownership: no**
+- **Most commits:** dblock, at about 117. That is four author-name aliases for <email redacted> (54 + 42 + 16 + 5, plus 2 more under a fifth spelling). There is no `.mailmap`, so a plain `git shortlog` splits them. They don't appear in the top blame entries for `lib/` and haven't touched `exposure` since 2016. They are the maintainer, not a code owner.
+- **Most lines:** Kochnev has 758 surviving lines in `lib/`, 433 of them in `exposure`. They made only 16 commits and left in 2015.
+- **Second most lines:** Mark Madsen has 265 lines in `lib/` from 11 commits, and his last commit was in 2013.
+
+The "left" judgement comes from commit activity only. I can't see who is still on the team, so check with whoever knows the roster before relying on it. The three recent authors all use `kestrel.example` emails, which suggests a placeholder or internal domain.
+META cost=0.0739877 ms=21626 turns=4

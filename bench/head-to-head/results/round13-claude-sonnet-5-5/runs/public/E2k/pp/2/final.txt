@@ -1,0 +1,27 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%ad|%s' --date=short --no-merges; echo; git log -1 --format='%h %ad %an'
+ - Bash: git log --since="2026-03-29" --format='%h|%an|%ae|%cn' | cat; git shortlog -sne --all | head -20; for c in b2005d9 02afce3 5317ebe; do echo == $c; git show --stat --format= $c; done
+echo; git ls-files | grep -v node_modules > /tmp/files.txt; for f in $(cat /tmp/files.txt); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^(author-mail|author) ' | paste - - ; done | sort | uniq -c | sort -rn | head
+ - Bash: for c in b2005d9 02afce3 5317ebe; do echo == $c; git show --stat --format= $c; done
+git ls-files | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^[0-9a-f]{40} ' | cut -c1-7 ; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe'
+echo; git ls-files | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^author-mail '; done | grep -c 'troy@laptop'
+ - Bash: for c in b2005d9 02afce3 5317ebe; do echo "-- $c"; git show --stat --format= $c; done
+git ls-files | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -E '^[0-9a-f]{40} ' | cut -c1-7 ; done | sort | uniq -c | grep -E 'b2005d9|02afce3|5317ebe'
+FINAL ANSWER:
+Window: 2026-03-29 to 2026-04-12. I left out Fiona Formatter's reformat commit (62628c0). I counted surviving lines with `git blame -w --ignore-rev 62628c0`, so the reformat doesn't take credit for lines that other people wrote.
+
+| Person | Commits in window | Lines still in the code |
+|---|---|---|
+| **Troy Goode** | `b2005d9` lib: annotate handlers (12 lines added, 12 removed in `lib/index.js`)<br>`02afce3` test: vary header coverage (36 lines added in `test/vary.js`) | **48** (12 + 36) |
+| **Vansh Sharma** | `5317ebe` docs: app.del() with app.delete() in README example (#411) (1 line added, 1 removed in `README.md`) | **1** |
+
+- **Troy Goode:** the history lists them under two emails, `troy@laptop.example` and `<email redacted>`. I counted them once as one person.
+- **Vansh Sharma:** the commit was committed through GitHub, but the author is Vansh.
+
+All 48 of Troy's lines and Vansh's 1 line are still present in the current code. No bot commits fell in the window.
+META cost=0.0619581 ms=16568 turns=5

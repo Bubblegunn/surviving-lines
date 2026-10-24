@@ -1,0 +1,53 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | awk -F/ '{print (NF>1?$1:"(root)")}' | sort | uniq -c; git log --format='%h|%an|%ae|%s' | wc -l; git shortlog -sne HEAD | head -30; git log -3 --stat --format='%h %an %s' | head -40
+ - Bash: git ls-files; git log --format='%h %an %s' | grep -iE 'style|format|lint|whitespace|indent|prettier|semi|quote' ; cat .mailmap 2>/dev/null
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep '^author ' | sed "s|^author |$f\t|"; done | awk -F'\t' '{split($1,p,"/"); d=(length(p)>1?p[1]:"(root)"); if($1=="test/.eslintrc.yml")d="test"; c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,a,"\t"); printf "%s\t%s\t%d\t%.0f%%\n",a[1],a[2],c[k],100*c[k]/t[a[1]]}}' | sort -k1,1 -k3,3nr | awk -F'\t' '{n[$1]++; if(n[$1]<=4)print}'
+ - Bash: cat > /tmp/own.py <<'E'
+import subprocess,collections,sys
+fs=subprocess.check_output(["git","ls-files"],text=True).split()
+c=collections.defaultdict(collections.Counter)
+for f in fs:
+    top=f.split("/")[0] if "/" in f else "(root)"
+    o=subprocess.check_output(["git","blame","-w","-M","-C","--ignore-rev","62628c0","--line-porcelain","HEAD","--",f],text=True)
+    for l in o.splitlines():
+        if l.startswith("author "):
+            a=l[7:]
+            if "[bot]" in a: continue
+            c[top][a]+=1
+for t,k in c.items():
+    s=sum(k.values()); print(t,s,[(a,n,round(100*n/s)) for a,n in k.most_common(4)])
+E
+python3 -I /tmp/own.py; git log --format='%an|%ae' | grep -iE 'efe|troy|doug|dha
+FINAL ANSWER:
+Only `lib` and `test` have an owner at 50% or more. I used `git blame` on HEAD with the formatting commit `62628c0` ignored, and `-w -M -C` so whitespace changes and moved lines don't count. I left out dependabot lines and merged authors by name, so Troy Goode's two emails count as one person.
+
+| Path | Top contributor | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159 of 238 (67%) | Yes |
+| `test/` | Troy Goode | 517 of 966 (54%) | Yes |
+| `.github/` | Douglas Christopher Wilson | 118 of 366 (32%) | No |
+| root files | Troy Goode | 134 of 415 (32%) | No |
+
+For `.github/`, the next biggest contributors are Íñigo Marquínez Prado at 26% and Sebastian Beltran at 17%. For the root files, Douglas Christopher Wilson has 28% and Jon Church has 17%.
+
+Suggested CODEOWNERS:
+
+```
+# Only paths where one person holds >=50% of surviving lines
+/lib/   @<troy-goode-github-handle>
+/test/  @<troy-goode-github-handle>
+
+# No owner: no one holds half the lines
+# /.github/   (top: Douglas Christopher Wilson 32%)
+# root files  (top: Troy Goode 32%)
+```
+
+- **Handle:** I don't know Troy's GitHub username. Git history only gives the name and the email `<email redacted>`, so replace the placeholder with the real handle.
+- **Activity:** Blame shows who wrote the lines, not who is active now. Troy did make the latest non-formatting commits (`b2005d9`, `02afce3`). Check that Troy still wants to review these paths before you commit the file.
+- **Unmerged names:** A few people appear under two names, such as "Alejandro Caravaca Puchades" and "alex94puchades". They hold only a few percent each, so merging them wouldn't change any result.
+META cost=0.08054259999999999 ms=25803 turns=5

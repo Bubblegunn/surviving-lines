@@ -1,0 +1,58 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "time.go version7.go sql.go"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-ppi-3/repo; ls *.go | head -50; echo; for f in time.go version7.go sql.go; do echo "=== $f"; git log --all --no-merges --pretty=format:"%an <%ae>" -- $f | sort | uniq -c | sort -rn; echo; echo "last commit:"; git log -1 --pretty='%an %ad' --date=short -- $f; done; echo; echo "=== all authors, last commit date"; git log --all --no-merges --pretty='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -30; echo; git log --follow --oneline -- version7.go | tail -3; git log -1 --format=%ad --date=short
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-ppi-3/repo; for f in time.go version7.go sql.go; do echo "=== blame $f"; git blame -w --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo; for f in time version7 sql; do echo "$f dependents (non-test files referencing):"; ls *.go | grep -v _test | wc -l; done; git log --all --since=2025-10-24 --no-merges --pretty='%an' | sort | uniq -c | sort -rn; ls CODEOWNERS .github/CODEOWNERS MAINTAINERS* 2>/dev/null
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-ppi-3/repo; for f in database_sql.go null.go sql.go; do echo "=== $f"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- $f | awk -F'|' '{c[$1]++; if(!($1 in l)) l[$1]=$2} END{for(a in c) print c[a], a, "last:", l[a]}' | sort -rn; done; echo; echo "== blame"; for f in database_sql.go null.go; do echo "-- $f"; git blame -w --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "== renamed from sql.go?"; git log --all --follow --oneline --name-status -- database_sql.go | grep -E '^R|sql.go' | head; echo "== Kofi"; git log --all --author="Kofi" --pretty='%h %an %ad %s' --date=iso | head; echo "== Rowe aliases"; gi
+FINAL ANSWER:
+## Bus factor: `time.go`, `version7.go` and the SQL code
+
+**Short answer:** ask **Ravi Menon** first. They are the only person who has touched all three areas recently. The people who wrote most of the code are mostly gone. I can only see git history, so "still around" means "still committing".
+
+Two caveats:
+- **No `sql.go`:** it was renamed to `database_sql.go` (commit `cfc4a55`). `null.go` holds the `Null*` types for `database/sql`, so I included it.
+- **Nobody is active by the 90-day test:** today is 2026-10-24, and the latest commit in the repo is 2026-06-17 (Ravi Menon). Nobody has committed since 2026-07-26.
+
+### Who wrote it vs. who is still around
+
+| File | Main author (by surviving lines) | Last commit | Still around? |
+|---|---|---|---|
+| `time.go` | Paul Borman, 111 of 152 lines | ~2021 (later `bormanp` commits may be the same person) | Probably not |
+| `time.go` (recent) | Alexander Rowe, 11 lines | 2026-03-09 | Yes, about 7 months quiet |
+| `time.go` (recent) | Sam Okafor, last touch 2025-04-22 | 2025-05-06 | Quiet for about 17 months |
+| `version7.go` | MikeWang, 101 of 117 lines | 2024-07-02 | No, over 2 years |
+| `version7.go` (recent) | Mei Chen, 11 lines | 2025-08-02 | Quiet for about 14 months |
+| `version7.go` (recent) | Ravi Menon, 2 lines, latest touch 2026-05-05 | 2026-06-17 | Yes, most recent committer |
+| `database_sql.go` | Justin Overfelt (26 lines), Andrew Stone (11), David E. Wheeler (8), Daniel Souza (8) | 2015–2017 | No |
+| `null.go` | Samuel Roth, 107 of 118 lines | 2021-07-12 | No |
+
+### Bus factor per area
+
+| Area | Contributors in history | Bus factor | Risk |
+|---|---|---|---|
+| `version7.go` | 6 | **1**: MikeWang wrote about 86% of the lines, and has been inactive for over 2 years | **Critical** |
+| `database_sql.go` / `null.go` | 7 and 2 | **0 active**: the authors left 5–10 years ago, and Ravi Menon's one commit was only the rename | **Critical** |
+| `time.go` | 8 | 1–2: Borman wrote about 73% and is gone. Rowe and Okafor have touched it recently | **High** |
+
+Many contributors in the history doesn't mean many people know the code. Most of them made a single small commit.
+
+### Who to ask
+
+1. **Ravi Menon** (`ravi.menon@harbor.example`): recent work on `version7.go` and `database_sql.go`, and the most recent commits in the repo. They are the default reviewer for all three.
+2. **Alexander Rowe** for `time.go`. Their git identities are split across `Alexander Rowe`, `arowe` and `Alex Rowe`, so a `.mailmap` would help.
+3. **Mei Chen** as a second reviewer on `version7.go`, if they will still respond.
+4. **Sam Okafor** is a fallback for `time.go` (same `harbor.example` domain as Ravi). They haven't committed since May 2025.
+5. For SQL, nobody currently active knows the code. Rely on `sql_test.go` and `null_test.go`, and review it yourself.
+
+### Recommendations
+
+- **Now:** ask Ravi Menon whether they will act as reviewer for these files, and check whether they are still engaged with the project.
+- **Short-term:** add a `CODEOWNERS` file. There isn't one. Add a `.mailmap` to merge the Rowe aliases.
+- **Ongoing:** `version7.go` has the sharpest risk. The clock step-back handling was documented recently (`b94e0ae`), so keep tests and comments there up to date.
+
+One data quirk: commit `d97a7fa` is dated 1970-01-01 under the author "Kofi Mensah". It doesn't affect these files, but it distorts date-based activity queries.
+META cost=0.0973348 ms=33361 turns=6

@@ -1,0 +1,21 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%ad|%s' --date=short --no-merges; echo; git log -1 --format='%h %ad %s'; git branch -a
+ - Bash: git log --since="2026-03-25" --format='%h|%an|%ae|%cn|%ad' --date=iso | head; cat .mailmap 2>/dev/null; git ls-files | head -80; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail' ; done | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | grep -a '^[0-9a-f]\{40\} ' | cut -c1-7; done | sort | uniq -c | grep -E '^ *[0-9]+ (b2005d9|02afce3|5317ebe|62628c0)'; git log --author=troy --format='%ae' | sort | uniq -c
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), after I set aside Fiona Formatter's formatting-only commit and found no bot commits.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (2026-04-10)<br>`b2005d9` lib: annotate handlers (2026-04-10) | **746** |
+| **Vansh Sharma** | `5317ebe` docs: app.del() with app.delete() in README example (#411) (2026-04-07) | **1** |
+
+- **Troy Goode:** the 746 lines combine two email identities, `<email redacted>` (698) and `troy@laptop.example` (48). I treated them as one person and counted them once. Only 48 of the 746 come from the two window commits: 36 from `02afce3` and 12 from `b2005d9`. The other 698 are older work.
+- **Vansh Sharma:** the only line is the README change from `5317ebe`.
+- **Fiona Formatter:** her commit `62628c0` only reformatted the JS (4-space indent, double quotes), so I left her out. I ran `git blame` with whitespace ignored and that commit skipped, so her reformatting doesn't take credit for other people's lines.
+META cost=0.053585299999999995 ms=15545 turns=4

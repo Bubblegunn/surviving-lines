@@ -1,0 +1,52 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ 2>&1 | head; git log --oneline | wc -l; git shortlog -sne HEAD | head -20; cat .mailmap
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -80
+ - Bash: for d in src tests; do echo "== $d"; git ls-files $d | grep '\.php$' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail '; done | sort | uniq -c | sort -rn | head -12; done; echo; git log -1 --format=%cd; git log --format='%ae %ad' --date=short --no-merges | awk '{print $1}' | sort | uniq -c | sort -rn | head -3; for e in tomasz.wrona@brightmail.example <email redacted>; do echo $e; git log --author=$e --format=%ad --date=short | sed -n '1p;$p'; done; git ls-files tests/Support; git log --format='%an %ad' --date=short -- tests/Support
+ - Bash: git log --no-merges --format='%aN|%ad' --date=short | awk -F'|' '!s[$1]++{l[$1]=$2} END{for(k in l)print l[k],k}' | sort -r | head -10; git log --since=2025-09-01 --no-merges --format=%aN | sort | uniq -c | sort -rn
+FINAL ANSWER:
+I ran the busfactor script (dry run) and cross-checked it with `git blame`, which shows who wrote the lines that exist today. The result is below. I haven't written a CODEOWNERS file.
+
+**Who wrote what (surviving lines, PHP files)**
+
+| Author | `src/` lines | `tests/` lines |
+|---|---|---|
+| Ben Ramsey | 2,171 | 1,964 |
+| Tomasz Wrona | 358 | 61 |
+| Carlos C Soto (eclipxe13) | 270 | 204 |
+| zf2timo | 223 | 174 |
+| icanhazstring | 199 | 594 |
+| Kévin Gomez | 145 | 329 |
+| Simone Todaro | 29 | 113 |
+| peter279k | – | 91 |
+
+- **Ben Ramsey:** he wrote roughly 70% of `src/` and about half of `tests/`.
+- **Everyone else:** the other contributors are small, mostly one-off patches.
+- **Mailmap:** I merged Ben's two emails and Wrona's two emails using `.mailmap`, so neither is split into two people.
+- **Tests:** icanhazstring and Kévin Gomez are the real second and third authors of the test suite, even though they wrote little of `src/`.
+
+**Who is still around**
+
+In the 12 months up to the newest commit (2026-09-01), only Ben Ramsey and Tomasz Wrona committed from the main contributor list. The rest of that window is bots (dependabot, github-actions) and a few drive-by committers (Kasia Nowak, Rodrigo Primo, chris). Carlos Soto's commits date from 2016. Kévin Gomez, icanhazstring, zf2timo and Simone Todaro have no commits in the last 12 months. That means the code of at least five significant authors has no active author left to review it.
+
+**The main loss if Ben Ramsey left**
+
+- **Overall:** he is the loss. Wrona is the only other active person with real code in `src/`, and Wrona's share is about 12% of the lines versus Ben's 70%.
+- **`src/` and the repo root:** these would be left to Wrona, who joined only in June 2026, so his history is short. The script's fallback owner for the whole repo is Ben.
+- **`tests/Support/`:** this is already a bus factor of 1, and Wrona is that one person. It holds only five files, and he committed all of them in June and July 2026.
+- **Orphaned areas:** most of the older code, such as the collection internals written by Soto, zf2timo and Gomez, is orphaned. Their authors are no longer active and Ben is the only person who has been maintaining it.
+
+**Caveats**
+
+- Line counts measure volume, not understanding. A reviewer who never commits looks like a stranger here.
+- The "active" roster is inferred from commit dates. If anyone listed as inactive is still involved, tell me and I can rerun with an override.
+- I used `--no-github`, so the output has bare emails rather than GitHub handles.
+- The Wrona name and email look like a placeholder (`brightmail.example`), so check that this is a real person before you rely on them as the successor.
+
+I can write the CODEOWNERS file and the HTML risk report if you want them.
+META cost=0.081094 ms=25358 turns=7

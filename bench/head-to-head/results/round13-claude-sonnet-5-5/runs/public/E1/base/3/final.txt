@@ -1,0 +1,46 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -20; echo; git log --format='%an' | wc -l; ls; echo; git ls-files | grep -v node_modules | head -100
+ - Bash: for f in lib/index.js test/test.js test/vary.js test/error-response.js test/example-app.js test/issue-2.js test/support/env.js README.md HISTORY.md package.json .github/workflows/ci.yml; do echo "== $f"; git log --follow --format='%an' -- $f | sort | uniq -c | sort -rn | head -4; done
+echo; echo BLAME lib/index.js ignoring reformat; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head
+echo; git blame -w --ignore-rev 62628c0 --line-porcelain test/test.js | grep '^author ' | sort | uniq -c | sort -rn | head -4
+echo; git log --format='%an %ad' --date=short | awk '{print $NF}' | cut -c1-4 | sort | uniq -c | head -30
+git log -8
+ - Bash: git log --since=2025-01-01 --format='%an' | sort | uniq -c | sort -rn | head -8; echo; git log -1 --format='%ad' --date=short --author="Troy Goode" --no-merges -- . ; git log --author="Douglas" -1 --format='%ad' --date=short; git log --since=2025-01-01 --author="Troy" --format='%ad %s' --date=short | head -5; wc -l lib/index.js
+FINAL ANSWER:
+**Bottom line:** the core of this project depends on **Troy Goode** (`<email redacted>`). Douglas Christopher Wilson is a clear second, but the project's recent maintenance has mostly been done by other people.
+
+**Overall commit counts (354 commits)**
+- Douglas Christopher Wilson: 143
+- Troy Goode: 120, plus 2 more under `troy@laptop.example`
+- dependabot: 11
+- Everyone else: 1–4 commits each
+
+**Per-area dependence**
+
+| Area | Main contributor | Evidence | Risk |
+|---|---|---|---|
+| `lib/index.js`, the only source file (238 lines) | Troy Goode | 29 of about 40 commits. In `git blame` (ignoring whitespace and the 62628c0 reformat), 159 lines are his, 22 are Wilson's, and no one else has more than 12. | **High, single owner** |
+| `test/vary.js` | Troy Goode | His only commit; it's the sole author. | **High** |
+| `test/example-app.js`, `test/issue-2.js`, `test/error-response.js` | Troy Goode | 10 of 13, 10 of 12, and 5 of 9 commits. Wilson is the second contributor on each. | Medium–high |
+| `test/test.js` | Wilson and Troy, shared | By blame, Wilson has 365 lines and Troy 253. | Low–medium (two people) |
+| `README.md` | Troy Goode | 37 of about 50 commits. A few others have contributed. | Medium |
+| `package.json`, CI, release process | Douglas Wilson | 68 commits to `package.json`. CI is shared with Ulises Gascón and others. | Medium |
+| `HISTORY.md` (changelog) | No single owner | Wilson has 4 commits; Gascón and others have 1 each. | Low |
+| `test/support/env.js` | Wilson | One commit. | Trivial |
+
+**Caveats**
+- **Recent activity doesn't match the history.** Wilson's last commit was 2021-09-07, so his knowledge of the code isn't being refreshed. Troy Goode has only 2 commits since 2025 (both on 2026-04-10), and they come after a long quiet stretch (1 commit in 2022, 4 in 2024). Most 2025–26 commits are dependabot, Ulises Gascón, Jon Church and Sebastian Beltran. Those are release and maintenance work, not authorship of the core logic.
+- **The two main authors are the same pair.** `lib/index.js` and the tests are covered almost entirely by Goode and Wilson. If both are inactive, nobody else has meaningful ownership of the code. Gascón has 3 commits and is the only recent person who cut a release (2.8.6).
+- **Blame is skewed by two recent commits.** I ignored the reformat commit (62628c0, "Fiona Formatter"), but the same commit shows up as an author in the file histories of `error-response.js` and `example-app.js`. The "annotate handlers" and "vary header coverage" commits on 2026-04-10 are Troy's and add to his share.
+- **Method.** I used commit counts and `git blame -w -M -C --ignore-rev`. This measures who wrote the code, not who understands it. The GitHub contributor, reviewer and npm-publish permissions aren't visible from git, so I couldn't check them.
+
+**Recommendations**
+- Have a second person review and then take on `lib/index.js` and `test/vary.js`.
+- Document the release process, since `package.json` and CI knowledge sits mostly with Wilson.
+- Confirm that the current releasers (Gascón and others) have the publishing and merge rights they need.
+META cost=0.060866100000000006 ms=18874 turns=4

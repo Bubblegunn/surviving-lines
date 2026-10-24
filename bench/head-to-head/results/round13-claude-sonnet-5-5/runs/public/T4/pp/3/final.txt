@@ -1,0 +1,18 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an <%ae>' -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log -n 8 --format='%h %an %ad %s' --date=short -- lib/index.js; echo ---; ls .github CODEOWNERS docs/CODEOWNERS 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null
+FINAL ANSWER:
+There's no CODEOWNERS file, so I based this on the git history of `lib/index.js`.
+
+**Troy Goode** is the best choice. They have about 30 of the commits to this file, which is by far the most. They also made the most recent substantive change, "lib: annotate handlers" on 2026-04-10.
+
+If you want a second reviewer, **Douglas Christopher Wilson** has 4 commits, including ones from 2017. **Alejandro Caravaca Puchades** has 5 commits across two author identities. Those commits are old, so check that they're still active on the repo before you request them.
+
+I'd skip Fiona Formatter even though they have the latest commit, 62628c0. It was a whole-file reformat to 4-space indent and double quotes, so it says little about who knows the code.
+
+Because that reformat touched every line, `git blame` on this file is mostly noise. Use `git blame --ignore-rev 62628c0 lib/index.js` to see who actually wrote each line.
+META cost=0.0414649 ms=7005 turns=2

@@ -1,0 +1,53 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .mailmap; echo ---; git log --oneline | wc -l; git shortlog -sne HEAD | head -20; echo ---; ls src tests | head -50; git ls-files src tests | wc -l
+ - Bash: for c in b607d90 3a3c10f 093e431 3b40daf 3eac4de; do git show --stat --format='%h %an <%ae> | %cn | %s%n%b' $c | tail -n 15; echo ====; done; git log -15 --format='%h %ad %an | %s' --date=short
+ - Bash: for c in 3a3c10f 093e431 3b40daf 3eac4de; do git show --stat --format='%h %an <%ae> | committer %cn | %s%n%b' $c | tail -n 20; echo "-----"; done; git log -15 --format='%h %ad %an | %s' --date=short
+ - Bash: git show --stat --format='%h %an <%ae>%n%B' 96dd608 e5909f5 c3611fa | head -80; head -20 src/Generated/TypeMap.php
+ - Bash: git log --format='%h %an | %s' --grep='Co-authored-by\|squash\|Original author\|cs-fixer\|phpcbf\|format\|style\|rename\|header\|license' -i | head -40
+ - Bash: git show -s --format='%an <%ae>%n%B' 4a02cef a8a6eac; git log --format='%h %an' --grep='Co-authored-by' -i | head; git log --format='%(trailers:key=Co-authored-by)' | sort | uniq -c | sort -rn | head
+ - Bash: printf '3b40daf\nc3611fa\n' > /tmp/ignore-revs.txt && blame() { for f in $(git ls-files "$1" | grep -v '^src/Generated/'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain HEAD -- "$f" | awk -v F="$f" '/^[0-9a-f]{40} /{sha=substr($1,1,7)} /^author /{a=substr($0,8)} /^author-mail /{print sha"\t"a"\t"$2"\t"F}'; done; }; blame src > /tmp/b_src.tsv; blame tests > /tmp/b_tests.tsv; for d in src tests; do echo "== $d (total $(wc -l < /tmp/b_$d.tsv) lines)"; cut -f2 /tmp/b_$d.tsv | sort | uniq -c | sort -rn | head -15; echo "-- lines from 96dd608 / 4a02cef:"; grep -cE '^96dd608' /tmp/b_$d.tsv; grep -cE '^4a02cef' /tmp/b_$d.tsv; done; wc -l src/Generated/TypeMap.php
+ - Bash: git rev-parse 3b40daf c3611fa > /tmp/ignore-revs.txt && blame() { for f in $(git ls-files "$1" | grep -v '^src/Generated/'); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs.txt --line-porcelain HEAD -- "$f" | awk -v F="$f" '/^[0-9a-f]{40} /{sha=substr($1,1,7)} /^author /{a=substr($0,8)} /^author-mail /{print sha"\t"a"\t"$2"\t"F}'; done; }; blame src > /tmp/b_src.tsv; blame tests > /tmp/b_tests.tsv; for d in src tests; do echo "== $d (total $(wc -l < /tmp/b_$d.tsv) lines)"; cut -f2 /tmp/b_$d.tsv | sort | uniq -c | sort -rn | head -15; echo "-- 96dd608 / 4a02cef / ignored revs leftover:"; grep -cE '^96dd608' /tmp/b_$d.tsv; grep -cE '^4a02cef' /tmp/b_$d.tsv; grep -cE '^(3b40daf|c3611f
+ - Bash: for d in src tests; do echo "== $d per file: top author share"; cut -f4 /tmp/b_$d.tsv | sort -u | while read f; do t=$(grep -c "	$f$" /tmp/b_$d.tsv); top=$(grep "	$f$" /tmp/b_$d.tsv | awk -F'\t' '{ if($1=="96dd608") print "Katarzyna Nowak*"; else print $2}' | sort | uniq -c | sort -rn | head -1); echo "$t $f :: $top"; done | sort -rn | head -40; done
+ - Bash: for a in "Ben Ramsey" "Carlos C Soto" "icanhazstring" "zf2timo" "Kévin Gomez" "Tomasz Wrona" "Nowak" "Simone Todaro"; do echo "$a: $(git log --use-mailmap --author="$a" --format=%ad --date=short -- src tests | tail -1) .. $(git log --use-mailmap --author="$a" --format=%ad --date=short -- src tests | head -1)"; done
+FINAL ANSWER:
+Ben Ramsey wrote most of the code as it stands today: about 66% of the lines in `src/` and 53% in `tests/`. Nobody else who wrote a large share has touched the code since 2020, so if Ben left, almost all of the knowledge would leave with him.
+
+I measured this by who last wrote each surviving line (`git blame -w -M -C`), not by commit counts. I also corrected for a few things in the history that would otherwise give credit to the wrong people.
+
+## What I corrected for
+- **Two email addresses for Ben:** the `.mailmap` file merges `<email redacted>` into `<email redacted>`. The same file merges "T. Wrona" into Tomasz Wrona.
+- **A squashed pull request:** commit `96dd608` (Grouping) is under Ben's name, but its message says the original author is Katarzyna Nowak. I credited those 150 lines to her.
+- **A co-authored commit:** `4a02cef` (#128) has Frank van den Brink as co-author, covering 41 lines.
+- **Mechanical commits I skipped:** the php-cs-fixer bot run (`3b40daf`) and Tomasz's rename of the Tool namespace to Support (`c3611fa`). Both change many lines without adding any code.
+- **A generated file I left out:** `src/Generated/TypeMap.php` (295 lines). It's marked `@generated`, so the T. Wrona commit that added it isn't real authorship.
+
+## Who wrote the surviving code
+
+| Author | src/ (3,175 lines) | tests/ (3,625 lines) | Last active in src/tests |
+|---|---|---|---|
+| **Ben Ramsey** | 2,093 (66%) | 1,907 (53%) | 2026-08 |
+| Carlos C Soto | 275 (9%) | 208 (6%) | 2016 |
+| zf2timo | 225 (7%) | 174 (5%) | 2016 |
+| icanhazstring | 202 (6%) | 596 (16%) | 2019 |
+| Kévin Gomez | 145 (5%) | 329 (9%) | 2018 |
+| Katarzyna (Kasia) Nowak | 93 (3%) | 59 (2%) | 2026-05 |
+| Tomasz Wrona | 51 (2%) | 53 (1%) | 2026-07 |
+| Simone Todaro | 29 | 113 (3%) | 2020 |
+| Others (~10 people) | <25 each | <100 each | — |
+
+"Kasia Nowak <kasia@nowak.example>" and "Katarzyna Nowak <…noreply.github.com>" are almost certainly the same person, but the `.mailmap` doesn't link them. I counted them together; it's worth confirming and adding a line to the `.mailmap`.
+
+## If Ben left
+He is the main loss by a wide margin:
+- **Core code is almost entirely his:** `AbstractCollection`, `AbstractArray`, `AbstractMap`, `CollectionInterface`, `QueueInterface`, `DoubleEndedQueueInterface`, `MapInterface`, `NamedParameterMap`, `TypeTrait`, `ValueExtractorTrait`, and all the static-analysis type tests in `tests/types/*`. In most of these he wrote 70–98% of the lines.
+- **No one else covers those areas today.** The second-tier authors (Carlos C Soto, zf2timo, icanhazstring, Kévin Gomez) wrote real pieces, such as `TypedMap`, `Queue`, `DoubleEndedQueue`, `Set` and their tests, but they last worked on the code in 2016–2019.
+- **The only other active contributors own narrow pieces:** Tomasz Wrona wrote `ChunkTrait` plus some mechanical renames, and Katarzyna Nowak wrote `Grouping`. Neither has worked on the core collection, map or queue code.
+- **Ben's own recent work is light.** His last change to `src/` was a docblock reword in August 2026. He's the owner, but not working on it heavily right now.
+
+For the handover, I'd plan knowledge-transfer time with Ben on the abstract base classes, the map/typed-map hierarchy, and the PHPStan/Psalm type tests. Tomasz Wrona and Katarzyna Nowak are worth keeping in touch with as secondary contacts for the newest features.
+META cost=0.3057234 ms=63791 turns=11

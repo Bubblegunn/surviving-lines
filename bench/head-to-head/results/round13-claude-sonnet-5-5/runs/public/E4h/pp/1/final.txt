@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E4h-pp-1/repo; git log --format='%h|%an|%ae|%s' | head -300 | wc -l; git shortlog -sne HEAD | head -30; ls -a; git ls-files | awk -F/ '{print (NF>1?$1:"<root>")}' | sort | uniq -c
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E4h-pp-1/repo; git log --format='%h %s' | head -5; for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain $f 2>/dev/null | awk -v f=$f '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{print f"\t"a"\t"m}'; done > /tmp/b.tsv; awk -F'\t' '{split($1,p,"/"); d=(index($1,"/")?p[1]:"<root>"); c[d"\t"$2]++; t[d]++} END{for(k in c){split(k,x,"\t"); printf "%s\t%s\t%d/%d\n",x[1],x[2],c[k],t[x[1]]}}' /tmp/b.tsv | sort -t$'\t' -k1,1 -k3,3 | sort -k1,1 -s
+FINAL ANSWER:
+Troy Goode holds at least half of the surviving lines in `lib/` and `test/`. Nobody does in `.github/` or the root files.
+
+| Path | Top contributor | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 (67%) | yes |
+| `test/` | Troy Goode | 517/966 (53.5%) | yes |
+| `.github/` | Douglas Christopher Wilson | 118/366 (32%) | no |
+| root files | Troy Goode | 134/415 (32%) | no |
+
+Suggested CODEOWNERS lines:
+
+```
+/lib/   @<troygoode-github-handle>
+/test/  @<troygoode-github-handle>
+# /.github/ and root files: no majority owner, so none assigned
+```
+
+I only have commit names and emails, not GitHub handles, so fill in the handle yourself.
+
+Method:
+- **Counting:** I ran `git blame` on the current files, ignoring whitespace changes and the reformat commit `62628c0`.
+- **Bots:** I removed dependabot's lines from the denominators (8 in `.github/`, 2 in the root).
+- **One person, one count:** Troy Goode's two commit emails collapse into one person, because blame groups by name.
+- **Closest runner-ups:** Íñigo Marquínez Prado has 95 lines in `.github/`, and Jon Church has 72 in the root. Neither is close to half.
+- **Margin:** `test/` is the narrowest call, at 53.5%.
+- **Not checked:** I didn't screen the other recent commits (such as `b2005d9`, "annotate handlers") for being formatting-only.
+META cost=0.0609447 ms=15523 turns=3

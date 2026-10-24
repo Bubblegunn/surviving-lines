@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib; echo ---; git log --no-merges --pretty='%an' -- lib | sort | uniq -c | sort -rn | head -15; echo ---; git log --no-merges --pretty='%an' | wc -l; for f in lib/*; do echo "$f: $(git log --no-merges --pretty='%an' -- $f | sort | uniq -c | sort -rn | awk 'NR<=3{printf "%s(%s) ", $2" "$3, $1}') | uniq=$(git log --no-merges --pretty='%an' -- $f | sort -u | wc -l)"; done; echo ---; git log --no-merges --since="90 days ago" --pretty='%an' -- lib | sort | uniq -c | sort -rn | head; git log -1 --format=%cd
+ - Bash: wc -l lib/index.js; git blame -w -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -6; git log -1 --format='%an %cd' -- lib; git log --since="1 year ago" --pretty='%an' -- lib | sort | uniq -c; git log --no-merges --format='%an|%s' -3 -- lib
+FINAL ANSWER:
+## Bus factor of `lib/`: 1
+
+`lib/` is a single file, `lib/index.js` (238 lines), so the directory-level number is the file-level number. If Troy Goode left, almost nobody would be left who understands it.
+
+| Metric | Value |
+|---|---|
+| Commits touching `lib/` (no merges) | 33 of 33+ by Troy Goode, about 60% of `lib/` commits |
+| Lines surviving in `git blame` | Troy Goode 138 of 238 (58%) |
+| Next largest owners by blame | Fiona Formatter 32 (reformat only), Douglas Christopher Wilson 18, Alejandro Caravaca Puchades 12 |
+| Distinct historical contributors | 25 |
+
+**Why the formal answer is 1**
+- Troy Goode is the only person who owns more than half the code.
+- The 50% rule means removing one person leaves less than half the lines with a knowledgeable author.
+
+**Why the real risk is better than that sounds**
+- Ownership is not above 80%, so this isn't a classic single-owner file.
+- 25 people have touched it. Wilson, Puchades, Feng and LuisEGR each wrote real portions.
+- A practical estimate is that 2 to 3 people leaving would remove most of the deep knowledge. Removing Goode and Wilson would leave about 40% of the lines with their authors gone.
+
+**Activity**
+- Only 2 commits in the last year: Goode ("annotate handlers") and a formatting-only commit.
+- The most recent change (Apr 2026) is Fiona Formatter's reformat. It makes them the second-largest blame owner on paper, but it says nothing about understanding.
+- I couldn't tell from git whether Goode is still active elsewhere in the project. The data suggests `lib/` is stable and rarely edited, not actively maintained by a team.
+
+**Caveats**
+- Authors are matched by name, not email. Alias duplicates, such as "Alejandro Caravaca Puchades" and "alex94puchades", slightly understate how concentrated ownership is.
+- I skipped the importance cross-check because `lib/` has one file. Everything in the project depends on it, so it counts as critical.
+
+**Recommendations**
+1. Have someone other than Goode review or write the next change to `lib/index.js`.
+2. Put the intent behind the "annotate handlers" work into doc comments or the README while the author is available.
+3. Add `.git-blame-ignore-revs` entries for the reformat commit so blame shows the real authors.
+META cost=0.06417300000000001 ms=16431 turns=5

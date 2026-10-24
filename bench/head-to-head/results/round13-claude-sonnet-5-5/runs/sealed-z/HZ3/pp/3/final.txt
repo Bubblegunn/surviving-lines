@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne HEAD | head -20; echo; git ls-files | grep -v '^\.' | head -50
+ - Bash: for f in $(git ls-files | grep -E '\.zig$|build.zig.zon'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author-mail ' | sed "s|^author-mail |$f |"; done > /tmp/bl.txt
+echo "== per file top"; awk '{c[$1" "$2]++} END{for(k in c)print c[k],k}' /tmp/bl.txt | sort -k2,2 -k1,1nr | awk '{n[$2]++; if(n[$2]<=3)print}'
+echo "== total"; awk '{c[$2]++;t++} END{for(k in c)printf "%d %.1f%% %s\n",c[k],100*c[k]/t,k}' /tmp/bl.txt | sort -nr | head -15; wc -l /tmp/bl.txt
+git log --since=12.months --format='%an|%ad' --date=short | sort | uniq -c | sort -nr | head; git log -1 --format=%ad
+ - Bash: grep -E 'mq32|random-projects|ib-queissner' /tmp/bl.txt | awk '{c[$2]++;t++} END{for(k in c)print c[k],k; print t" total"}'; echo; awk '{c[$2]++} END{print length(c)" distinct authors"}' /tmp/bl.txt
+# bus factor: authors needed (greedy) to cover 50% of lines, felix merged
+sed -E 's/<.*(mq32|random-projects|ib-queissner).*>/<felix>/' /tmp/bl.txt | awk '{c[$2]++;t++} END{for(k in c)print c[k],k}' | sort -nr | awk '{s+=$1; t+=0; a[NR]=$1; n[NR]=$2} END{tot=s; cum=0; for(i=1;i<=NR;i++){cum+=a[i]; printf "%d %s %.1f%%\n",i,n[i],100*cum/tot; if(i>=6)break}}'
+FINAL ANSWER:
+**Short answer:** Felix Queißner ("xq") wrote the most of the current code, about 36% of it. He doesn't dominate it, though. The bus factor is about 2, and the last commit by any of his four identities was in April 2026.
+
+I ran `git blame -w -M -C` on every `.zig` file and on `build.zig.zon` at HEAD. That covers 2,135 surviving lines from 30 distinct author emails. I merged Felix's four emails (`mq32.de`, `masterq32.de`, `random-projects.net`, `ib-queissner.de`) into one person.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Felix Queißner (4 identities) | ~761 | ~36% |
+| Wen Li | 552 | 26% |
+| jnagpaul | 188 | 9% |
+| Vincent Rischmann | 132 | 6% |
+| mochalins | 77 | 3.6% |
+| Dhole | 75 | 3.5% |
+| 23 others | ~350 | ~16% |
+
+- **If Felix disappeared:** about 36% of the current lines would have no author left. Most of that is the core parser in `src/args.zig`, where Felix wrote roughly 700 of the lines. That is the part that matters most.
+- **Bus factor:** it is 2 if you count the authors whose lines add up to more than half the code. Felix plus Wen Li cover 61%, and Felix alone covers 36%. Adding jnagpaul and Vincent Rischmann reaches 76%.
+- **Wen Li's share is inflated:** 484 of their 552 lines are in `src/width_table.zig`, which looks like a Unicode lookup table. Without that file Wen Li owns only about 4% of the code, and Felix rises to about 46%.
+- **Help and width code:** `src/help.zig` is mostly jnagpaul (166 lines), Dhole (75) and Bob Farrell (42), so it doesn't depend on Felix. `src/width.zig` and `width_table.zig` are essentially all Wen Li, so those are single-owner.
+- **Recent activity:** over the last 12 months the commits come from Felix (7, all on 2026-04-16), Wen Li, Tobias Ek and a few one-off contributors. Maintenance is moving to Wen Li and Tobias Ek, who have little code in the core yet.
+
+**Risks:**
+- The core parser in `src/args.zig` has the least knowledge spread around it. Vincent Rischmann is the only other meaningful author there, with 64 lines.
+- `src/width.zig` and `src/width_table.zig` have a single owner, Wen Li.
+
+Blame measures who wrote the lines that survive, not who understands them. Reviewers and issue triagers don't show up in it. Dates also look odd: the latest commit is dated 2026-11-04, after today's date.
+META cost=0.0701406 ms=22032 turns=4

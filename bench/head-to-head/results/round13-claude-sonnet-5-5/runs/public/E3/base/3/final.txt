@@ -1,0 +1,21 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | while IFS= read -r f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,"");print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";if(!(e in s)){s[e]=1;print e"\t"c"\t"$0}}'
+FINAL ANSWER:
+Top owner of surviving lines by file extension, from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| (no extension) | Douglas Christopher Wilson | 17 |
+
+I only kept the top author per extension, so I can't tell you how close the runner-up is. I didn't check whether Troy Goode's `.js` lines come from the latest reformat commit (`62628c0`) or from older work. If it's the reformat, the `.js` result says who ran the reformat, not who wrote the code. I can rerun with `-w -M -C` or ignore that commit via `--ignore-rev` if you want.
+META cost=0.0351252 ms=8373 turns=2

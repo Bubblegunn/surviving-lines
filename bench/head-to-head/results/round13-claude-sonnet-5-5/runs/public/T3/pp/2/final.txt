@@ -1,0 +1,26 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all; ls -a | grep -i mailmap; git config mailmap.file
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sn --all -e | head -5; git shortlog -sn --all | grep -iE "troy|alej"
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** committed as `<email redacted>` (120 commits) and as `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** committed under that name (4 commits) and as `alex94puchades` (1 commit). Both used the same email.
+
+I added a `.mailmap` at the repo root that maps each to a single identity. I didn't rewrite any history. Git tools such as `git shortlog` and `git log --use-mailmap` read the file. I haven't committed it.
+
+With the file in place, Troy Goode has 122 commits and Alejandro Caravaca Puchades has 5.
+
+**The top author is still Douglas Christopher Wilson with 143 commits.** Troy Goode is second with 122, so the merge doesn't change the order.
+
+"Fiona Formatter" (`fiona@formatter.example`) has 1 commit and looks like a bot or formatting-tool identity. I didn't merge it with anyone, because nothing shows who it belongs to.
+META cost=0.051185800000000004 ms=10054 turns=3

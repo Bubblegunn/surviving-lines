@@ -1,0 +1,33 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ2-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: for f in time.go version7.go sql.go; do echo "== $f"; git log --format='%an <%ae> %ad' --date=short -- $f | awk '{c[$0]++} END{for(k in c) print c[k], k}' | sort -rn | head -6; done; echo; git log -1 --format='newest: %ad' --date=short; git shortlog -sne --since='12 months ago' HEAD | head
+ - Bash: git ls-files | grep -iE 'sql|time|version7'; echo; git shortlog -sne --since='12 months ago' HEAD; echo; git shortlog -sne HEAD | head -12; echo; git log --since='2025-06-17' --format='%an|%ad' --date=short -- time.go version7.go sql.go sql_test.go time_test.go version7_test.go
+FINAL ANSWER:
+**Short answer:** ask Ravi Menon (`ravi.menon@harbor.example`) first, then Alexander Rowe. The people who originally wrote most of this code have left.
+
+The busfactor tool's dry run only produced the fallback rule `* ravi.menon@harbor.example alex.rowe@mailbox.example`. It found no zones with their own owners. I got the per-file picture from `git log` instead. This is inferred from commit history and I haven't checked it against anything else. The history runs through 2026-06-17.
+
+Only four people, one of them a bot, committed in the 12 months before that date. They were Ravi Menon (2 commits), Alexander Rowe (1), Kofi Mensah (1) and renovate[bot] (1).
+
+| File | Who wrote it | Still around? |
+|---|---|---|
+| `time.go` | Paul Borman wrote almost all of it (2011–2016). The only later changes are Youngjae Lee (2024) and Sam Okafor (2025). | Borman, Lee and Okafor have no commits in the last 12 months. I'd treat `time.go` as **orphaned**. |
+| `version7.go` | MikeWang, David Kaufman, Andreas Deininger and Mei Chen (2023–2025), plus Ravi Menon on 2026-05-05. | Only Ravi is active. |
+| SQL (`database_sql.go`, `sql_test.go`) | David E. Wheeler, Andrew Stone, Justin Overfelt, Steven Kaufman and Paul Borman (2015–2021), plus Ravi Menon on 2025-03-10. | Only Ravi is active. I didn't run the per-file history on `database_sql.go` itself. |
+
+- **Ravi Menon** is the only current maintainer who has touched all three areas. That also makes them a single point of failure, so a second reviewer would help.
+- **Alexander Rowe and Kofi Mensah** are active but have no history on these files. They can review, but they can't be treated as the people who know this code.
+- **Paul Borman** wrote most of the original code. Their commits are spread across several emails (`<email redacted>`, `<email redacted>`, `pborman`), and none are recent. I wouldn't assume they're available.
+
+Two caveats on the roster:
+- Mei Chen's 2025-08-02 commit to `version7.go` falls inside the 12-month window. She doesn't appear in the recent-author list, probably because of how that commit was attributed. Check whether she's reachable before treating `version7.go` as single-owner.
+- The tool decides who is "active" from commits alone. Someone who reviews but doesn't commit, or a contractor who has been quiet for 13 months, would be misclassified. Please confirm the roster, especially whether Sam Okafor (a `harbor.example` address, last commit April 2025) is still on your team.
+
+I ran it as `--dry-run --no-github`, so nothing was written to the repo and I didn't resolve any GitHub logins. I haven't produced the HTML risk report; I can generate it, plus a real `.github/CODEOWNERS`, if you want them.
+META cost=0.0699056 ms=19835 turns=6

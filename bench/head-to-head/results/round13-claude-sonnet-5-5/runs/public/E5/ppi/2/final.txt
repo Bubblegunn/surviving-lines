@@ -1,0 +1,45 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js: who shaped it, and whose code is still in it today?"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -50; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo BLAME; git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js
+ - Bash: git log --follow --pretty=format:"%h|%an|%ad" --date=short -- lib/index.js | tail -3; echo; git blame -w -C -C -C --line-porcelain lib/index.js | grep -E '^[0-9a-f]{40} ' | cut -c1-7 | sort | uniq -c | sort -rn | head -8; git show b2005d9 --stat | head; git show b2005d9 -- lib/index.js | head -40
+FINAL ANSWER:
+## 🔍 Code History: `lib/index.js`
+
+### Quick Context
+> This is the core of the `cors` middleware. It handles origin matching, preflight responses, and header application. Troy Goode wrote it in 2013 and it has had about 62 commits since.
+
+### Decision Timeline
+- **2013-01 to 2013-10:** Troy Goode wrote the original file. Contributors added early-`Origin` checks (Simon Mansfield), a callback form for `origin` (Eric di Domenico), and Connect support without Express (Mathias Buus).
+- **2014:** Troy added `Access-Control-Expose-Headers` and Express 4 support. Other contributors added `PATCH` to the default methods (Typicode), uppercase normalization of method names (Shane Tomlinson), and a fix so the `origin` callback isn't overridden (Alberto Leal). Igor Soarez added `Vary: Origin`, and Troy then moved it to the `vary` module.
+- **2015:** Raymond Feng removed a closure in `applyHeaders`. Alejandro Caravaca Puchades added RegExp and array values for `origin`. max.laverse let preflight requests pass through to `next()`, and DracoBlue added exposed headers to the OPTIONS response. Troy moved linting to ESLint.
+- **2016 to 2017:** Troy's 2.8.0 release (2016-08). Douglas Christopher Wilson then made the `Vary` header handling correct for regex origins and dynamic `allowedHeaders`. He also fixed a missing `methods` option. Benjamin Eidelman added a Safari preflight workaround.
+- **2018 to 2021:** Tom Arad fixed `maxAge: 0`, and LuisEGR removed unused parameters in a lint pass.
+- **2026-04:** Two recent commits were mostly cosmetic.
+  - **`b2005d9`**, "annotate handlers", is credited to Troy. It adds `// checked` comments to 12 function lines.
+  - **`62628c0`**, a reformat to 4-space indent and double quotes, is credited to Fiona Formatter.
+
+### Narrative
+Troy Goode wrote the file and shaped it most. Almost all of its feature set came from small contributor PRs: regex and array origins, `Vary` handling, preflight pass-through, and the Safari workaround. Douglas Christopher Wilson was the main maintainer in 2017, and his work is correctness fixes around `Vary` and options handling. After 2021 the file saw little activity until the two cosmetic commits in April 2026.
+
+### Key Takeaways
+1. **Troy Goode is still the largest author.** Blame attributes 138 of 238 lines to him, but this is a loose count. Many lines in the current file are Troy's 2013–2015 code.
+2. **Fiona Formatter's 32 lines are from the reformat.** Blame credits those lines to the reformat commit even though the logic is older. `-w` ignores whitespace only, not the quote changes. Those lines most likely trace back to Troy and others.
+3. **The contributor lines that remain are mostly small.** Wilson has 18 lines, Alejandro Caravaca Puchades 15 (12 plus 3 under his other handle, `alex94puchades`), Raymond Feng 7 and LuisEGR 6. The rest of the 17 listed authors have 5 lines or fewer each.
+4. **The "annotate handlers" commit looks questionable.** It only adds `// checked` comments, which don't record any real review. The 2026 commit dates look synthetic too, and `troy@laptop.example` is not a real address. I'd check whether Troy actually made that commit before trusting its attribution.
+
+### Metrics
+| Metric | Value |
+|--------|-------|
+| Total commits | 62 (per `git log --follow`) |
+| Contributors | 17 in blame (Troy Goode, Fiona Formatter, Douglas Christopher Wilson, Alejandro Caravaca Puchades, Raymond Feng, LuisEGR, max.laverse, alex94puchades, Simon Mansfield, Igor Soarez, Mathias Buus, Eric di Domenico, Benjamin Eidelman, Alberto Leal, Saad Tazi, Hannah Wolfe, Chima Alaebo) |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Low to medium, with a quiet 2018–2026 stretch broken only by the 2026 cosmetic commits |
+
+I didn't run the deep checks for PRs, reverts and linked issues. If you want those, I can run the deep version.
+META cost=0.07766390000000001 ms=23154 turns=5

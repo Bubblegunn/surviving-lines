@@ -1,0 +1,35 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "lib directory"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/T2-bf-1/repo --dry-run --no-github 2>&1 | head -60
+ - Bash: git log -1 --format=%cd && git log --no-merges --format='%ae|%ad' --date=short -- lib | awk -F'|' '{n[$1]++; if(!l[$1])l[$1]=$2; f[$1]=$2} END{for(a in n)print n[a],a,"last:"l[a],"first:"f[a]}' | sort -rn; ls lib
+ - Bash: git log --no-merges --since=2025-04-12 --format='%h %ae %ad %s' --date=short --numstat -- lib; wc -l lib/index.js
+FINAL ANSWER:
+**Short answer: the bus factor of `lib/` is effectively 0. Nobody currently understands it in depth, and it has no real owner.** I computed this directly from `git log` on `lib/`, not with the busfactor script's full risk report, because you only asked about one directory.
+
+**What's in `lib/`:** one file, `index.js`, 238 lines. It has 59 non-merge commits from 25 email addresses.
+
+**Who wrote it:**
+- **<email redacted>** made 32 of the 59 commits (54%), but the last one was in 2016-08. They are the only real domain expert, and they are gone.
+- **Everyone else** made 1–5 commits each, and nearly all of them stopped between 2013 and 2018. One more commit came in 2021. The 2013–2018 group includes alex94puchades (5), <email redacted> (4) and siyfion (3).
+
+**Activity in the last 12 months** (history runs through 2026-04-12). There are only two commits, and neither changes behaviour:
+- `62628c0` fiona@formatter.example, 2026-04-12: a whitespace and quote reformat, touching 214 of 238 lines.
+- `b2005d9` troy@laptop.example, 2026-04-10: "annotate handlers", touching 12 lines.
+
+**How to read this:**
+- **Formatting commits inflate ownership.** Fiona's commit makes them look like the top recent owner of `lib/`. A mechanical reformat shows who ran a tool, not who understands the logic.
+- **Troy's commit may be Troy Goode.** The `troy@laptop.example` address could be the departed maintainer back for one small edit, but I can't confirm that from git. If it is, the real bus factor is 1, and everything depends on a person who commits about once a decade. If it's a different Troy, the factor is 0.
+- **Ownership by volume:** the original design knowledge rests on someone inactive for about 10 years. Everyone else made one or two commits.
+- **If people leave:** there is nobody left to lose. The code is already effectively orphaned. If Fiona and the laptop-Troy also leave, `lib/` loses its only two recent touchers, but neither has shown deep ownership.
+
+**Caveats:**
+- **Commit counts are a proxy for knowledge.** Reviewers, maintainers who don't commit, and people who read the code without committing are invisible to this analysis.
+- **Imported history.** The repo's history starts with a bulk commit of 8 files in 2013, so the earliest ownership may predate what git shows.
+
+**Next steps, if you want them:** I can run the full busfactor script. It would write a `CODEOWNERS` file and an `ownership.json` into the repo, and I'd also need you to tell me whether `troy@laptop.example` and Troygoode are the same person. I'd also suggest adding a `.git-blame-ignore-revs` entry for `62628c0`, so the reformat stops hiding the real authorship in `git blame`.
+META cost=0.0688245 ms=20374 turns=6

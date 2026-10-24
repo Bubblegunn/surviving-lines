@@ -1,0 +1,71 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -A && git ls-files | head -50 && git log --format='%h %an <%ae> %s' | head -40 && git log --format='%an <%ae>' | sort | uniq -c | sort -rn && cat .mailmap 2>/dev/null; ls .github; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: git show --stat 62628c0 b2005d9 02afce3 | cat; git show -w --format= 62628c0 | sed 's/"/'"'"'/g' | grep -E '^[+-][^+-]' | head -60
+ - Bash: for f in lib/index.js test/error-response.js test/example-app.js test/test.js; do diff <(git show 62628c0^:$f | tr -d ' \t' | tr '"' "'") <(git show 62628c0:$f | tr -d ' \t' | tr '"' "'") >/dev/null && echo "$f fmt-only" || echo "$f CHANGED"; done; git show b2005d9 | cat; git show --stat f038e77 | cat
+ - Bash: for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");a=$0} /^author-mail /{print f"\t"a"\t"$2}'; done > /tmp/blame.tsv; wc -l /tmp/blame.tsv; cut -f2,3 /tmp/blame.tsv | sort | uniq -c | sort -rn
+ - Bash: cd /tmp && awk -F'\t' '$2!~/\[bot\]/{p=$2; if(p=="alex94puchades")p="Alejandro Caravaca Puchades"; split($1,a,"/"); g=(length(a)>1)?a[1]"/":"(root)"; print g"\t"p; print $1"\t"p}' blame.tsv | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{c=$1;$1="";sub(/^ /,"");split($0,x,"\t"); k=x[1]; tot[k]+=c; if(!(k in top)){top[k]=x[2];tc[k]=c} else if(!(k in sec)){sec[k]=x[2];sc[k]=c}} END{for(k in tot) printf "%-28s total=%4d top=%s %d (%.1f%%) | 2nd=%s %d\n",k,tot[k],top[k],tc[k],100*tc[k]/tot[k],sec[k],sc[k]}' | sort; grep bot blame.tsv | cut -f1 | sort | uniq -c
+ - Bash: python3 -I - <<'EOF'
+from collections import Counter, defaultdict
+alias={"alex94puchades":"Alejandro Caravaca Puchades"}
+g=defaultdict(Counter)
+for l in open("/tmp/blame.tsv",encoding="utf-8"):
+    f,a,m=l.rstrip("\n").split("\t")
+    if "[bot]" in a: continue
+    a=alias.get(a,a)
+    top=f.split("/")[0]+"/" if "/" in f else "(root)"
+    g[top][a]+=1
+    if top=="(root)": g[f][a]+=1
+for k in sorted(g):
+    c=g[k]; t=sum(c.values())
+    print(f"{k:16} total={t:4} " + ", ".join(f"{a} {n} ({100*n/t:.1f}%)" for a,n in c.most_common(3)))
+EOF
+FINAL ANSWER:
+Only `lib/` has a clear owner, Troy Goode. `test/`, `.github/` and the root files as a group have nobody at half or more. A few individual root files do.
+
+| Path | Surviving lines | Top holders | Owner? |
+|---|---|---|---|
+| `lib/` | 238 | Troy Goode 159 (66.8%), Douglas Christopher Wilson 22 (9.2%) | **Troy Goode** |
+| `test/` | 966 | Troy Goode 453 (46.9%), Douglas Christopher Wilson 400 (41.4%) | No one. Troy is 30 lines short of half. |
+| `.github/` | 366 | Douglas Christopher Wilson 108 (29.5%), Íñigo Marquínez Prado 95 (26.0%), Sebastian Beltran 63 (17.2%) | No one |
+| Root files together | 415 | Troy Goode 134 (32.3%), Douglas Christopher Wilson 115 (27.7%), Jon Church 72 (17.3%) | No one |
+| `HISTORY.md` | 64 | Douglas Christopher Wilson 78.1% | Douglas |
+| `LICENSE` | 22 | Douglas Christopher Wilson 77.3% | Douglas |
+| `.eslintrc.yml` | 7 | Douglas Christopher Wilson 100% | Douglas |
+| `.gitignore` | 5 | Douglas Christopher Wilson 80% | Douglas |
+| `package.json` | 40 | Douglas Christopher Wilson 20 (exactly 50.0%) | Douglas, just at the threshold |
+| `README.md` | 277 | Troy Goode 41.9%, Jon Church 26.0% | No one |
+
+Suggested CODEOWNERS:
+
+```
+# Top-level directories
+/lib/            <email redacted>
+# /test/     no owner: Troy Goode 46.9%, Douglas Christopher Wilson 41.4%
+# /.github/  no owner: top holder is Douglas Christopher Wilson at 29.5%
+
+# Root files (as a group nobody holds half: Troy Goode 32.3% is the top share)
+/HISTORY.md      <email redacted>
+/LICENSE         <email redacted>
+/package.json    <email redacted>
+/.eslintrc.yml   <email redacted>
+/.gitignore      <email redacted>
+# /README.md no owner: Troy Goode 41.9%, Jon Church 26.0%
+```
+
+The owners are listed by commit email because the repo doesn't show GitHub usernames. Swap in `@handles` if you know them. CODEOWNERS accepts either form.
+
+How I counted:
+- **Formatting:** I counted `git blame -w` with `--ignore-rev 62628c0`, the "style: reformat" commit. I checked that it's formatting-only: after removing whitespace and treating both quote styles as the same, the before and after versions of every file it touched are identical. Its author doesn't own any surviving lines.
+- **Not formatting:** `b2005d9` ("lib: annotate handlers") adds `// checked` comments to 12 lines in `lib/index.js`. That's new content, so I counted it. Leaving it out would still give Troy about 65% of `lib/`.
+- **Bots:** I removed dependabot's 10 lines from both the counts and the totals.
+- **One person, two identities:**
+  - Troy Goode commits as both `<email redacted>` and `troy@laptop.example`. I counted these as one person; it adds 48 lines but doesn't push them over half in `test/`.
+  - "alex94puchades" and "Alejandro Caravaca Puchades" share an email, so I merged them as well.
+
+`package.json` sits exactly on the threshold, so one more line from anyone else drops Douglas below half. You may want to leave it unowned. No CODEOWNERS file was written or committed; if you want one, I can add it as `.github/CODEOWNERS`.
+META cost=0.30929720000000005 ms=55470 turns=7

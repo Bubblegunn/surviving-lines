@@ -1,0 +1,45 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-base-3/runs/HZ2-base-3/repo; ls; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null; for f in time.go version7.go sql.go; do echo "== $f"; git log --format='%an <%ae>' -- $f | sort | uniq -c | sort -rn | head -5; git log --format='%ad %an' --date=short -1 -- $f; done; echo; git log --since='2 years ago' --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git log -1 --format='%ad'
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-base-3/runs/HZ2-base-3/repo; for f in database_sql.go sql_test.go; do echo "== $f"; git log --format='%ad %an' --date=short -- $f | awk '{d=$1; $1=""; c[$0]++; if(!($0 in l))l[$0]=d} END{for(k in c)print c[k],l[k],k}' | sort -rn | head; done; echo; echo "== last commit per person (all files)"; git log --format='%ad|%an' --date=short | awk -F'|' '!s[$2]++' | head -20; echo; git blame -w --line-porcelain time.go version7.go database_sql.go | grep '^author ' | sort | uniq -c | sort -rn | head; cat CONTRIBUTORS | head -20
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-base-3/runs/HZ2-base-3/repo; for f in time.go version7.go database_sql.go; do echo "== $f"; git log --follow --format='%ad|%an' --date=short -- $f | awk -F'|' '{c[$2]++; if(!($2 in l))l[$2]=$1} END{for(k in c)print c[k],l[k],k}' | sort -rn; echo "-- blame"; git blame -w -e $f | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/' | sort | uniq -c | sort -rn | head -5; done; git log --format='%h %ad %an %s' --date=short -3 -- version7.go; git log --format='%h %ad %an %s' --date=short | grep -i -m3 kofi; git log --format='%an' | sort | uniq -c | sort -rn | grep -i -E 'borman|pborman'; git log --format='%ad %an' --date=short | grep -i borman | head -1
+FINAL ANSWER:
+The git history can show who wrote and last touched each file. It can't show who is still around. I only have commit dates to go on, so treat "active" below as "committed recently".
+
+**Official review routing**
+
+`CODEOWNERS` sends everything to `@google/go-uuid-contributors`, with no per-file owners. I can't see that team's membership from the repo, so check it on GitHub.
+
+**Who wrote each part**
+
+| Area | Original author (most of the code today) | Recent maintainers |
+|---|---|---|
+| `time.go` | Paul Borman wrote about 111 lines (10 commits, 2016) | Alexander Rowe (2025-02), Sam Okafor (2025-04), Nicu Micle (2024-11), MikeWang (2023-11) |
+| `version7.go` | MikeWang wrote about 101 lines (2024-01) | Mei Chen (2025-08, added `Time7`), Ravi Menon (2026-05, v7 clock step-back docs) |
+| SQL (`database_sql.go`, formerly `sql.go`) | Justin Overfelt wrote the most lines (2015). Also David E. Wheeler, Andrew Stone, "thehazard" | Ravi Menon (2025-03), Steven Kaufman (2021) |
+
+There is no `sql.go` any more. It was renamed to `database_sql.go`, and `git log --follow` recovers the history.
+
+**Are the original authors still around?**
+
+- **Paul Borman:** probably not. His last commit is 2023-10-26, and he wrote most of the library. He is the person to ask about `time.go` if you can reach him.
+- **MikeWang:** probably not. His last commit is 2024-07, and he wrote nearly all of `version7.go`.
+- **Justin Overfelt, David E. Wheeler, Andrew Stone:** none has committed to the SQL code since 2017, and Wheeler's last was 2016.
+- **Active in the last year:** Ravi Menon (latest commit 2026-06-17, touches all three areas), Alexander Rowe, Mei Chen, Sam Okafor and Noor Haddad.
+
+**Suggested reviewers**
+
+- **Ravi Menon:** the only person who has touched all three areas recently, so the best first choice.
+- **Alexander Rowe or Sam Okafor** for `time.go`.
+- **Mei Chen** for `version7.go`.
+
+**Check before relying on this**
+
+- One commit, `d97a7fa` by Kofi Mensah, is dated 1970-01-01. That date is likely a bad timestamp or a rewritten history, so I would verify that commit.
+- Authors appear under several names, for example "Alex Rowe", "Alexander Rowe" and "arowe", and Paul Borman appears as "pborman" and "bormanp". I grouped them by hand, so the counts are approximate.
+- Commit emails like `*.harbor.example` and `*.example` look like placeholders, so I wouldn't use them to contact anyone.
+META cost=0.0651064 ms=19312 turns=4

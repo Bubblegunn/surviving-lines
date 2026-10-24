@@ -1,0 +1,125 @@
+You grade 1 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+I am taking over the google/uuid library. Who should I ask to review changes to time.go, version7.go and the SQL code, and are the people who actually wrote those parts still around?
+
+CRITERIA:
+1. time.go. PASS: Paul Borman (all his names/addresses merged: Paul Borman, pborman, <email redacted>, <email redacted>) is named main author of time.go with 65-80% of its lines (truth 73%) and described as no longer active (last commit 2023). FAIL: Sam Okafor (line-ending commit) credited with time.go; no single main author because Paul's identities are split; Paul Borman described as active.
+2. version7.go and the committer/author split. PASS: MikeWang is named main author of version7.go with 72-90% (truth 81%), and Mei Chen is credited with the Time7 accessor, about 9% of the file (6-13%), although Ravi Menon committed it; Ravi Menon is not credited with Mei's lines. FAIL: Ravi Menon credited with the Time7 patch or with more than 5% of version7.go; Mei Chen missing while the answer discusses who wrote the file's recent additions.
+3. SQL code across the rename. PASS: the answer follows the history of database_sql.go (formerly sql.go) and names Justin Overfelt as the largest author with 36-52% of the file (truth 44%), with Andrew Stone, David E. Wheeler and Daniel Souza as other original authors, all gone. FAIL: Ravi Menon (who did the rename) named as author or owner of the SQL code; the answer says the SQL code has no history or starts in 2025.
+4. Who is still around. PASS: the answer says that almost all lines of the repository (93-98%, truth 95.9%) are owned by people with no commit in the last 12 months, that none of the three files has an active author with a meaningful share (time.go at most 8%, version7.go at most 3%, SQL code 0%), and that the only active people are Ravi Menon, Alex Rowe and Kofi Mensah, with Alex Rowe counted as ONE person (Alex Rowe, arowe and Alexander Rowe merged; about 92 lines, 3%). FAIL: Paul Borman, MikeWang or Justin Overfelt recommended as an available reviewer without saying they left; Alex Rowe listed as three people; a share of lines owned by departed people below 85%.
+5. Noise that must not count. PASS: Noor Haddad (two commits, reverted ULID work) is credited with 0 surviving lines and not named an owner or expert; Sam Okafor owns no code (line-ending, generated and vendored changes); the bot commits are not treated as a person; Kofi Mensah is treated as active (his commit is dated Dec 2025 by the committer date, the 1970 author date is a clock error). FAIL: Noor Haddad or Sam Okafor named as owner/expert or given 1% or more; generated/vendored files counted as authorship; Kofi Mensah described as inactive since 1970.
+
+GROUND TRUTH (computed by a script with git blame):
+FIXTURE HEAD 08af9eef4787055aa3b4035e715ecb3421a9e920
+SCOPE 27 go files, 3105 lines; excluded generated/vendored: ['uuid_names_gen.go', 'vendor/example.org/bits/bits.go']
+
+== repo-wide surviving lines (>=1%) and commit share
+  Paul Borman          lines  1302  41.9%   commits   68 (35.8% of 190)  last 2023-10-26 LEFT
+  Samuel Roth          lines   319  10.3%   commits    1 ( 0.5% of 190)  last 2021-07-12 LEFT
+  MikeWang             lines   270   8.7%   commits    5 ( 2.6% of 190)  last 2024-07-01 LEFT
+  Nicu Micle           lines   170   5.5%   commits    1 ( 0.5% of 190)  last 2024-11-14 LEFT
+  Bryan Matsuo         lines   143   4.6%   commits   17 ( 8.9% of 190)  last 2016-02-28 LEFT
+  Justin Overfelt      lines   104   3.3%   commits    3 ( 1.6% of 190)  last 2016-02-08 LEFT
+  Andrey Pechkurov     lines   100   3.2%   commits    1 ( 0.5% of 190)  last 2021-07-08 LEFT
+  Alex Rowe            lines    92   3.0%   commits    4 ( 2.1% of 190)  last 2026-03-09 active
+  Lucas JAHIER         lines    73   2.4%   commits    1 ( 0.5% of 190)  last 2023-12-11 LEFT
+  talis                lines    55   1.8%   commits    6 ( 3.2% of 190)  last 2019-03-13 LEFT
+  Vladimir Kochergin   lines    51   1.6%   commits    1 ( 0.5% of 190)  last 2023-08-21 LEFT
+  Joe Wreschnig        lines    44   1.4%   commits    1 ( 0.5% of 190)  last 2020-12-30 LEFT
+  Elliott Stoneham     lines    42   1.4%   commits    1 ( 0.5% of 190)  last 2017-11-29 LEFT
+  Jorge Massih         lines    39   1.3%   commits    1 ( 0.5% of 190)  last 2024-08-06 LEFT
+  Ravi Menon           lines    35   1.1%   commits    7 ( 3.7% of 190)  last 2026-06-17 active
+  commit counts of zero/near-zero line owners: {'Noor Haddad': (0, 2), 'Sam Okafor': (0, 2), 'Ravi Menon': (35, 7), 'Mei Chen': (11, 1), 'Kofi Mensah': (1, 1)}
+  bot commits: 11 of 190
+
+== per-file owners (>=5% of the file), last activity, status
+-- time.go (152 lines)
+     Paul Borman           111  73.0%  last 2023-10-26 LEFT
+     MikeWang               12   7.9%  last 2024-07-01 LEFT
+     Alex Rowe              11   7.2%  last 2026-03-09 active
+     Nicu Micle              8   5.3%  last 2024-11-14 LEFT
+     lines owned by active people: 11 (7.2%)
+-- version7.go (117 lines)
+     MikeWang               95  81.2%  last 2024-07-01 LEFT
+     Mei Chen               11   9.4%  last 2025-08-09 LEFT
+     Paul Borman             6   5.1%  last 2023-10-26 LEFT
+     lines owned by active people: 2 (1.7%)
+-- database_sql.go (59 lines)
+     Justin Overfelt        26  44.1%  last 2016-02-08 LEFT
+     Andrew Stone           11  18.6%  last 2017-03-03 LEFT
+     David E. Wheeler        8  13.6%  last 2016-02-08 LEFT
+     Daniel Souza            8  13.6%  last 2016-01-21 LEFT
+     Paul Borman             5   8.5%  last 2023-10-26 LEFT
+     lines owned by active people: 0 (0.0%)
+-- version8.go (31 lines)
+     Alex Rowe              31 100.0%  last 2026-03-09 active
+     lines owned by active people: 31 (100.0%)
+-- node_id.go (31 lines)
+     Paul Borman            31 100.0%  last 2023-10-26 LEFT
+     lines owned by active people: 0 (0.0%)
+-- version4.go (76 lines)
+     Paul Borman            24  31.6%  last 2023-10-26 LEFT
+     Andrey Pechkurov       21  27.6%  last 2021-07-08 LEFT
+     Bryan Matsuo           14  18.4%  last 2016-02-28 LEFT
+     jackterm                8  10.5%  last 2021-01-22 LEFT
+     talis                   5   6.6%  last 2019-03-13 LEFT
+     lines owned by active people: 0 (0.0%)
+
+== who is active and what they own (whole scope)
+  Ravi Menon         35 lines (1.1%) last 2026-06-17
+  Alex Rowe          92 lines (3.0%) last 2026-03-09
+  Kofi Mensah         1 lines (0.0%) last 2025-12-02
+lines owned by people who left: 2977 = 95.9%
+bus factor (>=50% of lines): 2 ['Paul Borman', 'Samuel Roth'] 52.2%
+Kofi Mensah author-date of his commit: ['1970-01-01'] committer date: 2025-12-02
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-base-3/runs/HZ2-base-3/repo; ls; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null; for f in time.go version7.go sql.go; do echo "== $f"; git log --format='%an <%ae>' -- $f | sort | uniq -c | sort -rn | head -5; git log --format='%ad %an' --date=short -1 -- $f; done; echo; git log --since='2 years ago' --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git log -1 --format='%ad'
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-base-3/runs/HZ2-base-3/repo; for f in database_sql.go sql_test.go; do echo "== $f"; git log --format='%ad %an' --date=short -- $f | awk '{d=$1; $1=""; c[$0]++; if(!($0 in l))l[$0]=d} END{for(k in c)print c[k],l[k],k}' | sort -rn | head; done; echo; echo "== last commit per person (all files)"; git log --format='%ad|%an' --date=short | awk -F'|' '!s[$2]++' | head -20; echo; git blame -w --line-porcelain time.go version7.go database_sql.go | grep '^author ' | sort | uniq -c | sort -rn | head; cat CONTRIBUTORS | head -20
+ - Bash: cd /private/tmp/r13/final/f6r/HZ2-base-3/runs/HZ2-base-3/repo; for f in time.go version7.go database_sql.go; do echo "== $f"; git log --follow --format='%ad|%an' --date=short -- $f | awk -F'|' '{c[$2]++; if(!($2 in l))l[$2]=$1} END{for(k in c)print c[k],l[k],k}' | sort -rn; echo "-- blame"; git blame -w -e $f | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/' | sort | uniq -c | sort -rn | head -5; done; git log --format='%h %ad %an %s' --date=short -3 -- version7.go; git log --format='%h %ad %an %s' --date=short | grep -i -m3 kofi; git log --format='%an' | sort | uniq -c | sort -rn | grep -i -E 'borman|pborman'; git log --format='%ad %an' --date=short | grep -i borman | head -1
+FINAL ANSWER:
+The git history can show who wrote and last touched each file. It can't show who is still around. I only have commit dates to go on, so treat "active" below as "committed recently".
+
+**Official review routing**
+
+`CODEOWNERS` sends everything to `@google/go-uuid-contributors`, with no per-file owners. I can't see that team's membership from the repo, so check it on GitHub.
+
+**Who wrote each part**
+
+| Area | Original author (most of the code today) | Recent maintainers |
+|---|---|---|
+| `time.go` | Paul Borman wrote about 111 lines (10 commits, 2016) | Alexander Rowe (2025-02), Sam Okafor (2025-04), Nicu Micle (2024-11), MikeWang (2023-11) |
+| `version7.go` | MikeWang wrote about 101 lines (2024-01) | Mei Chen (2025-08, added `Time7`), Ravi Menon (2026-05, v7 clock step-back docs) |
+| SQL (`database_sql.go`, formerly `sql.go`) | Justin Overfelt wrote the most lines (2015). Also David E. Wheeler, Andrew Stone, "thehazard" | Ravi Menon (2025-03), Steven Kaufman (2021) |
+
+There is no `sql.go` any more. It was renamed to `database_sql.go`, and `git log --follow` recovers the history.
+
+**Are the original authors still around?**
+
+- **Paul Borman:** probably not. His last commit is 2023-10-26, and he wrote most of the library. He is the person to ask about `time.go` if you can reach him.
+- **MikeWang:** probably not. His last commit is 2024-07, and he wrote nearly all of `version7.go`.
+- **Justin Overfelt, David E. Wheeler, Andrew Stone:** none has committed to the SQL code since 2017, and Wheeler's last was 2016.
+- **Active in the last year:** Ravi Menon (latest commit 2026-06-17, touches all three areas), Alexander Rowe, Mei Chen, Sam Okafor and Noor Haddad.
+
+**Suggested reviewers**
+
+- **Ravi Menon:** the only person who has touched all three areas recently, so the best first choice.
+- **Alexander Rowe or Sam Okafor** for `time.go`.
+- **Mei Chen** for `version7.go`.
+
+**Check before relying on this**
+
+- One commit, `d97a7fa` by Kofi Mensah, is dated 1970-01-01. That date is likely a bad timestamp or a rewritten history, so I would verify that commit.
+- Authors appear under several names, for example "Alex Rowe", "Alexander Rowe" and "arowe", and Paul Borman appears as "pborman" and "bormanp". I grouped them by hand, so the counts are approximate.
+- Commit emails like `*.harbor.example` and `*.example` look like placeholders, so I wouldn't use them to contact anyone.
+
+FILE .mailmap written by this run
+Alex Rowe <alex@rowe.example> arowe <<email redacted>>
+Paul Borman <<email redacted>> pborman <<email redacted>>

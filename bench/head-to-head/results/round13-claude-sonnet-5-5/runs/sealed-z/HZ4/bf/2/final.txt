@@ -1,0 +1,54 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ4-bf-2/repo --dry-run --no-github 2>&1 | head -80; cd /private/tmp/r13/final/out-F/runs/HZ4-bf-2/repo && git shortlog -sne HEAD | head -15
+ - Bash: for p in lib/grape_entity/exposure lib/grape_entity/delegator lib/grape_entity/delegator.rb lib/grape_entity/delegators; do echo "== $p"; git log --no-merges --format='%ae' -- $p | sort | uniq -c | sort -rn | head -8; git log --no-merges --format='%ae %ad' --date=short -- $p | awk '{if(!($1 in l))l[$1]=$2}END{for(k in l)print k,l[k]}'; done; echo; git log -1 --format=%ad --date=short; git log --format='%ae' | sort | uniq -c | sort -rn | grep -i kestrel; git ls-files | xargs -n1 -I{} echo >/dev/null; git ls-files lib/grape_entity | head -30
+ - Bash: git ls-files lib | xargs -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author-mail' | sort | uniq -c | sort -rn | head -8; echo; for p in lib/grape_entity/exposure lib/grape_entity/delegator.rb lib/grape_entity/delegators; do echo == $p; git ls-files $p | xargs -n1 git blame -w --line-porcelain HEAD -- | grep '^author-mail' | sort | uniq -c | sort -rn | head -4; done; git log --no-merges --format='%ae' | sort | uniq -c | sort -rn | head -4; git log -3 --format='%h %ae %ad %s' --date=short -- lib/grape_entity/exposure lib/grape_entity/delegators
+ - Bash: for p in lib/grape_entity/exposure lib/grape_entity/delegator.rb lib/grape_entity/delegators; do echo "== $p"; for f in $(git ls-files $p); do git blame -w --line-porcelain HEAD -- $f; done | grep '^author-mail' | sort | uniq -c | sort -rn | head -4; done; git log --no-merges --format='%ae' | sort | uniq -c | sort -rn | head -3; git log --no-merges --format='%ae' --since=2025-10-05 | sort | uniq -c | sort -rn
+FINAL ANSWER:
+I've been running the busfactor script and some `git blame` checks to get you actual numbers. I now have enough to answer.
+
+## Best reviewers
+
+**`lib/grape_entity/exposure`**
+- **Lena Brandt and Marco Silva** are the best choice. They are the active owners, and they last committed there in mid-2026. The Kestrel-address commits include Anna K. (Aug 2026), Marco (Aug 2026) and Lena (Jul 2026).
+- The script emits no rule for this directory, so the fallback applies: `<email redacted>` and Lena.
+- The old exposure design came from Vladimir Kochnev (`<email redacted>`). He wrote about 394 of the surviving lines there, but his last commit was in 2015, so he can't review.
+- One identity gap: about 143 surviving lines are attributed to `<email redacted>`. I assumed that is Marco Silva, but it's a guess. I ran with `--no-github`, so no email was mapped to an account. Please confirm it.
+
+**Delegator code (`delegator.rb` and `delegators/`)**
+- **Marco Silva and Lena Brandt**. The script gives this path a "bus factor 1" rule, with both named. Their recent commits there are July 2026.
+- Both are only recent contributors. Kochnev wrote most of the surviving lines in `delegators/` (50 of about 75), and the other earlier authors are also gone.
+
+## Who has effectively left
+These people appear in the history of these paths and have no commits in the last 12 months:
+- Vladimir Kochnev (2015)
+- James McCarthy (2017)
+- Dmitry Tsepelev (2018)
+- Mikael Henrixon (2019)
+- Peter Scholz (2020)
+- Ahmed Naguib (2021)
+- pp_online (2021)
+- Paul Padier (2023)
+- Daniel Dao (2023)
+- Praveen (2022)
+
+**Daniel Doubrovkine (`dblock`)** is the top committer overall, with 52 non-merge commits. He has no commits since October 2025, so I'd treat him as inactive too. If he still reviews informally, tell me and I'll override it.
+
+None of these is a fully orphaned zone, because the Kestrel authors are active. Review knowledge in these areas is thin, though. The older design is understood only by people who have left.
+
+## Is the top committer also the top owner?
+No. Doubrovkine leads on commits, with about 112 across his email variants, but he is not the top owner in either area:
+- **`lib/` overall:** Kochnev owns 758 surviving lines by `git blame`. Mark Madsen is next with 265. Marco is third with 143, if the laptop address is him.
+- **Both areas you asked about:** Kochnev again has the most surviving lines. Active ownership has shifted to Marco and Lena.
+- **Repo-wide fallback:** the script names `<email redacted>`, who is active, plus Lena.
+
+## Caveats
+- The history starts with an 18-file bulk commit in 2013, so the history was imported. Ownership reflects work since then, not who first wrote the code.
+- Commit counts and blame lines are only proxies for knowledge.
+- Dry-run only. I wrote no `CODEOWNERS` or `ownership.json` file into the repo.
+META cost=0.0935444 ms=28461 turns=7

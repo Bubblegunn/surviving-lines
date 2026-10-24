@@ -1,0 +1,97 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.py' | tee /tmp/pyfiles.txt | wc -l && echo --- && git shortlog -sne --all --no-merges | head -30 && echo --- && git log -1 --format=%cd && git log --all --no-merges --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -30
+ - Bash: while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' | sed "s|^author |$f\|", ; done < /tmp/pyfiles.txt > /tmp/blame.txt; wc -l /tmp/blame.txt; echo; cut -d'|' -f2 /tmp/blame.txt | sort | uniq -c | sort -rn | head -15
+ - Bash: while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{sub(/^author /,""); print f"|"$0}'; done < /tmp/pyfiles.txt > /tmp/blame.txt; wc -l < /tmp/blame.txt; echo "== overall"; cut -d'|' -f2 /tmp/blame.txt | sort | uniq -c | sort -rn | head -15; echo "== by dir"; awk -F'|' '{split($1,p,"/"); d=(p[2]==""?".":p[1]); c[d"|"$2]++; t[d]++} END{for(k in c){split(k,a,"|"); printf "%s %s %d/%d\n", a[1],a[2],c[k],t[a[1]]}}' /tmp/blame.txt | sort -k1,1 -k3,3 -t' ' | sort -t' ' -k1,1 | head -60
+ - Bash: git log --all --no-merges --since=2025-10-24 --format='%an|%ad|%s' --date=short | head -30; echo ---; for n in "Jonathan Hartley" "Arnon Yaari"; do echo "$n: last commit $(git log --all --author="$n" -1 --format=%ad --date=short)"; done
+ - Bash: git log --all --no-merges --author="Dana Kessler" --format='%h %ad %s' --date=short --shortstat | grep -v '^$'; echo ---; git log --format='%H' --grep='black-style string quotes' --grep='Move tests out of the installed package' --grep='Vendor typing' > /tmp/ignore.txt; cat /tmp/ignore.txt | wc -l
+ - Bash: git show --stat --format='%h %an%n%B' aa872f7 | head -20; f=$(git show --name-only --format= aa872f7 | head -1); echo "FILE $f"; git ls-files | grep -i -E 'typing|compat'; 
+ - Bash: head -30 colorama/_vendor/_typing_compat.py; grep -rn "_typing_compat\|_vendor" --include=*.py --include=*.toml --include=*.cfg . | grep -v "^./colorama/_vendor/_typing" | head
+ - Bash: git ls-files tools/vendor.sh; grep -rln "_typing_compat" . --include='*.py' 2>/dev/null | grep -v _vendor; 
+grep -v '_vendor/' /tmp/pyfiles.txt > /tmp/pyfiles2.txt
+while read f; do git blame -w -M -C --ignore-revs-file /tmp/ignore.txt --line-porcelain HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^author /{sub(/^author /,""); print f"|"$0}'; done < /tmp/pyfiles2.txt > /tmp/blame2.txt
+T=$(wc -l < /tmp/blame2.txt); echo total $T
+cut -d'|' -f2 /tmp/blame2.txt | sort | uniq -c | sort -rn | head -12 | awk -v t=$T '{printf "%5d %5.1f%%  %s %s %s\n",$1,100*$1/t,$2,$3,$4}'
+echo "== per file: top author share"
+awk -F'|' '{c[$1"|"$2]++;t[$1]++} END{for(k in c){split(k,a,"|"); if(c[k]/t[a[1]]>m[a[1]]){m[a
+FINAL ANSWER:
+## Bus Factor Analysis for colorama
+Period: all history | Generated: 2026-10-24 | Scope: 25 tracked `.py` files, 1,936 hand-written lines.
+
+The two biggest contributors are **Jonathan Hartley** and **Arnon Yaari**, by commits and by surviving lines. Dana Kessler looks like the top author at first glance, but that is a measurement artifact.
+
+### Who wrote today's code
+
+I used `git blame` with whitespace and moves ignored. I also ignored three mechanical Dana Kessler commits that would otherwise take credit for other people's work:
+- **Vendored file:** `aa872f7` added `colorama/_vendor/_typing_compat.py`, 1,103 lines. Its header says it was vendored from typing_extensions, and nothing in the repo imports it. Plain blame credits Dana with 1,324 lines (44%) because of it.
+- **Quote reformat:** `c73f380` changed string quotes in 20 files.
+- **Test move:** `994fda9` moved the tests out of the package.
+
+| Author | Surviving lines | Share | Last commit | Status |
+|---|---|---|---|---|
+| Jonathan Hartley | 1,080 | 55.8% | 2026-07-03 | ⚠️ Quiet for 3.7 months |
+| Arnon Yaari | 232 | 12.0% | 2026-05-13 | ❌ Quiet for 5.4 months |
+| Nathaniel J. Smith | 196 | 10.1% | 2022-10-16 | ❌ Inactive for 4 years |
+| Delgan | 107 | 5.5% | not checked | |
+| John Szakmeister | 62 | 3.2% | not checked | |
+| Everyone else (about 20 people) | 259 | 13.4% | | |
+
+Dana Kessler, Priya Nair and Tomás Ibarra are the only recently active authors. They hold a small share of the surviving lines: Tomás 15, Priya 13, and Dana a handful outside the three commits above.
+
+### Project-level bus factor: 2
+
+Hartley alone owns 56% of the code. Hartley plus Yaari own 68%, so losing them leaves **no knowledgeable maintainer for more than half the codebase**. Adding Smith brings it to 78%.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Files with a single blame author | 5 (20%), all tiny demos or `__init__` files |
+| Files with 2–3 authors | 9 |
+| Files with 4+ authors | 11 |
+| Core files where one person owns about half or more | 7 of 8 |
+
+Per-file author counts look healthy, but the ownership is lopsided. Many people have touched each file, yet one person wrote most of it.
+
+### Critical risk areas
+
+| File | Top owner (share of lines) | Owner active? | Risk |
+|---|---|---|---|
+| `colorama/ansitowin32.py` (277 lines) | Hartley 51% | ⚠️ Quiet since July | HIGH |
+| `colorama/win32.py` | Hartley 60% | ⚠️ Quiet since July | HIGH |
+| `colorama/winterm.py` | Hartley 48% | ⚠️ Quiet since July | HIGH |
+| `colorama/initialise.py` | Hartley 44% | ⚠️ Quiet since July | MEDIUM |
+| `colorama/ansi.py` | Hartley 40% | ⚠️ Quiet since July | MEDIUM |
+| `tests/winterm_test.py` | Hartley 93% | ⚠️ Quiet since July | HIGH, because the tests exist only in his head |
+| `tests/ansitowin32_test.py` | Hartley 62% | ⚠️ Quiet since July | HIGH |
+| `tests/isatty_test.py` and `tests/utils.py` | Delgan 98% and 61% | Not checked | MEDIUM |
+
+Yaari is the main owner of no core file. His 232 lines are spread thinly, mostly across `colorama/` (142 lines), the tests, and `demos/demo07.py`. Losing him matters less than losing Hartley.
+
+### Knowledge heat map
+
+```
+colorama/  [██████░░░░] 🟡 Hartley 22% of 2,013 raw lines (Dana's lines are mostly the vendored file)
+                          Excluding the vendored file, Hartley owns about half of the core modules
+tests/     [███████░░░] 🔴 Hartley 48%, Smith 14%, Delgan 11%, current team under 3%
+demos/     [██████░░░░] 🟡 Hartley 50%, Dana 19%, Yaari 9%
+```
+
+### Caveats
+
+- **Reverted and reapplied work:** Hartley's `Reapply "Add cursor save/restore and cursor style helpers"` (2026-07-03) restored work Priya Nair first committed on 2026-06-02. Blame gives the lines to the person who reapplied them, so some of Hartley's share may really be Priya's. I didn't check how many lines.
+- **Other mechanical commits:** I ignored only the three Dana commits listed above. Other mechanical commits could still shift credit, such as the pre-commit.ci auto-fixes.
+- **Activity dates:** these come from `git log` author dates. They show only that someone stopped committing, not that they stopped answering questions.
+- **Unused vendored file:** `_vendor/_typing_compat.py` says "Regenerate with tools/vendor.sh". `tools/vendor.sh` isn't tracked, so the file can't be regenerated from the repo. Also, the "typing_extensions" content is a pile of identical `_compat_NNN` functions, which doesn't match the real library. Ask Dana where it came from before the handover.
+
+### Recommendations
+
+1. **Immediate:** Run a recorded walkthrough with Hartley of `ansitowin32.py`, `win32.py` and `winterm.py`, covering the Windows console handling and the reasons behind it. Ask him which edge cases the `winterm_test.py` tests protect.
+2. **Short-term:** Have Priya, Tomás or Dana, the active authors on the receiving team, take on review of changes to those three modules. Ask Priya to explain the cursor helper work and the revert and reapply history.
+3. **Ongoing:** Move the "why" behind the Windows-specific behavior into docstrings or an ADR, because that knowledge sits mostly with Hartley. Resolve the vendored file by either removing it or documenting its source and restoring `tools/vendor.sh`.
+META cost=0.1413711 ms=46183 turns=11

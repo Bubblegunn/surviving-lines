@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:sprint-health
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:sprint-health", "args": "--team"}
+ - Bash: git log -1 --format='%H %ad %an' --date=iso; git log --since="2026-03-29" --until="2026-04-12 23:59:59" --no-merges --pretty=format:"%h|%an|%ae|%ad|%s" --date=short --shortstat
+ - Bash: git log -8 --no-merges --pretty=format:"%h|%an|%ae|%cn|%ad|%s" --date=short; echo; git shortlog -sne --all | head -20
+ - Bash: git show b2005d9 --stat --format=%H; git show b2005d9 -w --ignore-blank-lines | head -60; for c in b2005d9 02afce3 5317ebe 62628c0; do echo $c; git show $c --name-only --format=; done
+ - Bash: for f in lib/index.js test/vary.js README.md; do echo "== $f"; echo default; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c; echo ignoring-reformat; git blame --ignore-rev 62628c0 --line-porcelain $f | grep -E '^(author |[0-9a-f]{40} )' | grep '^author ' | sort | uniq -c; done; git blame --ignore-rev 62628c0 --line-porcelain -- . 2>/dev/null | head -0; for c in b2005d9 02afce3 5317ebe; do echo $c; for f in lib/index.js test/vary.js README.md; do git blame --ignore-rev 62628c0 -s $f | grep -c "^${c:0:7}" | sed "s|^|$f |"; done; done
+FINAL ANSWER:
+The window is 2026-03-29 to 2026-04-12, taken from the latest commit rather than today's date. I ran the skill's git steps by hand and skipped the contributor-analyzer agent, because the data was small enough to read directly.
+
+Two people committed in that window, after setting aside formatting-only commits and bots.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | 2 (`b2005d9` lib: annotate handlers, `02afce3` test: vary header coverage) | 47 |
+| Vansh Sharma | 1 (`5317ebe` docs: README `app.delete()` fix, #411) | 1 |
+
+- **Troy Goode:** 11 of the 12 lines in `lib/index.js` from `b2005d9` survive, plus all 36 lines of `test/vary.js` from `02afce3`. Git records Troy under two emails (`<email redacted>` and `troy@laptop.example`). I counted them as one person.
+- **Vansh Sharma:** the one README line from the 1-line change survives.
+
+**Excluded:**
+- **Fiona Formatter:** her only commit, `62628c0`, is a reformat to 4-space indent and double quotes. It touched four files with 1016 lines added and 1016 removed.
+- **dependabot[bot]:** its latest commits are from 2026-03-02, so they fall outside the window anyway.
+
+I kept Troy's `b2005d9` even though it is small, since it adds `// checked` comments rather than only reformatting.
+
+**How I counted surviving lines:** the reformat rewrote most of `lib/index.js`, so plain `git blame` credits that file to Fiona. I ran blame with `--ignore-rev 62628c0` so the lines go back to their real authors. Without that flag, Troy's `lib/index.js` lines would show as Fiona's.
+META cost=0.08712180000000001 ms=25072 turns=7

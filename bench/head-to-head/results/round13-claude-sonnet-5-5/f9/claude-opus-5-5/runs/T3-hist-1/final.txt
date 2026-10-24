@@ -1,0 +1,41 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .mailmap 2>/dev/null; echo ---; git log --format='%aN <%aE>' | sort | uniq -c | sort -rn | head -60
+ - Bash: git log --format='%aN <%aE>' | sort | uniq -c | sort -rn | tail -n +61; echo ---; git log --format='%h %ad %aN <%aE> | %cN <%cE> | %s' --date=short --author='laptop.example' --author='Fiona' --author='alex94' --author='Efe' -n 20; echo; git log -3 --stat --format='%h %aN %s' | head -30
+ - Bash: echo "emails with >1 name:"; git log --format='%aE|%aN' | sort -u | awk -F'|' '{c[tolower($1)]++; n[tolower($1)]=n[tolower($1)]" ["$2"]"} END{for(e in c) if(c[e]>1) print e, n[e]}'; echo "names with >1 email:"; git log --format='%aN|%aE' | sort -u | awk -F'|' '{c[tolower($1)]++; n[tolower($1)]=n[tolower($1)]" "$2} END{for(e in c) if(c[e]>1) print e":", n[e]}'; git log --format='%aN|%aE' | sort -u | grep -iE 'goode|troy|puchad|wilson|doug|church|gasc'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>>
+EOF
+git shortlog -sne HEAD | head -5; git status --short
+FINAL ANSWER:
+Yes, two people showed up under more than one identity. I fixed both, and the top author is still **Douglas Christopher Wilson with 143 commits**. Merging the duplicates moved Troy Goode up, but not to first place.
+
+**Duplicates found:**
+1. **Troy Goode**: 120 commits as `<email redacted>` and 2 as `troy@laptop.example` (the two from 2026-04-10, `02afce3` and `b2005d9`). That second address looks like an unconfigured laptop. I merged them because the name matches exactly, but the email gives no proof it's the same person.
+2. **Alejandro Caravaca Puchades**: 4 commits under that name and 1 as `alex94puchades`. Both use `<email redacted>`, so this one is certain.
+
+I also checked every author for shared emails and for names that differ only by capitalisation, and found nothing else. Similar names like the three other "Alejandro"s have different emails and are different people.
+
+**The fix:** I added a `.mailmap` file instead of rewriting history, so no commit hashes change. Git and other tools that read `.mailmap` will now count each person once:
+
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>>
+```
+
+**New ranking:**
+
+| # | Author | Commits |
+|---|---|---|
+| 1 | Douglas Christopher Wilson | 143 |
+| 2 | Troy Goode | 122 (was 120 + 2) |
+| 3 | dependabot[bot] | 11 |
+| 4 | Alejandro Caravaca Puchades | 5 (was 4 + 1) |
+
+The `.mailmap` file is new and not committed yet. Tell me if you'd like me to commit it.
+META cost=0.1487202 ms=24877 turns=5

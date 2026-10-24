@@ -1,0 +1,33 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-3/repo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -15; echo ---; ls lib/grape_entity lib/grape_entity/exposure; grep -rli delegator lib; echo ---EXPOSURE; git log --format='%an|%ad' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | awk -F'|' '{c[$1]++; if(!l[$1])l[$1]=$2} END{for(a in c)print c[a],a,"last:",l[a]}' | sort -rn; echo ---DELEG; git log --format='%an|%ad' --date=short -- lib/grape_entity/delegator lib/grape_entity/delegator.rb | awk -F'|' '{c[$1]++; if(!l[$1])l[$1]=$2} END{for(a in c)print c[a],a,"last:",l[a]}' | sort -rn; echo ---LAST; git log --format='%an|%ad' --date=short | awk -F'|' '!
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-base-3/repo; cat .mailmap 2>/dev/null; b(){ for f in "$@"; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -8; }; echo ALL lib; b $(git ls-files lib); echo EXPOSURE; b $(git ls-files lib/grape_entity/exposure lib/grape_entity/exposure.rb); echo DELEG; b $(git ls-files lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb); echo; git log --format='%an' --since=2025-10-24 -- lib | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** Marco Silva is the best reviewer for both areas, with Lena Brandt as the second reviewer for the delegator code. The top committer is not the top code owner.
+
+**Who to route to**
+- **`lib/grape_entity/exposure`:** Marco Silva. They own 143 lines by `git blame`, the second most after Vladimir Kochnev, and their last commit to this path was 2026-08-03. Lena Brandt (20 lines, last commit 2026-07-14) and Anna Kowalczyk (one commit, 2026-08-10) are also recent contributors to this path.
+- **Delegator code** (`delegator.rb`, `delegators/*`, `exposure/delegator_exposure.rb`): Lena Brandt first. They hold 12 lines, tied for second with James McCarthy, and committed to it in 2026-07. Marco Silva (4 lines, 2026-07) is the second reviewer. Paul Padier owns 10 lines, but their last commit to the delegator files was 2021-10 and to the repo overall 2023-12.
+- The delegator code is small, and nobody active owns much of it, so expect shallow institutional knowledge there.
+
+**Effectively gone** (no commits to the repo in years)
+- **Vladimir Kochnev:** the main author of both areas, with 433 lines in exposure and 71 in the delegator code. Their last commit to the exposure path was 2015-09.
+- **Mark Madsen:** 265 lines across `lib`.
+- **Dmitry Tsepelev:** last commit 2018-01.
+- **James McCarthy:** last commit 2017-04.
+- **Alexander Yunin:** last commit 2016-07.
+- **LeFnord / peter scholz:** these look like the same person (`<email redacted>` appears under both names). Their last commit was 2024-04.
+- **Paul Padier:** last commit 2023-12.
+
+**Most commits versus most code owned**
+No. The top committer is Daniel Doubrovkine (dblock). Their commits are split across several name variants, which I added up to about 112. The top code owner is Vladimir Kochnev: they have 758 lines in `lib` by `git blame -w -M -C`, which is more than twice Mark Madsen's 265 (second place). Doubrovkine doesn't appear among the top blame owners.
+
+**Caveats**
+- The repo has no `.mailmap`, so the same person appears under several names. I merged them by eye for Doubrovkine and for LeFnord / peter scholz. I didn't merge the Subbota variants, and any other split identities are also uncombined.
+- I read "gone" from commit dates across the whole repo, not from the contributors' actual status. Doubrovkine, for example, last committed in 2026-04.
+- Several of the recent "Marco Silva" and "Lena Brandt" commits could be refactors, so their line counts may overstate how well they know the original design.
+META cost=0.0649418 ms=25693 turns=3

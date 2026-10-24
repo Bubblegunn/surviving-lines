@@ -1,0 +1,23 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; git config mailmap.file
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{n[tolower($1)]++; e[$2]++} END{}1' | wc -l; git log --all --format='%cn|%ce' | sort -u | grep -i -E 'goode|formatter|efe'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git status --short
+FINAL ANSWER:
+Two people appeared under more than one identity. I added a `.mailmap` at the repo root that merges them. I didn't commit it.
+
+- **Troy Goode** had two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). He now has 122.
+- **Alejandro Caravaca Puchades** had two names on the same email, `<email redacted>`. One was "Alejandro Caravaca Puchades" (4 commits) and the other was "alex94puchades" (1 commit). They now count as 5.
+
+The top author is still **Douglas Christopher Wilson** with 143 commits. Troy Goode is second at 122, up from 120, and still 21 behind.
+
+I only matched identical names or emails. Someone who appears under a different name and a different email would not show up as a duplicate, so I wouldn't have caught them.
+META cost=0.0497118 ms=10520 turns=4

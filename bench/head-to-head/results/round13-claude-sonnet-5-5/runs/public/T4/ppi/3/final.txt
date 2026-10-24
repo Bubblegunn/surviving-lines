@@ -1,0 +1,28 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== commits per author (all history) ==" && git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit per author ==" && git log --all --no-merges --pretty=format:"%an|%as" -- lib/index.js | awk -F'|' '!s[$1]++' && echo && echo "== recent 6m ==" && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== blame lines ==" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo && echo "== importers ==" && grep -rln "lib/index\|require(['\"]\.\./lib['\"])\|require(['\"]\./lib['\"])" --include=*.js . --e
+ - Bash: echo "== blame ignoring reformat ==" && git blame --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo "== main ==" && grep -n '"main"' package.json; echo "== importers ==" && grep -rlE "lib/index|require\(['\"]\.\./?(lib)?['\"]\)|require\(['\"]\.\./lib['\"]\)" . --include='*.js' --exclude-dir=node_modules --exclude-dir=.git | head; echo "== lib files =="; ls lib; echo "== Troy log =="; git log --since="2025-01-01" --no-merges --pretty=format:"%an|%as|%s" -- lib | head
+FINAL ANSWER:
+## Reviewer recommendation for `lib/index.js`
+
+**Primary reviewer: Troy Goode.** Troy has about 29 of the file's roughly 55 commits, counting the 28 under `<email redacted>` and 1 under an alias email. After I excluded the reformat commit, `git blame` still attributes 109 of 232 lines to Troy, about 47%. Troy also made the latest substantive change, "lib: annotate handlers" on 2026-04-10.
+
+**Secondary reviewer: Douglas Christopher Wilson.** Doug has 4 commits and owns 36 lines in blame once the reformat is ignored, so they know the core logic. Their last commit to this file was 2017-10-04, so they may no longer be involved. Check that they are still around before you request their review.
+
+### Risk notes
+- **This file is the whole library.** `lib/` contains only `index.js`, and `package.json` sets it as `"main"`. All five test files (`test/test.js`, `test/vary.js`, `test/issue-2.js`, `test/error-response.js`, `test/example-app.js`) import it directly. Any change to it affects every consumer.
+- **Bus factor for this file is effectively 1–2.** The history has about 25 authors, but most contributed one commit before 2018. Only Troy has touched the file in the last 6 months, and Troy's last commit was about 6.5 months ago, on 2026-04-10. Nobody has committed to it in the last 6 months. I can't tell from git history whether Troy is still actively maintaining it.
+- **Ignore "Fiona Formatter" as an owner.** That author appears only on the 2026-04-12 style commit (`62628c0`), which rewrote 214 lines. The commit tells you nothing about who understands the code. I used `git blame --ignore-rev 62628c0` to get past it.
+
+### Suggestions
+1. Request Troy Goode as the required reviewer. If Troy is unavailable, find a current maintainer who can sign off, because the history shows no other recent contributor.
+2. Ask the reviewer to run the full `test/` suite, since all of it exercises this one file.
+3. After a review, consider having a second maintainer read the file. That would stop knowledge of the file from sitting with one person.
+
+I analyzed only this file. I didn't run the project-level bus factor across the whole repo or launch the contributor-analyzer agent, because your question was about one file. I can run the full analysis if you want it.
+META cost=0.0756635 ms=19561 turns=5

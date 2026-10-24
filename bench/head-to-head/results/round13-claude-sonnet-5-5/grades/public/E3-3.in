@@ -1,0 +1,254 @@
+You grade 5 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}], "D": [{"n": 1, "reason": "...", "pass": true}], "E": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+For each file type in this repo (by extension), who owns the most surviving lines?
+
+CRITERIA:
+1. Names Troy Goode as the top owner of .js files with a count between 640 and 700 lines.
+2. Names Douglas Christopher Wilson as the top owner of .yml files.
+3. Names Troy Goode as the top owner of .md files.
+4. Does not name the formatter (Fiona Formatter) or a bot as the top owner of any file type.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1985 bots 10
+  Troy Goode                         715  36.0%
+  Douglas Christopher Wilson         454  22.9%
+  Fiona Formatter                    291  14.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+  Alejandro Caravaca Puchades         16   1.7%
+  Eric di Domenico                    12   1.2%
+  Alberto Leal                        12   1.2%
+  Saad Tazi                            5   0.5%
+  max.laverse                          3   0.3%
+  bus factor (min authors >=50%): 2
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+  Alejandro Caravaca Puchades         15   6.3%
+  Raymond Feng                         7   2.9%
+  LuisEGR                              6   2.5%
+  max.laverse                          5   2.1%
+  Simon Mansfield                      3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 27
+  Douglas Christopher Wilson          21  77.8%
+  Troy Goode                           6  22.2%
+.js total 1202
+  Troy Goode                         581  48.3%
+  Fiona Formatter                    291  24.2%
+  Douglas Christopher Wilson         219  18.2%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 415
+  Troy Goode                         134  32.3%
+  Douglas Christopher Wilson         115  27.7%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         138  58.0%
+  Fiona Formatter                     32  13.4%
+  Douglas Christopher Wilson          18   7.6%
+test total 966
+  Troy Goode                         443  45.9%
+  Fiona Formatter                    259  26.8%
+  Douglas Christopher Wilson         203  21.0%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Troy Goode                           2
+  Fiona Formatter                      1
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         138
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      0
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          0
+  max.laverse                          5
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         15
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            1
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          18
+  Benjamin Eidelman                    2
+  Chima Alaebo                         1
+  Tom Arad                             0
+  LuisEGR                              6
+  Fiona Formatter                     32
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: git ls-files | awk -F/ '{f=$NF; if (f ~ /\./) {n=split(f,a,"."); print a[n]"\t"$0} else print "(none)\t"$0}' > /tmp/files.tsv; cut -f1 /tmp/files.tsv | sort | uniq -c
+ - Bash: cut -f2 /tmp/files.tsv | while read f; do ext="${f##*/}"; case "$ext" in *.*) ext="${ext##*.}";; *) ext="(none)";; esac; git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | awk -v e="$ext" '/^author /{sub(/^author /,""); print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Top owner of surviving lines (by `git blame -w -M -C`) for each extension:
+
+| Extension | Top owner | Lines | Notes |
+|---|---|---|---|
+| `.js` | Troy Goode | 581 | Fiona Formatter is second with 291. Their lines come from the latest "reformat js" commit. Douglas Christopher Wilson has 219. |
+| `.md` | Troy Goode | 116 | Jon Church has 72 and Douglas Christopher Wilson has 67. |
+| `.yml` | Douglas Christopher Wilson | 127 | Íñigo Marquínez Prado has 95. |
+| `.json` | Douglas Christopher Wilson | 20 | Troy Goode has 12. |
+| `.gitignore` | Douglas Christopher Wilson | 4 | Troy Goode has 1. |
+| no extension | Douglas Christopher Wilson | 17 | This is one file. Troy Goode has 5 lines in it. |
+
+The `.js` result depends on how the reformat commit is counted. `-w` ignores whitespace changes but not the quote changes, so Fiona Formatter still gets 291 lines. Some of those lines would probably go back to the original authors if the quote-only changes were ignored too. Troy Goode leads either way.
+
+The counts cover only the files git tracks, and only the lines that survive at HEAD.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: git ls-files | while IFS= read -r f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,"");print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;$1="";$2="";if(!(e in s)){s[e]=1;print e"\t"c"\t"$0}}'
+FINAL ANSWER:
+Top owner of surviving lines by file extension, from `git blame -w` on tracked files:
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| (no extension) | Douglas Christopher Wilson | 17 |
+
+I only kept the top author per extension, so I can't tell you how close the runner-up is. I didn't check whether Troy Goode's `.js` lines come from the latest reformat commit (`62628c0`) or from older work. If it's the reformat, the `.js` result says who ran the reformat, not who wrote the code. I can rerun with `-w -M -C` or ignore that commit via `--ignore-rev` if you want.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: run() { git ls-files | while read -r f; do [ -f "$f" ] || continue; e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; esac; git blame -w -M -C --line-porcelain $1 -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author //;s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1;e=$2;if(e!=p){print;p=e}}'; }; echo "== plain (-w)"; run ""; echo "== ignoring 62628c0"; run "--ignore-rev 62628c0"
+ - Bash: git blame --ignore-rev 62628c0 -- index.js 2>&1 | head -3; git ls-files | head -20
+ - Bash: git blame --ignore-rev 62628c0 -- lib/index.js 2>&1 | head -3
+ - Bash: git ls-files | while read -r f; do e="${f##*/}"; case "$e" in *.*) e=".${e##*.}";; esac; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author ' | sed "s/^author //;s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{e=$2;if(e!=p){print;p=e}}'
+FINAL ANSWER:
+Top owner of surviving lines per extension, from `git blame` at HEAD. I ignored whitespace changes and detected moved or copied lines:
+
+| Type | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 676 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 127 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| `LICENSE` (no extension) | Douglas Christopher Wilson | 17 |
+
+- **Reformat commit:** The latest commit, `62628c0`, reformatted all the JS to 4-space indent and double quotes. I excluded it from blame so it doesn't take credit for lines it only restyled. Troy Goode's `.js` count is 676 with it excluded and 581 with it included. He is the top owner either way.
+- **Counts:** These are line counts per author, not shares of each type, so I haven't shown how close the runner-up is.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - Bash: git ls-files | while read f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | awk -v e="$e" '/^author /{sub(/^author /,"");print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; $1=""; split($0,a,"\t"); e=substr(a[1],2); if(!(e in s)){s[e]=1; tot[e]=0} n[e]=n[e]+c; if(!(e in top)){top[e]=a[2]; tc[e]=c}} END{for(e in top) printf "%s\t%s\t%d\t(of %d)\n", e, top[e], tc[e], n[e]}' | sort
+ - Bash: git ls-files | while read f; do case "$f" in *.*) e=".${f##*.}";; *) e="(none)";; esac; git blame -w --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed "s/^author /$e|/"; done | python3 -I -c '
+import sys,collections
+d=collections.defaultdict(collections.Counter)
+for l in sys.stdin:
+    e,a=l.rstrip("\n").split("|",1); d[e][a]+=1
+for e,c in sorted(d.items()):
+    t=sum(c.values()); print(e,t,[(a,n,round(100*n/t)) for a,n in c.most_common(2)])
+'
+FINAL ANSWER:
+Top owner of surviving lines (by `git blame -w`) for each file type:
+
+| Type | Surviving lines | Top owner | Share | Runner-up |
+|---|---|---|---|---|
+| `.js` | 1202 | Troy Goode | 517 (43%) | Fiona Formatter, 291 (24%) |
+| `.md` | 341 | Troy Goode | 116 (34%) | Jon Church, 72 (21%) |
+| `.yml` | 383 | Douglas Christopher Wilson | 117 (31%) | Íñigo Marquínez Prado, 95 (25%) |
+| `.json` | 42 | Douglas Christopher Wilson | 20 (48%) | Troy Goode, 12 (29%) |
+| `.gitignore` | 5 | Douglas Christopher Wilson | 4 (80%) | Troy Goode, 1 |
+| no extension | 22 | Douglas Christopher Wilson | 17 (77%) | Troy Goode, 5 |
+
+- **Reformat commit:** the latest commit, "style: reformat js with 4-space indent and double quotes", is attributed to "Fiona Formatter". That puts Fiona second on `.js` with 291 lines. I used `-w`, so whitespace-only changes don't count. Quote-style changes still do, which is why Fiona keeps those lines.
+- **Small samples:** `.json`, `.gitignore` and the extensionless files have very few lines, so their owners are less meaningful.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "per file type ownership by extension"}
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/<tool>" --group-by ext --merge-identities; echo ----; node "/private/tmp/r13/final/ours-src/bin/<tool>" --group-by ext
+FINAL ANSWER:
+**Top owner of surviving lines, by file type** (HEAD @ 62628c0, 18 files; 1,662 non-blank lines, 1,995 counting blank lines)
+
+| Type | Files | Lines (non-blank / with blank) | Top owner | Their lines (share) | With blank (share) |
+|---|---|---|---|---|---|
+| `.js` | 7 | 1,032 / 1,202 | Troy Goode (2 addresses, merged) | 564 (54.7%) | 676 (56.2%) |
+| `.yml` | 6 | 314 / 375 | Douglas Christopher Wilson | 101 (32.2%) | 127 (33.9%) |
+| `.md` | 2 | 253 / 341 | Troy Goode | 71 (28.1%) | 116 (34.0%) |
+| `.json` | 1 | 40 / 40 | Douglas Christopher Wilson | 20 (50.0%) | 20 (50.0%) |
+| no extension (LICENSE etc.) | 2 | 23 / 27 | Douglas Christopher Wilson | 21 (91.3%) | 21 (77.8%) |
+
+**Runners-up**
+- **`.js`:** Douglas Christopher Wilson has 362 lines (35.1%), or 394 (32.8%) counting blank lines.
+- **`.yml`:** Íñigo Marquínez Prado has 80 lines (25.5%), or 95 (25.3%) counting blank lines. Sebastian Beltran has 53 (16.9%).
+- **`.md`:** Jon Church has 59 lines (23.3%), or 72 (21.1%) counting blank lines.
+- **`.json`:** Troy Goode has 12 lines (30.0%).
+
+**Merged vs unmerged Troy Goode**
+- Troy Goode appears under two addresses (`<email redacted>` and `troy@laptop.example`). The tool rates the match as strong, but it is a guess from names and addresses. I merged them in memory only; nothing was written to `.mailmap`.
+- **`.js` (headline):** counting both addresses as one person, Troy Goode has 564 lines (54.7%). Unmerged, `<email redacted>` has 520 (50.4%) and `troy@laptop.example` has 44 (4.3%).
+- **`.md` and `.json`:** no merged figure differs, because only the gmail address appears there.
+- **Wilson in the no-extension group:** the 91.3% figure rests on 23 lines in two files, so it is a small sample.
+
+**Bus factor per type** (smallest number of authors holding 50% of that type's lines)
+- **`.js`:** 1 (Troy Goode, merged). Unmerged it is also 1, with `<email redacted>` at 50.4%. The active bus factor is 1, counted on the 564 lines of the one active author. 45.3% of the lines belong to people with no commit in the last 365 days. Verdict: single point.
+- **`.yml`:** 2 (Wilson and Marquínez Prado, 57.6%). The active bus factor is 2 (Beltran and Gascón), counted on the 132 lines of the 3 active authors. 58.0% of the lines belong to inactive people. Verdict: orphaned.
+- **`.md`:** 2 (Goode and Church, 51.4%). The active bus factor is 2, with 43.1% of lines belonging to inactive people.
+- **`.json`:** 1 (Wilson, 50.0%). The active bus factor is 1 (Goode), with 55.0% of lines belonging to inactive people. Verdict: single point.
+- **No extension:** 1 (Wilson, 91.3%). Verdict: single point and orphaned, as two separate findings.
+
+**What the figures leave out or adjust**
+- **Reformat commit set aside:** commit 62628c0 ("style: reformat js with 4-space indent and double quotes") rewrote 1,016 lines in 4 files, formatting only. Its lines went back to the earlier authors.
+  - Wilson overall is 551 lines (33.2%) with the correction and 376 (22.6%) without.
+  - Goode overall is 605 (36.4%) with it and 510 (30.7%) without. Merged, that is 649 (39.0%) against 554 (33.3%).
+- **Bots:** `dependabot[bot]` is excluded (10 lines, 11 commits), and its lines are not credited to anyone.
+- **Same person, one address:** Alejandro Caravaca Puchades (`<email redacted>`) also appears as `alex94puchades`. The tool counts them as one, which gives 30 `.js` lines.
+- **Credited to the author, not the committer:** several CI and docs commits were committed by GitHub, so their lines go to the author. Examples are Marquínez Prado (60 lines of de19afc), Beltran (53 lines of 14cefd4) and Mangas (35 lines of f442e77).
+- **More mechanical rewrites I did not set aside:** the tool lists 7 commits that look mechanical. The largest is 739dc11 "docs: reformat license" by Wilson, with 17 surviving lines. Two of the seven are not named in the output. I did not inspect them or re-run without them.
+- **Copy detection:** the figures use `git blame -w -M -C`.
+- **Out of scope:** these counts measure surviving lines, not quality, review work or who understands the code.

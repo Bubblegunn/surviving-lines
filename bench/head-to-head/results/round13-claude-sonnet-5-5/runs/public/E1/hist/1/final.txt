@@ -1,0 +1,53 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 3}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/E1-hist-1/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/E1-hist-1/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/E1-hist-1/repo"}
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short -3 && for f in lib/index.js test/test.js; do echo $f; git blame -w --ignore-rev 62628c0 --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+## Bus factor summary
+
+The repo's overall bus factor is **2**. Two people account for 73% of the 326 non-merge commits:
+
+| Author | Commits | Share |
+|---|---|---|
+| Douglas Christopher Wilson | 143 | 43.9% |
+| Troy Goode | 95 | 29.1% |
+| 62 others | 88 | 27% combined |
+
+No directory has a single-author silo, using the tool's rule of at least 3 commits with one author above 80%.
+
+- **`lib/` (the core code):** Troy Goode has 50% of the commits, spread across 25 authors.
+- **`test/`:** Troy Goode has 44%, spread across 18 authors.
+- **Root and `.github/`:** Douglas Christopher Wilson has 51% and 37% of the commits.
+
+## Line ownership needs a correction
+
+The tool's blame output points to "Fiona Formatter", who it says owns 51% of all lines. It lists them as the main owner of `lib/index.js`, `test/test.js`, `test/example-app.js` and `test/error-response.js`. That is misleading. Fiona's only commit is the last one, `62628c0`, a whole-repo reformat to 4-space indent and double quotes. I re-ran blame ignoring that commit for the two main files:
+
+- **`lib/index.js`:** Troy Goode owns 159 of 238 lines (about 67%). The rest is spread across Wilson, Alejandro Caravaca Puchades and Raymond Feng.
+- **`test/test.js`:** Wilson owns 365 lines (about 50%) and Troy Goode 253 (about 35%). Eric di Domenico and Alberto Leal have about 25 lines each.
+
+## Where single-person dependence is real
+
+- **Core library, `lib/index.js`:** Troy Goode is the main owner. The two tests added on 2026-04-10 (`test/vary.js` and `test/issue-2.js`) are 100% and 83% Troy's as well.
+- **Test suite, `test/test.js`:** this depends mostly on Wilson and Troy together, so it has two key people rather than one.
+- **Wilson-only project plumbing:** Wilson is the main or only owner of `.eslintrc.yml`, `test/.eslintrc.yml`, `test/support/env.js`, `.gitignore`, `LICENSE` and `HISTORY.md`. He is also the largest owner of `package.json` and `ci.yml`, though not above 50% in either. His last commit was 2021-09-07.
+- **Single-owner CI files:**
+  - `scorecard.yml`: Íñigo Marquínez Prado owns 93%, last commit 2024-05-14.
+  - `codeql.yml`: Sebastian Beltran owns 95%, last commit 2025-07-23.
+  - `dependabot.yml`: Ulises Gascón owns 100%, last commit 2026-01-22.
+
+## Caveats
+
+- **Everyone shows as inactive.** The "orphaned" flag is relative to six months before today (2026-10-24), and the last commit in the repo is 2026-04-12. All 18 files being flagged as orphaned therefore mostly means the project has been quiet since April. It is not evidence that specific people left.
+- **Wilson is the exception.** His last commit was 2021-09-07, so he really has been inactive for years. That makes the Wilson-only files above the clearest orphaned knowledge.
+- **Commit counts are not importance.** The 64 authors include dependabot, which has 11 commits and is not a person. Many authors made a single commit.
+
+**Recommendation:** have someone besides Wilson take ownership of the lint, `LICENSE`, `HISTORY.md` and CI setup. Have someone besides Troy review the core code in `lib/index.js`. Add `62628c0` to a `.git-blame-ignore-revs` file so that blame stops attributing the code to the formatting commit.
+META cost=0.08776470000000001 ms=20683 turns=6

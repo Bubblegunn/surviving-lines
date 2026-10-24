@@ -1,0 +1,54 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; $SL -- lib/grape_entity/exposure; echo ======; $SL --for-diff HEAD -- lib/grape_entity/exposure 2>&1 | head -30; echo =====; ls lib/grape_entity; grep -ril delegator lib | head
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; SL() { node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; SL -- lib/grape_entity/exposure; echo ======; ls lib/grape_entity lib/grape_entity/delegator 2>&1; grep -ril delegator lib
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; grep -ril delegator lib; ls lib/grape_entity; SL() { node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; SL -- lib/grape_entity/delegator.rb lib/grape_entity/delegator
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-1/repo; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb | head -30; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --identities | grep -i -E "marco|padier"
+FINAL ANSWER:
+**Short answer:** Vladimir Kochnev wrote the most of both areas, but they left in 2015. The people you can actually ask are Marco Silva and Anna Kowalczyk, and Marco's numbers need a caveat (below).
+
+All counts come from surviving-lines (git blame based), as of 2026-10-05.
+
+**`lib/grape_entity/exposure` (609 non-blank lines, 732 counting blank lines)**
+- Vladimir Kochnev has 331 lines (54.4%), or 400 counting blank lines (54.6%). His last commit was 2015-09-18.
+- Marco Silva appears as 117 lines (19.2%), or 143 counting blank lines (19.5%). His last commit was 2026-08-03. All 117 lines are `grouped_exposure.rb`, committed under `<email redacted>`. The tool calls that address a placeholder identity that "cannot be attributed to a person". It proposes treating it as the same person as `marco.silva@kestrel.example`. That is only a proposal from names and addresses, it is unconfirmed, and I have not applied it. The two addresses stay separate in the figures below.
+- Alexander Yunin has 55 lines (9.0%), last commit 2016. James McCarthy has 48 lines (7.9%), last commit 2017.
+- Anna Kowalczyk has only 4 lines (0.7%), but her last commit was 2026-08-10, so she is the other active person.
+- Only 2 of the 18 authors have committed in the last 365 days, and they hold 19.9% of the lines.
+
+**Best reviewer for `exposure`:** Marco Silva for `grouped_exposure.rb`, with Anna Kowalczyk as a second reviewer. For the rest of the directory nobody active holds much, so pick a maintainer. peter scholz has 14 lines (2.3%) and 5 commits, but his last commit was 2024-04-10, which is outside the 365-day window.
+
+**Delegator code (`delegator.rb`, `delegators/`, `exposure/delegator_exposure.rb`; 97 non-blank lines, 109 counting blank lines)**
+- Vladimir Kochnev has 69 lines (71.1%), or 73 counting blank lines (67.0%). He is gone.
+- Paul Padier has 11 lines (11.3%), or 12 counting blank lines (11.0%). His last commit was 2021-10-15, so he is also inactive. The tool also proposes merging his two addresses, which is likewise unconfirmed and not applied.
+- James McCarthy has 6 lines (6.2%), last commit 2017.
+- Marco Silva has 4 lines (4.1%), last commit 2026-09-15. He is the only author active in the last year.
+- 95.9% of these lines belong to people with no commit in the last 365 days.
+
+**Best reviewer for the delegator code:** Marco Silva, because he is the only active person who has touched it. He holds just 4 lines there, so expect a reviewer who knows it loosely. Consider a second reviewer from the maintainers.
+
+**Marco Silva: merged and unmerged figures**
+- Unmerged, repo-wide, as the tool lists them: `<email redacted>` has 117 lines (143 counting blank lines) from 1 commit, and `marco.silva@kestrel.example` has 23 lines (29 counting blank lines) from 2 commits.
+- If they are one person, the merged total is about 140 lines, 2.6% of the repo. The 117 lines under the laptop address are `grouped_exposure.rb`. The merge does not change the delegator figure of 4 lines.
+- Whether they are one person is unconfirmed. Ask Marco before relying on it.
+
+**Who has effectively left**
+- Vladimir Kochnev: last commit 2015. He holds 54% of `exposure`, 71% of the delegator code, and 18.7% of the whole repo.
+- Mark Madsen: 13.5% of the repo, and the top owner of `entity.rb` and `entity_spec.rb`.
+- Alexander Yunin, James McCarthy, Dmitry Tsepelev and Paul Padier have also had no commits in the last year.
+- Repo-wide, 89.3% of lines belong to people with no commit in the last 365 days. 49 of 56 files (96.5% of lines) are orphaned, meaning the top owner is inactive and nobody active holds 20% or more.
+
+**Is the top committer also the top owner? No.**
+- dblock has the most commits: 52 (18.2% of all commits). But they hold 565 non-blank lines (10.4%), or 725 counting blank lines (10.8%), which is third place.
+- Vladimir Kochnev holds the most lines: 1,010 (18.7%), or 1,180 counting blank lines (17.6%). That comes from only 11 commits (3.8%).
+- peter scholz is second on commits (34, 11.9%) but fifth on lines: 427 (7.9%), or 586 counting blank lines (8.7%).
+- Many of peter scholz's commits were merges or committer-only actions. For example, he committed Brian van de Boogaard's 276 lines in "Add expose_nil option (#293)", and those lines are credited to Brian.
+
+**Caveats**
+- Surviving lines measure what is left in the code. They don't measure review skill, design knowledge, or deleted code.
+- All figures above are printed by surviving-lines. The delegator totals come from the command `surviving-lines -- lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb`. That grouping of files is my own choice of what counts as "the delegator code". I made no `.mailmap` changes.
+META cost=0.123076 ms=41732 turns=6

@@ -1,0 +1,43 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: ls *.go | head -50
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-1/repo", "file": "time.go"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-1/repo", "file": "version7.go"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-1/repo", "file": "sql.go"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-1/repo", "inactive_after": "1 year ago"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ2-hist-1/repo", "file": "database_sql.go"}
+ - Bash: git log --format='%h %ad %an | %s' --date=short --follow -- time.go | head -20; echo ---; git log --format='%h %ad %an | %s' --date=short --follow -- database_sql.go | head; echo ---; git log --format='%h %ad %an | %s' --date=short -- version7.go | head -15; echo ---; git log -8 --format='%h %ad %an | %s' --date=short
+FINAL ANSWER:
+**Short answer:** the people who wrote these files are almost all gone. The only person still active who has touched any of them is Ravi Menon, and they have touched version7.go but not time.go or the SQL code. Activity is measured against the last commit, 2026-06-17, and today's date, 2026-10-24.
+
+**time.go**
+- `git blame` credits Sam Okafor with 100% of the file, but that is misleading. Their only commit is "Normalize line endings" (2025-04-22), which rewrote every line.
+- The real authors are Paul Borman (original code, 2011–2016, last commit 2021), MikeWang (v6/v7 support, 2023), Youngjae Lee (a v6 timestamp fix, 2024), Nicu Micle (v6 from custom time, 2024-11) and Alexander Rowe (`UnixMillis`, 2025-02).
+- Sam Okafor's last commit was 2025-05-06. Paul Borman, MikeWang, Youngjae Lee and Nicu Micle have all been inactive for at least 16 months.
+- Alexander Rowe is the exception. A commit under that name ("Test IsV8") landed 2026-03-09. The tool lists an "Alex Rowe" as a separate author, last active 2025-06-30. They may be the same person under two identities, which is worth checking in `.mailmap`.
+
+**version7.go**
+- MikeWang wrote 86% of it (2023–24), and their last commit was 2024-07.
+- Mei Chen added `Time7` (2025-08, 9%). Their last commit was that one, so they are inactive.
+- **Ravi Menon** wrote the clock step-back documentation (2026-05-05). They are the only active person with any connection to this file.
+- The remaining lines are typo and doc fixes from drive-by contributors.
+
+**SQL code (`database_sql.go`, formerly `sql.go`, plus `sql_test.go`)**
+- Justin Overfelt wrote the original code in 2015–16 (44% of the file). Andrew Stone, Daniel Souza, David E. Wheeler, Paul Borman and Steven Kaufman wrote the rest.
+- All of them are inactive, and the newest line is from 2021-01.
+- Ravi Menon's only commit here is the rename to `database_sql.go` (2025-03), so they never changed the logic.
+
+**Who to ask**
+- **Ravi Menon** is the only realistic reviewer. They also wrote the two most recent commits (the functional options scaffolding and the v7 docs), and they are the main owner of 3 files. Everything else is orphaned, so they are a single point of failure.
+- **Alexander Rowe** is a possible second reviewer for time.go and v7 changes. Confirm whether the two "Rowe" identities are the same person and that they are still around.
+- Nobody active knows the SQL code. You will be the de facto expert, so the existing `sql_test.go` is your main safety net.
+
+Two caveats:
+- The "inactive" label is based only on commits to this repo. Some of these people may still be reachable for questions.
+- The `d97a7fa` commit by Kofi Mensah is dated 1970-01-01, which looks like a bad timestamp. I'd treat that history with some suspicion.
+META cost=0.0993396 ms=19812 turns=9

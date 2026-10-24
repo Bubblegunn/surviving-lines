@@ -1,0 +1,55 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "time.go version7.go and SQL code (sql.go); who should review, and are the original authors still active?"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-ppi-1/repo; ls *.go | grep -v _test | tr '\n' ' '; echo; for f in time.go version7.go sql.go; do echo "== $f"; git log --all --no-merges --pretty='%an <%ae>' -- $f | sort | uniq -c | sort -rn; echo "last commit:"; git log -1 --pretty='%an %ad' --date=short -- $f; done; echo "== repo-wide recent (since 2026-07-26)"; git log --all --no-merges --since=2026-07-26 --pretty='%an' | sort | uniq -c | sort -rn; echo "== latest 15 authors w/ dates"; git log --no-merges -15 --pretty='%ad %an' --date=short; echo "== blame"; for f in time.go version7.go sql.go; do echo $f; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "== 
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-ppi-1/repo; echo "== database_sql.go"; git log --follow --no-merges --pretty='%an' -- database_sql.go | sort | uniq -c | sort -rn; git blame --line-porcelain database_sql.go | grep '^author ' | sort | uniq -c | sort -rn; git log --follow -1 --pretty='%an %ad' --date=short -- database_sql.go; echo "== time.go log"; git log --follow --pretty='%h %ad %an %s' --date=short -- time.go; echo "== sam okafor stat"; git log --author="Sam Okafor" --stat --pretty='%h %ad %s' --date=short | head -20; echo "== last commit per person"; for a in "Paul Borman" "Sam Okafor" "MikeWang" "Ravi Menon" "Mei Chen" "Alexander Rowe" "Noor Haddad" "Kofi Mensah" "David E. Wheele
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-ppi-1/repo; cat .github/CODEOWNERS
+FINAL ANSWER:
+## Bus factor: `time.go`, `version7.go`, SQL code
+
+**Short answer:** ask **Ravi Menon** first, and **Mei Chen** or **Alexander Rowe** for a second opinion. The people who wrote most of these files are mostly gone. Nobody has committed to the repo in the last 90 days (since 2026-07-26). The most recent commit is Ravi's on 2026-06-17, about 4 months ago.
+
+### Who wrote what
+
+| File | Main author by blame | Still around? | Recent maintainers |
+|---|---|---|---|
+| `time.go` | Sam Okafor (152 lines, 100%) | Last commit 2025-05-06 (about 17 months ago). | Alexander Rowe (2025-02, `UnixMillis`; last commit 2026-03-09) |
+| `version7.go` | MikeWang (101 of 117 lines) | Last commit 2024-07-02. | Mei Chen (`Time7`, last commit 2025-08-02), Ravi Menon (docs, 2026-05-05) |
+| `database_sql.go` (formerly `sql.go`) | Justin Overfelt (26 of 59 lines), Andrew Stone (11), David E. Wheeler (8), Daniel Souza (8) | None of them has been active in years, and Wheeler's last commit was 2016. | Ravi Menon (one commit, 2025-03) |
+
+The SQL code is now `database_sql.go`. `sql.go` doesn't exist at HEAD, but `git log --follow` resolves the history.
+
+### Caveats on that table
+
+- **Sam Okafor's ownership of `time.go` is misleading.** Their only commit to it (`c50c42f`) normalized line endings and rewrote every line. Blame is useless here. The people who understand the logic are:
+  - Paul Borman, the original author with 6 commits. His last commit was 2021 and he is Google staff, so he is probably not a practical reviewer.
+  - MikeWang, who added v6 and v7 support in 2023.
+  - Youngjae Lee and Nicu Micle, who fixed and extended v6 time handling. I didn't check their recent activity.
+- **MikeWang is the real v7 expert.** They wrote the monotonicity fix (`a2b2b32`) and 86% of the file. They have been inactive since 2024-07. Ravi's and Mei's changes were small, being docs and an accessor.
+- **SQL knowledge is spread thin.** Six or seven people each wrote a little, and none is active. That makes the bus factor nominally 6 or more but effectively 0.
+
+### Reviewers
+
+1. **Ravi Menon** is the only person who has touched all three areas (`version7.go`, `database_sql.go`, and the repo overall). They are also the most recent committer.
+2. **Mei Chen** for `version7.go` and `Time7`.
+3. **Alexander Rowe** for `time.go`, since they wrote `UnixMillis` and committed as recently as March 2026.
+4. For deep changes to v6/v7 time logic, MikeWang or Paul Borman would be worth contacting directly, but I wouldn't count on a reply.
+
+### Process notes
+
+- `.github/CODEOWNERS` assigns everything (`*`) to `@google/go-uuid-contributors`. It has no per-file ownership, so GitHub won't route reviews to the people above. Check who is in that team now.
+- Dependents are small. `time.go` is used by `version1.go` and `version6.go`, and `version7.go` has no other dependents. A mistake in `time.go` would affect v1 and v6 generation as well.
+- "Active" here means the author's name appears in git history. Authors who contribute under a different name or email would be missed. The history also contains an odd commit dated 1970-01-01 (`d97a7fa`, Kofi Mensah), so don't trust every date.
+
+### Recommendations
+
+- **Now:** ask Ravi, Mei and Rowe whether they're still reachable. Confirm membership of `@google/go-uuid-contributors`.
+- **Short term:** replace the blanket CODEOWNERS rule with per-file entries for `time.go`, `version7.go` and `database_sql.go`.
+- **Ongoing:** write down the v7 monotonicity and clock step-back behaviour, since the person who designed it has left. Add tests where coverage is thin.
+
+I did this with direct git commands instead of the contributor-analyzer agent, because only three files were involved.
+META cost=0.09613529999999999 ms=29688 turns=6

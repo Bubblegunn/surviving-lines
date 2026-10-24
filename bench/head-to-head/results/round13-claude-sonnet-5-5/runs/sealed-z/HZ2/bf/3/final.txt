@@ -1,0 +1,31 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ2-bf-3/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: for f in time.go version7.go sql.go; do echo "== $f"; git log --no-merges --format='%ae|%an|%as' -- $f | awk -F'|' '{c[$1" "$2]++; if(!l[$1" "$2])l[$1" "$2]=$3} END{for(k in c)print c[k],k,"last:",l[k]}' | sort -rn | head -8; done; echo; git log -1 --format='newest: %as'; git rev-list --max-parents=0 HEAD | xargs git show --stat --format='root %as' | tail -1
+FINAL ANSWER:
+**Short answer:** ask Ravi Menon (ravi.menon@harbor.example) first. Alex Rowe (alex.rowe@mailbox.example) is the likely second reviewer. The people who wrote most of this code have mostly left.
+
+I ran the busfactor script with `--dry-run --no-github`, so nothing was written to the repo. Its output only contained a repo-wide fallback rule, `* ravi.menon@… alex.rowe@…`, and no per-file rules for these three areas. The per-file picture below comes from `git log`.
+
+| File | Main authors by commits | Still active? |
+|---|---|---|
+| `time.go` | Paul Borman (6 commits, last 2016) | No. The rest are one-off contributors, with the latest from Sam Okafor (2025-04), Alex Rowe (2025-02), Nicu Micle (2024-11) and Youngjae Lee (2024-06). |
+| `version7.go` | MikeWang (2), Ravi Menon (latest, 2026-05), Mei Chen (2025-08), plus David Kaufman, Andreas Deininger and Alex Bozhenko (all early 2024) | Ravi clearly is. Mei Chen's last commit was 2025-08, which is outside a 12-month window as of today. |
+| SQL code (`sql.go`) | David E. Wheeler (3, 2016), Justin Overfelt (2, 2015), Andrew Stone (2, 2017), Daniel Souza (2016) | No. Paul Borman's single commit was 2016. Steven Kaufman (2021) and Ravi Menon (2025-03) are the only later authors. |
+
+- **`time.go`:** the original author, Paul Borman, last committed in 2016. Nobody active has deep history here. Alex Rowe and Sam Okafor each have only one commit.
+- **`version7.go`:** this is the best-covered file. Ravi wrote the most recent change, and Mei Chen, if still around, is a second option.
+- **`sql.go`:** it is effectively orphaned. Everyone who shaped it left years ago, and Ravi's one commit in 2025 is the only recent knowledge. Treat Ravi as the sole reviewer, so there is a bus-factor-1 risk.
+
+**Caveats**
+- Commit counts only approximate knowledge. Someone who reviews but never commits won't show up.
+- Check that Sam Okafor, Alex Rowe and Mei Chen are still around. By commit dates they sit near or outside the 12-month window, but the script's fallback names Alex as an owner anyway. If any of them are still involved, they are reasonable extra reviewers.
+- Git emails weren't resolved to GitHub handles, because I used `--no-github`. You'll need to map them yourself before writing a CODEOWNERS file.
+
+If you want, I can generate the full CODEOWNERS file and the risk report with per-zone verdicts. First I'd need you to confirm who is still active.
+META cost=0.06344129999999999 ms=17942 turns=5

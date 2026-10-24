@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --oneline | wc -l && git show --stat --format='%h %s' 62628c0 | tail -3 && git ls-files | head -80 | wc -l
+ - Bash: git ls-files | grep -vE 'package-lock|\.(png|jpg|ico)$' > /tmp/files.txt; 
+run(){ while read f; do git blame -w -M -C --line-porcelain $1 HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done < /tmp/files.txt | sort | uniq -c | sort -rn | head -12; }
+echo "== ignoring reformat commit"; run "--ignore-rev 62628c0"
+echo "== plain blame"; run ""
+ - Bash: while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done < /tmp/files.txt | sort | uniq -c | sort -rn | awk '{t+=$1; print} END{print t" total"}' | head -20; git ls-files | grep -vE 'package-lock|\.(png|jpg|ico)$' | tr '\n' ' '
+ - Bash: while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep -a '^author '; done < /tmp/files.txt | wc -l; for f in lib/index.js test/test.js; do echo $f; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- $f | grep -a '^author ' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that is still here. Between them they have about 72% of it.
+
+I ran `git blame` on every tracked file at HEAD, skipping `package-lock.json` and images. That covers 1,995 lines. I used `-w -M -C`, so whitespace changes and code moved between files don't change who gets credit.
+
+I also had to ignore the latest commit, `62628c0` ("reformat js with 4-space indent and double quotes"). Plain blame gives 291 lines to "Fiona Formatter" for that commit, which hides who wrote the code. With it ignored, those lines go back to whoever wrote them before.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1% |
+| Everyone else | ~170 | ~8% |
+
+- **Core library:** In `lib/index.js`, Troy Goode has 159 lines, Douglas Christopher Wilson 22 and Alejandro Caravaca Puchades 12. The original author's code is still the core of the library.
+- **Tests:** In `test/test.js`, Douglas Christopher Wilson has 339 lines and Troy Goode 317. Wilson's rewrites have caught up with Goode's original tests.
+- **Counts:** These are line counts, not a measure of importance. Line counts include docs, `HISTORY.md`, config and test fixtures, so a few small fixes can matter more than their line count suggests. If you want only `lib/`, or only code without docs and tests, I can rerun it that way.
+META cost=0.0590087 ms=21125 turns=5

@@ -1,0 +1,46 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: echo "commits by author:" && git shortlog -sne --all --no-merges && echo && echo "files:" && git ls-files | grep -E '\.zig$' && echo && echo "blame lines per author (current HEAD, zig files):" && for f in $(git ls-files | grep -E '\.zig$'); do git blame --line-porcelain -w -M -C HEAD -- "$f" | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files | grep -E '\.zig$'); do echo "== $f"; git blame --line-porcelain -w -M -C HEAD -- "$f" | grep -a '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn; done; echo; echo "last commit per author:"; git log --all --no-merges --format='%an|%ad' --date=short | sort -t'|' -k1,1 -u
+FINAL ANSWER:
+**Bus factor is 2 by the usual 50% rule, and it drops to 1 for the core parser.** This is based on `git blame` over the 7 `.zig` files at HEAD (2,120 lines). I merged author-name variants that look like the same person. That's my judgment, not something git knows.
+
+**Current line ownership**
+
+| Author | Lines | Share |
+|---|---|---|
+| Felix "xq" Queißner (3 name variants) | 758 | 36% |
+| Wen Li | 552 | 26% |
+| jnagpaul | 188 | 9% |
+| Vincent Rischmann | 130 | 6% |
+| Everyone else (24 people) | 492 | 23% |
+
+- **Wen Li's share is mostly one file.** 484 of their 552 lines are in `src/width_table.zig`, which looks like a lookup table, though I didn't check whether it's generated. Without that file, Felix owns 46% and Wen Li 4%.
+- **Felix is the top author either way.** They also have the most commits: 46 of 130, or 35%.
+- **The 50% threshold is crossed with Felix plus Wen Li.** That's 62% of lines, or 51% without the table. If Felix leaves and someone else takes over, the top two are still enough to pass 50%.
+
+**If Felix stopped answering**
+
+- About 36% of all current lines, or 46% excluding the width table, would have no author left to ask.
+- The impact is much bigger in the core file. `src/args.zig` is 67% Felix (705 of 1,048 lines), so its bus factor is effectively 1.
+- The other files are less exposed. `help.zig` is mostly jnagpaul (166 of 336 lines), Dhole and Bob Farrell. `width.zig` and `width_table.zig` are almost entirely Wen Li. `build.zig`, `demo.zig` and `demo_verb.zig` are spread across many authors.
+
+**Activity**
+
+- **Felix is still active.** Their latest commit is 2026-04-16, about 6 months ago, under the "xq" alias. The older "(xq)" alias hasn't committed since 2021, which is the same person under another name.
+- **Recent committers:** only Wen Li and Tobias Ek have committed in the last 90 days. Both are minor contributors to `src/args.zig` (40 and 2 lines).
+- **Authors who have gone quiet:** 37% of current lines (789) were written by people with no commit in 90 days. That includes jnagpaul (last commit 2023), Vincent Rischmann (2025) and mochalins (2025).
+
+**Caveats**
+
+- Two author dates are after today's date (2026-10-24): Wen Li at 2026-10-27 and Dmitri Volkov at 2026-11-04. That suggests skewed clocks or rewritten history, so treat the "recent activity" figures loosely.
+- Blame credits whoever last touched a line. A large mechanical change, such as the recent `allocator` to `gpa` rename, can shift credit away from the original author.
+- I didn't compute how many files import each module. For a library this small, `src/args.zig` is clearly the critical one.
+
+**Recommendation:** have a second maintainer review and document `src/args.zig`'s parsing and option-handling logic. That's the single area where Felix leaving would hurt most.
+META cost=0.09000810000000001 ms=28940 turns=5

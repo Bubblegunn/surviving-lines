@@ -1,0 +1,30 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git log --oneline | wc -l && git ls-files | wc -l && git show --stat --oneline 62628c0 | tail -3 && git rev-list --max-parents=0 HEAD | xargs git show --stat --oneline | tail -2
+ - Bash: git ls-files | head -30; for f in $(git ls-files | grep -Ev 'png|jpg|ico|lock'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -E '^author (.*)$|^author-mail '; done | paste - - | sed 's/^author //' | sort | uniq -c | sort -rn | head -15
+ - Bash: for f in $(git ls-files | grep -Ev 'png|jpg|ico|lock'); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0; c[NR]=$1} END{for(i=1;i<=8;i++) printf "%s  %.1f%%\n", a[i], 100*c[i]/t; print "total",t}'; for n in "Troy Goode" "Douglas Christopher Wilson" "Íñigo" "Jon Church" "Sebastian Beltran" "Ulises"; do echo "$n: $(git log --author="$n" -1 --format=%ad --date=short)"; done
+FINAL ANSWER:
+I used `git blame` instead of commit counts. It counts the lines that survive at HEAD (about 1,995 across the tracked text files). It follows moved and copied lines and ignores whitespace changes. I also excluded the "reformat js with 4-space indent and double quotes" commit (62628c0), which would otherwise have made its author look like the owner of nearly everything.
+
+| Owner | Surviving lines | Share | Last commit |
+|---|---|---|---|
+| Troy Goode | 810 | 40.6% | 2026-04-10 |
+| Douglas Christopher Wilson | 629 | 31.5% | 2021-09-07 |
+| Íñigo Marquínez Prado | 95 | 4.8% | 2024-05-14 |
+| Jon Church | 72 | 3.6% | 2026-01-16 |
+| Sebastian Beltran | 67 | 3.4% | 2025-07-23 |
+| Ulises Gascón | 52 | 2.6% | 2026-01-22 |
+| Others (Ignacio Mangas, Alejandro Caravaca Puchades, and about a dozen more) | the remaining ~10% | | |
+
+- **Troy Goode:** their lines appear under two emails, `<email redacted>` (762) and `troy@laptop.example` (48). I merged them into one person.
+- **Original code:** two authors wrote about 72% of what's left. Troy Goode's share is the larger one, and they were still committing in April 2026.
+- **Douglas Christopher Wilson:** their 31.5% is the largest risk. Their last commit was in 2021, so nearly a third of the code has no recent author who knows it. I'm inferring that from commit dates, since I can't see who is still involved.
+- **Everyone else:** the remaining authors each hold under 5%. Íñigo Marquínez Prado's last commit was in 2024, so their share is also out of date.
+
+Line survival measures who wrote the code, not who understands or reviews it. Someone who reviews everything but rarely commits won't show up here. I haven't run the busfactor skill, because it weights recent commits and writes files into the repo. I can run it if you want a CODEOWNERS file or a per-directory breakdown.
+META cost=0.07169089999999999 ms=20389 turns=6

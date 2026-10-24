@@ -1,0 +1,19 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls; cat CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>/dev/null; git shortlog -sne HEAD -- lib/index.js; git log --since="12 months ago" --format='%an <%ae>' -- lib/index.js | sort | uniq -c | sort -rn | head
+ - Bash: git log -8 --format='%h %ad %an %s' --date=short -- lib/index.js; cat .git-blame-ignore-revs
+FINAL ANSWER:
+The repo has no CODEOWNERS file, so I based this on git history. My pick is **Troy Goode**.
+
+- **Troy Goode** has 30 commits to `lib/index.js` (29 under one email, 1 under another), far more than anyone else. They also made the most recent real change, "lib: annotate handlers" (b2005d9, 2026-04-10).
+- **Douglas Christopher Wilson** has 4 commits, mostly lint and build work from 2017. They're a reasonable second reviewer if you want one.
+- **Alejandro Caravaca Puchades** also has 4 commits (5 counting a second identity, alex94puchades). Their commits are older, so they may be less current on the file.
+
+I'd skip Fiona Formatter even though they're the latest author. Their only commit is the 4-space/double-quote reformat (62628c0), which is listed in `.git-blame-ignore-revs`, so it says nothing about who knows the logic.
+
+Most of the other contributors made one-off fixes years ago. Nobody other than Troy Goode has touched the file since 2021, so I can't tell who else is active on the project today. Check that Troy is still around before you request the review.
+META cost=0.0470152 ms=11006 turns=3

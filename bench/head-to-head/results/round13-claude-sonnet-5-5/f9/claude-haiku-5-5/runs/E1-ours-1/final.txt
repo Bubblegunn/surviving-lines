@@ -1,0 +1,69 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "bus factor analysis of whole repository, current activity"}
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --brief && echo ---- && node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --merge-identities && echo ---- && node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --group-by dir --merge-identities
+FINAL ANSWER:
+## Bus factor: 2 for the whole repo, but only 1 among active authors
+
+**Scope:** whole repository, 1,662 non-blank lines (1,995 counting blank lines, per the merged run; the brief says 1,985, see below).
+
+- **Bus factor (50% of lines): 2.** Troy Goode (649 lines, 39.0%, merged) and Douglas Christopher Wilson (551 lines, 33.2%) together hold 72.2%. On the unmerged brief figures it is also 2: Troy 605 (36.4%) and Douglas 551 (33.2%).
+- **To reach 80%: 4 authors** (merged). The unmerged brief says 5.
+- **Counting blank lines:** bus factor 2 (Troy 40.8% plus Douglas 31.7% = 72.5%).
+- **Active bus factor: 1.** Troy Goode alone holds at least half of the 860 lines held by the 9 authors active in the last 365 days. This is counted on the active lines, not all lines.
+- **Activity:** `as of 2026-04-12: 9 of 44 authors committed in the last 365 days and hold 51.7% of the non-blank lines; 48.3% of the lines belong to people with no commit in that time`.
+
+Troy Goode's merge of two addresses is a strong suggestion from the tool, not a confirmed fact. It is a guess from names and addresses (<email redacted> and troy@laptop.example). I did not write a `.mailmap` because you did not ask for one.
+
+### Top owners (merged view, `--merge-identities`)
+
+| Author | Lines (share) | Counting blank lines | Commits | Last commit |
+|---|---|---|---|---|
+| Troy Goode (2 addresses) | 649 (39.0%) | 810 (40.8%) | 95 (30.2%) | 2026-04-10 |
+| Douglas Christopher Wilson | 551 (33.2%) | 629 (31.7%) | 143 (45.4%) | 2021-09-07 |
+| Íñigo Marquínez Prado | 80 (4.8%) | 95 (4.8%) | 2 (0.6%) | 2024-05-14 |
+| Jon Church | 59 (3.5%) | 72 (3.6%) | 3 (1.0%) | 2026-01-16 |
+| Sebastian Beltran | 57 (3.4%) | 67 (3.4%) | 2 (0.6%) | 2025-07-23 |
+| Ulises Gascón | 46 (2.8%) | 52 (2.6%) | 3 (1.0%) | 2026-01-22 |
+| Ignacio Mangas | 38 (2.3%) | 44 (2.2%) | 2 (0.6%) | 2025-12-01 |
+
+The tool's tail line reads: `… 52 more authors hold 6.7% together; largest: Eric di Domenico 0.7%`.
+
+## Per directory
+
+| Scope | Non-blank lines (share of repo) | Top owner (share) | Active bus factor | Tool verdict |
+|---|---|---|---|---|
+| `test/` | 820 (49.3%) | Troy Goode 420 (51.2%) | 1 (Troy) | single point |
+| root files | 323 (19.4%) | Douglas 95 (29.4%), inactive; Troy 85 (26.3%) | 1 (Troy, 85 of 164 active lines) | single point |
+| `.github/` | 305 (18.4%) | Douglas 92 (30.2%), inactive; Íñigo 80 (26.2%), inactive | 2 (Sebastian Beltran and Ulises Gascón) | orphaned |
+| `lib/` | 214 (12.9%) | Troy Goode 144 (67.3%) | 1 (Troy) | single point |
+
+The tool treats "single point" and "orphaned" as separate findings. Each directory has one, both, or neither.
+
+**Files:**
+- **Orphaned:** 6 of 18 files, 7.8% of lines. The largest are `.github/workflows/scorecard.yml` (Íñigo Marquínez Prado, 61 lines), `HISTORY.md` (Douglas, 41) and `LICENSE` (Douglas, 18). The tool names only these three.
+- **Single owner (90% or more):** `scorecard.yml` (Íñigo, 61 lines, inactive), `.github/workflows/codeql.yml` (Sebastian Beltran, 53, last commit 2025-07-23) and `test/vary.js` (Troy, 32).
+
+## Who to ask
+
+- **Top owner: Troy Goode**, 649 lines (39.0%), active (last commit 2026-04-10). Troy is the main source of knowledge and the practical contact.
+- **Douglas Christopher Wilson** is the second-largest owner (551 lines, 33.2%), but the last commit was 2021-09-07. He is a source of history only, not someone you can reach.
+- **Other active authors** with code in `.github/`: Sebastian Beltran, Ulises Gascón, Ignacio Mangas.
+
+## Left out, and checks
+
+- **Bots:** dependabot[bot] (10 lines, 11 commits) is excluded.
+- **Reformat commit:** `62628c0` ("style: reformat js with 4-space indent and double quotes") rewrote 1,016 lines in 4 files and is set aside. Without that correction, Douglas drops to 376 (22.6%) and Troy rises to 554 (33.3%). The bus factor stays at 2 (56.0% together).
+- **Mechanical candidates not set aside:** 739dc11 ("docs: reformat license", Douglas, 17 surviving lines), fcd2b56 (Troy, 11), 00d6eec (Douglas, 9), c915bcf (Peter Stromquist, 2), 344ce1e (Douglas, 1), and two more. The tool examined 136 commits holding surviving lines. I did not inspect these with `git show --stat`. If they are mechanical, their lines would move to earlier authors.
+- **Lines credited to a committer's author:** for example, 60 lines of de19afc are Íñigo's, committed by GitHub.
+- **One person under two names:** Alejandro Caravaca Puchades also appears as `alex94puchades` (30 lines). The merged table counts them as one.
+
+## Caveats
+
+- **The activity window is anchored to the ref date, 2026-04-12, not today (2026-10-24).** The "inactive" marks are relative to April. Using today's date, my own arithmetic on the printed last-commit dates (not a new SL count) shows Sebastian Beltran's last commit (2025-07-23) falls outside 365 days. That would drop `.github/` to one active author, Ulises Gascón and Ignacio Mangas, with Ignacio's last commit 2025-12-01 also inside the window. The full set of authors active today needs a re-run with the window anchored to today, and I did not do that.
+- **Line totals disagree between runs.** The brief says 1,985 lines counting blank lines and "top 6 of 45" owners. The merged run says 1,995 lines with blank lines and lists 62 authors (10 rows plus 52 more). I could not resolve this from the output. I used the non-blank count of 1,662, which both runs agree on.
+META cost=0.01077785 ms=57366 turns=4

@@ -1,0 +1,51 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor 2>/dev/null && ls scripts; cd /private/tmp/r13/final/out-F/runs/HZ3-bf-1/repo && git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git log --reverse --format='%h %ad' --date=short | head -1; git log -1 --format='%ad' --date=short; git ls-files | wc -l
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --no-github --dry-run 2>&1 | head -60; git log --format='%ae' | wc -l
+ - Bash: git ls-files; echo; echo "-- blame lines by author email (current tree)"; for f in $(git ls-files | grep -E '\.(zig|md|zon)$'); do git blame --line-porcelain -w -M -C -- $f | grep '^author-mail'; done | sort | uniq -c | sort -rn; echo "-- commits by email, last 12mo / total"; git log --no-merges --format='%ae' | sort | uniq -c | sort -rn | head -15; git log --no-merges --since=2025-11-04 --format='%ae' | sort | uniq -c | sort -rn
+ - Bash: for f in src/args.zig src/help.zig src/width.zig src/width_table.zig build.zig demo.zig; do echo "== $f $(wc -l <$f)"; git blame --line-porcelain -w -M -C -- $f | grep '^author-mail' | sort | uniq -c | sort -rn | head -3; done; git log --format='%ae %ad' --date=short -3 -- src/width_table.zig
+FINAL ANSWER:
+I've finished the analysis. I used `git blame` on the current tree rather than the skill's report, and I'm writing up the result now. I ran the skill's script only with `--dry-run`, so nothing was written to the repo.
+
+## Short answer
+
+The bus factor is **1 for the core parser**, and **about 2 for the repo as a whole**. No part of the current code is fully orphaned.
+
+The author is **Felix "xq" Queißner**, who started the project in 2020. He commits under four different emails: `<email redacted>`, `<email redacted>`, `<email redacted>` and `<email redacted>`. Counting them as one person:
+
+| Person | Lines surviving in the tree | Share of 2,225 |
+|---|---|---|
+| Felix (4 emails combined) | about 831 | about 37% |
+| Wen Li | 552 | about 25% |
+| Everyone else, about 30 people | the remaining 842 | about 38% |
+
+Felix's 37% is the largest share, but it isn't a majority. It looks smaller than it is because it's split across emails.
+
+## Per file
+
+- **`src/args.zig`** (1,049 lines, the core parser) is the real concentration. Felix's emails account for about 691 lines, roughly 66%, and the next person has 64. This is bus factor 1.
+- **`src/help.zig`** has a spread of authors, led by jnagpaul with 166 of 337 lines. It's healthier, though still dominated by one person.
+- **`src/width.zig` and `src/width_table.zig`** are 100% Wen Li (508 lines). Wen Li's first commit to `src/width_table.zig` was on 2026-10-27, and Wen Li has only 3 commits in the last 12 months. That makes the width code a second single-owner zone. Wen Li's share is mostly a data table, and the table looks generated (my guess from its size, not checked), so it probably understates how easy it is to take over.
+- The build files and demos are spread across several people.
+
+## If Felix stopped answering
+
+- About 37% of the code would have no author left, and almost all of it is `args.zig`.
+- Felix is still active. He has 7 commits in the last 12 months (5 under `<email redacted>` and 2 under `<email redacted>`), so that's the risk scenario, not what has happened.
+- Nobody else has deep knowledge of the parser. The next-largest contributors to `args.zig` hold single-digit percentages of it.
+
+## Caveats
+
+- The script's dry run named `<email redacted>`, `tobias.ek@fjord.example` and `wen.li@fjord.example` as fallback owners. That run used `--no-github`, so it **couldn't merge Felix's four emails**. It split his weight and understated how concentrated `args.zig` is. Merging the emails would make him the clear owner of `src/args.zig`.
+- The fallback also names Tobias Ek, who has only 5 surviving lines. That owner list looks wrong.
+- The repo is small (13 files), so these percentages are sensitive to a single contributor.
+- The newest commit is dated 2026-11-04, which is after today's date, 2026-10-24. I used the newest commit as "now", as the script does. The activity windows depend on that date being right.
+- Commit and blame volume is only a proxy for who understands the code.
+
+I can write `.github/CODEOWNERS` and `ownership.json` with Felix's emails merged through the cache file. I'd need you to confirm those four emails are all him first.
+META cost=0.09003810000000001 ms=30482 turns=7

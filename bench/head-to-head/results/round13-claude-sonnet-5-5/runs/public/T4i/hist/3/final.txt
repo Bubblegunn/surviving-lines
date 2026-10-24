@@ -1,0 +1,21 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history", "max_results": 5}
+ - mcp__git-historian__file_history: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4i-hist-3/repo", "file": "lib/index.js", "limit": 40}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4i-hist-3/repo", "path": "lib/index.js"}
+FINAL ANSWER:
+I can't point you to a clear reviewer. Nobody who knows `lib/index.js` has committed in the last 6 months.
+
+- **Fiona Formatter** shows as the top owner at about 90% of lines. That comes from the 2026-04-12 reformat commit (`62628c0`), which touched 214 lines and changed no logic. The repo's `.git-blame-ignore-revs` lists that commit, but the ownership tool doesn't honor the file, so I'd ignore this number.
+- **Troy Goode** is the original author and the most relevant person. He wrote much of the file's logic and made the latest real change (`b2005d9`, "annotate handlers", 2026-04-10). His last commit is about 6.5 months old, so he counts as inactive, though he may still respond.
+- **Douglas Christopher Wilson** made many of the 2017 fixes to the Vary header, preflight handling and options delegate. His last commit in this repo is 2021, so he's the next person to try if you want someone with that history.
+- The remaining contributors are one-off, mostly from 2014–2021, and aren't useful reviewers.
+
+I'd ask Troy Goode first and Douglas Wilson second. If neither is available, ask whoever is currently active on the repo. The tool flags the file as orphaned, so it's worth having a second reviewer. The most regression-prone areas have been Vary headers, origin matching (regex, array and callback) and preflight handling, and the tests should cover those.
+
+I can check who is active elsewhere in the repo, or re-run the ownership numbers with the formatting commit excluded, if either would help.
+META cost=0.0626522 ms=11118 turns=4

@@ -1,0 +1,37 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL --help 2>&1 | head -40; $SL --without "Felix (xq) Queißner" 2>&1 | head -40
+ - Bash: SL=(node /private/tmp/r13/final/ours-src/bin/surviving-lines.js); "${SL[@]}" --without "Felix (xq) Queißner" 2>&1 | head -40; "${SL[@]}" --merge-identities --without "Felix (xq) Queißner" 2>&1 | head -40
+ - Bash: SL=(node /private/tmp/r13/final/ours-src/bin/surviving-lines.js); "${SL[@]}" --without "Felix (xq) Queißner" --without "Felix 'xq' Queißner" 2>&1 | sed -n 1,9p; echo ----; "${SL[@]}" --help 2>&1 | grep -i -A2 -e without -e mailmap | head -20
+ - Bash: SL=(node /private/tmp/r13/final/ours-src/bin/surviving-lines.js); "${SL[@]}" --merge-identities --without '<email redacted>,<email redacted>,<email redacted>' 2>&1 | sed -n 1,9p
+FINAL ANSWER:
+Ownership is moderately concentrated in one person, but it's split across several git identities. That makes it look less concentrated than it is. The numbers below come from surviving-lines, which counts the lines that are still in the code at HEAD (bd73202) using `git blame`. They cover 12 files and 1,535 non-blank lines (1,795 counting blank lines). The generated `src/width_table.zig` (484 lines) is left out.
+
+**Concentration**
+- The git history shows Felix Queißner (xq) under three addresses, which the table counts separately: 384 lines (25.0%), 274 lines (17.9%) and 10 lines.
+- The tool flags these as very likely the same person, but that's a guess from names and addresses. If they are one person, they hold **668 of 1,535 lines (43.5%)**. Unmerged, the largest single identity is 25.0%.
+- Next come jnagpaul with 146 lines (9.5%), Vincent Rischmann with 114 (7.4%), mochalins with 76 (5.0%) and Dhole with 67 (4.4%). A further 27 people hold the remaining 30.9%.
+
+**If that person stopped answering**
+- Only 24.0% of the code is written by active people. 79.0% of the lines belong to people with no commit in the last 365 days, and the largest of those is Felix.
+- Treating the three identities as one, **668 lines (43.5%) would have no author left**.
+- In 6 of the 12 files, he is the top owner. Those files hold 1,052 lines (68.5%).
+- **`src/args.zig`, the core file, is the real exposure.** It has 898 lines, and he holds 64.0% of them. The best remaining author, Vincent Rischmann, holds only 6.6%. Nobody left would know that file.
+- `README.md` (71 lines), `demo.zig` (55 lines) and the CI workflow (24 lines) are also his.
+- The people most likely to inherit pieces are mochalins (60 lines), Vincent Rischmann (59) and Wen Li (40).
+
+**Bus factor**
+- The bus factor is the smallest number of authors who hold 50% of the lines. It is **3** today, and it would be **5** without him. On the unmerged identities it is also 3.
+- It would rise to 5 because the lines left over are spread thinly across many people, not because anyone else is a stronger owner.
+- Counting only people active in the last year (Dhole, Wen Li, Krzysztof Wolicki), the bus factor is 3. Those three hold only 21.0% of the lines between them. It's a thin base.
+- Overall, 6 of the 12 files (76.1% of the lines) are orphaned. That means the top owner is inactive and no active person holds 20% or more.
+
+**Caveats**
+- The merge of Felix's identities is my inference, and I haven't written a `.mailmap`. The tool also suggests merging Felix Queißner (<email redacted>, <email redacted>) and Antoine Gagniere, but I left those out. Say so if you want them added.
+- Lines credited to someone are not the same as who understands the code. Felix committed 32 commits that other people authored, for example jnagpaul's tests and Krzysztof Wolicki's `std.lang.Type` update. He may have reviewed or integrated more than the line counts show.
+- Copy detection moved 293 lines in 2 files to another author. Without it, jnagpaul would hold 1.2% of the lines instead of 9.5%, and Felix's share would be higher.
+META cost=0.0868419 ms=27132 turns=5

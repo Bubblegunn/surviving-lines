@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | sed -n 's/.*\.\([^./]*\)$/\1/p' | sort | uniq -c | sort -rn | head -40; echo; git ls-files | wc -l
+ - Bash: git ls-files
+ - Bash: git ls-files -z | while IFS= read -r -d '' f; do
+  case "$f" in *.*) ext="${f##*.}";; *) ext="(none)";; esac
+  git blame --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //' | sed "s/^/$ext\t/"
+done | sort | uniq -c | sort -k2,2 -k1,1nr > /tmp/blame_counts.txt; cat /tmp/blame_counts.txt
+ - Bash: git show -s --format='%H %an %s' 62628c0 && git ls-files -z -- '*.js' | while IFS= read -r -d '' f; do git blame --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" | grep '^author '; done | sed 's/^author //' | sort | uniq -c | sort -rn | head -8
+FINAL ANSWER:
+Surviving lines in `HEAD`, attributed with `git blame`. There are 18 tracked files across 5 extensions.
+
+| Extension | Files | Lines | Top owner | Share |
+|---|---|---|---|---|
+| `.js` | 7 | 1202 | Fiona Formatter | 1016 (85%) |
+| `.md` | 2 | 341 | Troy Goode | 104 (30%) |
+| `.yml` | 6 | 383 | Douglas Christopher Wilson | 117 (31%) |
+| `.json` | 1 | 42 | Douglas Christopher Wilson | 20 (48%) |
+| no extension (`LICENSE`) | 1 | 22 | Douglas Christopher Wilson | 17 (77%) |
+| `.gitignore` | 1 | 5 | Douglas Christopher Wilson | 4 (80%) |
+
+The `.js` result is distorted by commit `62628c0` ("style: reformat js with 4-space indent and double quotes"), which rewrote nearly every line under the name Fiona Formatter. Ignoring that commit with `git blame --ignore-rev`, the JS owners are:
+
+- Troy Goode: 520
+- Douglas Christopher Wilson: 339
+- Fiona Formatter: 237
+- Alejandro Caravaca Puchades: 26
+- Alberto Leal: 25
+
+So Troy Goode is the real top owner of `.js` once formatting churn is excluded.
+
+These counts use the author name as recorded in git. The repo has no `.mailmap`, so any contributor who committed under more than one name would be split across them.
+META cost=0.00423059 ms=19123 turns=5

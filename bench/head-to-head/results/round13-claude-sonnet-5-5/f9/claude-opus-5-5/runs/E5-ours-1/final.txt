@@ -1,0 +1,48 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "history of lib/index.js"}
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL --history lib/index.js; echo ===; $SL --history lib/index.js --merge-identities
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --history lib/index.js; echo "-----"; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --history lib/index.js --merge-identities
+ - Bash: SL=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $SL --reviewers lib/index.js --merge-identities | head -40; echo -----; git show --stat 62628c0 | head -15; git show --stat fcd2b56 | head -15; echo -----; node $SL --history lib/index.js --merge-identities --ignore-rev fcd2b56 | sed -n '1,25p'
+FINAL ANSWER:
+`lib/index.js` is Troy Goode's file from start to finish. They made the first commit on 2013-01-30 and still hold about two thirds of the lines, if their two addresses are one person (see below). The file has 214 non-blank lines (238 counting blank lines), and 24 people have changed it since 2013 (23 if Troy's addresses are merged). All figures come from `surviving-lines --history` and `--reviewers` on `lib/index.js`, at HEAD `62628c0` as of 2026-04-12.
+
+## How the file was shaped
+
+- **2013–2016, Troy Goode's era.** Troy started the file and made 28 commits to it from `<email redacted>` up to 2016-08-23. Over the same years a long line of one-time contributors each added a small change and still hold a few lines or none: Damien Klinnert, Simon Mansfield, Eric di Domenico, Mathias Buus, Typicode, Alberto Leal, Shane Tomlinson, Igor Soarez and Raymond Feng, among others.
+- **2015, Alejandro Caravaca Puchades.** Alejandro made 5 commits. One of them, `e64e854`, added support for an array of matching conditions as `options.origin`. Troy committed it, but its 11 lines are credited to Alejandro as the author.
+- **Up to 2017, Douglas Christopher Wilson.** Douglas made 4 commits to this file, the last on 2017-10-04. He stayed active elsewhere in the repo until 2021-09-07. He also committed LuisEGR's lint cleanup `f038e77` (2021), whose 6 lines belong to LuisEGR.
+- **2026.** On 2026-04-10, `troy@laptop.example` made 1 commit (12 surviving lines). On 2026-04-12, `62628c0` by "Fiona Formatter" reformatted the file to 4-space indent and double quotes. That commit rewrote 1,016 lines across 4 files with formatting changes only, so the tool set it aside and gave those lines back to their earlier authors.
+
+## Whose code is still there
+
+Counting Troy's two addresses as one person:
+
+| Author | Non-blank lines | Counting blank lines | Commits | Last commit here |
+|---|---|---|---|---|
+| Troy Goode (2 addresses) | 144 (67.3%) | 159 (66.8%) | 29 | 2026-04-10, active |
+| Douglas Christopher Wilson | 20 (9.3%) | 22 (9.2%) | 4 | 2017-10-04, inactive |
+| Alejandro Caravaca Puchades | 14 (6.5%) | 16 (6.7%) | 5 | 2015-05-28, inactive |
+| LuisEGR | 6 (2.8%) | 6 (2.5%) | 1 | 2021-07-20, inactive |
+| Raymond Feng | 6 (2.8%) | 7 (2.9%) | 1 | 2015-01-13, inactive |
+
+19 more authors share the rest, each with a handful of lines or none.
+
+- **Troy's two addresses:** merging `<email redacted>` (132 lines) and `troy@laptop.example` (12 lines) is a guess based on the same name. The tool rates the evidence as strong, but it hasn't been confirmed. Counted separately, `<email redacted>` has 132 non-blank lines (61.7%), or 147 counting blank lines (61.8%).
+- **Alejandro's two names:** `alex94puchades` and "Alejandro Caravaca Puchades" share one address, so they are counted as one person.
+- **Bus factor:** this is the smallest number of authors who together hold 50% of the lines. It is 1 (Troy) on both line bases, merged or not. Reaching 80% takes 3 authors merged, or 4 unmerged.
+- **Activity:** as of 2026-04-12, 1 of 18 authors had committed in the last 365 days and held 67.3% of the non-blank lines. The other 32.7% belong to people with no commit in that time. The file isn't orphaned, but Troy is a single point of failure.
+
+## What affects these numbers
+
+- **Reformat commit:** without setting `62628c0` aside, the formatter would have taken lines from Troy (144 → 123, 57.5%), Douglas (20 → 16), Alejandro (14 → 13), Benjamin Eidelman (3 → 2) and Eran Tiktin (1 → 0).
+- **ESLint commit:** the tool flagged one more commit as possibly mechanical: `fcd2b56`, Troy's "switch to ESLint; clean up" (5 surviving lines). It changed 30 lines of `lib/index.js` along with real lint fixes. Re-running with it set aside left the figures unchanged, so it stays counted.
+- **Where the history starts:** it begins with a 2013-01-30 commit that added 8 of the repo's 18 files. Any older work is credited to whoever made that commit. Lines on merged branches are credited to the commit authors, not to whoever merged them.
+- **Method:** the counts use `git blame -w -M -C`. They measure whose lines are still in the file, not code quality, reviews or design input. Deleted code counts for nobody.
+
+**Who to ask:** Troy Goode is both the main owner and the only active contributor, so they are the person to go to. Douglas Christopher Wilson is the next largest owner but hasn't committed to this file since 2017.
+META cost=0.2730556 ms=39618 turns=6

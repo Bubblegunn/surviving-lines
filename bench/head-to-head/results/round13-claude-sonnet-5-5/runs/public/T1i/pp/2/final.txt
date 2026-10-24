@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '(package-lock\.json|\.png|\.jpg|\.ico)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain HEAD -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+By surviving lines at HEAD, **Troy Goode** owns the most code, with **Douglas Christopher Wilson** a close second. Together they account for roughly two-thirds of the lines in the top 20.
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+Below the top 10 it is a long tail of about 10 or fewer lines each: Eric di Domenico (16), Alberto Leal (15), max.laverse, Saad Tazi, Benjamin Eidelman, dependabot[bot] (10 each), and others. The list was cut at 20 entries, so the tail isn't fully shown.
+
+**How I counted**
+- I ran `git blame` on every tracked file at HEAD and counted the author of each line.
+- I skipped the reformat commit (`62628c0`) using `.git-blame-ignore-revs`. That commit re-indented and re-quoted every JS file, so blame would otherwise have credited most of the code to whoever ran it.
+- I also used `-w`, `-M` and `-C`. These ignore whitespace changes and follow lines that were moved or copied between files, so credit goes to the original author.
+- I excluded `package-lock.json` and image files.
+
+**Caveats**
+- The counts include docs, tests, and config as well as library code. Sorting by directory would show who owns `lib/` specifically. I can do that if you want.
+- Blame credits whoever last changed a line, not whoever designed it. Someone who made a small edit to a line takes it over from its original author.
+- Git identifies authors by name, so one person who committed under two names or emails would be counted twice. I haven't merged aliases. A `.mailmap` file would fix that.
+META cost=0.0466789 ms=12994 turns=2

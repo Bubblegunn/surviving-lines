@@ -1,0 +1,55 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-1/repo/src", "top": 20}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-1/repo/tests", "top": 20}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-1/repo"}
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote about two thirds of the code that survives today. If they left, the loss would be the maintainer role itself, because most of the original authors are gone. The numbers come from line ownership at HEAD (git blame).
+
+**`src/` (33 files, about 3,470 lines)**
+
+| Author | Lines owned | Share | Notes |
+|---|---|---|---|
+| Ben Ramsey | 2,302 | 66% | Main owner of 22 files, last commit 2026-08-05 |
+| Tomasz Wrona | 358 | 10% | Active, last commit 2026-07-14, main owner of 2 files |
+| Carlos C Soto | 262 | 8% | Original author of the Set and TypedMap code; last commit 2016 |
+| icanhazstring | 172 | 5% | Last commit 2019; wrote much of `AbstractCollection` and `CollectionInterface` |
+| Kévin Gomez | 152 | 4% | Wrote most of `DoubleEndedQueue`; last commit 2018 |
+| zf2timo | 134 | 4% | Original `Queue` code; last commit 2016 |
+
+Everyone else owns under 1% each.
+
+**`tests/` (32 files, about 3,620 lines)**
+
+| Author | Lines owned | Share | Notes |
+|---|---|---|---|
+| Ben Ramsey | 2,381 | 66% | Main owner of 25 files, including 100% of `tests/types/*` |
+| icanhazstring | 480 | 13% | Last commit 2019 |
+| Carlos C Soto | 200 | 5.5% | Last commit 2016 |
+| Kévin Gomez | 179 | 5% | Last commit 2018 |
+| Simone Todaro | 108 | 3% | Last commit 2020 |
+| Tomasz Wrona | 61 | 1.7% | Active |
+
+**If Ben Ramsey left**
+- **Bus factor:** it is 2 across all 253 non-merge commits. Ben has 126 of them (50%), and the next author, Carlos C Soto, has 29.
+- **Nobody else is active in the code:** Tomasz Wrona is the only other active contributor with meaningful ownership. Kasia Nowak is also active, but owns about 2 lines.
+- **Orphaned files:** 9 files in `src/` and 8 in `tests/` are already mostly owned by people with no commits in six months. These are `TypedMap`, `AbstractSet`, `Set`, `Queue`, `DoubleEndedQueue`, the value-to-string trait and the `NoSuchElementException` class. Ben is the only active person who owns the rest of those files.
+- **Files that depend entirely on Ben:**
+  - `AbstractCollection`, `CollectionInterface`, `QueueInterface` and `DoubleEndedQueueInterface` are 69–80% Ben.
+  - `NamedParameterMap` is 94% Ben.
+  - `ArrayInterface` is 94% Ben.
+  - The static-analysis type tests in `tests/types/` are 100% Ben.
+- **Outside `src/` and `tests/`:** `bin/` has a single author, Ben. `.github` is 66% Ben and the repo root is 65% Ben.
+
+**Caveats**
+- Blame credits the last person to touch a line. The recent commits (php-cs-fixer, the generated type map, the PHP 8.2 bump) may have moved some lines to Ben that were originally written by others, so the 66% probably overstates Ben's original authorship.
+- Tomasz Wrona's 358 lines in `src/` are probably mostly `src/Generated`, which has 295 lines, but I didn't confirm that.
+- The "active" labels use a six-month cutoff (2026-04-24).
+
+I can run `blame_summary` on specific files, or check whether Tomasz Wrona's lines really are the generated code, if you want either.
+META cost=0.1009898 ms=15421 turns=5

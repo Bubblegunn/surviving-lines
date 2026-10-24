@@ -1,0 +1,69 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-base-1/repo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; echo ---; git log --format='%an' | sort -u | wc -l; ls lib/grape_entity lib/grape_entity/exposure; git log -1 --format=%ci; git log --reverse --format=%ci | head -1
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-base-1/repo; ls -a | grep mailmap; git log --format='%an|%ae' | sort -u | grep -iE 'scholz|lefnord|subbota|dblock|doubrov|kochnev|hashtable'
+norm(){ sed -E 's/.*(dblock|Doubrovkine|^dB$).*/dblock/I; s/^(peter scholz|LeFnord)$/LeFnord (Peter Scholz)/; s/^Andre[iy] Subbota$/Andrei Subbota/'; }
+for p in lib/grape_entity/exposure lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb; do
+ echo "=== $p commits (all time / last 3y)"; git log --format='%an' -- $p | norm | sort | uniq -c | sort -rn | head -6
+ git log --since=2023-10-01 --format='%an %cs' -- $p | head -8
+ echo "--- blame lines"; f
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-base-1/repo
+norm(){ sed -E 's/.*(dblock|Doubrovkine|^dB$).*/dblock/I; s/^(peter scholz|LeFnord)$/LeFnord (Peter Scholz)/; s/^Andre[iy] Subbota$/Andrei Subbota/'; }
+echo "== last/first commit per key person"; for a in "Vladimir Kochnev" "Marco Silva" "Lena Brandt" "Anna Kowalczyk" "James McCarthy" "Dmitry Tsepelev" "Paul Padier" "LeFnord\|peter scholz" "dblock\|Doubrovkine\|^dB$" "Alexander Yunin"; do echo "$a: $(git log --format=%cs --author="$a" | tail -1) .. $(git log --format=%cs --author="$a" | head -1) ($(git log --oneline --author="$a"|wc -l))"; done
+echo "== since 2025"; git log --since=2025-01-01 --format='%cs %an %s' | head -40
+e
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-base-1/repo
+for c in $(git log --since=2026-07-01 --format=%h --no-merges --author='Marco\|Lena\|Anna'); do git show --stat --format='%h %an %s' $c | head -12; done
+echo "== blame exposure with -C -C -C"; for f in $(git ls-files lib/grape_entity/exposure); do git blame --line-porcelain -w -M -C -C -C $f | grep '^author ' | cut -c8-; done | sort | uniq -c | sort -rn | head -6
+echo "== delegators --follow history"; for f in $(git ls-files lib/grape_entity/delegators lib/grape_entity/delegator.rb); do echo "-- $f"; git log --follow --format='%cs %an' -- $f | head -6; done
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ4-base-1/repo
+git show --stat --format='%h %an %s' $(git log --format=%h -1 --grep='#406') $(git log --format=%h -1 --grep='#399') | grep -v '^$'
+echo; git log --since=2024-01-01 --format='%an' -- lib | sort | uniq -c | sort -rn
+echo; git log --format='%an' --author='Marc Rohloff' | wc -l; git log --format='%cs' --author='Marc Rohloff' | sed -n '1p;$p'
+FINAL ANSWER:
+I've finished going through the history. This is based on `git log` and `git blame` (ignoring whitespace, with `-M -C -C -C` so copied code is credited to whoever first wrote it). I merged duplicate identities first: dblock has 5 name spellings under one email, "peter scholz" and "LeFnord" are the same person, and so are "Andrey" and "Andrei" Subbota.
+
+## Short answer
+- **Who wrote the code:** Vladimir Kochnev wrote most of both the exposure and delegator code. His last commit was on 2015-09-18, so he has effectively left.
+- **Who to route reviews to:** No active contributor really owns either area. Send reviews to **Andrei Subbota**, the active maintainer (releases and fixes through June 2026). Add **dblock** as a backup; they're still merging PRs.
+- **Most commits vs. most code:** These are different people. dblock has the most commits; Kochnev owns the most surviving code.
+
+## lib/grape_entity/exposure
+| Author | Surviving lines | Last commit |
+|---|---|---|
+| Vladimir Kochnev | 496 | 2015 |
+| James McCarthy | 68 | 2017 |
+| Alexander Yunin | 57 | 2016 |
+| Dmitry Tsepelev | 34 | 2018 |
+| Lena Brandt | 20 | 2026 |
+| LeFnord / Peter Scholz | 13 | 2024 |
+
+Watch out for two recent contributors who look like owners but aren't:
+- **Marco Silva** shows 143 lines in a plain blame, but that is `grouped_exposure.rb`, which his own commit describes as a "copy of NestingExposure with a group name". With copy detection those lines go back to Kochnev and others. His real work in this area is a rename, that copied file, and a 25-line spec.
+- **Lena Brandt's** 20 lines are copyright headers added to every file.
+- Anna Kowalczyk made one 5-line change.
+
+None of the three has real depth in this code. Andrei Subbota's recent fixes (#399, #404) and Marc Rohloff's #406 (a delegated-method fix, his only commit) are all in `entity.rb`. Nobody active has done substantive work in `exposure/` since Peter Scholz (last commit April 2024).
+
+## Delegator code (`delegator.rb`, `delegators/`, `exposure/delegator_exposure.rb`)
+- Marco renamed `delegator/` to `delegators/` in July 2026, so plain `git log` only shows him. Use `git log --follow` to see the real history.
+- Real history: Kochnev wrote it in 2015 and still has about 71 of the surviving lines. Smaller later edits came from James McCarthy (2017), Dmitry Tsepelev (2018), Mikael Henriksson and Joakim Antman (2019), Dmitriy Nesteryuk (2020), Paul Padier (2021–23) and Daniel Dao (2023).
+- Every one of those people has been inactive for at least 3 years.
+
+The routing is the same as for exposure: Andrei Subbota, with dblock as backup. If you'd like the person who has touched delegators most recently, add Marco Silva, but treat him as someone who has seen the code, not an expert.
+
+## Effectively departed
+Kochnev (main author), Mark Madsen (2nd-largest owner overall), James McCarthy, Alexander Yunin, Dmitry Tsepelev, and everyone else in the delegator history above. Peter Scholz is the second-biggest committer (45 commits), but his last commit was April 2024, so treat him as gone too.
+
+## Commits vs. ownership
+- **Most commits:** dblock with 119, after merging aliases. They're still around but now mostly merge PRs. Next are Peter Scholz (45), Andrei Subbota (18) and Kochnev (16).
+- **Most surviving code:** Kochnev, with 756 lines in `lib/` and 1,190 across `lib/` and `spec/`. Mark Madsen is second (601 overall). dblock has only about 242 surviving lines overall.
+
+Kochnev did a big rewrite in about 16 commits, and that code still makes up most of the library. dblock's many commits are mostly merges, releases and small edits.
+
+One caveat: some names may belong to the same person under addresses I didn't merge. If you add a `.mailmap`, these numbers can be recomputed reliably.
+META cost=0.22004039999999997 ms=47365 turns=6

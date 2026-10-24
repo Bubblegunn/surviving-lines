@@ -1,0 +1,32 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/T2-hist-1/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T2-hist-1/repo", "path": "lib"}
+FINAL ANSWER:
+**By commit history, the bus factor of `lib/` is 2.** By line ownership it looks like 0, but that figure is misleading.
+
+**Commit history (66 commits, 25 authors)**
+- Troy Goode wrote 33 commits (50%). Losing them alone leaves exactly half the history without its author.
+- The next biggest contributors are far behind: Alejandro Caravaca Puchades (4), Douglas Christopher Wilson (4) and Simon Mansfield (3).
+- The other ~20 authors made one or two commits each.
+- Two people cover more than 50% of the commits, so that's the bus factor. The tool doesn't flag a knowledge silo, since no one author exceeds 80%.
+
+**Line ownership**
+- `lib/` is a single file, `lib/index.js` (238 lines). The tool marks it orphaned because 100% of its lines belong to authors with no commit in the last 6 months.
+- "Fiona Formatter" owns about 90% of the lines (214). That is almost certainly the latest commit, `62628c0 style: reformat js with 4-space indent and double quotes`. It rewrote every line, so blame credits that commit instead of the people who wrote the logic.
+- Troy Goode is credited with 20 lines, about 8%.
+- Both Fiona Formatter (last commit 2026-04-12) and Troy Goode (2026-04-10) count as inactive under the 6-month cutoff.
+
+**What this means**
+- Troy Goode is the main person to worry about. They wrote half the history and haven't committed since April.
+- The orphaned flag overstates the risk, because it comes from a formatting commit.
+- The real knowledge is spread thinly across many one-time contributors. That is fine for small fixes but gives few people who understand the whole design.
+- The file is only 238 lines, so someone new could learn it in an afternoon.
+
+I could re-run the ownership check with the formatting commit ignored (`git blame -w`, or `--ignore-rev 62628c0`) to get true line ownership. Do you want me to?
+META cost=0.0519503 ms=10599 turns=4

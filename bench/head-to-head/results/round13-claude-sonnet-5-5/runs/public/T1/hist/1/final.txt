@@ -1,0 +1,45 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 5}
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk", "max_results": 1}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T1-hist-1/repo", "top": 15}
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12; git log -1 --format='%an <%ae> %ad' 62628c0; git log --format=%an 62628c0 --stat | head -3
+FINAL ANSWER:
+Plain `git blame` gives a misleading answer here, so I ran it twice.
+
+**What plain blame says:** "Fiona Formatter" owns about 51% of the surviving lines. That's wrong. Her only commit is `62628c0`, the "reformat js with 4-space indent and double quotes" commit (2026-04-12). It rewrote lines other people wrote, so blame credits her with them.
+
+**Who owns the code once that commit is ignored:** I re-ran blame with `-w -M -C --ignore-rev 62628c0` across all tracked files, about 2,000 lines.
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+I cut this list at the top ten. Eric di Domenico (16) and Alberto Leal (15) come next, and there is a tail of smaller contributors.
+
+- **Troy Goode** is the largest owner, mostly in `lib/index.js`, `test/`, and the README. Before the reformat was excluded, blame credited him with only 13%.
+- **Douglas Christopher Wilson** owns the project scaffolding: `LICENSE`, `HISTORY.md`, `.eslintrc.yml`, much of `ci.yml`, and about half of `package.json`. His last commit was in 2021.
+- **The rest** is a long tail of CI, docs, and small fixes. The CI files belong to Íñigo Marquínez Prado (`scorecard.yml`), Sebastian Beltran (`codeql.yml`), and Ulises Gascón (`dependabot.yml`).
+
+**Inactive owners:** every file is "orphaned" under the tool's rule, because the authors who own most of each file have made no commit in the last six months (since 2026-04-24). That includes Troy Goode, whose last commit was 2026-04-10. The tool also lists you (Efe) as inactive, with 6 lines owned. This is a threshold effect, not a sign the project is abandoned. The repo's recent activity is mostly dependency bumps and the reformat.
+
+**Caveats:**
+- Line counts measure what survives, not importance. `lib/index.js` is only 238 lines but is the core of the project.
+- `-M -C` follows moved or copied lines, which can shift some credit compared with plain blame.
+- I only excluded the reformat commit. If other bulk commits are in the history, they could still skew the numbers.
+
+I can break this down per file or per directory if that's useful.
+META cost=0.0795528 ms=20142 turns=5

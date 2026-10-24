@@ -1,0 +1,31 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git ls-files | grep -vE 'lock|\.(png|jpg|gif|ico|svg)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -15; echo; git ls-files | wc -l; git log --reverse --format='%h %ad %an' --date=short | head -1; git log -1 --format='%ad' --date=short
+ - Bash: git shortlog -sne HEAD | head -8; cat .git-blame-ignore-revs
+FINAL ANSWER:
+Troy Goode wrote most of the code that survives today, and Douglas Wilson is a close second. By surviving lines, Troy's share is about 43% and Douglas's is about 33%. Troy leads even though Douglas has more commits (143 to 120).
+
+I counted lines with `git blame` across the 19 tracked files, excluding lockfiles and images. I used `-w -M -C` so whitespace changes and moved lines don't take credit. I also used `.git-blame-ignore-revs` so the 4-space/double-quote reformat commit (`62628c0`) doesn't hand every line to whoever ran it.
+
+| Author | Surviving lines | Share (of ~1,900) |
+|---|---|---|
+| Troy Goode (`<email redacted>`) | 762 | ~40% |
+| Troy Goode (`troy@laptop.example`, a second email) | 48 | ~3% |
+| Douglas Wilson | 629 | ~33% |
+| Iñigo Marquínez | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3.5% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 34 | ~2% |
+| About 6 others | 10–26 each | the rest |
+
+- **Troy's two emails:** I combined them to get the 43%. Raw blame counts would split his lines across the two addresses.
+- **The repo's history:** It runs from 2013-01-30 to 2026-04-12, and Troy made the first commit. That is why so much of his original code is still there.
+- **What I haven't checked:** Whether Troy or anyone else is still active. That matters if you want to know who can still review this code, not just who wrote it. I haven't run the busfactor tool, which weights recent work more heavily and flags areas whose authors have left. I can run it (read-only, with `--dry-run --no-github`) and give you per-directory ownership and orphaned zones. Want me to?
+META cost=0.058993500000000004 ms=14808 turns=5

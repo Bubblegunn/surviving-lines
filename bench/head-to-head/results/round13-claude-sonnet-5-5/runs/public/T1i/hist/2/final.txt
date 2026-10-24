@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 5}
+ - Bash: cat .git-blame-ignore-revs && git ls-files | grep -vE '\.(png|jpg|ico|lock)$|package-lock' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -15
+FINAL ANSWER:
+Here are the surviving lines per author, from `git blame` on the current files. I ignored the 4-space and double-quote reformat commit (`62628c0`, listed in `.git-blame-ignore-revs`), and I used `-w -M -C` so whitespace changes and moved or copied lines still credit the original author. Without that, the reformat would have taken most of the lines.
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+| Eric di Domenico | 16 |
+| Alberto Leal | 15 |
+| max.laverse | 10 |
+| dependabot[bot] | 10 |
+| Saad Tazi | 10 |
+
+I only listed the top 15, so there is a longer tail of smaller contributors.
+
+- **Two people account for most of the code.** Troy Goode and Douglas Christopher Wilson together hold well over half of what's left. Everyone else is an order of magnitude smaller.
+- **Ownership doesn't match commit counts.** Goode's lines come first, ahead of Wilson's. If Wilson leads on commit count, that's because many of their commits are small fixes and maintenance.
+- **Some of Goode's lines may be tests or fixtures.** I counted every tracked file except images and lockfiles, so a bulky test or data file would inflate a total. If you want only the library code, I can rerun this on `lib/` or exclude tests.
+META cost=0.0497089 ms=12939 turns=3

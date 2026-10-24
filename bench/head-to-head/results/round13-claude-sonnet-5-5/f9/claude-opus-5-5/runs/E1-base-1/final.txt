@@ -1,0 +1,65 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; echo ---; git log --format='%h %an %ad %s' --date=short | head -8; git rev-list --count HEAD; echo ---; git ls-files | grep -v -E '^(node_modules)/' | head -50
+ - Bash: git show --stat 62628c0 b2005d9 02afce3 | cat; cat .git-blame-ignore-revs 2>/dev/null; git log --format='%h %an <%ae> %ad' --date=short --author='laptop' ; cat .mailmap 2>/dev/null
+ - Bash: git show b2005d9 02afce3 | head -80
+ - Bash: for f in $(git ls-files); do echo "== $f"; for mode in raw clean; do if [ $mode = raw ]; then opts=""; else opts="-w --ignore-rev 62628c0 --ignore-rev b2005d9"; fi; printf "  [$mode] "; git blame --line-porcelain $opts -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -3 | awk '{c=$1; $1=""; printf "%s:%s; ", $0, c}'; echo; done; done
+ - Bash: bash -c '
+for f in $(git ls-files); do
+  n=$(wc -l < "$f" | tr -d " ")
+  for mode in raw clean; do
+    if [ $mode = raw ]; then opts=(); else opts=(-w --ignore-rev 62628c0 --ignore-rev b2005d9); fi
+    printf "%-24s %5s [%s] " "$f" "$n" "$mode"
+    git blame --line-porcelain "${opts[@]}" -- "$f" | grep "^author " | sed "s/^author //" | sort | uniq -c | sort -rn | head -3 | awk -v n=$n "{c=\$1; \$1=\"\"; printf \"%s %d%%;\", \$0, (n?100*c/n:0)}"
+    echo
+  done
+done'
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson" "Ulises Gascón" "Jon Church" "Sebastian Beltran"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | tail -1) .. $(git log --author="$a" --format=%ad --date=short | head -1)"; done; echo "--- commits since 2024 (excl. bot/formatter):"; git log --since=2024-01-01 --format='%an' | grep -v -e dependabot -e Formatter | sort | uniq -c | sort -rn; echo "--- lib/index.js substantive commits by author:"; git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head; echo "--- lib/index.js commits since 2020:"; git log --since=2020-01-01 --format='%h %ad %an %s' --date=short -- lib/index.js
+ - Bash: git log --author="Troy Goode" --format='%h %ad %s' --date=short | head -6; git log --author="Troy Goode" --format=%ad --date=format:%Y | sort | uniq -c
+FINAL ANSWER:
+**The bus factor is effectively 1, and that one person is Troy Goode.** He wrote about 65% of the core logic and most of the tests. But almost everything he wrote dates from 2013–2016, so the person who knows the code best has not done meaningful work on it in about 7 years.
+
+**Two commits had to be excluded first.** A plain `git blame` gives the wrong answer here:
+- `62628c0` (Fiona Formatter, 2026-04-12) reformatted every JS file. Raw blame credits "Fiona" with 89% of `lib/index.js` and 93% of `test/test.js`.
+- `b2005d9` (Troy Goode, 2026-04-10) only added `// checked` comments to function headers, which pads his line count without changing any logic.
+
+I re-ran blame with whitespace ignored and both commits skipped. I also merged Troy's two emails (`<email redacted>` and `troy@laptop.example`). I'm assuming they're the same person because the name matches, but I haven't confirmed it.
+
+### Files that depend on one person
+
+| File | Lines | Main author (after cleanup) | Notes |
+|---|---|---|---|
+| `lib/index.js` (the entire library) | 238 | **Troy Goode 65%**; Douglas Wilson 9%, Alejandro Caravaca Puchades 5% | 30 of the ~50 commits to it are Troy's. The only real change since 2020 is a 2021 lint fix. |
+| `test/error-response.js` | 66 | **Troy Goode 86%** | |
+| `test/example-app.js` | 81 | **Troy Goode 82%** | |
+| `test/issue-2.js` | 48 | **Troy Goode 83%** | |
+| `test/vary.js` | 36 | **Troy Goode 100%** | Added 2026-04-10 |
+| `test/test.js` (main suite) | 731 | Douglas Wilson 49%, Troy Goode 34% | Two people, both largely inactive |
+| `.eslintrc.yml`, `test/support/env.js`, `HISTORY.md`, `LICENSE` | small | **Douglas Christopher Wilson** 77–100% | |
+| `.github/workflows/codeql.yml` | 65 | Sebastian Beltran 96% | Mostly standard template |
+| `.github/workflows/scorecard.yml` | 72 | Íñigo Marquínez Prado 95% | Mostly standard template |
+| `.github/dependabot.yml` | 15 | Ulises Gascón 100% | |
+| `ci.yml`, `README.md`, `package.json` | — | Spread across 3+ people | Lower risk |
+
+### Who has been active and when
+
+- **Troy Goode** (original author): 119 of his 122 commits are from 2013–2016. After that: one in 2017, one in 2019, then two in 2026 (the comment pass and `test/vary.js`).
+- **Douglas Christopher Wilson** (top committer overall, 143 commits): active 2017–2021. Owns the tooling, changelog and half the main test suite. No commits since September 2021.
+- **The current maintainers** (Ulises Gascón, Jon Church, Sebastian Beltran, Íñigo Marquínez Prado; all active 2025–26) have worked on CI, releases and docs. **None of them owns a meaningful share of `lib/index.js`.**
+
+### What it means
+
+- The real risk is not that one person is still holding everything together. It's that the core library was written by people who have mostly left, and nobody now working on it has written much of it.
+- The CI workflow files each show one owner, but they are generated templates and easy for anyone to take over. They're low risk.
+- To lower the risk, have a current maintainer study `lib/index.js` (the origin matching and preflight handling in `configureOrigin` and `isOriginAllowed`) and the older test files closely enough to own them.
+
+### Caveats
+
+- Blame shows who wrote each line, not who understands it. The project is small (about 240 lines of library code), so the knowledge gap would be fairly cheap to close.
+- To keep future analyses from being skewed, add `62628c0` and `b2005d9` to a `.git-blame-ignore-revs` file and run `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+- If the two Troy Goode emails really are the same person, add a `.mailmap` entry for them.
+META cost=0.21642579999999995 ms=48881 turns=8

@@ -1,0 +1,34 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: find lib -type f | sort && echo "---" && git shortlog -sne --all | head -50
+ - Bash: git log -1 --format='%H %ad' --date=short && echo "--- exposure dir commits by author:" && git log --format='%an <%ae>' -- lib/grape_entity/exposure | sort | uniq -c | sort -rn && echo "--- delegator commits by author:" && git log --format='%an <%ae>' -- lib/grape_entity/delegator.rb lib/grape_entity/delegator 2>/dev/null | sort | uniq -c | sort -rn
+ - Bash: echo "--- blame lines, exposure/:" && git blame --line-porcelain -- lib/grape_entity/exposure/*.rb lib/grape_entity/exposure/*/*.rb lib/grape_entity/exposure.rb | grep -E '^author-mail' | sort | uniq -c | sort -rn | head -12 && echo "--- blame lines, delegator(s):" && git blame --line-porcelain -- lib/grape_entity/delegator.rb lib/grape_entity/delegators/*.rb | grep -E '^author-mail' | sort | uniq -c | sort -rn | head -12 && echo "--- last commit per author (exposure + delegator):" && git log --format='%ad %an <%ae>' --date=short -- lib/grape_entity/exposure lib/grape_entity/exposure.rb lib/grape_entity/delegator.rb lib/grape_entity/delegators | sort -r | awk '!seen[$0]++' | awk '{k=$0; sub(
+ - Bash: blame_count(){ for f in "$@"; do git blame --line-porcelain -- "$f"; done | grep -E '^author-mail' | sort | uniq -c | sort -rn | head -8; }; echo "--- exposure/ blame (lines by author-mail):"; blame_count $(find lib/grape_entity/exposure lib/grape_entity/exposure.rb -name '*.rb'); echo "--- delegator blame:"; blame_count lib/grape_entity/delegator.rb lib/grape_entity/delegators/*.rb; echo "--- delegator last-commit dates:"; git log --format='%ad %an' --date=short -- lib/grape_entity/delegator.rb lib/grape_entity/delegators | head -5; echo "--- exposure last 5 commits:"; git log --format='%ad %an' --date=short -5 -- lib/grape_entity/exposure lib/grape_entity/exposure.rb
+ - Bash: git log --format='%ad %an <%ae>' --date=short | awk '{print $1}' | cut -c1-4 | sort | uniq -c | tail -12; echo "--- last repo-wide commit per email (top 8 by count):"; for e in $(git log --format='%ae' | sort | uniq -c | sort -rn | head -8 | awk '{print $2}'); do echo "$(git log --author="$e" -1 --format='%ad' --date=short) $e"; done; echo "--- Anna/Marco/Lena repo-wide commit counts:"; git log --format='%ae' --author='kestrel' | wc -l; git log --format='%ae %an' | grep -i -E 'kestrel|anna|marco|lena' | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** Route `exposure/` to Marco Silva, with Anna Kowalczyk as second reviewer. Route the delegator code to Marco Silva or Lena Brandt. The most prolific author, Daniel Doubrovkine (dblock), is not the best reviewer for either area. The top line-owner in both areas is Vladimir Kochnev, who has been gone since 2015.
+
+**Recommended reviewers (active, and owning code now)**
+- **`lib/grape_entity/exposure/`**: Marco Silva (143 surviving lines, last touched 2026-08-03), then Anna Kowalczyk (last commit 2026-08-10) and Lena Brandt (2026-07-14).
+- **Delegators** (`delegator.rb`, `delegators/`): Marco Silva (last touched 2026-07-21) and Lena Brandt (2026-07-14, 10 surviving lines).
+- Fallback: dblock (`<email redacted>`), whose last repo-wide commit was 2026-04-11.
+
+**Who has effectively left**
+- **Vladimir Kochnev** (`<email redacted>`) is the largest owner by surviving lines: 429 in `exposure/` and 59 in the delegator files. His last commit under that email was 2015-09-18. A `Vladimir <<email redacted>>` commit from 2020-02-17 may be the same person under another email, so verify before treating him as fully inactive.
+- Last touched in the exposure or delegator code, and not seen since: Dmitry Tsepelev (2018), James McCarthy (2017), Alexander Yunin (2016), Christoph Petschnig (2016), Andrew Rempe (2016), Brian van de Boogaard (2018), Ahmed Naguib (2021), Paul Padier (2023), Fabien Loup (2023), Daniel Dao (2023).
+- Pirate Praveen Arimbrathodiyil (2022) also touched the exposure code, but I did not check his later activity.
+
+**Is the most-prolific person also the top owner?** No.
+- Daniel Doubrovkine has the most commits repo-wide, about 119 across four name spellings under `<email redacted>`. Per-name counts understate him.
+- In `exposure/` he has one commit, and he barely appears in the delegator history.
+- Ownership by surviving lines in `exposure/` goes to Vladimir Kochnev (429 lines), well ahead of Marco Silva (143).
+
+**Caveats**
+- Blame measures surviving code, not who maintains it now.
+- Marco Silva and Lena Brandt are also active elsewhere in the repo, so their recent activity is strong evidence, not a guarantee.
+- Several people appear under more than one email. I merged only the obvious ones (dblock, Marco Silva), so other counts may be slightly off.
+META cost=0.007148410000000001 ms=28198 turns=6

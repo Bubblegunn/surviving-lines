@@ -1,0 +1,40 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne HEAD | head -20; echo; git ls-files | grep -E '\.zig$' | head -50
+ - Bash: for f in $(git ls-files | grep -vE '^\.git'); do git blame --line-porcelain -w -M -C HEAD -- "$f" 2>/dev/null | grep -a '^author ' | sed "s|^author |$f\t|"; done > /tmp/blame.txt; echo "by file:"; cut -f1 /tmp/blame.txt | sort | uniq -c; echo; echo "overall by author:"; cut -f2 /tmp/blame.txt | sort | uniq -c | sort -rn | head -15; echo; echo "per file top:"; sort /tmp/blame.txt | uniq -c | sort -k2,2 -k1,1rn | awk '{f=$2; if(c[f]++<3)print}'; git log --format='%an|%ae' | grep -i -E 'queißner|xq' | sort | uniq -c; git log -1 --format=%ad; git log --since='12 months ago' --format=%an | sort | uniq -c | sort -rn | head
+ - Bash: cd /tmp && f() { grep -aE "$1" blame.txt | grep -aiE "Queißner" | wc -l; }; echo total $(wc -l <blame.txt); echo felix_all $(grep -ai "Queißner" blame.txt | wc -l); for p in 'src/args' 'src/help' 'src/' ; do echo $p total $(grep -a "^$p" blame.txt | wc -l) felix $(grep -a "^$p" blame.txt | grep -ai Queißner | wc -l); done; echo "src excl width_table:"; grep -a '^src/' blame.txt | grep -av width_table | wc -l; grep -a '^src/' blame.txt | grep -av width_table | grep -ai Queißner | wc -l; grep -a '^src/' blame.txt | grep -av width_table | cut -f2 | sort | uniq -c | sort -rn | head -8
+FINAL ANSWER:
+Ownership is concentrated in one person, Felix "xq" Queißner, but the answer depends on whether you count the whole tree or only hand-written code.
+
+This comes from `git blame` on HEAD, ignoring whitespace and following moves and copies. Felix appears under six name and email variants, which I merged into one person. The variants are `<email redacted>`, `<email redacted>`, `<email redacted>`, `<email redacted>` and two others.
+
+**Share of surviving lines that Felix wrote**
+
+| Scope | Lines | Felix | Share |
+|---|---|---|---|
+| All tracked files (2,246 lines) | 852 | 852 | 38% |
+| `src/` excluding the generated `width_table.zig` (1,410 lines) | 706 | 706 | 50% |
+| `src/args.zig`, the parser core (1,049 lines) | 705 | 705 | 67% |
+| `src/help.zig` (337 lines) | 1 | 1 | about 0% |
+
+**If Felix stopped answering questions**
+- About 62% of all lines and 50% of the hand-written library code were written by other people.
+- The part with no author left is mostly `args.zig`, which holds the parsing logic. Roughly two-thirds of it is Felix's. The other contributors there are small: Vincent Rischmann has about 64 lines and the rest are scattered.
+- `help.zig` and the width code are effectively already independent of him:
+  - `help.zig` is mostly jnagpaul (166 lines), Dhole (75) and Bob Farrell (42).
+  - `width.zig` and the generated `width_table.zig` are Wen Li's. Wen Li is the largest author overall at 552 lines, but 484 of those are the generated table.
+
+**Bus factor**
+- By the usual definition, the smallest number of people whose loss would orphan more than 50% of the code, the bus factor is **1** for the core parser (`args.zig`). Felix alone covers 67% of it.
+- For the whole `src/` tree it is **1 to 2**. Felix is at exactly 50% excluding the generated table, and Wen Li owns the width code.
+- If you count the generated table, Wen Li and Felix together own about 60% of all lines, so the factor is 2.
+
+**Caveats**
+- **Contributor count:** Many contributors exist. There were 20 or more in the shortlog, but most hold small slices.
+- **Recent activity:** The last 12 months of commits are Felix (7 across his name variants), Wen Li (3), Tobias Ek (3), Krzysztof Wolicki (2) and others. So he is still the most active person, but not the only active one.
+- **Method limits:** Blame measures who last touched a line. Mechanical commits such as the `gpa` rename and the move to `src/` can shift credit away from the original author, so Felix's real share is probably a bit higher than shown.
+META cost=0.06023660000000001 ms=19604 turns=4

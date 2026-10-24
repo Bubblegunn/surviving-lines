@@ -1,0 +1,31 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 5}
+ - Bash: git ls-files | wc -l && git show --stat --format='%h %an %s' HEAD | tail -3 && git ls-files -z | grep -zvE '(^|/)(package-lock\.json|.*\.(png|jpg|ico|svg))$' | xargs -0 -n1 git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | sort -rn | head -15
+ - Bash: git ls-files -z | grep -zvE '(^|/)(package-lock\.json|.*\.(png|jpg|ico|svg))$' | xargs -0 -n1 git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- 2>/dev/null | grep -a '^author ' | sort | uniq -c | awk '{n[NR]=$0;s+=$1}END{print s" total"}'; git log --format=%an | sort | uniq -c | sort -rn | head -3
+FINAL ANSWER:
+Troy Goode owns the most surviving code, about 41%. Douglas Christopher Wilson is next at about 32%.
+
+I counted who last changed each line at HEAD, using `git blame` across all tracked files, about 1,995 lines in total. I excluded lockfiles and images. I skipped the latest commit, `62628c0`, which reformatted the JS and would otherwise credit every line to whoever ran the reformat. I also ignored whitespace-only changes and followed lines that were moved or copied between files.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1% |
+| Everyone else | under 20 each | the remainder |
+
+- **Commit count gives a different ranking.** By commits, Douglas Christopher Wilson leads (143) over Troy Goode (122). Troy Goode's lines have survived better, and I expect that's because the original code is still mostly in place.
+- **Blame shows who last touched a line.** A line that was refactored or lightly edited counts for the later editor, not the original author. Original authorship may therefore be somewhat more concentrated in Troy Goode than these numbers show.
+- **Two people hold about 73% of the code.** That is a concentration risk if either is inactive. I haven't checked who is still active.
+META cost=0.0565423 ms=15754 turns=4

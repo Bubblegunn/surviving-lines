@@ -1,0 +1,23 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap; git config --get mailmap.file
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%aN|%aE' | sort -u | awk -F'|' '{n[tolower($1)]++; e[$2]++} END{}1' | wc -l; echo --- committers; git log --all --format='%cN <%cE>' | sort | uniq -c | sort -rn | head
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -5; git shortlog -sne --all | grep -ci 'puchades\|goode'; git log -1 --format='%an <%ae>' 62628c0
+FINAL ANSWER:
+Yes, two people appeared under more than one identity. I fixed both by adding a `.mailmap` file at the repo root. It's uncommitted, and git history is unchanged.
+
+- **Troy Goode** committed under `<email redacted>` and `troy@laptop.example`. That was 120 commits plus 2, now 122.
+- **Alejandro Caravaca Puchades** committed as "Alejandro Caravaca Puchades" and as "alex94puchades", both with `<email redacted>`. That was 4 plus 1, now 5.
+
+The top author is still **Douglas Christopher Wilson** with 143 commits. Troy Goode is second with 122, so merging his identities didn't change the ranking.
+
+"Fiona Formatter" (`fiona@formatter.example`) authored the recent reformat commit. It looks like a tool or bot identity rather than a duplicate of someone, so I left it alone. Tell me if it should be mapped to a real person.
+META cost=0.055560700000000005 ms=13305 turns=4

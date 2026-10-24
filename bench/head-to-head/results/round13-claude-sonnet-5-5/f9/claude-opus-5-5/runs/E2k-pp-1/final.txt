@@ -1,0 +1,28 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-pp-1/repo; git log --since=2026-03-29 --format='%h|%ad|%an|%ae|%cn|%s' --date=iso --all | head -100; echo; git log -1 --format=%ad --date=iso
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-pp-1/repo; git log -15 --format='%h|ad=%ad|cd=%cd|%an <%ae>|%s' --date=iso; echo; cat .mailmap 2>/dev/null; git shortlog -sne --all | head -30
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-pp-1/repo; git show --stat 62628c0 | tail -5; git show 62628c0 --format= | grep '^[-+][^-+]' | wc -l; for c in b2005d9 02afce3 5317ebe; do git show --stat --format='%h %s' $c; git show $c --format= | head -40; done
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-pp-1/repo; git show 62628c0 --format= -U0 | grep '^[-+][^-+]' | sed 's/^\(.\)//;s/[[:space:]]//g;s/"/'"'"'/g' | sort | uniq -c | awk '$1%2==1' | head; echo ---
+git ls-files | wc -l
+git ls-files | while read f; do git blame -w --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep '^author-mail ' ; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+Three people committed between 2026-03-29 and 2026-04-12. Once the formatting commit is set aside, two of them are left: Troy Goode and Vansh Sharma.
+
+| Person | Commits in window | Lines of theirs in the code today |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (2026-04-10, +36)<br>`b2005d9` lib: annotate handlers (2026-04-10, 12 lines changed) | **746** in total: all 48 lines from these two commits are still there, plus 698 from his older commits |
+| **Vansh Sharma** | `5317ebe` docs: replace app.del() with app.delete() in README (#411) (2026-04-07) | **1** |
+
+**What I set aside**
+- **Fiona Formatter, `62628c0` (2026-04-12):** this is the only formatting commit in the window. I checked it: once spaces and quote style are ignored, every removed line matches an added line, so it changes no code. It touches 1,016 lines in 4 files. If it were counted, those lines would show up under Fiona's name instead of the people who wrote them.
+- **Bots:** dependabot's most recent commits are from 2026-03-02, which is before the window, so no bot commits fall inside it.
+
+**How I counted**
+- **One entry for Troy:** his commits in the window use `troy@laptop.example`, while his older ones use `<email redacted>`. I treated these as the same person because the name is the same. The two addresses split as 48 + 698 lines. If they turn out to be different people, the laptop identity alone has 48 lines.
+- **Line counts:** I ran `git blame -w --ignore-rev 62628c0` on every tracked file. That ignores whitespace and skips the formatting commit, so each line is credited to whoever last changed what it actually says.
+META cost=0.16757479999999997 ms=28140 turns=5

@@ -1,0 +1,53 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary,mcp__git-historian__blame_summary", "max_results": 4}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-2/repo/src", "top": 20}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-2/repo/tests", "top": 20}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ5-hist-2/repo"}
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote about two-thirds of the code that survives today. Tomasz Wrona is the only other active person who owns a meaningful share, and only in `src/`.
+
+This comes from `git blame` at HEAD (surviving lines, not commit counts), with "inactive" meaning no commit since 2026-04-24.
+
+**`src/` (33 files)**
+
+| Author | Share of lines | Status |
+|---|---|---|
+| Ben Ramsey | 66.3% (main owner of 22 files) | active |
+| Tomasz Wrona | 10.3% (main owner of 2 files) | active |
+| Carlos C Soto | 7.6% | last commit 2016 |
+| icanhazstring | 5.0% | last commit 2019 |
+| Kévin Gomez | 4.4% | last commit 2018 |
+| zf2timo | 3.9% | last commit 2016 |
+| Everyone else | under 1% each | mostly inactive |
+
+**`tests/` (32 files)**
+
+| Author | Share of lines | Status |
+|---|---|---|
+| Ben Ramsey | 65.7% (main owner of 25 files) | active |
+| icanhazstring | 13.2% | last commit 2019 |
+| Carlos C Soto | 5.5% | last commit 2016 |
+| Kévin Gomez | 4.9% | last commit 2018 |
+| Simone Todaro | 3.0% | last commit 2020 |
+| peter279k | 2.5% | last commit 2021 |
+| Tomasz Wrona | 1.7% | active |
+
+**Where Ben's departure would hurt most**
+- **Core code:** Ben owns 69–94% of `AbstractCollection`, `CollectionInterface`, `QueueInterface`, `DoubleEndedQueueInterface`, `Collection`, `NamedParameterMap`, `ArrayInterface` and `ValueExtractorTrait`. No active person holds a meaningful share of these.
+- **Original contributors are gone:** Carlos C Soto and zf2timo wrote the `Set`, `AbstractSet`, `Queue`, `TypedMap` and `ValueToStringTrait` files. Those files are already orphaned (9 of 33 in `src/`), and Ben holds the remaining 30–45% of each. He is the only active person who understands them.
+- **Tests:** The type-level tests in `tests/types/` and `tests/stubs/` are 100% Ben's. He also owns most of the queue and set tests, and he's the only active person who knows the `DoubleEndedQueue` tests.
+- **Wrona:** Wrona holds only 358 lines in `src/` and 61 in `tests/`. That is a start, but not a replacement for Ben. I didn't look at which files those lines are in.
+
+**Caveats**
+- The line counts use blame, so the php-cs-fixer commit and the generated type map (`src/Generated`, 295 lines) may shift some credit to whoever ran them.
+- By commit count Ben is at 126 of 299, and the next person is Carlos C Soto with 29.
+- The repo has little activity: about 1–3 commits a month.
+- Ben's last commit in this analysis is 2026-08-05, but HEAD is dated 2026-09-01. I didn't check who authored HEAD.
+
+If you want a hand-over list, the worst gaps are the 9 orphaned `src/` files and the type-test setup. Documentation from Ben on those would help most.
+META cost=0.1001011 ms=16145 turns=5

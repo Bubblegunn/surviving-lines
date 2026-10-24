@@ -1,0 +1,303 @@
+You grade 6 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}], "D": [{"n": 1, "reason": "...", "pass": true}], "E": [{"n": 1, "reason": "...", "pass": true}], "F": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+How concentrated is the ownership of zig-args today? If the person who wrote most of it stopped answering questions, how much of the current code would have nobody left who wrote it, and what is the bus factor?
+
+CRITERIA:
+1. Top owner. PASS: Felix Queissner / "xq" / MasterQ32 (all addresses and spellings merged) is named top owner with 43-52% of surviving lines (truth 47.2%) as one person. FAIL: the top owner shown below 40% because the spellings/addresses are listed separately; Tobias Ek or Wen Li named a top owner.
+2. Mechanical changes do not create owners. PASS: Tobias Ek (split and move of files) is at most 2% (truth 0.3%) and Wen Li (rename/revert/re-apply of allocator to gpa, generated width table, width helper) is at most 2.5% (truth 1.5%, 24 lines); the answer says the help-printing code in help.zig remains attributed to its original authors (jnagpaul about 49% of it, Dhole about 23%). FAIL: Tobias Ek or Wen Li at 5% or more; help.zig credited to Tobias Ek; the generated width table counted as code anyone wrote.
+3. Bus factor. PASS: the answer gives a bus factor of 2 on surviving lines (Felix Queissner plus jnagpaul reach 58.7%, accept 54-63%) AND says jnagpaul (11.5% of lines) stopped contributing in 2023, or says Felix alone is just under half (47%) and needs a second person; a bus factor of 1 is accepted only if the answer states that Felix holds 47% (below half) and calls him the dominant key person. FAIL: bus factor of 3 or more; jnagpaul presented as an active contributor; Felix's share stated above 55%.
+4. What is lost. PASS: the answer says that if Felix left, about 85% of the current lines (80-90%) would have no author still active - his own 47% on top of the 38% (34-42%) already owned by people who left - or gives both components within those ranges. FAIL: only Felix's own 47% is given as the loss with no mention of already departed authors; a combined figure below 70%.
+5. Who has left. PASS: the answer names as no longer active (no commit in 12 months) at least jnagpaul (last 2023), Vincent Rischmann (8.5%, last 2025-03) and mochalins (5.1%, last 2025-07), and does not list Felix Queissner, Dhole, Krzysztof Wolicki, Linus Groh, Wen Li or Dmitri Volkov as having left; Dmitri Volkov (squash-merged PR, committed by GitHub) is credited as the author of printVersion (about 1%). FAIL: Vincent Rischmann or mochalins described as active; Felix Queissner described as having left; the printVersion code credited to GitHub or to the maintainer who merged it.
+
+GROUND TRUTH (computed by a script with git blame):
+FIXTURE HEAD bd732029f612e4f816e2d7b24ec5412a2c1aad79
+SCOPE 6 zig files 1636 lines; generated excluded: ['src/width_table.zig']
+
+== surviving lines per person (merged identities, rename/revert/reapply commits ignored)
+  Felix Queissner          773  47.2%  commits  48  last 2026-04-16 active
+  jnagpaul                 188  11.5%  commits   7  last 2023-07-26 LEFT
+  Vincent Rischmann        139   8.5%  commits   7  last 2025-03-01 LEFT
+  mochalins                 84   5.1%  commits   5  last 2025-07-13 LEFT
+  Dhole                     76   4.6%  commits   2  last 2026-03-21 active
+  Krzysztof Wolicki         60   3.7%  commits   2  last 2026-07-08 active
+  Linus Groh                51   3.1%  commits  11  last 2026-05-20 active
+  Bob Farrell               46   2.8%  commits   3  last 2024-06-18 LEFT
+  guillaumederex            39   2.4%  commits   4  last 2021-01-23 LEFT
+  Anthon van der Neut       25   1.5%  commits   2  last 2022-02-10 LEFT
+  Lee Cannon                24   1.5%  commits   3  last 2022-12-01 LEFT
+  Wen Li                    24   1.5%  commits   3  last 2026-10-27 active
+  Antoine Gagniere          18   1.1%  commits   6  last 2025-08-20 LEFT
+
+== naive blame (no -w/-M/-C, no ignore, names not merged), same scope
+  Felix (xq) Queißner              355  21.7%
+  Felix "xq" Queißner              347  21.2%
+  Tobias Ek                        340  20.8%
+  Vincent Rischmann                 94   5.7%
+  mochalins                         88   5.4%
+  Felix Queißner                    70   4.3%
+
+== top owner: Felix Queissner 47.2%   top2: ['Felix Queissner', 'jnagpaul'] 58.7%   top3 67.2%
+bus factor (>=50%): 2 ['Felix Queissner', 'jnagpaul'] 58.7%
+lines whose author has left: 624 = 38.1%
+if Felix Queissner left too: lines with no active author = 1397 = 85.4%
+
+== per file: top owner share
+  build.zig               80 lines; Vincent Rischmann 22%, mochalins 19%, LordMZTE 18%
+  demo.zig                63 lines; Felix Queissner 54%, jnagpaul 27%, data-man 6%
+  demo_verb.zig           83 lines; Vincent Rischmann 58%, Felix Queissner 11%, Anthon van der Neut 11%
+  src/args.zig          1049 lines; Felix Queissner 69%, Vincent Rischmann 7%, mochalins 6%
+  src/help.zig           337 lines; jnagpaul 49%, Dhole 23%, Bob Farrell 12%
+  src/width.zig           24 lines; Wen Li 100%
+
+== hazard specifics
+  Wen Li: 24 lines (1.5%), commits 3
+  Tobias Ek: 5 lines (0.3%), commits 3
+  Dmitri Volkov: 16 lines (1.0%), commits 1
+  Felix Queissner: 773 lines (47.2%), commits 48
+  Antoine Gagniere: 18 lines (1.1%), commits 6
+  lines in help.zig credited to Tobias Ek: 2 of 337
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/<tool>"; $SL --help 2>&1 | head -40; $SL --without "Felix (xq) Queißner" 2>&1 | head -40
+ - Bash: SL=(node /private/tmp/r13/final/ours-src/bin/<tool>); "${SL[@]}" --without "Felix (xq) Queißner" 2>&1 | head -40; "${SL[@]}" --merge-identities --without "Felix (xq) Queißner" 2>&1 | head -40
+ - Bash: SL=(node /private/tmp/r13/final/ours-src/bin/<tool>); "${SL[@]}" --without "Felix (xq) Queißner" --without "Felix 'xq' Queißner" 2>&1 | sed -n 1,9p; echo ----; "${SL[@]}" --help 2>&1 | grep -i -A2 -e without -e mailmap | head -20
+ - Bash: SL=(node /private/tmp/r13/final/ours-src/bin/<tool>); "${SL[@]}" --merge-identities --without '<email redacted>,<email redacted>,<email redacted>' 2>&1 | sed -n 1,9p
+FINAL ANSWER:
+Ownership is moderately concentrated in one person, but it's split across several git identities. That makes it look less concentrated than it is. The numbers below come from surviving-lines, which counts the lines that are still in the code at HEAD (bd73202) using `git blame`. They cover 12 files and 1,535 non-blank lines (1,795 counting blank lines). The generated `src/width_table.zig` (484 lines) is left out.
+
+**Concentration**
+- The git history shows Felix Queißner (xq) under three addresses, which the table counts separately: 384 lines (25.0%), 274 lines (17.9%) and 10 lines.
+- The tool flags these as very likely the same person, but that's a guess from names and addresses. If they are one person, they hold **668 of 1,535 lines (43.5%)**. Unmerged, the largest single identity is 25.0%.
+- Next come jnagpaul with 146 lines (9.5%), Vincent Rischmann with 114 (7.4%), mochalins with 76 (5.0%) and Dhole with 67 (4.4%). A further 27 people hold the remaining 30.9%.
+
+**If that person stopped answering**
+- Only 24.0% of the code is written by active people. 79.0% of the lines belong to people with no commit in the last 365 days, and the largest of those is Felix.
+- Treating the three identities as one, **668 lines (43.5%) would have no author left**.
+- In 6 of the 12 files, he is the top owner. Those files hold 1,052 lines (68.5%).
+- **`src/args.zig`, the core file, is the real exposure.** It has 898 lines, and he holds 64.0% of them. The best remaining author, Vincent Rischmann, holds only 6.6%. Nobody left would know that file.
+- `README.md` (71 lines), `demo.zig` (55 lines) and the CI workflow (24 lines) are also his.
+- The people most likely to inherit pieces are mochalins (60 lines), Vincent Rischmann (59) and Wen Li (40).
+
+**Bus factor**
+- The bus factor is the smallest number of authors who hold 50% of the lines. It is **3** today, and it would be **5** without him. On the unmerged identities it is also 3.
+- It would rise to 5 because the lines left over are spread thinly across many people, not because anyone else is a stronger owner.
+- Counting only people active in the last year (Dhole, Wen Li, Krzysztof Wolicki), the bus factor is 3. Those three hold only 21.0% of the lines between them. It's a thin base.
+- Overall, 6 of the 12 files (76.1% of the lines) are orphaned. That means the top owner is inactive and no active person holds 20% or more.
+
+**Caveats**
+- The merge of Felix's identities is my inference, and I haven't written a `.mailmap`. The tool also suggests merging Felix Queißner (<email redacted>, <email redacted>) and Antoine Gagniere, but I left those out. Say so if you want them added.
+- Lines credited to someone are not the same as who understands the code. Felix committed 32 commits that other people authored, for example jnagpaul's tests and Krzysztof Wolicki's `std.lang.Type` update. He may have reviewed or integrated more than the line counts show.
+- Copy detection moved 293 lines in 2 files to another author. Without it, jnagpaul would hold 1.2% of the lines instead of 9.5%, and Felix's share would be higher.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: echo "commits by author:" && git shortlog -sne --all --no-merges && echo && echo "files:" && git ls-files | grep -E '\.zig$' && echo && echo "blame lines per author (current HEAD, zig files):" && for f in $(git ls-files | grep -E '\.zig$'); do git blame --line-porcelain -w -M -C HEAD -- "$f" | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn
+ - Bash: for f in $(git ls-files | grep -E '\.zig$'); do echo "== $f"; git blame --line-porcelain -w -M -C HEAD -- "$f" | grep -a '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn; done; echo; echo "last commit per author:"; git log --all --no-merges --format='%an|%ad' --date=short | sort -t'|' -k1,1 -u
+FINAL ANSWER:
+**Bus factor is 2 by the usual 50% rule, and it drops to 1 for the core parser.** This is based on `git blame` over the 7 `.zig` files at HEAD (2,120 lines). I merged author-name variants that look like the same person. That's my judgment, not something git knows.
+
+**Current line ownership**
+
+| Author | Lines | Share |
+|---|---|---|
+| Felix "xq" Queißner (3 name variants) | 758 | 36% |
+| Wen Li | 552 | 26% |
+| jnagpaul | 188 | 9% |
+| Vincent Rischmann | 130 | 6% |
+| Everyone else (24 people) | 492 | 23% |
+
+- **Wen Li's share is mostly one file.** 484 of their 552 lines are in `src/width_table.zig`, which looks like a lookup table, though I didn't check whether it's generated. Without that file, Felix owns 46% and Wen Li 4%.
+- **Felix is the top author either way.** They also have the most commits: 46 of 130, or 35%.
+- **The 50% threshold is crossed with Felix plus Wen Li.** That's 62% of lines, or 51% without the table. If Felix leaves and someone else takes over, the top two are still enough to pass 50%.
+
+**If Felix stopped answering**
+
+- About 36% of all current lines, or 46% excluding the width table, would have no author left to ask.
+- The impact is much bigger in the core file. `src/args.zig` is 67% Felix (705 of 1,048 lines), so its bus factor is effectively 1.
+- The other files are less exposed. `help.zig` is mostly jnagpaul (166 of 336 lines), Dhole and Bob Farrell. `width.zig` and `width_table.zig` are almost entirely Wen Li. `build.zig`, `demo.zig` and `demo_verb.zig` are spread across many authors.
+
+**Activity**
+
+- **Felix is still active.** Their latest commit is 2026-04-16, about 6 months ago, under the "xq" alias. The older "(xq)" alias hasn't committed since 2021, which is the same person under another name.
+- **Recent committers:** only Wen Li and Tobias Ek have committed in the last 90 days. Both are minor contributors to `src/args.zig` (40 and 2 lines).
+- **Authors who have gone quiet:** 37% of current lines (789) were written by people with no commit in 90 days. That includes jnagpaul (last commit 2023), Vincent Rischmann (2025) and mochalins (2025).
+
+**Caveats**
+
+- Two author dates are after today's date (2026-10-24): Wen Li at 2026-10-27 and Dmitri Volkov at 2026-11-04. That suggests skewed clocks or rewritten history, so treat the "recent activity" figures loosely.
+- Blame credits whoever last touched a line. A large mechanical change, such as the recent `allocator` to `gpa` rename, can shift credit away from the original author.
+- I didn't compute how many files import each module. For a library this small, `src/args.zig` is clearly the critical one.
+
+**Recommendation:** have a second maintainer review and document `src/args.zig`'s parsing and option-handling logic. That's the single area where Felix leaving would hurt most.
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Bash: git shortlog -sne HEAD | head -20; echo ---; git ls-files | grep -v '^\.' | head -50
+ - Bash: for f in $(git ls-files | grep -E '\.(zig|md|zon)$|LICENSE'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep -E '^author-mail ' | sed "s|^|$f |"; done > /tmp/blame.txt
+echo "== by author (lines)"; awk '{print $3}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -15
+echo "== by file"; awk '{print $1}' /tmp/blame.txt | sort | uniq -c
+echo "== src+demo only"; grep -E '^(src|demo|build)' /tmp/blame.txt | awk '{print $3}' | sort | uniq -c | sort -rn | head -10
+echo "== total"; wc -l < /tmp/blame.txt
+git shortlog -sn --no-merges HEAD | awk '{s+=$1} END{print "commits",s}'; git shortlog -sn HEAD | wc -l
+echo "== last 12mo"; git shortlog -sne --since='12 months ago' HEAD
+ - Bash: cd /tmp; echo "Wen by file:"; grep wen.li blame.txt | awk '{print $1}' | sort | uniq -c
+echo "Felix by file:"; grep -E 'mq32|masterq32|ib-queissner|random-projects' blame.txt | awk '{print $1}' | sort | uniq -c
+echo "args.zig top:"; grep '^src/args.zig' blame.txt | awk '{print $3}' | sort | uniq -c | sort -rn | head -5
+echo "authors for 50% (merged Felix):"; sed -E 's/<(<email redacted>|<email redacted>|<email redacted>|<email redacted>)>/<FELIX>/' blame.txt | awk '{print $3}' | sort | uniq -c | sort -rn | awk '{c+=$1; print c, $0}' | head -6
+FINAL ANSWER:
+**If Felix Queißner stopped answering, about 37% of the current lines would have no author left, and the bus factor is about 2.** I'm assuming the four Felix emails are one person, and I measured with `git blame -w -M -C` on HEAD, which counts surviving lines rather than commits.
+
+**Ownership of current lines (2,246 total)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Felix (4 emails combined) | 841 | 37% |
+| Wen Li | 552 | 25% |
+| jnagpaul | 188 | 8% |
+| Vincent Rischmann | 132 | 6% |
+| mochalins | 77 | 3% |
+| Dhole | 75 | 3% |
+| ~27 others | the rest | long tail |
+
+- **Core parser:** Felix wrote 705 of the 1,049 lines in `src/args.zig`, about 67%. The next largest contributors there are Vincent (64 lines), mochalins (60) and Wen Li (40). This file is where the loss would hurt most.
+- **Wen Li's share is mostly generated data:** 484 of their 552 lines are `src/width_table.zig`, which looks like a Unicode width table. Without that file, Felix owns about 48% of the hand-written code. Wen's remaining 68 lines are small.
+- **`src/help.zig`:** Felix wrote only 1 of its 337 lines, so it is already someone else's code.
+- **Felix also owns most of the surrounding files:** `README.md` (70 of 90 lines), `LICENSE`, and about half of the demos.
+- **Commit counts point the same way:** Felix has about 45 of the 130 commits. Counting them needs the identity merge, because the shortlog splits Felix across several emails.
+
+**Bus factor**
+
+- **Strict version:** counting the fewest people whose departure would leave over half the code unwritten by anyone remaining, it is about 2 (Felix and Wen). Losing Felix alone takes 37% of the code, and also removes the author of the main parser.
+- **Without the generated table:** Felix is near 50% alone, and the next contributor has only about 10%. It is effectively a bus factor of 1 for `args.zig`, softened by a decent tail of contributors.
+- **Recent activity is more spread out:** in the last 12 months, 11 people committed. Felix had 7 of about 20 commits (5 under one email, 2 under another). Tobias Ek, Wen Li and Dhole were active too.
+
+**Caveats:** `git blame` credits the last person to touch a line, so a refactor like the move to `src/` or the `gpa` rename can hide who originally wrote it. Mechanical commits may have moved some of Felix's lines to other names. If so, his true share is a bit higher than 37%.
+
+=== ANSWER D ===
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__tool__bus_factor,mcp__tool__knowledge_risk", "max_results": 5}
+ - mcp__tool__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ3-hist-1/repo"}
+ - mcp__tool__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ3-hist-1/repo"}
+FINAL ANSWER:
+**Short answer:** Felix Queißner has the largest share of any author, about 39% of current lines. If you stopped hearing from them, roughly 39% of the code would have no author left who is answering questions. The bus factor is about 4 (the tool reports 6), but the code is more orphaned than either figure suggests.
+
+**The tool undercounts Felix.** Felix shows up under three author names that .mailmap doesn't merge: "Felix (xq) Queißner", "Felix \"xq\" Queißner" and "Felix Queißner". Combined:
+- **Commits:** 23 + 15 + 8 = 46 of 130, or 35%. That is far ahead of the next author, Linus Groh, at 8.5%.
+- **Lines at HEAD:** 413 + 386 + 98 = 897 of about 2,280, or about 39%.
+- **Bus factor:** with Felix counted once, it takes 4 authors to cover over 50% of commits (Felix, Linus Groh, Vincent Rischmann, jnagpaul). The tool's 6 comes from counting Felix as three people. Either way, 33 authors have contributed but the work isn't spread evenly.
+
+**What is already orphaned.** I counted anyone with no commit in the last 6 months as gone, which includes Felix (last commit 2026-04-16). On that rule, 9 of 13 files have more than 50% of their lines owned by inactive authors:
+- **`src/args.zig`:** this is the core, with 1,049 lines. About 90% is owned by inactive authors, and Felix alone owns about 64%.
+- **Root files:** about 94% inactive across `build.zig`, `build.zig.zon`, the demos, README, LICENSE and the like.
+- **CI:** `.github/workflows/cross-build.yml` is about 97% inactive.
+- **`src/` overall:** about 50% inactive. The other half is recent and separately owned: `help.zig` is 100% Tobias Ek, and `width.zig` and `width_table.zig` are 100% Wen Li.
+
+**Caveats:**
+- **Active-author dates:** the tool lists Wen Li (last commit 2026-10-27) and Dmitri Volkov (2026-11-04) as active, but both dates are after today (2026-10-24). I haven't checked why. It could be clock skew or rewritten history.
+- **Commits vs. lines:** these measure authorship, not who understands the code. The original author of `args.zig` leaving matters more than the percentages suggest, because the new files are separate modules that sit on top of it.
+- **Siloed recent code:** each recent file has a single owner. Tobias Ek and Wen Li each have a bus factor of 1 for their own files.
+
+If you want a cleaner number, I can re-run the analysis with the three Felix names merged. I can also scope it to `src/args.zig` to see who besides Felix has touched the parsing logic.
+
+=== ANSWER E ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin> 2>/dev/null && ls scripts; cd /private/tmp/r13/final/out-F/runs/HZ3-bf-1/repo && git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head; git log --reverse --format='%h %ad' --date=short | head -1; git log -1 --format='%ad' --date=short; git ls-files | wc -l
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/<plugin>/scripts/<plugin> . --no-github --dry-run 2>&1 | head -60; git log --format='%ae' | wc -l
+ - Bash: git ls-files; echo; echo "-- blame lines by author email (current tree)"; for f in $(git ls-files | grep -E '\.(zig|md|zon)$'); do git blame --line-porcelain -w -M -C -- $f | grep '^author-mail'; done | sort | uniq -c | sort -rn; echo "-- commits by email, last 12mo / total"; git log --no-merges --format='%ae' | sort | uniq -c | sort -rn | head -15; git log --no-merges --since=2025-11-04 --format='%ae' | sort | uniq -c | sort -rn
+ - Bash: for f in src/args.zig src/help.zig src/width.zig src/width_table.zig build.zig demo.zig; do echo "== $f $(wc -l <$f)"; git blame --line-porcelain -w -M -C -- $f | grep '^author-mail' | sort | uniq -c | sort -rn | head -3; done; git log --format='%ae %ad' --date=short -3 -- src/width_table.zig
+FINAL ANSWER:
+I've finished the analysis. I used `git blame` on the current tree rather than the skill's report, and I'm writing up the result now. I ran the skill's script only with `--dry-run`, so nothing was written to the repo.
+
+## Short answer
+
+The bus factor is **1 for the core parser**, and **about 2 for the repo as a whole**. No part of the current code is fully orphaned.
+
+The author is **Felix "xq" Queißner**, who started the project in 2020. He commits under four different emails: `<email redacted>`, `<email redacted>`, `<email redacted>` and `<email redacted>`. Counting them as one person:
+
+| Person | Lines surviving in the tree | Share of 2,225 |
+|---|---|---|
+| Felix (4 emails combined) | about 831 | about 37% |
+| Wen Li | 552 | about 25% |
+| Everyone else, about 30 people | the remaining 842 | about 38% |
+
+Felix's 37% is the largest share, but it isn't a majority. It looks smaller than it is because it's split across emails.
+
+## Per file
+
+- **`src/args.zig`** (1,049 lines, the core parser) is the real concentration. Felix's emails account for about 691 lines, roughly 66%, and the next person has 64. This is bus factor 1.
+- **`src/help.zig`** has a spread of authors, led by jnagpaul with 166 of 337 lines. It's healthier, though still dominated by one person.
+- **`src/width.zig` and `src/width_table.zig`** are 100% Wen Li (508 lines). Wen Li's first commit to `src/width_table.zig` was on 2026-10-27, and Wen Li has only 3 commits in the last 12 months. That makes the width code a second single-owner zone. Wen Li's share is mostly a data table, and the table looks generated (my guess from its size, not checked), so it probably understates how easy it is to take over.
+- The build files and demos are spread across several people.
+
+## If Felix stopped answering
+
+- About 37% of the code would have no author left, and almost all of it is `args.zig`.
+- Felix is still active. He has 7 commits in the last 12 months (5 under `<email redacted>` and 2 under `<email redacted>`), so that's the risk scenario, not what has happened.
+- Nobody else has deep knowledge of the parser. The next-largest contributors to `args.zig` hold single-digit percentages of it.
+
+## Caveats
+
+- The script's dry run named `<email redacted>`, `tobias.ek@fjord.example` and `wen.li@fjord.example` as fallback owners. That run used `--no-github`, so it **couldn't merge Felix's four emails**. It split his weight and understated how concentrated `args.zig` is. Merging the emails would make him the clear owner of `src/args.zig`.
+- The fallback also names Tobias Ek, who has only 5 surviving lines. That owner list looks wrong.
+- The repo is small (13 files), so these percentages are sensitive to a single contributor.
+- The newest commit is dated 2026-11-04, which is after today's date, 2026-10-24. I used the newest commit as "now", as the script does. The activity windows depend on that date being right.
+- Commit and blame volume is only a proxy for who understands the code.
+
+I can write `.github/CODEOWNERS` and `ownership.json` with Felix's emails merged through the cache file. I'd need you to confirm those four emails are all him first.
+
+=== ANSWER F ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ3-ppi-1/repo; git log --all --no-merges --pretty='%an <%ae>' | sort | uniq -c | sort -rn; echo; git ls-files | grep -E '\.zig$' > /tmp/zf.txt; wc -l < /tmp/zf.txt; git ls-files | wc -l; echo; for f in $(cat /tmp/zf.txt); do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn; echo; git log -1 --format=%cd; git log --since=90.days --no-merges --pretty=%an | sort | uniq -c
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ3-ppi-1/repo; for f in $(git ls-files | grep -E '\.zig$'); do echo "$f $(wc -l <$f) lines; authors: $(git log --no-merges --pretty=%an -- $f | sort | uniq -c | sort -rn | awk '{c=$1;$1="";printf "%s(%s) ",$0,c}')"; done
+FINAL ANSWER:
+**The bus factor is 2.** If Felix Queißner left, about 36% of the current code would have no author left. If Felix and Wen Li both left, about 62% would.
+
+I read ownership from `git blame` (with `-w -M -C`, so whitespace changes and moved or copied code don't count against the original author). I did it over all 7 tracked `.zig` files, 2,120 lines. The command's built-in file list has no `.zig`, so I did this by hand rather than through its agent. Felix appears under six name and email variants, which I merged into one person.
+
+### Share of current lines by author
+
+| Author | Lines | Share | Active in last 90 days? |
+|---|---|---|---|
+| Felix "xq" Queißner (all variants) | 758 | 35.8% | No |
+| Wen Li | 552 | 26.0% | Yes (3 commits) |
+| jnagpaul | 188 | 8.9% | No |
+| Vincent Rischmann | 130 | 6.1% | No |
+| mochalins | 77 | 3.6% | No |
+| Dhole | 75 | 3.5% | No |
+| Krzysztof Wolicki | 60 | 2.8% | Yes |
+| Linus Groh | 47 | 2.2% | No |
+| Others (20 people, each under 2.2%) | 233 | 11.0% | Mostly no |
+
+Felix is also the top author by commits, with 46 of roughly 130 non-merge commits.
+
+### Bus factor
+- Felix alone owns 35.8%, which is below the 50% threshold. Losing only the main author would not orphan most of the code.
+- Felix and Wen Li together own 61.8%, which is over 50%. So the bus factor is 2.
+- The ownership is concentrated but not total: the next-largest authors each hold under 9%.
+
+### Active versus historical ownership
+- **Felix is the founder but not the current maintainer.** He has no commits in the last 90 days, so his 36% is already effectively orphaned.
+- **Wen Li is the largest active owner.** Wen Li wrote the Unicode width helper (`src/width.zig` and `src/width_table.zig`, 508 lines), and `src/width.zig` and `src/width_table.zig` each have only one contributor. Those two files are a per-file bus factor of 1, which is how the one-person 26% share arises.
+- **Active contributors are few.** Only four people committed recently: Wen Li, Tobias Ek, Krzysztof Wolicki and Dmitri Volkov.
+- **`src/args.zig` and `src/help.zig` have thin recent history.** `src/args.zig` is 1,049 lines, half the codebase, and `src/help.zig` has 337 lines. Their file-level history shows only Tobias Ek and Dmitri Volkov (that count stops at the "Move library sources to src/" commit, which `git log` doesn't follow). The blame data shows the real authorship comes from many earlier contributors.
+
+### Caveats
+- This is a small repository, and the counts are lines, not importance.
+- Contributor names and emails are not unified beyond Felix, so other people may be double-counted.
+- I did not do the command's import-dependent ranking, because with 7 files it adds little. `src/args.zig` is the core file that everything else depends on.
+- I did not break Felix's 758 lines down by file, so I can't say whether they sit in the core parser or in the demos and build script.
+
+### Recommendations
+- **Now:** have Tobias Ek or Dmitri Volkov review the Unicode width code, so it has a second person who understands it.
+- **Soon:** find out which files Felix's lines are in. If any are in `src/args.zig`, treat those as the first knowledge-transfer targets.
+- **Ongoing:** documentation of the parsing design would reduce the risk from Felix's departure.

@@ -1,0 +1,46 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ1-bf-3/repo --dry-run --no-github; echo ---; cd /private/tmp/r13/final/out-F/runs/HZ1-bf-3/repo; git log --oneline | wc -l; git log --reverse --format='%h %ad %an' --date=short | head -2; git log -1 --format='%ad' --date=short; git ls-files '*.py' | wc -l
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ1-bf-3/repo; git show --stat --format='%h %s' $(git rev-list --max-parents=0 HEAD) | tail -3; echo; git ls-files '*.py'|head -30; echo; echo "== blame lines by author (py, current HEAD)"; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -15; echo "== commits by author (all/last 12mo)"; git shortlog -sn --no-merges HEAD | head -8; git shortlog -sn --no-merges --since=2025-09-12 HEAD | head -8
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ1-bf-3/repo; git log --no-merges --format='%h %ad %an <%ae> %s' --date=short --author='Dana\|Priya' ; echo; echo "== active since 2025-09-12"; git shortlog -sne --no-merges --since=2025-09-12 HEAD; echo "== last commit per top author"; for a in "Jonathan Hartley" "Arnon Yaari" "Nathaniel J. Smith" "Delgan" "Hugo van Kemenade" "Jon Dufresne"; do echo "$a: $(git log --author="$a" -1 --format=%ad --date=short)"; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ1-bf-3/repo; printf 'c73f380\n994fda9\n' > /tmp/ign; git rev-parse c73f380 994fda9 >/tmp/ign2 2>/dev/null; git rev-parse c73f380 994fda9 > /tmp/ign; for d in colorama tests; do echo "== $d (ignoring quote reformat + test move)"; for f in $(git ls-files "$d/*.py"); do git blame -w -M -C --ignore-revs-file /tmp/ign --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -6; done; echo "== all py, ignoring"; for f in $(git ls-files '*.py'); do git blame -w -M -C --ignore-revs-file /tmp/ign --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -6; git show --stat --format='%h %s' c73f380 | tail
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ1-bf-3/repo; for f in $(git ls-files 'colorama/*.py'); do echo "$f $(wc -l <$f) dana=$(git blame -w -M -C --ignore-revs-file /tmp/ign --line-porcelain HEAD -- $f | grep -c '^author Dana')"; done; git show --stat --format='%h %s' aa872f7 | tail -4
+FINAL ANSWER:
+**Short answer:** the two biggest contributors are Jonathan Hartley and Arnon Yaari. The code you'd actually be handing over is written mostly by them plus Nathaniel J. Smith, and the people active now (Dana Kessler and Priya Nair) have touched little of it. I read this from `git blame` and `git log` myself. The busfactor script's output looked unreliable (see the last section), so I didn't use its verdicts.
+
+**Who wrote the 25 Python files**
+
+I counted blame lines, ignoring whitespace and the mechanical quote-style reformat and test move. Dana's raw count of 1,324 is misleading. 1,103 of those lines are one vendored file, `colorama/_vendor/_typing_compat.py`, which they added in a single commit. Excluding it, Dana wrote about 15 lines of the core library.
+
+| Author | Share of authored Python | Last commit |
+|---|---|---|
+| Jonathan Hartley | about 1,080 lines | 2026-07-03 |
+| Arnon Yaari | about 230 lines | 2026-05-13 |
+| Nathaniel J. Smith | about 196 lines | 2022-11-01 |
+| Delgan | about 107 lines | 2018-10-15 |
+| John Szakmeister | about 62 lines | not checked |
+| Dana Kessler | about 15 lines of library code, plus the vendored file | 2026-08-20 |
+| Priya Nair | small (2 commits) | 2026-09-12 |
+
+**How exposed you are if Hartley and Yaari go quiet**
+
+- **Hartley:** the exposure is high. They wrote the original design, about 470 of the roughly 800 test lines, and about 456 lines of the library. By commit count they have about 85 commits, roughly 1.3 times Yaari's 64.
+- **Yaari:** the exposure is high for the Windows internals, because they are the second-largest author there. Because Hartley has also been active in the last 12 months, these two are your only deep-knowledge pair.
+- **The files the Windows console behaviour depends on are almost untouched by your current team.** `win32.py` and `winterm.py` show 0 lines from Dana, and `ansitowin32.py` shows 8. Those are about 670 lines carrying the core logic.
+- **Nathaniel J. Smith and Delgan are effectively gone.** Their last commits are in 2022 and 2018. Their code is still in the tree (about 300 lines, mostly tests), but no one active can speak for it.
+- **Your active maintainers are new to the code.** Dana's work is mostly the vendored shim, the quote reformat and the test move. Priya's two commits add features. I'd treat neither as deep knowledge of the Windows console layer yet.
+
+**Caveats**
+
+- This is inferred from commit history. Commit volume is a proxy for knowledge, not a measurement of it. Reviewers who never committed won't show up here.
+- The history starts 2014-04-17 with a 30-file root commit by Hartley. That looks like an import, so earlier authorship may be missing.
+- The script's dry-run CODEOWNERS output looks wrong. It names the `northwind.example` addresses (Dana, and Tartley's address) as the fallback owner. It also marks `.github/` as orphaned while assigning owners to it. I didn't write any files.
+- The script ran with `--dry-run --no-github`, so no GitHub logins were resolved. Hugo van Kemenade appears under two names ("Hugo van Kemenade" and "Hugo") and Hartley under two spellings, so commit counts are slightly split.
+
+**What I'd do before handover:** get Hartley and Yaari to walk the new team through `win32.py`, `winterm.py` and `ansitowin32.py` while they still answer. Pair Dana or Priya on a real change in those files. If you want, I can generate the full report with the person-by-zone table.
+META cost=0.09982049999999999 ms=34779 turns=8

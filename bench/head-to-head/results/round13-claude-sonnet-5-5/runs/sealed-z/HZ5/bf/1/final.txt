@@ -1,0 +1,56 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ5-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: cat .mailmap; git log --format='%an <%ae>' | sort | uniq -c | sort -rn; for d in src tests; do echo "== $d (blame lines, current)"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain 2>/dev/null | grep '^author-mail' | sort | uniq -c | sort -rn; done; git log -1 --format=%ad; git log --reverse --format='%ad %an' | head -1; cat .github/ownership.json 2>/dev/null | head -5
+ - Bash: git log --no-merges --since=2025-09-01 --format='%aN' -- src tests | sort | uniq -c | sort -rn; echo; git log --format='%aN|%as' -- src tests | awk -F'|' '!s[$1]++' | head -12; echo; git ls-files tests/Support; git log --format='%aN %as' -- tests/Support
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote most of both directories. Almost everyone else who contributed is gone, so he is the one real loss. Tomasz Wrona is the only other person still working on the code.
+
+I counted surviving lines with `git blame -w -M -C` on the current tree. The `.mailmap` folds Ben's two emails and Tomasz's two identities into one person each. I also ran the busfactor script with `--no-github`, so it shows raw emails. I used it only as a cross-check.
+
+**`src/`, about 3,470 lines**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 2,171 | ~63% |
+| Tomasz Wrona | 358 | ~10% |
+| Carlos C Soto | 270 | ~8% |
+| zf2timo | 223 | ~6% |
+| icanhazstring | 199 | ~6% |
+| Kévin Gomez | 145 | ~4% |
+
+The remaining ~3% is spread over about a dozen one-off contributors.
+
+**`tests/`, about 3,630 lines**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 1,964 | ~54% |
+| icanhazstring | 594 | ~16% |
+| Kévin Gomez | 329 | ~9% |
+| Carlos C Soto | 204 | ~6% |
+| zf2timo | 174 | ~5% |
+| Simone Todaro | 113 | ~3% |
+| peter279k | 91 | ~3% |
+| Tomasz Wrona | 61 | ~2% |
+
+**Who is still around:** In the last 12 months, `src/` and `tests/` got commits from Tomasz Wrona (3), Ben Ramsey (2), Kasia Nowak (1) and github-actions (1). The other big contributors have no commits in `src/` or `tests/` in that window.
+
+**If Ben leaves**
+- You lose the author of over half of both directories, and the only active person who knows most of the original design.
+- Tomasz is the only plausible successor. He has about 10% of `src/`, and he is the sole author of the newest code in `tests/Support/`, which holds the chunk, value-extractor and value-to-string trait tests. That area is a bus factor of 1 on its own.
+- The script fell back to Ben as the repo-wide owner (`*`). Once he's gone, nothing in `CODEOWNERS` names a replacement.
+- Carlos, icanhazstring, zf2timo and Kévin together wrote a large share of the code, but their recent activity is nil, so they can't be treated as reviewers. I didn't check whether they're still reachable outside the repo.
+
+**Caveats**
+- Line counts measure who wrote the code, not who understands it. A reviewer who never commits looks like a stranger here.
+- Rename and move handling in blame is good but not perfect.
+- I didn't check whether the activity window fits Kasia Nowak, who has a single commit.
+
+If you want, I can write the `CODEOWNERS` and a fuller risk report. The script would put `.github/CODEOWNERS` and `ownership.json` into the repo, so I'm leaving those files alone until you say so.
+META cost=0.07809440000000001 ms=22993 turns=6

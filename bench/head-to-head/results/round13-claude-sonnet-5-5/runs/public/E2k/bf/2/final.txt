@@ -1,0 +1,21 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=short; git log -1 --format='%ad'
+ - Bash: cat .mailmap 2>/dev/null; git log --format='%an|%ae' | sort | uniq -c; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep -a '^author '; done | sort | uniq -c
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), after setting aside the formatting commit and bots.
+
+| Person | Commits in window | Lines still in the code |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (04-10)<br>`b2005d9` lib: annotate handlers (04-10) | 746 |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) (04-07) | 1 |
+
+- **Excluded:** `62628c0` (reformat js with 4-space indent and double quotes) by Fiona Formatter is formatting-only. No bot commits fall in the window.
+- **One person:** Troy Goode committed under two emails, `<email redacted>` and `troy@laptop.example`. I counted them once, and the 746 combines both.
+- **Line counts:** I counted with `git blame`, ignoring whitespace changes and skipping the reformat commit. That way reformatted lines stay credited to whoever wrote them, not to Fiona Formatter.
+- **Scope of the counts:** The line counts cover each person's whole history in the repo, not only the lines from their window commits. Troy's 746 is mostly older work. Say if you want only the lines from the window commits.
+META cost=0.0494717 ms=12644 turns=3

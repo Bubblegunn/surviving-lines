@@ -1,0 +1,36 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib && echo "--- authors (all time, no merges)" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- last 6 months" && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- recent commits" && git log --all --no-merges --pretty=format:"%h %an %ad %s" --date=short -15 -- lib/index.js && echo && echo "--- importers" && grep -rn "lib/index\|require(.*lib\|from.*lib'" --include="*.js" --include="*.json" . 2>/dev/null | grep -v node_modules | grep -v "^./.git/" | head -30
+ - Bash: echo "--- current line ownership (blame)" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8 && echo "--- total lines" && wc -l < lib/index.js && echo "--- today" && date +%F && echo "--- Troy Goode & Fiona recent activity across repo" && git log --all --no-merges --since="2025-10-01" --pretty=format:"%h %an %ad %s" --date=short --author="Troy Goode" | head -5; echo; git log --all --no-merges --since="2025-10-01" --pretty=format:"%h %an %ad %s" --date=short | head -10 && echo "--- scope of 62628c0" && git show --stat --format= 62628c0 | tail -3 && echo "--- scope of b2005d9" && git show --stat --format= b2005d9 | tail -3
+ - Bash: git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo "--- Troy's commits to lib/index.js by year"; git log --all --no-merges --pretty=format:"%ad" --date=format:%Y -- lib/index.js | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** Troy Goode is the person who knows this file best, but he hasn't touched it in about six months. No one active on the project has recent history in `lib/index.js`, so review it with a reviewer who can reach Troy if the change is risky.
+
+**Ownership of `lib/index.js`** (period: all history, excluding merges)
+
+| Contributor | Commits | Current lines (ignoring the reformat commit) | Last commit to this file |
+|---|---|---|---|
+| Troy Goode | 29 | 109 of 238 (~46%) | 2026-04-10 |
+| Fiona Formatter | 1 (reformat) | 57 | 2026-04-12 (whitespace and quote style only) |
+| Douglas Christopher Wilson | 4 | 36 | 2017 |
+| Raymond Feng, LuisEGR, Tom Arad, and others | a few each | the rest | 2013–2021 |
+
+- **Raw blame is misleading.** Fiona's reformat commit (`62628c0`) makes her look like the owner with 214 of 238 lines. Ignoring that commit, Troy is the clear primary owner. The repo already has `.git-blame-ignore-revs` for this reason; `git blame` should be run with `--ignore-revs-file` to see the real picture.
+- **Activity:** Nothing has changed in this file in the last six months. Troy's last commit to it (`b2005d9`, "lib: annotate handlers") was about six months ago. Fiona's commit was formatting only. Other recent repo activity (Vansh Sharma, Ulises Gascón, Phillip Barta, Jon Church, and dependabot) doesn't touch this file.
+- **Importance is high.** `package.json` names `lib/index.js` as the package `main` entry, and `test/example-app.js`, `test/error-response.js`, and `test/issue-2.js` all require it. This is the core of the CORS middleware.
+
+**Who should review**
+
+1. **Troy Goode**, if you can reach him. He wrote most of the logic, and his April commit is the most recent substantive change.
+2. **Fiona Formatter** for style. She is active and knows the current formatting conventions, but she is not a domain expert on this code.
+3. Someone from the active contributor group, for a second pair of eyes, since no one active has deep knowledge of this file.
+
+Before merging, run the test suite. The tests in `test/` are the best substitute for the knowledge that has left the team.
+
+**Limits of this check:** I ran the file-level analysis directly rather than through the contributor-analyzer agent, and I did not run the project-wide bus-factor sweep. The importer check was a text search, not a full dependency graph.
+META cost=0.005335929999999999 ms=20626 turns=6

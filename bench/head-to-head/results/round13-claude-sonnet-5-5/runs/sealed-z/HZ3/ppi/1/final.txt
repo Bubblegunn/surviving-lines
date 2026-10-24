@@ -1,0 +1,52 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ3-ppi-1/repo; git log --all --no-merges --pretty='%an <%ae>' | sort | uniq -c | sort -rn; echo; git ls-files | grep -E '\.zig$' > /tmp/zf.txt; wc -l < /tmp/zf.txt; git ls-files | wc -l; echo; for f in $(cat /tmp/zf.txt); do git blame -w -M -C --line-porcelain -- "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn; echo; git log -1 --format=%cd; git log --since=90.days --no-merges --pretty=%an | sort | uniq -c
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ3-ppi-1/repo; for f in $(git ls-files | grep -E '\.zig$'); do echo "$f $(wc -l <$f) lines; authors: $(git log --no-merges --pretty=%an -- $f | sort | uniq -c | sort -rn | awk '{c=$1;$1="";printf "%s(%s) ",$0,c}')"; done
+FINAL ANSWER:
+**The bus factor is 2.** If Felix Queißner left, about 36% of the current code would have no author left. If Felix and Wen Li both left, about 62% would.
+
+I read ownership from `git blame` (with `-w -M -C`, so whitespace changes and moved or copied code don't count against the original author). I did it over all 7 tracked `.zig` files, 2,120 lines. The command's built-in file list has no `.zig`, so I did this by hand rather than through its agent. Felix appears under six name and email variants, which I merged into one person.
+
+### Share of current lines by author
+
+| Author | Lines | Share | Active in last 90 days? |
+|---|---|---|---|
+| Felix "xq" Queißner (all variants) | 758 | 35.8% | No |
+| Wen Li | 552 | 26.0% | Yes (3 commits) |
+| jnagpaul | 188 | 8.9% | No |
+| Vincent Rischmann | 130 | 6.1% | No |
+| mochalins | 77 | 3.6% | No |
+| Dhole | 75 | 3.5% | No |
+| Krzysztof Wolicki | 60 | 2.8% | Yes |
+| Linus Groh | 47 | 2.2% | No |
+| Others (20 people, each under 2.2%) | 233 | 11.0% | Mostly no |
+
+Felix is also the top author by commits, with 46 of roughly 130 non-merge commits.
+
+### Bus factor
+- Felix alone owns 35.8%, which is below the 50% threshold. Losing only the main author would not orphan most of the code.
+- Felix and Wen Li together own 61.8%, which is over 50%. So the bus factor is 2.
+- The ownership is concentrated but not total: the next-largest authors each hold under 9%.
+
+### Active versus historical ownership
+- **Felix is the founder but not the current maintainer.** He has no commits in the last 90 days, so his 36% is already effectively orphaned.
+- **Wen Li is the largest active owner.** Wen Li wrote the Unicode width helper (`src/width.zig` and `src/width_table.zig`, 508 lines), and `src/width.zig` and `src/width_table.zig` each have only one contributor. Those two files are a per-file bus factor of 1, which is how the one-person 26% share arises.
+- **Active contributors are few.** Only four people committed recently: Wen Li, Tobias Ek, Krzysztof Wolicki and Dmitri Volkov.
+- **`src/args.zig` and `src/help.zig` have thin recent history.** `src/args.zig` is 1,049 lines, half the codebase, and `src/help.zig` has 337 lines. Their file-level history shows only Tobias Ek and Dmitri Volkov (that count stops at the "Move library sources to src/" commit, which `git log` doesn't follow). The blame data shows the real authorship comes from many earlier contributors.
+
+### Caveats
+- This is a small repository, and the counts are lines, not importance.
+- Contributor names and emails are not unified beyond Felix, so other people may be double-counted.
+- I did not do the command's import-dependent ranking, because with 7 files it adds little. `src/args.zig` is the core file that everything else depends on.
+- I did not break Felix's 758 lines down by file, so I can't say whether they sit in the core parser or in the demos and build script.
+
+### Recommendations
+- **Now:** have Tobias Ek or Dmitri Volkov review the Unicode width code, so it has a second person who understands it.
+- **Soon:** find out which files Felix's lines are in. If any are in `src/args.zig`, treat those as the first knowledge-transfer targets.
+- **Ongoing:** documentation of the parsing design would reduce the risk from Felix's departure.
+META cost=0.0789665 ms=23944 turns=5

@@ -1,0 +1,72 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/grape_entity/exposure and the delegator code"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-2/repo; ls lib/grape_entity lib/grape_entity/exposure; git ls-files | grep -i deleg; echo; git log --all --no-merges --pretty='%an|%ad' --date=short | wc -l; echo "-- commits exposure dir"; git log --all --no-merges --pretty='%an' -- lib/grape_entity/exposure | sort | uniq -c | sort -rn; echo "-- commits delegator"; git log --all --no-merges --pretty='%an' -- lib/grape_entity/delegator lib/grape_entity/delegator.rb | sort | uniq -c | sort -rn; echo "-- overall commits"; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -10; echo "-- last commit per author"; git log --all --no-merges --pretty='%an|%ad' --date=short | awk -
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-2/repo; echo "-- blame lines, all lib"; for f in $(git ls-files 'lib/*.rb'); do git blame --line-porcelain -w -M -C "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -10; echo "-- blame exposure"; for f in $(git ls-files 'lib/grape_entity/exposure*'); do git blame --line-porcelain -w -M -C "$f" | grep '^author '; done | sort | uniq -c | sort -rn; echo "-- blame delegator"; for f in $(git ls-files 'lib/grape_entity/delegator*'); do git blame --line-porcelain -w -M -C "$f" | grep '^author '; done | sort | uniq -c | sort -rn; date
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-2/repo; git log --all --no-merges --author='Kochnev' --pretty='%h %an <%ae> A:%ad C:%cd' --date=short | head -12; git log --all --no-merges --author='^Vladimir$' --pretty='%h %an <%ae> %ad' --date=short|head -3; for a in "Marco Silva" "Lena Brandt" "Dmitry Tsepelev" "James McCarthy" "Paul Padier"; do echo "$a: $(git log --all --no-merges --author="$a" --pretty='%ad' --date=short | sed -n '1p;$p' | tr '\n' ' ') total=$(git log --all --no-merges --author="$a" --oneline | wc -l)"; done; git log --since=2026-01-24 --no-merges --pretty=%an -- lib | sort | uniq -c
+FINAL ANSWER:
+## Bus factor: `lib/grape_entity/exposure/` and the delegator code
+
+Everything below comes from `git log` and `git blame -w -M -C` over the full history, run today (2026-10-24). I did the git analysis directly instead of launching the contributor-analyzer agent. For "owns the most code" I used surviving blame lines. For "most commits" I used non-merge commits.
+
+### Best reviewers
+
+**`lib/grape_entity/exposure/` (about 790 lines in 17 files, 17 commit authors):**
+
+| Rank | Reviewer | Why |
+|---|---|---|
+| 1 | **Marco Silva** | Active (last commit 2026-09-15) and owns 143 lines, about 18% of the directory. That is the largest share of anyone still around. |
+| 2 | **Lena Brandt** | Active (2026-07-14) and owns 20 lines. Also touched the delegator code. |
+| 3 | **Anna Kowalczyk** | Active (2026-08-10) but owns only 5 lines. Use as a second reviewer, not the main one. |
+
+**Delegator code (`delegator.rb`, `delegators/*`, `exposure/delegator_exposure.rb`, about 100 lines):**
+
+| Rank | Reviewer | Why |
+|---|---|---|
+| 1 | **Lena Brandt** | Active, and owns 10 lines (a tie for second by line count). |
+| 2 | **Marco Silva** | Active, but owns only 4 lines. |
+
+Neither of them is a strong owner of the delegator code. The real owner is Vladimir Kochnev, who owns 60 of about 100 lines, and he is inactive (see below). Paul Padier and James McCarthy tie Lena Brandt for second on lines, but they are inactive too.
+
+The recent maintainers are **Andrei/Andrey Subbota** (the same person under two names, 8 lib commits in the last 90 days), Marc Rohloff and Olivier Bellone. Their lines in these two areas are negligible, so I wouldn't treat them as domain experts. They are reasonable tiebreaker or merge-authority reviewers.
+
+### Who has effectively left
+
+| Person | Last commit | Surviving knowledge |
+|---|---|---|
+| **Vladimir Kochnev** | **2015-09-18** (last commit; 11 commits in total) | 433 lines in exposure/ (about 55%) and 60 lines in the delegator code (about 60%). Bus factor 1, inactive for about 11 years. |
+| Dmitry Tsepelev | 2018-01 | 63 lines in exposure/ |
+| James McCarthy | 2017-04 | 58 lines in exposure/, 10 in the delegator code |
+| Alexander Yunin | 2016-07 | 59 lines in exposure/ |
+| Paul Padier | 2023-12 | 10 lines in exposure/, 10 in the delegator code |
+| peter scholz | 2024-04 | Second-most commits in the repo (24), but only 7 lines in exposure/ |
+| LeFnord, Tobias Bielohlawek | 2020 and 2016 | Minor |
+
+The dominant knowledge holder in this area left a decade ago. The people who are active now hold 168 of about 790 exposure/ lines (about 21%): Marco Silva, Lena Brandt and Anna Kowalczyk.
+
+### Is the top committer also the top owner?
+
+**No, at three levels:**
+
+- **Whole repo:** `dblock` has the most commits (38, last active 2016) but does not appear among the top line owners. Vladimir Kochnev owns the most `lib/` code, with 758 lines.
+- **`exposure/`:** Vladimir Kochnev has both the most commits (5) and the most lines (433). Here the two do coincide, but with only 5 commits.
+- **Delegator code:** Commits are spread out, 1 each across 10 authors. By lines, Vladimir Kochnev owns 60.
+
+Commit count is a poor ownership signal in this repo. Marco Silva made only 1 commit in exposure/ (3 in the whole repo) but owns 143 lines. That is probably one large refactor or rewrite. Counting commits would have missed the best current reviewer.
+
+### Caveats
+
+- Line ownership favors big one-time commits (a rewrite or a mass reformat). I used `-w -M -C` to reduce that effect, but I haven't checked what Marco Silva's 143 lines are.
+- Author identities aren't normalized. Andrey/Andrei Subbota is one person, and "Vladimir" (2020) is probably a different person from Vladimir Kochnev. I didn't merge identities beyond that.
+- I did not run the importer/dependent-count step from the skill, so there is no CRITICAL/HIGH risk ranking by number of dependents.
+
+### Recommendations
+
+1. **Route exposure/ reviews to Marco Silva, with Lena Brandt as second reviewer.** For delegator changes, use Lena Brandt, plus a maintainer such as Andrei Subbota.
+2. **Treat exposure/ as a bus-factor-1 area** whose original author has been gone for 11 years. Spec coverage is the main safeguard (`GroupedExposure` just got a spec).
+3. **Have the active reviewers pair on or document the delegator and `nesting_exposure` code paths.** Nobody active has meaningful ownership of the delegator code.
+META cost=0.0987563 ms=28214 turns=6

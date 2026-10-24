@@ -1,0 +1,46 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an <%ae>' -- lib | sort | uniq -c | sort -rn; echo; for f in lib/*.js lib/**/*.js; do [ -f "$f" ] && echo "== $f" && git log --format='%an' --follow -- "$f" | sort | uniq -c | sort -rn | head -3; done; echo; git blame -w -M -C --line-porcelain lib/*.js lib/**/*.js 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head
+ - Bash: ls lib; wc -l lib/*; git blame -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo; git log -n 62628c0 --format='%h %an %ad %s' --date=short -- lib | head -8; echo; git log --since=2023-10-24 --format='%an' -- lib | sort | uniq -c
+ - Bash: git log -8 --format='%h %an %ad %s' --date=short -- lib; git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -6
+FINAL ANSWER:
+**The bus factor of `lib/` is 1.** It's one file, `lib/index.js` (238 lines), and Troy Goode wrote most of it.
+
+**Ownership**
+
+I ran `git blame` with the 2026-04-12 reformat commit (62628c0, "Fiona Formatter") ignored. That commit would otherwise show up as the author of the lines it rewrote.
+
+| Author | Lines surviving | Share |
+|---|---|---|
+| Troy Goode | 159 | about 67% |
+| Douglas Christopher Wilson | 22 | about 9% |
+| Alejandro Caravaca Puchades | 12 | about 5% |
+| Raymond Feng | 7 | about 3% |
+| max.laverse | 6 | about 3% |
+| LuisEGR | 6 | about 3% |
+| Others | the remainder | |
+
+By commit count, Troy has 34 of the roughly 60 commits that touched `lib/`. Douglas Wilson and Alejandro Caravaca Puchades have 4 each.
+
+**Who is still active**
+
+- The last two changes to `lib/` were Troy Goode's "annotate handlers" on 2026-04-10 and the automated reformat two days later.
+- Before that, the last change was LuisEGR's lint fix in 2021-07-20, and before that Tom Arad's `maxAge` fix in 2018-11-04.
+- Douglas Wilson's work is from 2017 and earlier, and Alejandro's is probably similarly old (I didn't check its dates). So Troy is the only person who has recently shown they understand the code.
+
+**What this means**
+
+- If Troy leaves, nobody active is left with working knowledge of the file.
+- The other contributors mostly made small fixes: lint cleanups, a Safari workaround, the `maxAge` edge case. Few of them are likely to know the design as a whole.
+- Counting everyone with real, non-trivial ownership, the bus factor is perhaps 2 (Troy plus Douglas). Douglas's contribution is old, so I wouldn't rely on it.
+
+**Caveats**
+
+- Git history can't tell me who is still around or reachable. If past contributors still review PRs, the real number is higher.
+- Troy's "annotate handlers" commit helps, since the annotations are documentation of the code.
+- The file is small and self-contained, so the cost of someone new picking it up is low even though the bus factor is 1.
+META cost=0.0527178 ms=15179 turns=4

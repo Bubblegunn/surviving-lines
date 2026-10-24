@@ -1,0 +1,46 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --no-merges --format='%H|%aN|%aE|%s' | wc -l; git log --format='%aN|%aE' | sort | uniq -c | sort -rn | head -30; ls -a; git log --format='%h %aN %s' | grep -iE 'style|format|lint|prettier' | head -20
+ - Bash: F=62628c0; for d in lib test .github root; do
+if [ $d = root ]; then files=$(git ls-files | grep -v -E '^(lib|test|\.github)/'); else files=$(git ls-files $d); fi
+echo "== $d"; for f in $files; do git blame --ignore-rev $F -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep '^author '; done | sort | uniq -c | sort -rn | head -6; done
+git log -3 --format='%h %aN <%aE> %s'; git ls-files | grep -v -E '^(lib|test)/'
+ - Bash: F=62628c0; git ls-files test | head -3; for d in test .github root; do
+if [ $d = root ]; then files=$(git ls-files | grep -v -E '^(lib|test|\.github)/'); else files=$(git ls-files $d); fi
+echo "== $d"; for f in $files; do git blame --ignore-rev $F -w --line-porcelain -- "$f" 2>&1 | grep -E '^(author |fatal)'; done | sort | uniq -c | sort -rn | head -6; done
+ - Bash: F=62628c0; for d in lib test .github root; do
+echo "== $d"; if [ $d = root ]; then git ls-files | grep -v -E '^(lib|test|\.github)/'; else git ls-files $d; fi | while IFS= read -r f; do git blame --ignore-rev $F -w --line-porcelain -- "$f" 2>&1 | grep -E '^(author |fatal)'; done | sort | uniq -c | sort -rn | head -6; done
+ - Bash: F=62628c0; for d in lib test .github root; do
+echo "== $d"; if [ $d = root ]; then git ls-files | grep -v -E '^(lib|test|\.github)/'; else git ls-files $d; fi | while IFS= read -r f; do git blame --ignore-rev $F -w --line-porcelain -- "$f" | grep -E '^author-mail '; done | grep -v bot | sed 's/<email redacted>/x/' | sort | uniq -c | sort -rn | awk '{c[NR]=$0;t+=$1} END{for(i=1;i<=3&&i<=NR;i++)print c[i], int(100*substr(c[i],1,8)/t)"%"; print "total",t}'; done
+FINAL ANSWER:
+Only `lib` has an owner who holds at least half of the surviving lines. I used `git blame` on the current tree and ignored `62628c0`, the formatting-only reindent. I left out `dependabot[bot]` and counted each person once. Troy Goode's two emails are merged, and so are Alejandro Caravaca Puchades's two identities. No maintainer GitHub handles are recorded in the repo, so the handles below are placeholders.
+
+| Path | Top contributors (share of surviving lines) | Result |
+|---|---|---|
+| `lib` | Troy Goode ~67% (159 of 238), Douglas Wilson ~9%, Alejandro Caravaca Puchades ~6% | Troy holds more than half |
+| `test` | Troy Goode ~47% (453 of 966), Douglas Wilson ~41% | Nobody reaches half |
+| `.github` | Douglas Wilson ~29%, Íñigo Marquínez Prado ~25%, Sebastian Beltran ~17% | Nobody reaches half |
+| root files | Troy Goode ~32%, Douglas Wilson ~27%, Jon Church ~17% | Nobody reaches half |
+
+The root files are `.eslintrc.yml`, `.gitignore`, `HISTORY.md`, `LICENSE`, `README.md` and `package.json`.
+
+`test` is the close one. Troy's 47% is just under the line.
+
+Suggested CODEOWNERS:
+
+```
+# lib: Troy Goode holds ~67% of surviving lines
+/lib/      @troygoode
+
+# No single owner holds >=50%, so these are left unassigned:
+# /test/     (Troy Goode ~47%, Douglas Wilson ~41%)
+# /.github/  (Douglas Wilson ~29%, Íñigo Marquínez Prado ~25%)
+# /*         (root files: Troy Goode ~32%, Douglas Wilson ~27%)
+```
+
+If you still want owners for the shared areas, a team entry for `test`, `.github` and the root files would be a better fit than naming one person.
+META cost=0.07395180000000001 ms=23387 turns=6

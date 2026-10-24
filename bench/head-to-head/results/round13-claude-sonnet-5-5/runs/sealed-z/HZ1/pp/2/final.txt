@@ -1,0 +1,54 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.py' | wc -l && git log --format='%an' | sort | uniq -c | sort -rn | head -8 && echo ---BLAME-ALL-PY--- && git ls-files '*.py' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12 && echo ---BY-FILE--- && git ls-files '*.py' | while read f; do echo "$f: $(git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -3 | sed 's/ *\([0-9]*\) author /\1 /' | paste -sd',' -)"; done; echo ---LAST-ACTIVE---; git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -8
+ - Bash: git log --format='%h %an %ad %s' --date=short -- colorama/_vendor | head; head -15 colorama/_vendor/_typing_compat.py; echo ---EXCL-VENDOR---; git ls-files '*.py' | grep -v _vendor | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -8; echo ---CORE-ONLY colorama/*.py---; git ls-files 'colorama/*.py' | grep -v _vendor | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -6; echo; git log --format='%an' --since=2025-10-24 | sort | uniq -c | sort -rn
+ - Bash: echo CORE; for f in colorama/__init__.py colorama/ansi.py colorama/ansitowin32.py colorama/initialise.py colorama/win32.py colorama/winterm.py; do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author '; done | sort | uniq -c | sort -rn | head -6; echo RECENT12MO; git log --format='%an' --since=2025-10-24 | sort | uniq -c | sort -rn; ls tools 2>/dev/null
+FINAL ANSWER:
+**About half the code in the repository was written by Jonathan Hartley. With Arnon Yaari, the two biggest contributors account for roughly 60% of the hand-written Python. That share is higher in the core library, and both of them have already gone quiet.**
+
+I counted surviving lines with `git blame -w -M -C` across the 25 tracked `.py` files. That shows who wrote the lines that exist today, which differs from who made the most commits.
+
+**Who wrote the code (excluding `colorama/_vendor/`)**
+
+| Author | Lines | Commits |
+|---|---|---|
+| Jonathan Hartley | 943 (about 49%) | 130 |
+| Dana Kessler | 220 | not in top 8 |
+| Arnon Yaari | 196 | 83 |
+| Nathaniel J. Smith | 194 | 17 |
+| Delgan | 105 | not in top 8 |
+| John Szakmeister | 46 | not in top 8 |
+| Segev Finer | 37 | not in top 8 |
+
+My line counts for Hartley and Yaari are exact. The 60% figure is my estimate from the top-8 total plus the smaller contributors I didn't sum.
+
+In the six core modules (`ansi`, `ansitowin32`, `initialise`, `win32`, `winterm`, `__init__`), Hartley has 444 lines and Yaari has 142. Together that is about two-thirds of the core. The Windows-specific modules `win32.py` and `winterm.py` depend most heavily on those two.
+
+**How exposed you are**
+
+- **Hartley:** He is the single largest owner of nearly every core file, and his last commit was 2026-07-03. If he stopped answering, you would lose the main source of context for the Windows console handling in `ansitowin32.py`, `win32.py` and `winterm.py`.
+- **Yaari:** He is the second-largest owner of `winterm.py`, `ansitowin32.py` and `win32.py`, and wrote `demo07.py`. His last commit was 2026-05-13.
+- **Nathaniel J. Smith:** He is the main backup on `initialise.py`, which makes that file the least exposed. His 194 lines include 68 in `initialise_test.py`.
+- **Tests:** Delgan wrote `isatty_test.py` and most of `tests/utils.py`, so those have an owner outside the top two.
+- **Recent activity:** In the last 12 months, Hartley and Yaari made 2 commits and 1 commit. Dana Kessler made 4, Priya Nair 2, Brian Wing 2, and Tomás Ibarra 1. The current maintainers are probably those people, not the historical top two. Check whether they actually understand the Windows code, because they own very little of it.
+
+**Dana Kessler's line count is misleading, and the vendored file needs a look**
+
+Blame shows Kessler with 1,324 lines, the top total. But 1,103 of those are in `colorama/_vendor/_typing_compat.py`, added in one commit on 2026-07-12 ("Vendor typing compatibility shims"). Treat that as vendored code, not authorship. Kessler's hand-written code is about 220 lines, mostly small edits plus tests and demos.
+
+That file also looks wrong:
+- Its header says it was vendored from typing_extensions 4.12.2 and is regenerated with `tools/vendor.sh`.
+- No `tools/` directory exists in the repo.
+- The start of the file is a run of identical `_compat_NNN(value, default=None)` functions, which doesn't look like typing_extensions.
+
+I only read the first 15 lines. I'd verify where this file came from and whether anything imports it before the handover. I'm not claiming anything is wrong beyond that.
+
+**Before handover**
+1. Get Hartley and Yaari to walk the new team through `win32.py`, `winterm.py` and `ansitowin32.py`. Those three files carry most of the risk.
+2. Ask Kessler or whoever added the vendored file where it came from and what the missing `tools/vendor.sh` should have been.
+3. Run `/project-pilot:bus-factor` if you want a per-module risk score. It would use the same git data I used here.
+META cost=0.0823893 ms=31602 turns=4

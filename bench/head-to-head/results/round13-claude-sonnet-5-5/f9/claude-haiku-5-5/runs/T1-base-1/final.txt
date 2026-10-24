@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files -z | xargs -0 -n1 sh -c 'git check-ignore -q "$0" || echo "$0"' | head -500 > /tmp/files.txt; wc -l < /tmp/files.txt; git ls-files | head -100
+ - Bash: for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail ' ; done | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files); do git blame --line-porcelain -- "$f" 2>/dev/null | grep -E '^author ' ; done | sort | uniq -c | sort -rn; echo ---; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20
+ - Bash: git show --stat --format='%h %an <%ae> %ad%n%s' 62628c0 | head -30; echo ---; for f in $(git ls-files); do git blame --line-porcelain --ignore-rev 62628c0 -- "$f" 2>/dev/null | grep -E '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo ---; git blame --line-porcelain -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -3; git log --format='%h %an %s' | wc -l
+FINAL ANSWER:
+The surviving code is mostly Troy Goode's and Douglas Christopher Wilson's, but a single formatting commit currently puts about half the blame on someone who didn't write the logic.
+
+I ran `git blame` over the 18 tracked files, about 2,000 lines in total, and counted the lines each author still has. Authors are grouped by name, so Troy's two email addresses are merged.
+
+| Author | Lines still here | Lines, reformat commit ignored |
+|---|---|---|
+| Fiona Formatter | 1,016 | 237 (partial, see below) |
+| Troy Goode | 261 | 642 |
+| Douglas Christopher Wilson | 260 | 564 |
+| Íñigo Marquínez Prado | 94 | 94 |
+| Jon Church | 72 | 72 |
+| Sebastian Beltran | 67 | 67 |
+| Ignacio Mangas | 54 | 54 |
+| Ulises Gascón | 52 | 52 |
+| Linus Unnebäck | 37 | 37 |
+| Ollie Buck | 17 | 17 |
+
+Everyone else has fewer than 15 lines each.
+
+- **Fiona Formatter** made one commit, `62628c0` ("reformat js with 4-space indent and double quotes"). It rewrote 1,016 lines across `lib/index.js` and three test files without changing behavior. Blame credits those lines to her. Most of the library and test logic was written by others.
+- **The ignore-rev result is approximate.** `git blame --ignore-rev 62628c0` still assigns 237 lines to Fiona. The reformat changed quoting as well as whitespace, so some lines don't match their earlier versions and stay attributed to her. Her real share is probably lower than 237.
+- **Troy Goode and Douglas Wilson** are the main original authors. Troy has the most surviving lines once the reformat is set aside, and Douglas is close behind.
+
+Caveat: `lib/index.js` is now 214 lines attributed to Fiona, 20 to Troy and 2 to Raymond Feng. Per-file ownership for the tests is not broken out here.
+META cost=0.00431489 ms=19188 turns=4

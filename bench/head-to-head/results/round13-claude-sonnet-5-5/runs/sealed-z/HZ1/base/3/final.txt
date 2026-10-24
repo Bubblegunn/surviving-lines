@@ -1,0 +1,51 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.py' | tee /tmp/pyfiles.txt && echo --- && git shortlog -sne HEAD | head -20 && echo --- && git log --oneline | wc -l && git log --format='%ad' --date=short | sed -n '1p;$p'
+ - Bash: git ls-files '*.py' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: git log --author='Dana Kessler' --format='%h %ad %an <%ae> | committer: %cn <%ce> | %s' --date=short --stat | head -60; echo ---; git log --author='Priya Nair' --format='%h %ad %an <%ae> | %s' --date=short | head; echo; echo "--- per area (blame, no -C/-M move following) ---"; for d in colorama tests demos; do echo "[$d]"; git ls-files "$d/*.py" | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -6; done
+ - Bash: echo "$(git ls-files '*.py' | grep -v _vendor | wc -l) files, excluding colorama/_vendor"; echo "--- all non-vendored, ignoring reformat c73f380 + move 994fda9 ---"
+git ls-files '*.py' | grep -v _vendor | while read f; do git blame -w -M -C --ignore-rev c73f380 --ignore-rev 994fda9 --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn > /tmp/blame.txt; head -12 /tmp/blame.txt; echo total: $(awk '{s+=$1} END{print s}' /tmp/blame.txt)
+echo "--- colorama/ library only (non-test, non-vendored) ---"
+git ls-files 'colorama/*.py' | grep -v _vendor | while read f; do git blame -w -M -C --ignore-rev c73f380 --line-porcelain HEAD -- "$f" | grep '^author
+FINAL ANSWER:
+**Short answer:** Jonathan Hartley wrote most of the Python that survives today, and Arnon Yaari wrote the next largest share. The exposure is real but concentrated in the older core library code.
+
+**Method.** I ran `git blame` (with `-w -M -C`) across all 23 tracked, non-vendored `.py` files, which came to 1,936 lines. I skipped two commits so they wouldn't distort the count:
+- `c73f380` re-quoted every file.
+- `994fda9` only moved the tests.
+
+A naive blame says Dana Kessler wrote the most (1,324 lines). That figure is misleading. It includes a 1,103-line vendored `_typing_compat.py` and the mechanical quote rewrite.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Jonathan Hartley | 1,080 | 56% |
+| Arnon Yaari | 232 | 12% |
+| Nathaniel J. Smith | 196 | 10% |
+| Delgan | 107 | 6% |
+| John Szakmeister | 62 | 3% |
+| everyone else | about 260 | about 13% |
+
+I counted Arnon only under "Arnon Yaari". The `wiggin15` identity appears to be the same person but is a small number of lines, so I left it out of their total.
+
+**Exposure if Hartley and Yaari go quiet**
+- **Share of code:** they wrote about 68% of the surviving lines between them.
+- **Core library:** in `colorama/` itself (456 lines for Hartley, 158 for Yaari), they are the top two authors in `ansi.py`, `ansitowin32.py`, `win32.py` and `winterm.py`.
+- **`initialise.py`:** this is the one file where Nathaniel J. Smith is the second author, with 35 lines.
+- **Tests:** Hartley wrote 372 of the test lines, so the safety net for these modules is mostly his as well.
+- **Windows console code:** `win32.py` and `winterm.py` carry the most risk, because they wrap Windows console APIs, and they are the hardest to test without a Windows machine.
+
+**Mitigating factors**
+- Their contribution is old. Hartley has made 2 commits in the last 12 months and Yaari 1, so day-to-day knowledge has partly left already.
+- Smith, Delgan and Szakmeister each wrote enough of the code to answer some questions, but I haven't checked whether they are still reachable.
+
+**Caveats**
+- Surviving lines don't measure who understands the design. Hartley's rationale, such as why particular Windows quirks are handled, probably isn't written down in the code.
+- I measured only the Python files. I didn't look at the docs, packaging, CI or release process, where there could be other single points of failure. I can check those next.
+- Dana Kessler and Priya Nair both use `northwind.example` emails. If they are your team, their surviving authorship is small (a handful of lines of real logic, such as the `NO_COLOR` handling). The recent work from them has no long history behind it.
+
+I can also break down the authorship by function or class, or check who still has recent activity or maintainer rights on the upstream project.
+META cost=0.0826695 ms=30853 turns=5

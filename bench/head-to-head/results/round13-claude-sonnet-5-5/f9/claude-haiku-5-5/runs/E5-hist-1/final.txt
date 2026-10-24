@@ -1,0 +1,41 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %ad %an <%ae> %s' --date=short -- lib/index.js && echo --- && git blame --line-porcelain lib/index.js | grep -E '^author ' | sort | uniq -c | sort -rn && echo --- && wc -l lib/index.js && git ls-files lib | head -50
+ - Bash: git blame --ignore-rev 62628c0 --line-porcelain lib/index.js | grep -E '^author ' | sort | uniq -c | sort -rn && echo --- && git blame --ignore-rev 62628c0 -w --line-porcelain lib/index.js | grep -E '^author ' | sort | uniq -c | sort -rn && echo --- && git show --stat 62628c0 | head -20 && echo --- && git log --format='%h %an %s' -3 -- package.json && git log --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -5 && git show b2005d9 --stat | tail -3 && git log -1 --format=%B 62628c0 | head -5
+FINAL ANSWER:
+**Short answer:** `lib/index.js` is the core of the `cors` middleware. Troy Goode shaped it most, and most of the code that survives today is still his. A 2026 mechanical reformat makes raw `git blame` look like someone else owns the file, so I ignored that commit to get the real picture.
+
+**Timeline**
+
+- **2013 (Troy Goode, Simon Mansfield, Damien Klinnert, Eric di Domenico):** The first commit (`bcd03d9`) was by Troy Goode. Early work added Connect support, origin callbacks, the credentials header, and the rule that most CORS headers belong only on preflight responses.
+- **2014:** Troy added Express 4+ support and the `vary` module (`#30`). Shane Tomlinson normalized method names to uppercase. Alberto Leal fixed the `options.origin` callback.
+- **2015 (busiest year for external contributors):** Alejandro Caravaca Puchades added RegExp origins and array origins. DracoBlue added exposed headers to preflight. Raymond Feng optimized `applyHeaders`. Troy moved the project to ESLint.
+- **2016–2017:** Troy released 2.8.0. Douglas Christopher Wilson fixed the `methods` delegate bug and the `Vary` headers for dynamic `allowedHeaders`. Benjamin Eidelman added a Safari pre-flight workaround. Lint cleanups came from Chima Alaebo and Douglas.
+- **2018–2021:** Tom Arad fixed `maxAge: 0`. LuisEGR removed unused parameters.
+- **April 2026:** Troy's "lib: annotate handlers" (`b2005d9`) is the most recent substantive change. Fiona Formatter's "reformat js with 4-space indent and double quotes" (`62628c0`) rewrote almost every line of the file (about 428 lines across `lib/` and `test/`) without changing behavior.
+
+**Whose code is still in it**
+
+Blame with `--ignore-rev 62628c0` (238 lines total, approximate, counting surviving lines):
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | ~109 |
+| Douglas Christopher Wilson | ~22 |
+| Alejandro Caravaca Puchades (incl. alex94puchades) | ~16 |
+| Raymond Feng | ~8 |
+| max.laverse | ~6 |
+| LuisEGR | ~6 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman, others | 1–3 each |
+
+Without ignoring the reformat, Fiona Formatter's commit accounts for 214 lines. That's a formatting artifact, not authorship. Troy's share rises if you also ignore whitespace (`-w`) (~159 lines), because his original style is reflected in many lines the reformat touched.
+
+**Caveats**
+
+- The reformat commit author is listed as `fiona@formatter.example`, which may be a shared or tooling identity, so I haven't attributed the change to a specific person.
+- Line counts measure surviving lines, not total contribution. Troy wrote most of the structure; other contributors' logic (regex origins, `Vary` handling, the Safari workaround) still appears in the file.
+META cost=0.004226270000000001 ms=14514 turns=3

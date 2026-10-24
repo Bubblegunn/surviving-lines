@@ -1,0 +1,35 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%aN <%aE>' -- lib | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files lib | wc -l; for f in $(git ls-files lib); do echo "$f: $(git blame -w -M -C --line-porcelain $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done
+FINAL ANSWER:
+**The bus factor of `lib` is about 1, and arguably less.**
+
+`lib` holds a single file, `lib/index.js`, so the answer is for that file.
+
+**Surviving lines (`git blame`, whitespace and moves ignored, 188 lines):**
+- Troy Goode: 138 lines (about 73%)
+- Fiona Formatter: 32 lines (about 17%)
+- Douglas Christopher Wilson: 18 lines (about 10%)
+
+**Commits touching `lib`:**
+- Troy Goode: 34 of roughly 55 commits, counting his two author identities.
+- Douglas Christopher Wilson and Alejandro Caravaca Puchades: 4 each.
+- Simon Mansfield: 3.
+- About 15 others: 1 or 2 each.
+
+**What this means:**
+- **Troy Goode is the single point of failure.** If they leave, nobody left has written most of the file.
+- **Fiona Formatter doesn't count.** Those 32 lines come from the recent style reformat (`62628c0`, 4-space indent and double quotes). They hide the real authors, so Troy's true share is probably higher than 73%.
+- **Douglas Wilson is the only other author with real surviving code.** With them, the bus factor is 2 at best. Their 18 lines are a thin basis for understanding the whole file.
+- **The long tail adds little.** Most of the 15 or so other contributors made one-off fixes, and almost none of their code survives in the current file.
+
+**Caveats:**
+- Authorship isn't understanding. Someone may know the file well from reviewing it without having written it.
+- Commit counts depend on how the contributors split their commits.
+- The file is small. That makes it much easier for a newcomer to learn than a large codebase would be, and in practice that lowers the real risk.
+- I didn't check recent activity, so Troy may no longer be active. If so, the practical bus factor is already lower than it looks.
+META cost=0.038958 ms=10213 turns=2

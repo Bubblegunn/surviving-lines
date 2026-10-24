@@ -1,0 +1,55 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: echo "== shortlog ==" && git shortlog -sne HEAD | head -30 && echo "== tracked py files ==" && git ls-files '*.py' | wc -l && git ls-files '*.py' && echo "== total commits ==" && git rev-list --count HEAD
+ - Bash: for f in $(git ls-files '*.py'); do git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail' ; done | sort | uniq -c | sort -rn | head -30
+ - Bash: echo "== dana/priya commits ==" && git log --author='dana.kessler\|priya.nair' --format='%h %ad %an <%ae> %s' --date=short && echo "== per-file dana lines ==" && for f in $(git ls-files '*.py'); do n=$(git blame --line-porcelain -- "$f" | grep -c '^author-mail <dana.kessler'); [ "$n" -gt 0 ] && echo "$n $f"; done && echo "== commit date range ==" && git log --format='%ad' --date=short | sed -n '1p;$p'
+ - Bash: echo "== aa872f7 (vendor) ==" && git show --stat --format='%s' aa872f7 | tail -3 && echo "== c73f380 (quotes) ==" && git show --shortstat --format='%s' c73f380 && echo "== recent commits by author, last 24 months ==" && git log --since='2024-10-24' --format='%an' | sort | uniq -c | sort -rn | head -15 && echo "== last commit per top author ==" && for a in "Jonathan Hartley" "Arnon Yaari" "Nathaniel J. Smith" "Jon Dufresne" "Hugo van Kemenade" "Dana Kessler" "Priya Nair" "wiggin15"; do echo "$a: $(git log --author="$a" -1 --format='%ad' --date=short)"; done
+ - Bash: for f in colorama/ansi.py colorama/ansitowin32.py colorama/initialise.py colorama/win32.py colorama/winterm.py colorama/__init__.py; do echo "== $f"; git blame --line-porcelain -- "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+The two people you'd lose are Jonathan Hartley and Arnon Yaari. Jonathan is the bigger exposure. Your biggest raw line-count contributor, Dana Kessler, is misleading, so I'd discount that number.
+
+**Who wrote the current Python code** (`git blame` on the 25 tracked `.py` files, counting surviving lines)
+
+| Author | Surviving lines | Notes |
+|---|---|---|
+| Jonathan Hartley | 873 | Original author and current maintainer; 130 commits; last commit 2026-07-03 |
+| Arnon Yaari | ~220 | ~85 commits across two identities; last commit 2026-05-13 |
+| Nathaniel J. Smith | ~204 | Last commit 2022-11-01, so already unresponsive |
+| Dana Kessler | 1,324 (misleading) | About 1,100 lines are one vendored file (`colorama/_vendor/_typing_compat.py`, commit `aa872f7`) and ~220 lines are a quote-style reformat (`c73f380`). Her real logic work is a handful of commits, e.g. `Honour NO_COLOR in init()` |
+| Priya Nair | small | Two commits, including `Add is_windows_terminal() helper` |
+
+I'm treating the two `Arnon Yaari` identities (`<email redacted>` and `<email redacted>`) as one person based on the shared name. That's an inference, so confirm it.
+
+**Exposure by module** (top line authors)
+
+- `ansitowin32.py`: Jonathan 140, Arnon 42, Dana 25. This is the core ANSI-to-Win32 conversion layer.
+- `win32.py`: Jonathan 105, Arnon 33, Segev Finer 26.
+- `winterm.py`: Jonathan 85, Arnon 60, Nathaniel Smith 19.
+- `initialise.py`: Nathaniel Smith 40, Jonathan 38, Florian Bruhin 18.
+- `ansi.py`: John Szakmeister 38, Jonathan 20, Arnon 20, Dana 18.
+
+**How exposed you are**
+
+- **High on the Windows path.** `ansitowin32.py`, `win32.py` and `winterm.py` are where Jonathan and Arnon hold most of the knowledge. Those modules are hard to reason about from the code alone, and they're the ones most likely to need changes if Windows terminal behavior shifts.
+- **Moderate on the rest.** `ansi.py` and the demos are spread across more authors and are simpler.
+- **Already partly exposed.** Nathaniel Smith is unresponsive and still owns a fair amount of `initialise.py` and `winterm.py`.
+- **Partial safety net.** The tests in `tests/` (e.g. `ansitowin32_test.py`, `winterm_test.py`) cover these modules, so regressions should be catchable. I did not check how complete the coverage is.
+
+**Caveats**
+
+- Blame measures surviving lines, not design authority. Someone who reviewed or shaped the code without typing much won't appear here.
+- I only looked at git history. I didn't check issue trackers, mailing lists or review activity, and I can't tell whether Jonathan or Arnon are actually reachable.
+- I didn't verify where `_typing_compat.py` came from. Since it's vendored third-party code, confirm its upstream source and license before handover.
+
+**Suggested next steps before the handover**
+
+1. Ask Jonathan and Arnon for a short walkthrough of `ansitowin32.py` and `winterm.py` while they're still active.
+2. Get written notes on the Windows-specific behavior and any known edge cases.
+3. Confirm Arnon's identity mapping and the vendored file's provenance.
+
+I didn't change anything in the repo or make a commit.
+META cost=0.0059315800000000005 ms=28689 turns=6

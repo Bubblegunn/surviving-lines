@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; git log --all --format='%an <%ae>%n%cn <%ce>' | sort -u | grep -iE 'doug|troy|wilson|goode|fiona|efe'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** had two emails: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits).
+- **Alejandro Caravaca Puchades** had two names on one email, `<email redacted>`: the full name (4 commits) and the username `alex94puchades` (1 commit).
+
+I added a `.mailmap` at the repo root that maps each to a single identity. This doesn't rewrite history, so no hashes change. I haven't committed the file.
+
+With the mailmap applied, Troy Goode has 122 commits and Alejandro has 5. The top author is still **Douglas Christopher Wilson** (`<email redacted>`) with 143 commits, ahead of Troy Goode on 122. The merge only changed the ranking among people below Doug.
+
+I left the other near-duplicates alone because nothing shows they're the same person. For example, `Efe` and `Fiona Formatter` each have a single commit under one identity.
+META cost=0.054143399999999994 ms=10053 turns=4

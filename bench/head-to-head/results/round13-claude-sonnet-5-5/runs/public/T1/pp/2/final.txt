@@ -1,0 +1,47 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -3 --format='%h %an <%ae> %s' && git show --stat --format= 62628c0 | tail -5 && git ls-files | grep -vE '^(node_modules)/' | wc -l && ls
+ - Bash: echo "== naive blame ==" && for f in $(git ls-files); do git blame -w --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn
+echo "== ignoring reformat commit, -w, -M -C ==" 
+for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn
+echo "== per file (adjusted) =="
+for f in $(git ls-files); do echo "-- $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of what's left. I counted surviving lines per author with `git blame` across all 18 tracked files, about 1,995 lines in total.
+
+The most recent commit (`62628c0`, "reformat js with 4-space indent and double quotes", by Fiona Formatter) rewrote about 1,000 lines in `lib/` and `test/`. Plain blame credits Fiona with 291 lines, which isn't real authorship. I excluded that commit with `--ignore-rev`. I also ignored whitespace (`-w`) and followed moved or copied lines (`-M -C`). That gives each line to the person who last changed its substance.
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 810 | ~41% |
+| Douglas Christopher Wilson | 629 | ~32% |
+| Íñigo Marquínez Prado | 95 | ~5% |
+| Jon Church | 72 | ~4% |
+| Sebastian Beltran | 67 | ~3% |
+| Ulises Gascón | 52 | ~3% |
+| Ignacio Mangas | 44 | ~2% |
+| Alejandro Caravaca Puchades | 30 | ~1.5% |
+| Linus Unnebäck | 26 | ~1.3% |
+| Everyone else (about 30 people) | under 20 each | ~7% total |
+
+Troy and Douglas together own about 72% of the code.
+
+**Who owns what**
+- **`lib/index.js`, the core code:** Troy has 159 lines, Douglas 22 and Alejandro Caravaca Puchades 12.
+- **`test/`:** Troy owns most of the small test files. `test/test.js` is split about evenly, Douglas 339 and Troy 317.
+- **`README.md`:** Troy has 116 lines, Jon Church 72 and Linus Unnebäck 26.
+- **`package.json`, `HISTORY.md`, `LICENSE`, lint config and `.gitignore`:** mostly Douglas.
+- **CI and security workflows (`.github/`):** these belong to others. Douglas, Ignacio Mangas and Ulises Gascón share `ci.yml`. Sebastian Beltran owns `codeql.yml` and Íñigo Marquínez Prado owns `scorecard.yml`.
+
+**Caveats**
+- I counted lines, so a one-line fix counts the same as a core algorithm. Docs, config and tests are included, which is why CI authors show up. Counting only `lib/index.js` would make Troy's lead larger.
+- Blame credits the last person to touch a line, not the original author. Someone who tweaked a line has taken it from whoever wrote it.
+- I didn't merge identities. If anyone commits under more than one name or email, such as `alex94puchades` and Alejandro Caravaca Puchades, their share is split. A `.mailmailmap` file would merge them.
+- The ~7% for everyone else is approximate. I added the long tail up by hand from the table.
+
+I can rerun this for `lib/` only, or merge duplicate identities first, if you want.
+META cost=0.0695566 ms=20720 turns=3

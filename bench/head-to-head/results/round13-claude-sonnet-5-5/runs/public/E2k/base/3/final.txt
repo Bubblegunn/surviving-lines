@@ -1,0 +1,23 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29T00:00:00 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=iso --no-merges; echo; git log -1 --format='%h %ad' --date=iso
+ - Bash: git shortlog -sne HEAD | head -20; for f in $(git ls-files); do git blame -w -M -C --line-porcelain -- $f 2>/dev/null | grep -E '^(author|author-mail) ' ; done | paste - - | sort | uniq -c | sort -rn | head -15; git show --stat --format='%h %an' b2005d9 02afce3 5317ebe | head -30
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep -E '^author ' ; done | sort | uniq -c | sort -rn | grep -E 'Troy|Vansh|Fiona'; for f in $(git ls-files); do git blame -w --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep -E '^(author|author-mail|previous|[0-9a-f]{40}) ' | grep -E '^(b2005d9|02afce3|5317ebe)' ; done | cut -c1-7 | sort | uniq -c
+FINAL ANSWER:
+Two people committed in the 14 days up to 2026-04-12 (window 2026-03-29 to 2026-04-12) once formatting-only commits and bots are set aside.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | `b2005d9` "lib: annotate handlers" and `02afce3` "test: vary header coverage" | 810 |
+| Vansh Sharma | `5317ebe` "docs: app.del() with app.delete() in README example (#411)" | 1 |
+
+- **Troy Goode:** this is one person under two emails, `<email redacted>` and `troy@laptop.example`, so I counted them once. Both commits in the window use the laptop email. The 810 lines cover all of Troy's authored lines across both emails, not just the two window commits. Of those, 48 are under the laptop email in a plain `git blame`, and the rest are under `<email redacted>`. Of the 810, 36 come from `02afce3` and 12 from `b2005d9`.
+- **Vansh Sharma:** their one line is the README change, and it survives.
+- **Excluded:** Fiona Formatter's `62628c0` (the reindent and quote reformat) is formatting-only. I ignored it when attributing lines, so the reformatted lines count for their original authors.
+
+I ran `git blame` with whitespace changes and that formatting commit ignored, and with code moved or copied between files followed. Moved lines therefore stay with their original authors.
+META cost=0.0523729 ms=15179 turns=4

@@ -1,0 +1,43 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor", "args": "Ownership by surviving code: attribute the lines that exist at HEAD (git blame / current-line authorship), not commit counts. Report who owns the code still present today, by area. Do not write CODEOWNERS unless asked; the question is who owns the surviving code."}
+ - Bash: git ls-files | wc -l && git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head -30 && echo --- && git log --format='%ae' | sort | uniq -c | sort -rn | head -20 && echo --- && git log --reverse --format='%ad %ae %s' --date=short | head -3 && git log -1 --format='%ad' --date=short
+ - Bash: git ls-files -z | xargs -0 -n1 sh -c 'if git grep -Iq . HEAD -- "$0" 2>/dev/null; then git blame --line-porcelain HEAD -- "$0" | grep -E "^author-mail " | sed "s|^author-mail <\(.*\)>|\1|" | sed "s|^|$0\t|"; fi' 2>/dev/null > /tmp/blame_authors.tsv; wc -l < /tmp/blame_authors.tsv; cut -f2 /tmp/blame_authors.tsv | sort | uniq -c | sort -rn
+ - Bash: git show -s --format='%h %an <%ae> %ad %s' --date=short 62628c0 && cat .git-blame-ignore-revs && echo --- && git ls-files -z | xargs -0 -n1 sh -c 'if git grep -Iq . HEAD -- "$0" 2>/dev/null; then git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- "$0" | grep -E "^author-mail " | sed "s|^author-mail <\(.*\)>|\1|" | sed "s|^|$0\t|"; fi' 2>/dev/null > /tmp/blame_authors2.tsv; wc -l < /tmp/blame_authors2.tsv; cut -f2 /tmp/blame_authors2.tsv | sort | uniq -c | sort -rn | head -25; echo --- by path; cut -f1 /tmp/blame_authors2.tsv | sed 's|/[^/]*$||' | sort | uniq -c | sort -rn | head; echo --- ; awk -F'\t' '{print $1}' /tmp/blame_authors2.tsv | sort | uniq -c | sort -rn 
+ - Bash: git log --format='%h %ae %ad %s' --date=short --author='fiona' ; echo ---; git log --format='%h %ae %ad %s' --date=short -- lib/index.js | head -5; echo ---; git log --format='%ae' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain HEAD -- lib/index.js | grep -E '^author-mail ' | sort | uniq -c | sort -rn; echo ---; git log --format='%ae %ad' --date=short -- .github/workflows | head -3; git log -1 --format='%ad' --date=short -- .github/workflows/ci.yml
+ - Bash: cd /tmp && for f in test/test.js README.md lib/index.js .github/workflows/ci.yml test/example-app.js test/error-response.js HISTORY.md test/issue-2.js test/vary.js; do echo "== $f"; awk -F'\t' -v f="$f" '$1==f{print $2}' blame_authors2.tsv | sort | uniq -c | sort -rn | head -4; done; echo; echo "== last commit touching each area"; cd /private/tmp/r13/final/f9/claude-haiku-5-5/runs/T1i-bf-1/repo && for p in test lib README.md .github HISTORY.md package.json; do echo "$p: $(git log -1 --format='%ad %ae' --date=short -- $p)"; done
+FINAL ANSWER:
+Measured on the code that exists at HEAD, the largest share of surviving lines belongs to **Doug** (`<email redacted>`) and **Troy Goode** (`<email redacted>`, plus `troy@laptop.example`, which looks like the same person but I haven't confirmed that). Together they account for roughly 1,200 of the 1,997 text lines that `git blame` attributes at HEAD.
+
+I didn't run the busfactor skill's script. It weights commits by age rather than measuring surviving lines, and it writes `.github/CODEOWNERS` into the repo, which you asked me not to do. I used `git blame` directly, ignoring the repo's `.git-blame-ignore-revs`.
+
+**Surviving lines by person (blame, reformat ignored)**
+
+| Author | Lines | Notes |
+|---|---|---|
+| <email redacted> | 595 | Plus 47 under troy@laptop.example |
+| <email redacted> | 564 | |
+| fiona@formatter.example | 239 | Mostly artifact, see below |
+| inigomarquinez | 94 | |
+| <email redacted> | 72 | |
+| <email redacted> | 67 | |
+| <email redacted> | 54 | |
+| <email redacted> | 52 | |
+| <email redacted> | 37 | |
+
+**By area**
+
+- **`test/`** (964 lines, the largest area): `test/test.js` is split across Doug (270), Troy (213) and Fiona (178, mostly the reformat). `test/example-app.js`, `test/error-response.js` and `test/issue-2.js` are mainly Troy's. `test/vary.js` is entirely Troy's, under the `troy@laptop.example` identity.
+- **`lib/index.js`** (238 lines): Troy 98 + 11, Fiona 57, Doug 36. Most of the remaining lines are spread across many short contributions.
+- **`README.md`** (277 lines): Troy 104, Jonchurch 72, Linus 37, olliebuck 17.
+- **`.github/workflows/`** (359 lines): `ci.yml` is mostly Doug (108), Ignacio Mangas (54), Ulises Gascón González (30) and Iñigo Marquínez (26). `codeql.yml` and `scorecard.yml` are largely Dependabot-maintained or template-generated.
+- **`HISTORY.md`**: Doug 50 of 64 lines.
+
+**Caveat on Fiona's 239 lines.** Commit `62628c0` (`style: reformat js with 4-space indent and double quotes`, by `fiona@formatter.example`) rewrote the JavaScript. Blame with `.git-blame-ignore-revs` moves most lines back to their real authors, which cut her count from 1,018 to 239. The remaining lines changed content in the reformat (indentation, quote style), so blame cannot trace them to an earlier author. Those lines are real code, but who originally wrote them is not recoverable from blame. Doug and Troy's numbers are probably slightly understated for the same reason.
+
+**What I didn't check.** I haven't determined which of these authors are still active, so I can't say whether any of this code is orphaned in the sense of having no active maintainer. I also haven't resolved email addresses to GitHub logins. The Troy identity merge is an inference from matching first names and the same commit style, not something git confirms.
+META cost=0.00759951 ms=35015 turns=8

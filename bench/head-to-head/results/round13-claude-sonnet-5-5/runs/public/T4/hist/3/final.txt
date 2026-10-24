@@ -1,0 +1,26 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 3}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4-hist-3/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4-hist-3/repo", "file": "lib/index.js", "limit": 30}
+FINAL ANSWER:
+**Troy Goode** is the best reviewer for `lib/index.js`. **Douglas Christopher Wilson** is a good second if they're still available.
+
+**Don't pick Fiona Formatter.** Blame credits them with about 90% of the lines (214 of 238), but that comes entirely from the latest commit, `62628c0`, which reformatted the file to 4-space indent and double quotes. They know the formatting, not the CORS logic.
+
+- **Troy Goode:**
+  - They wrote the file in 2013 and still own about 8% of its lines.
+  - They made the most recent real change, `b2005d9` ("annotate handlers"), on 2026-04-10.
+  - They made the early structural changes: the `vary` module, non-Express support, and the ESLint switch.
+- **Douglas Christopher Wilson:**
+  - They made several of the substantive correctness fixes in 2017: the `Vary: Access-Control-Request-Headers` header for dynamic `allowedHeaders`, the missing `methods` option in the options delegate, and lint fixes.
+  - Most of their lines were overwritten by the reformat, so blame understates what they know.
+
+The file's history is mostly small bug fixes around `Vary` headers, origin matching (regex and array), preflight handling and option edge cases. Whoever reviews should check those paths for regressions. Run the header-coverage tests from `02afce3` too.
+
+I haven't checked whether Troy or Douglas are currently active on the project. A recent commit from Troy suggests they are. I didn't look for a CODEOWNERS file either.
+META cost=0.0567068 ms=11498 turns=4

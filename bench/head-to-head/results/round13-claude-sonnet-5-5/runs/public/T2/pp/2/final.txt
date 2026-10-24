@@ -1,0 +1,47 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: ls lib && echo --- && git log --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && for f in lib/*.js; do echo "$f: $(git log --no-merges --pretty=format:'%an' -- $f | sort | uniq -c | sort -rn | head -3 | tr '\n' ';')"; done && echo --- && git log --no-merges --since="6 months ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn && echo --- && git log -1 --format=%cd && for f in lib/*.js; do echo "$f $(grep -rl "$(basename $f .js)" lib index.js 2>/dev/null | wc -l)"; done
+ - Bash: git log --no-merges --pretty=format:"%an|%ad" --date=short -- lib | awk -F'|' '{if(!($1 in s)){s[$1]=$2; print}}' | head -6; wc -l lib/index.js; git log --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn | awk '{c+=$1; n++; if(c/70>=0.5 && !h){print "people for 50%:", n; h=1}} END{print "total", c}'
+FINAL ANSWER:
+## Bus factor of `lib/`: 1
+
+`lib/` is a single file, `lib/index.js` (238 lines). Authorship is concentrated, but a single file is small enough for a new maintainer to read in one sitting.
+
+### Commit ownership (66 non-merge commits, 25 authors)
+
+| Author | Commits | Share |
+|---|---|---|
+| Troy Goode | 33 | 50% |
+| Douglas Christopher Wilson | 4 | 6% |
+| Alejandro Caravaca Puchades | 4 | 6% |
+| Simon Mansfield | 3 | 5% |
+| About 21 others | 1–2 each | 33% combined |
+
+- **Bus factor:** Troy Goode alone accounts for 50% of the history, so losing that one person removes half of the commit history.
+- **Long tail:** Most of the other 24 authors made one-off contributions. Only about four people have more than a couple of commits.
+
+### Activity
+
+- **Last real change:** Troy Goode on 2026-04-10.
+- **Most recent commit:** "Fiona Formatter" on 2026-04-12, which was the 4-space/double-quote reformat. It is cosmetic and shows no real understanding of the code.
+- **Previous change:** Before April 2026, the last change to `lib/` was LuisEGR in July 2021.
+- **Last 6 months:** No commits touched `lib/` in that window.
+
+So the file has been effectively dormant, and the only recent substantive work came from Troy Goode.
+
+### Assessment
+
+- **Risk is moderate, not critical.** The ownership history is concentrated, but the code is a single small file, and the git history shows no sign that it has become hard to maintain.
+- **Dependents:** My check found no other files in the repo that import it by name, but I only searched `lib/` and `index.js`. The wider blast radius is probably the package's public API, which this check wouldn't show.
+- **Mitigations:**
+  1. Have someone other than Troy Goode review the next change to `lib/index.js`.
+  2. Add a short architecture note on the handlers.
+  3. Check that the tests cover the behaviour the file implements.
+
+**Caveat:** This counts commits by author name. It doesn't measure who understands the code, and the same person may appear under different names or emails. For example, "Alejandro Caravaca Puchades" and "alex94puchades" are probably the same person. If they are, the long-tail contributor count drops by one.
+META cost=0.0642976 ms=16190 turns=5

@@ -1,0 +1,88 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git ls-files '*.py' && git log --oneline | wc -l && git log -1 --format=%ci && git shortlog -sne --no-merges HEAD | head -20
+ - Bash: ls -a; cat .mailmap 2>/dev/null; echo ---; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain HEAD -- "$f" | sed -n 's/^author-mail //p' | sed "s|^|$f |"; done > /tmp/blame.txt; wc -l /tmp/blame.txt; awk '{print $2}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -20
+ - Bash: awk '{print $1}' /tmp/blame.txt | sort | uniq -c; echo; grep dana /tmp/blame.txt | awk '{print $1}' | sort | uniq -c; echo; git log --no-merges --format='%h %ad %an %s' --date=short --author='Dana\|Priya' --stat | head -60
+ - Bash: head -25 colorama/_vendor/_typing_compat.py; cat colorama/_vendor/__init__.py; grep -rn "_vendor\|_typing_compat" --include=*.py --include=*.toml --include=*.ini . | grep -v "^./colorama/_vendor"
+ - Bash: grep -rn "_vendor\|_typing_compat" --include='*.py' --include='*.toml' --include='*.ini' . | grep -v "^./colorama/_vendor"; ls tools 2>&1; grep -c "^def " colorama/_vendor/_typing_compat.py
+for f in $(git ls-files '*.py' | grep -v _vendor); do git blame -w -M -C --ignore-rev c73f380 --line-porcelain HEAD -- "$f" | sed -n 's/^author-mail //p' | sed "s|^|$f |"; done > /tmp/blame2.txt
+echo "== all non-vendored"; awk '{print $2}' /tmp/blame2.txt | sort | uniq -c | sort -rn | head -8; wc -l < /tmp/blame2.txt
+echo "== library colorama/"; grep '^colorama/' /tmp/blame2.txt | awk '{print $2}' | sort | uniq -c | sort -rn | head -6; grep -c '^colorama/' /tmp/blame2.txt
+echo "== per file top owner"; awk
+ - Bash: for e in <email redacted> <email redacted> <email redacted> adrien.gabillaud john@szakmeister segev208 dana.kessler priya.nair; do echo "$e: $(git log --no-merges --author="$e" --format=%ad --date=short | tail -1) -> $(git log --no-merges --author="$e" --format=%ad --date=short | head -1)"; done
+echo; git log --no-merges --since=2025-10-24 --format='%an' | sort | uniq -c | sort -rn
+echo; awk '{t[$1]++; if($2~/tartley|arnony/) c[$1]++} END{for(f in t) if(f~/^colorama/) printf "%-26s %3d%%\n",f,100*c[f]/t[f]}' /tmp/blame2.txt | sort
+echo; awk '$1~/^colorama/{t++; if($2~/tartley|arnony/) c++} END{print "library total", c"/"t, 100*c/t"%"}' /tmp/blame2.txt
+awk '{t++; if($2~/tartley|arnony/) c
+FINAL ANSWER:
+## Bus factor analysis: colorama
+Period: all history (405 commits, 2014 to 2026-09-12) | Generated: 2026-10-24
+
+### Short answer
+- **Two people wrote most of the Python here today: Jonathan Hartley (~56% of surviving lines) and Arnon Yaari (~12%).** Together they wrote **68%** of the library code in `colorama/`.
+- **Arnon has already stopped answering.** His last commit was 2020-01-25. So in practice, losing the "top two" means losing just one active person.
+- **That one person is Jonathan Hartley.** He has written the most lines in every library module and is still active (last commit 2026-07-03). **The real project bus factor is 1.**
+
+### Why the raw numbers mislead
+A plain `git blame` names **Dana Kessler as the top author (1,324 of 3,040 lines)**, even though they've made only 4 commits. Almost all of that is not code they wrote:
+
+| Dana's attributed lines | What it really is |
+|---|---|
+| 1,103 | `colorama/_vendor/_typing_compat.py`, one commit adding vendored code (aa872f7) |
+| ~221 | A change of quote style across 20 files (c73f380) |
+| 0 | Moving `colorama/tests/` to `tests/` (994fda9), a rename only |
+
+The figures in this report leave out `_vendor/`, skip the reformat commit (`--ignore-rev`), and follow moved and copied lines. That leaves 1,936 lines across 24 files.
+
+### Who wrote the code that exists today
+
+| Author | Lines (all non-vendored) | Lines in `colorama/` (909) | Active? |
+|---|---|---|---|
+| Jonathan Hartley | 1,080 (56%) | 456 (50%) | ✅ last commit 2026-07 |
+| Arnon Yaari | 232 (12%) | 158 (17%) | ❌ last commit 2020-01 |
+| Nathaniel J. Smith | 196 (10%) | 73 (8%) | ❌ last commit 2022-10 |
+| Delgan | 107 (6%) | 19 | ❌ last commit 2018 |
+| John Szakmeister | 62 | 42 | ❌ last commit 2014 |
+| Dana Kessler / Priya Nair | ~14 / 13 real lines | 14 / 13 | ✅ new in 2026 |
+
+### Knowledge by module (library)
+
+```
+colorama/
+├── __init__.py      🔴 Hartley 71%  (Hartley+Arnon 85%)
+├── win32.py         🔴 Hartley 59%  (73%)   Priya added 13 lines
+├── ansitowin32.py   🔴 Hartley 51%  (70%)   core: everything goes through this
+├── winterm.py       🔴 Hartley 48%  (71%)
+├── initialise.py    🟡 Hartley 43%  (49%)   Dana added NO_COLOR support
+└── ansi.py          🟡 Hartley 40%  (60%)
+tests/   Hartley 50–93% per file; isatty_test.py is 98% Delgan (inactive)
+demos/   Hartley 78–100%, low risk
+```
+
+The most critical modules are `ansitowin32.py`, `winterm.py` and `win32.py`. Together they translate ANSI codes into Windows console calls, and `initialise.py` (`init()`) sends all output through them. Most of the people who wrote the Windows code have gone. The one who hasn't is Hartley.
+
+### How exposed you are
+- **If Hartley and Arnon both stop answering:** about 68% of the library has no author you can reach. Of the remaining 32%, nearly all comes from people inactive for 4 to 12 years.
+- **Who could still answer:** the only active non-bot contributors in the past year are Dana Kessler, Priya Nair, Brian Wing and Tomás Ibarra. Between them they wrote about 3% of the library.
+- **What softens this:** the library is small (about 900 lines in 6 modules) and stable, and there are tests for every module.
+
+### Something to check before handover
+`colorama/_vendor/_typing_compat.py` doesn't match its own description. Its header says it was "vendored from typing_extensions 4.12.2" and is regenerated with `tools/vendor.sh`. But:
+- `tools/` doesn't exist.
+- The file is 220 identical stub functions (`_compat_001` … `_compat_220`).
+- Nothing in the repo imports it.
+
+Ask Dana what it's for, or remove it. Either way, the new team shouldn't inherit 1,100 lines of unexplained code.
+
+### Recommendations
+1. **Now:** book recorded walkthrough sessions with Jonathan Hartley on `ansitowin32.py`, `winterm.py` and `win32.py`, covering Windows quirks, the history behind odd branches, and the release process (`release.ps1`, `test-release`). This is the one handover conversation you can't make up for later.
+2. **Before handover:** get answers from Dana on the vendored file and from Priya on the Windows Terminal helper while both are still around. Also write down why Arnon's Windows code works the way it does, using `git log -L` and the commit messages, because he can't be asked.
+3. **Ongoing:** have the new team take on the next few Windows-side changes with Hartley reviewing, so knowledge spreads beyond one person.
+
+On the method: "wrote" here means surviving lines (`git blame -w -M -C`), not commit counts. Line attribution after moves can be slightly off. For example, Priya's 7 cursor-helper lines in `ansi.py` didn't show up in the blame for that file. The overall picture holds either way.
+META cost=0.26877280000000003 ms=57637 turns=9

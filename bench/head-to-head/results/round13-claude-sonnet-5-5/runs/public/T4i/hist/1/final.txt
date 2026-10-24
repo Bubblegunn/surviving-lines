@@ -1,0 +1,24 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__file_history", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4i-hist-1/repo", "path": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4i-hist-1/repo", "file": "lib/index.js", "limit": 30}
+FINAL ANSWER:
+I can't name a specific reviewer. Every author of this file is inactive (no commits in the last 6 months), so the history doesn't point to anyone who is still working on it.
+
+- **Blame is misleading here.** The tool says Fiona Formatter owns 89.9% of the lines. That comes from commit `62628c0`, the 4-space and double-quote reformat, which rewrote all 214 lines. The repo already lists that commit in `.git-blame-ignore-revs`, but the tool doesn't use that file. Fiona isn't a meaningful domain expert.
+- **The people who shaped the logic:**
+  - **Douglas Christopher Wilson** made most of the substantive 2017 changes: dynamic `Vary: Access-Control-Request-Headers`, the missing-`methods` fix and lint work. His last commit was in 2021-09.
+  - **Troy Goode** is the original author. He wrote the early `Vary` handling and the 2016 fixes, and made the recent "annotate handlers" commit (`b2005d9`, 2026-04-10).
+  - Others contributed single features: Alejandro Caravaca Puchades (regexp and array `origin`), Benjamin Eidelman (Safari preflight workaround) and Tomek Kopczuk (`Vary: Origin` for regexps).
+
+I'd ask whoever currently maintains the repo, and I'd check who has recently merged PRs or been active in issues on the remote, since local history doesn't show that. Troy is the best fallback because of their recent commit and original authorship.
+
+Because no one currently owns this file, add tests for any behavior you change, especially the `Vary` and preflight paths. That's where past fixes clustered.
+
+I can run `git blame --ignore-revs-file .git-blame-ignore-revs` to get ownership that skips the reformat, if you want a more accurate picture.
+META cost=0.060536400000000004 ms=11362 turns=4

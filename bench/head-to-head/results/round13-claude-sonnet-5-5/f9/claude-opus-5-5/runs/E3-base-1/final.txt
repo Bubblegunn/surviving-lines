@@ -1,0 +1,37 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | wc -l && git log -3 --format='%h %an <%ae> %s' && ls -a; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: cat > /tmp/blame.sh <<'EOF'
+mode="$1"
+git ls-files | while read f; do
+  case "$f" in *.*) ext="${f##*.}";; *) ext="(none)";; esac
+  git blame --line-porcelain $mode -- "$f" | awk -v e="$ext" '/^author /{a=substr($0,8)} /^author-mail /{print e "\t" a " " substr($0,13)}'
+done | sort | uniq -c | sort -k2,2 -k1,1nr
+EOF
+echo RAW; sh /tmp/blame.sh ""; echo; echo IGNORE-REFORMAT; sh /tmp/blame.sh "--ignore-rev 62628c0"; git shortlog -sne --all
+FINAL ANSWER:
+For each file type, the person who owns the most surviving lines (from `git blame` across all 18 tracked files):
+
+| Type | Owner by raw blame | Owner if the reformat commit is skipped |
+|---|---|---|
+| `.js` (lib + tests) | **Fiona Formatter**: 1016 of ~1203 lines | **Troy Goode**: 520 (473 + 47 under two emails), then Douglas Christopher Wilson 339, then Fiona 237 |
+| `.md` (README, HISTORY) | **Troy Goode**: 104 | same |
+| `.yml` (.eslintrc, workflows) | **Douglas Christopher Wilson**: 117 | same |
+| `.json` (package.json) | **Douglas Christopher Wilson**: 20 | same |
+| `.gitignore` | **Douglas Christopher Wilson**: 4 of 5 | same |
+| no extension (LICENSE) | **Douglas Christopher Wilson**: 17 of 22 | same |
+
+There are two caveats, both affecting the `.js` row only:
+
+- **The reformat commit skews the result.** The latest commit, `62628c0` ("reformat js with 4-space indent and double quotes"), puts Fiona Formatter on most JS lines even though nothing was really authored there. Telling `git blame` to skip that commit gives JS back to Troy Goode. Fiona still keeps 237 lines, because blame can't match lines where the quote style changed. So Troy's real share is likely higher than 520. If you want this handled automatically, you could add `62628c0` to a `.git-blame-ignore-revs` file.
+- **Troy Goode appears under two emails.** I counted `<email redacted>` and `troy@laptop.example` as the same person; the repo has no `.mailmap` saying so. Counted separately, `<email redacted>` alone still wins JS with 473.
+
+In the other file types, the second-place owners are:
+- **`.md`:** Jon Church (72) and Douglas Christopher Wilson (67).
+- **`.yml`:** Íñigo Marquínez Prado (94).
+- **`.json`:** Troy Goode (12).
+META cost=0.135349 ms=18359 turns=3

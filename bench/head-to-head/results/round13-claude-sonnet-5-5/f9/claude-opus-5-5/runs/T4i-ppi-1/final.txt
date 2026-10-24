@@ -1,0 +1,44 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4i-ppi-1/repo; git ls-files | head -50; echo ---; cat .git-blame-ignore-revs; echo ---; git log --no-merges --pretty='%h %an <%ae> %ad %s' --date=short -- lib/index.js | head -60; echo ---; git log --no-merges --pretty='%an' -- lib/index.js | sort | uniq -c | sort -rn
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4i-ppi-1/repo; git show b2005d9 --stat; git show b2005d9 | head -60; echo ---; git blame -w --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --no-merges --since=2025-10-24 --pretty='%h %an %ad %s' --date=short | head; echo; git log --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head; git log -1 --format=%ad --date=short --author="Douglas Christopher Wilson"
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T4i-ppi-1/repo; git log -1 --format='%ad %s' --date=short --author=<email redacted>; git log --no-merges --since=2024-10-24 --pretty='%an <%ae>' | sort | uniq -c | sort -rn; git blame -w --ignore-revs-file .git-blame-ignore-revs lib/index.js | grep -c b2005d9
+FINAL ANSWER:
+## Who should review `lib/index.js`
+
+The simple answer is "Troy Goode". Git history doesn't support that, for two reasons.
+
+**1. The obvious tools point at the wrong person.**
+- **Plain `git blame`** credits **Fiona Formatter** with 214 of 238 lines. That comes from the 2026-04-12 reformat commit (`62628c0`), which changed formatting only. It's listed in `.git-blame-ignore-revs`.
+- **Blame that skips the reformat** credits **Troy Goode** with 159 lines (about 67%). But 12 of those lines come from `b2005d9` ("lib: annotate handlers", 2026-04-10). That commit only adds `// checked` to the ends of function signatures. It was made under a different email (`troy@laptop.example`) than Troy's usual `<email redacted>`, which hasn't committed since **2019-05-27**. Treat that 2026 activity as unverified: it doesn't mean the original author is still active or still knows the code.
+
+**2. The people who actually wrote the logic have mostly left.**
+
+| Contributor | Commits to file | Blame lines* | Last active |
+|---|---|---|---|
+| Troy Goode (original author) | 29 | 159 | 2019 (gmail address) |
+| Douglas Christopher Wilson | 4 | 22 | 2021-09 |
+| Alejandro Caravaca Puchades | 4 | 12 | 2015 |
+| 20+ others | 1–3 each | ≤7 each | mostly 2013–2021 |
+
+\* Ignoring the reformat commit and whitespace.
+
+**Bus factor for this file: 1.** Nobody who contributed meaningfully to its logic has committed in the last 12 months. This is also the package's only source file, the `main` entry that every test loads. So it's the riskiest place to have no clear expert.
+
+### Recommended reviewers
+1. **Ulises Gascón** and **Jon Church**: the most active maintainers right now. Ulises cut the 2.8.6 release in Jan 2026, and Jon did the docs and FAQ work. Neither has touched `lib/index.js` directly, but they own releases and will know the expected behaviour.
+2. **Douglas Christopher Wilson**: the strongest expert on this file still around (most commits overall, and the Vary/preflight logic). Add him if you can reach him, but don't expect a quick reply; his last commit was in 2021.
+3. **Troy Goode**: ask through his known `<email redacted>` / GitHub identity. Don't assume the `troy@laptop.example` commits are his.
+
+### Recommendations
+- **Now:** Have at least one current maintainer review, and rely on the tests (`test/test.js`, `test/vary.js`, `test/issue-2.js`) rather than one person's memory.
+- **Short-term:** Find out who made `b2005d9`. If the `// checked` annotations serve no purpose, consider removing them in your change.
+- **Ongoing:** Once this lands, you become one of the few recent people with real knowledge of this file. Writing down the origin and Vary handling would help the next person.
+
+I gathered this data directly with `git log` and `git blame` instead of launching the contributor-analyzer agent, because the repo has only one source file. I only analysed `lib/index.js`, not a project-wide report.
+META cost=0.1987812 ms=31705 turns=6

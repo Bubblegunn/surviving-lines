@@ -1,0 +1,51 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls scripts && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ1-bf-2/repo --dry-run --no-github
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files '*.py' | wc -l; git log -1 --format=%ci; git log --reverse --format='%h %ci %an' | head -2; echo ---; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15
+ - Bash: git log --format='%h %ci %an <%ae> %s' --author='Kessler' | head; echo ---; git log --since=2025-09-12 --format='%ci %an' | awk '{print $4,$5,$6}' | sort | uniq -c | sort -rn; echo ---; git log -3 --format='%ci %an %s' -- . ; echo ---; git log --author=Hartley -1 --format='%ci'; git log --author='Arnon\|wiggin' -1 --format='%ci'; echo; for a in Kessler Hartley; do echo $a; done; git ls-files '*.py'
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain "$f" | awk -v f="$f" '/^author /{sub(/^author /,"");c[$0]++} END{for(a in c)print f"\t"a"\t"c[a]}'; done | sort -k1,1 -k3,3nr | awk -F'\t' '{t[$1]+=$3; if(!($1 in top)){top[$1]=$2; tc[$1]=$3}} END{for(f in top)printf "%-45s %-18s %d/%d\n",f,top[f],tc[f],t[f]}' | sort
+ - Bash: git show --stat --format=%s c73f380 | tail -3; git show --stat --format=%s 994fda9 | tail -2; echo ---; for f in $(git ls-files '*.py' | grep -v _vendor); do git blame -w -M -C --ignore-rev c73f380 --line-porcelain "$f" | grep '^author '; done | sort | uniq -c | sort -rn | head -8; echo; git ls-files '*.py' | grep -v _vendor | xargs cat | wc -l; head -5 colorama/_vendor/_typing_compat.py
+FINAL ANSWER:
+**Short answer:** Jonathan Hartley and Arnon Yaari wrote most of the Python code that matters. Losing them is a real but moderate risk. The bigger problem is that the headline numbers can mislead you.
+
+I ran the busfactor skill with `--dry-run --no-github`. I then cross-checked it with `git blame`, because the skill's output on its own was poor. The skill did not write `.github/CODEOWNERS` or `.github/ownership.json`. I did not edit anything in the repo.
+
+**Why the raw numbers mislead**
+- **Dana Kessler looks like the top author by lines (1,324 of about 3,000).** Of those, 1,103 are one vendored file, `colorama/_vendor/_typing_compat.py`. A header comment calls it a vendored copy of `typing_extensions` that should not be edited by hand. A mass quote-style reformat (`c73f380`, 221 lines) also moves line credit. Neither is authored logic.
+- **Commit counts split people across identities.** Arnon Yaari appears as "Arnon Yaari" and "wiggin15", on three different emails, with about 114 commits in total. Hugo van Kemenade appears under several identities too.
+
+**Who wrote the code after discounting those two effects (1,935 lines, excluding the vendored file)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Jonathan Hartley | 1,080 | about 56% |
+| Arnon Yaari | 232 | about 12% |
+| Nathaniel J. Smith | 196 | about 10% |
+| Delgan | 107 | about 6% |
+| John Szakmeister | 62 | about 3% |
+
+Hartley and Yaari together account for about two thirds of the code. The repo history starts with a bulk import on 2014-04-17 that adds 30 files at once. Ownership in the early years may therefore be under-attributed to whoever did the import.
+
+**How exposed you are**
+- **Hartley:** He is the root author of the core library, and `git blame` credits him with the largest share. His last commit was 2026-07-03, so he is somewhat active.
+- **Yaari:** He last committed on 2026-05-13, about four months before the newest commit. He is the second-largest author and the owner of `initialise.py` and `demo07.py`.
+- **The active maintainers have little history here.** The last 12 months show commits from Dana Kessler (4), Priya Nair (2), Brian Wing (2), Tomás Ibarra (1) and Hartley (2). The people who have actually been working on it recently wrote only a small share of the code.
+- **Orphaned areas:** The skill flagged `.github/` as orphaned. Its last authors are Hartley and Hugo van Kemenade, and nobody active has worked on it.
+- **Individual files:** Per-file top authors show who knows what. `win32.py` and `ansi.py` are mostly credited to Jurko and Zearin (193 and 109 lines total). I didn't check whether either is still active, and neither appears in the last 12 months of commits. `isatty_test.py` and `utils.py` mostly belong to Delgan, who is also not recently active.
+
+**Problems with the skill's own output**
+- The suggested CODEOWNERS lists `dana.kessler@northwind.example` and `<email redacted>` as the fallback owners. That is a poor basis for ownership, for the vendored-code reason above.
+- With `--no-github`, the skill can't merge one person's identities, so it likely under-reports risk.
+- Its roster of who counts as active is based only on commit dates. You should check it against who still works with you.
+
+**Suggested next steps**
+1. Ask Hartley and Yaari for a walkthrough of `ansitowin32.py`, `winterm.py` and `initialise.py` before the handover.
+2. Have the new team read Delgan's tests, since `tests/isatty_test.py` and `tests/utils.py` are mostly his work and he isn't recently active.
+3. Don't treat Dana Kessler's authorship numbers as expertise on the library internals.
+4. If you want a CODEOWNERS file, I can generate it with a hand-corrected roster and the vendored file excluded.
+META cost=0.0928715 ms=31147 turns=8

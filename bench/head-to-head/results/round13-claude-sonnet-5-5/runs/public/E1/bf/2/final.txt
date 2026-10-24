@@ -1,0 +1,52 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/E1-bf-2/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log --no-merges --format='%ae|%ad' --date=short | awk -F'|' '{c[$1]++; if(!l[$1])l[$1]=$2; f[$1]=$2} END{for(a in c)print c[a],a,"last="l[a],"first="f[a]}' | sort -rn | head -15; git ls-files | wc -l; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head; git log -1 --format=%ad --date=short
+ - Bash: git ls-files; git log --no-merges --since=2025-04-12 --format='%ae' --name-only | grep -v '^$' | paste -sd' ' | head -c 1500; echo; git log --format='%an <%ae>|%s' -3 -- lib; git log --format='%ae %ad %s' --date=short -4 | cat
+ - Bash: for p in lib test .github README.md HISTORY.md package.json; do echo "== $p"; git log --no-merges --format='%ae' -- $p | sort | uniq -c | sort -rn | head -4; echo "-- active (since 2025-04-12):"; git log --no-merges --since=2025-04-12 --format='%ae' -- $p | grep -v bot | sort | uniq -c | sort -rn | head -4; done
+FINAL ANSWER:
+# Bus factor analysis
+
+**The short answer:** the code that matters, `lib/` and `test/`, depends on **Troy Goode**. Treat that as inferred, because commit volume only approximates knowledge. The script's output is also unreliable on this repo, for the reasons below.
+
+## Findings
+
+| Zone | Historical authors | Active in the last 12 months | Verdict |
+|---|---|---|---|
+| `lib/index.js` (the whole library) | Troy Goode (32 of about 45 commits), Alex Puchades, Doug, Siyfion | Troy (the `troy@laptop.example` identity) and Fiona Formatter (a mechanical reformat) | Bus factor 1 |
+| `test/` | Troy (31), Doug (23) | Troy and Fiona (same two commits) | Bus factor 1 |
+| `.github/` (CI, CodeQL, Scorecard) | Doug (10), dependabot | Ulises Gascón, Ignacio Mangas, Sebastián Bjohan | Healthy: 3 active people |
+| `README.md` | Troy (29) | Jon Church (3), plus occasional drive-by contributors | Healthy |
+| `package.json`, `HISTORY.md` | Doug (68 on `package.json`) | Ulises, Bjohan and others | Healthy |
+
+## The main person: Troy Goode
+
+- Troy wrote most of the library and tests. They appear under two emails: `<email redacted>` (93 commits, 2013–2019) and `troy@laptop.example` (2 commits, April 2026).
+- I assumed those two emails are the same person. I couldn't confirm it, since I ran with `--no-github`. If they are different people, `lib/` and `test/` are closer to **orphaned** than to bus factor 1.
+- The only recent work in `lib/` and `test/` is Troy's two commits from 2026-04-10 and one reformat commit.
+
+## Orphaned knowledge
+
+- **Doug** (`<email redacted>`) is the second-largest contributor: 143 commits, including 68 on `package.json` and 23 on `test/`. His last commit was 2021-09-07, so he is inactive.
+- Alex Puchades, Siyfion and the other early contributors have also been inactive for years.
+- Anything that only Doug understood, such as the release and packaging history, is orphaned. It no longer shows up in the active-owner list.
+
+## Caveats
+
+- **Fiona Formatter is not a real owner.** The latest commit (`style: reformat js with 4-space indent and double quotes`) is a mechanical reformat. It makes Fiona look like an expert on `lib/` and `test/`, and the script then lists Fiona first in the fallback `*` owner line. Don't act on that.
+- **The tool's output is thin and suspect.** The dry run emitted only a fallback rule and a `/.github/` rule, and no rule for `lib/` or `test/`. It also flagged the history as imported, because the first commit has 8 files, which is more than 25% of the 18 tracked files. Treat that as an artifact of a tiny repo. I didn't verify it against the original history.
+- **I didn't write `.github/CODEOWNERS`.** I only ran `--dry-run`, so the repo is unchanged.
+- **The evidence is thin.** There are 18 tracked files and about 140 recent-era commits, and most dependabot activity is excluded. Commit counts are a proxy for knowledge, not a measure of it.
+
+## Recommendations
+
+1. Confirm with Troy whether `troy@laptop.example` is theirs. Then ask them to review `lib/` and `test/`.
+2. Get one of the active maintainers (Ulises Gascón, Jon Church or Sebastián Bjohan) to take shared ownership of `lib/index.js`. It is a single file, so this is cheap.
+3. Document anything Doug alone knew about releases and packaging.
+4. I can write the CODEOWNERS file with the owners corrected by hand. I can also add an identity mapping for the Troy emails and exclude Fiona's reformat commit, then re-run the tool.
+META cost=0.0846984 ms=26857 turns=7

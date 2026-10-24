@@ -1,0 +1,63 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; for f in time.go version7.go; do echo "=== $f"; $SL --reviewers $f --merge-identities; done; echo "=== SQL"; grep -l "database/sql" *.go; $SL --reviewers sql.go --merge-identities
+ - Bash: sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; ls sql.go 2>&1 | head -1; for f in time.go version7.go sql.go; do echo "=== $f"; sl --reviewers $f --merge-identities; done; echo "=== null.go"; sl --reviewers null.go --merge-identities
+ - Bash: sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; sl --reviewers database_sql.go --merge-identities | grep -v '^rows are\|^bus factor ='
+FINAL ANSWER:
+Short answer: the people who wrote most of these files have mostly left. Only two people with lines in `version7.go` have committed in the last year. Nobody with lines in `time.go` or the SQL code has.
+
+The numbers come from `surviving-lines --reviewers`. They are as of 2026-06-17, the date of the latest commit, and "active" means a commit in the 365 days before that. I treated the SQL code as `database_sql.go` and `null.go`, the two files that use `database/sql`. They were counted separately, so check that this is the SQL code you meant.
+
+## time.go (134 non-blank lines, 152 counting blank lines)
+| Person | Lines | Share | Last commit at this path |
+|---|---|---|---|
+| Paul Borman | 95 (111 with blank) | 70.9% (73.0%) | 2016-02-29, inactive |
+| MikeWang | 12 | 9.0% | 2023-11-24, inactive |
+| Alexander Rowe | 10 | 7.5% | 2025-02-18, inactive |
+| Nicu Micle | 8 | 6.0% | 2024-11-14, inactive |
+
+- **Top owner:** Paul Borman's last commit anywhere in the repo was 2016-11-28.
+- **Active people:** none of the top four. Alexander Rowe's last commit anywhere is 2026-03-09, so they have left this file, not the project.
+- **Review risk:** the file is orphaned: the top owner is inactive and nobody active holds 20%.
+- **Bus factor:** 1, on both line counts.
+- **Excluded:** commit `c50c42f` ("Normalize line endings") touched all 152 lines. It was ignored, because it only changed whitespace.
+- **Moved lines:** 18 of 134 lines (13.4%) were moved here from another path. The credit goes to the people who wrote them.
+
+## version7.go (103 non-blank lines, 117 counting blank lines)
+| Person | Lines | Share | Last commit at this path |
+|---|---|---|---|
+| MikeWang | 84 (95 with blank) | 81.6% (81.2%) | 2024-01-12, inactive |
+| Mei Chen | 10 | 9.7% | 2025-08-02, active |
+| Paul Borman | 4 | 3.9% | no commit here, inactive |
+| Ravi Menon | 2 | 1.9% | 2026-05-05, active |
+
+- **Top owner:** MikeWang wrote the original v6/v7 code and the monotonicity fix, but their last commit anywhere was 2024-07-02. The file is orphaned.
+- **Who to ask:** Mei Chen is the most useful reviewer, since they hold the most lines among active people and wrote the `Time7` accessor. Ravi Menon is the other active contact. Ravi committed Mei's `Time7` change, so those lines are Mei's, and Ravi holds only 2 lines.
+- **Bus factor:** 1, with MikeWang alone at 81.6%.
+
+## SQL code
+**`null.go` (101 non-blank lines, 118 counting blank lines):**
+- Samuel Roth holds 91 lines (90.1%; 107 with blank, 90.7%) from a single commit, `ae25fc6`, on 2021-07-12.
+- Paul Borman holds 10 lines (9.9%).
+- Both are inactive, so the file is orphaned with a bus factor of 1.
+
+**`database_sql.go` (48 non-blank lines, 59 counting blank lines):**
+- Justin Overfelt holds 19 lines (39.6%; 26 with blank, 44.1%).
+- Andrew Stone holds 10 lines (20.8%).
+- David E. Wheeler holds 7 lines (14.6%).
+- All six authors have been inactive since 2017 at the latest, so the file is orphaned.
+- No one person holds half of it. The bus factor is 2.
+- Tool output says all 48 lines were moved here from `sql.go`. The credit goes to the original authors.
+
+## What this means
+- Nobody wrote the SQL code or `time.go` and is still around, so you'll be reviewing them without a past author to ask.
+- The only people with live context on any of it are Mei Chen and Ravi Menon, on `version7.go`.
+- This counts surviving lines, not understanding. Someone inactive in this repo may still answer a question, and reviewing or mentoring leaves no lines behind.
+- Alex Rowe is the single active person in the repo overall, by the tool's repository-wide count. The tool also suspects "Alexander Rowe" and "Alex Rowe" are the same person, but that is a guess from names and addresses and I haven't merged them.
+- Paul Borman appears under several addresses, which I also left unmerged. The tool found no same-person duplicates inside these four files.
+META cost=0.122941 ms=27741 turns=6

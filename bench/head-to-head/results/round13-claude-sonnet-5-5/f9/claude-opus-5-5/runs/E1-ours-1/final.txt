@@ -1,0 +1,72 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E1-ours-1/repo; SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL --group-by dir --merge-identities 2>&1 | head -150; echo ======; $SL --files --merge-identities 2>&1 | head -80
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E1-ours-1/repo; sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; sl --group-by dir --merge-identities 2>&1 | head -150; echo '======'; sl --files --merge-identities 2>&1 | head -80
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E1-ours-1/repo; sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; git show --stat --format='%h %an <%ae> %ad %s' 62628c0 | head; git log -3 --format='%h %an <%ae> %ad %s'; echo ===; sl --without "Troy Goode" --merge-identities 2>&1 | head -40
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E1-ours-1/repo; node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --without "Troy Goode" --merge-identities 2>&1 | head -40; git log -1 --format='%h %an %ad' --author=<email redacted>; git log -1 --format='%h %an %ad' --author="Douglas"
+FINAL ANSWER:
+**Short answer:** the person most of this project depends on is **Troy Goode**. He wrote most of the core library (`lib/index.js`) and most of the tests. One caveat matters: he only counts as "active" if two recent commits from `troy@laptop.example` are really his. The tool guesses they are, but nobody has confirmed it.
+
+All numbers come from `surviving-lines`, which counts the lines each person wrote that are still in the code (using git blame). I used the pre-computed brief plus `--group-by dir`, `--files` and `--without "Troy Goode"`. Here, **bus factor** means the smallest number of people whose surviving lines add up to 50% of the code.
+
+## Whole repository (1,662 non-blank lines; 1,985 counting blank lines)
+
+| Owner | Non-blank lines | Counting blank lines | Commits |
+|---|---|---|---|
+| Troy Goode (2 addresses, merge is a guess) | 649 (39.0%) | — | 95 |
+| ↳ <email redacted> only | 605 (36.4%) | 762 (38.4%) | 93 (29.5%) |
+| Douglas Christopher Wilson | 551 (33.2%) | 629 (31.7%) | 143 (45.4%) |
+| Íñigo Marquínez Prado | 80 (4.8%) | 95 (4.8%) | 2 |
+| Jon Church | 59 (3.5%) | 72 (3.6%) | 3 |
+| Sebastian Beltran | 57 (3.4%) | 67 (3.4%) | 2 |
+| Ulises Gascón | 46 (2.8%) | 52 (2.6%) | 3 |
+| 39 more people | 264 (15.9%) | 308 (15.5%) | |
+
+- **Bus factor: 2** (Troy Goode and Douglas Christopher Wilson), on both line counts. It takes 5 people to reach 80%.
+- **Counting only active people: 1, Troy Goode.** "Active" means at least one commit in the 365 days before 2026-04-12, the date of the latest commit (not today). This figure only uses the lines of those 9 active people.
+- **Activity:** 9 of 44 people committed in that window and hold 51.7% of the lines. The other 48.3% belongs to people with no commits then; the largest is Douglas Christopher Wilson at 33.2%.
+
+## Areas that depend on one person
+
+| Area | Bus factor | Who | Finding |
+|---|---|---|---|
+| `lib/` (the core, 214 lines) | 1 | Troy Goode, 144 lines (67.3%) | **Single point of failure** |
+| `test/` (820 lines) | 1 | Troy Goode, 420 (51.2%); Douglas Christopher Wilson 344 (42.0%) | Single point of failure (he is the only active owner) |
+| Root files (323 lines) | 2; 1 among active people | Douglas Christopher Wilson 95 (29.4%), Troy Goode 85 (26.3%) | Single point of failure (Troy is the only active owner) |
+| `.github/` (305 lines) | 2; 2 among active people | Douglas Christopher Wilson 92 (30.2%), Íñigo Marquínez Prado 80 (26.2%) | **Orphaned**: the top owners are gone. Sebastian Beltran and Ulises Gascón are the active ones. |
+
+"Single point of failure" and "orphaned" are separate findings, not two levels of the same risk.
+
+**Files where one person holds 90% or more** (at least 20 lines):
+- `.github/workflows/scorecard.yml`: Íñigo Marquínez Prado, 98.4%, inactive
+- `.github/workflows/codeql.yml`: Sebastian Beltran, 100%
+- `test/vary.js`: Troy Goode, 100%
+
+`LICENSE` is also at 94.4% (Douglas Christopher Wilson) but is under 20 lines.
+
+**Orphaned files** (top owner inactive, and no active person holds 20%): 6 of 18, which is 7.8% of the lines. The main ones are `scorecard.yml`, `HISTORY.md` and `LICENSE`.
+
+## If Troy Goode left
+- He holds 649 lines (39.0%) and is the top owner of 6 files.
+- Two files would have nobody left who knows them: `lib/index.js` (the best remaining owner is Douglas Christopher Wilson at 9.3%) and `test/vary.js` (nobody else has any lines).
+- The bus factor would drop from 2 to 1, counted on the remaining lines. Douglas Christopher Wilson would inherit the most: 399 lines in 8 files.
+- This counts lines, not who actually understands the code.
+
+## Who to ask
+- **Troy Goode** is the main source of knowledge (39.0% of the lines). His last commit from the gmail address was in 2019, though.
+- **Douglas Christopher Wilson** is second (33.2%) and has had no commits since 2021.
+- For `.github/`, the practical contacts are **Sebastian Beltran** and **Ulises Gascón**, who are both active.
+
+## Caveats
+- **Troy's "active" status rests on a guess.** It comes only from two commits by `troy@laptop.example` on 2026-04-10, which hold 44 lines. The tool calls the match strong, but it is based on the name alone and isn't confirmed. If that isn't him, `lib/` has no active owner at all and is orphaned rather than a single point of failure. Can you confirm whether it's the same person?
+- **The latest commit was set aside.** Commit 62628c0, by "Fiona Formatter", only reformatted code: it rewrote 1,016 lines in 4 files. Its lines are credited back to the people who wrote them. Without that correction, Troy has 554 lines (33.3%) and Douglas has 376 (22.6%), and the bus factor is still 2. Seven more commits looked mechanical but were kept in the counts, including 739dc11 "docs: reformat license".
+- **Other duplicate names:** Alejandro Caravaca Puchades also appears as `alex94puchades` (same email, 30 lines) and the tool counts them as one person. I haven't written a `.mailmap` file.
+- **Left out:** the dependabot bot (10 lines, 11 commits). Lines in commits that GitHub made for someone else (19 commits) are credited to the actual authors.
+- **History:** it starts on 2013-01-30 with an imported commit covering 44% of the files. The table covers work from that point on, so older lines go to whoever did the import.
+- Line counts don't measure review work, design, or who understands the code.
+META cost=0.3004278 ms=47916 turns=7

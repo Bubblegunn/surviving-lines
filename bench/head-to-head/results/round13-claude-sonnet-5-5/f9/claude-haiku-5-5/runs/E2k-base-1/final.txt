@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad' --date=short && echo --- && git log --since='2026-03-29' --until='2026-04-13' --format='%h %ad %an <%ae> | %s' --date=short && echo --- && git ls-files | head -100 && git ls-files | wc -l
+ - Bash: git show -w --stat --format='%h %an' 62628c0 | tail -3; echo ---; git show --stat --format='%h %an' b2005d9 02afce3 5317ebe | grep -v '^$'; echo ---; git log --format='%an' | sort | uniq -c; echo ---; git ls-files -z | xargs -0 -n1 -I{} sh -c 'git blame --line-porcelain HEAD -- "{}" 2>/dev/null | grep -E "^author |^author-mail "' | paste - - | sort | uniq -c | sort -rn
+ - Bash: git blame --line-porcelain HEAD -- $(git ls-files) | grep -E '^[0-9a-f]{40} ' | cut -c1-7 | sort | uniq -c | grep -E ' (62628c0|b2005d9|02afce3|5317ebe) '; echo ---; git blame --line-porcelain HEAD -- $(git ls-files) | grep -E '^author ' | grep -E '^author (Troy Goode|Vansh Sharma)$' | sort | uniq -c; echo ---; git log --format='%h %an <%ae>' --author='Troy' ; git log --format='%h %an <%ae>' --author='Vansh'
+ - Bash: git ls-files -z | xargs -0 -n1 sh -c 'git blame --line-porcelain HEAD -- "$0"' | grep -E '^[0-9a-f]{40} [0-9]+ [0-9]+' | cut -c1-7 | sort | uniq -c | grep -E '(62628c0|b2005d9|02afce3|5317ebe)$'; echo ---; git ls-files -z | xargs -0 -n1 sh -c 'git blame --line-porcelain HEAD -- "$0"' | grep -E '^author (Troy Goode|Vansh Sharma)$' | sort | uniq -c
+FINAL ANSWER:
+**People who committed in the 14 days up to 2026-04-12 (2026-03-29 to 2026-04-12): two, plus one excluded.**
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (2026-04-10)<br>`b2005d9` lib: annotate handlers (2026-04-10) | 261 total across all their history, 37 of them from these two commits (36 from `02afce3`, 1 from `b2005d9`) |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) (2026-04-07) | 1 (the README line) |
+
+- **Troy Goode** committed from two email addresses (`<email redacted>` and `troy@laptop.example`). I counted them once, combining both in the 261.
+- **Fiona Formatter** (`62628c0`, 2026-04-12) is excluded as a formatting-only commit. Its subject is "reformat js with 4-space indent and double quotes", and it changes 291 lines across four files. Note that `git show -w` does not make it empty, because quote changes are not whitespace. Its reformatting is also why `b2005d9`'s 12 changed lines show only 1 surviving line. Fiona's reformat accounts for 1016 lines in the current code, the largest single share, but I left it out as you asked.
+- **Bots:** none committed in the window. The dependabot commits are older.
+
+The line counts come from `git blame HEAD` over the 18 tracked files, attributed by author name.
+META cost=0.0060014 ms=23356 turns=5

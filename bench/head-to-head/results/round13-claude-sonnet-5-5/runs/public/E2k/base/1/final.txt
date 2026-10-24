@@ -1,0 +1,20 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since=2026-03-29T00:00:00 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=iso; echo; git log -3 --format='%h %an %ad' --date=iso
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -e --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail'; done | sort | uniq -c | sort -rn | head -20; git show --stat --format=%h 5317ebe b2005d9 02afce3 | cat
+ - Bash: for f in $(git ls-files); do git blame --ignore-rev 62628c0 -e --line-porcelain -- "$f" 2>/dev/null | grep '^author-mail'; done | grep -iE 'vansh1811|gmail.com>' | sort | uniq -c | grep -E 'vansh|troy'
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), after setting aside the formatting commit and bots.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (adds `test/vary.js`)<br>`b2005d9` lib: annotate handlers (`lib/index.js`) | **642**, counting both of Troy's identities |
+| **Vansh Sharma** | `5317ebe` docs: replace `app.del()` with `app.delete()` in README example (#411) | **1** |
+
+- **Troy Goode:** Git lists Troy under two emails. `troy@laptop.example` is the author of the two window commits, and 47 lines from those commits survive. `<email redacted>` is the same name, and 595 older lines survive under it. I counted them as one person, which gives 642. If you only want lines from the window commits, it's 47.
+- **Excluded:** `62628c0` (Fiona Formatter, a reformat to 4-space indent and double quotes) is formatting-only. I ran the line counts with git blame ignoring that commit, so the reformatted lines are credited to their original authors, not to Fiona. No bot commits fell inside the window.
+META cost=0.048987699999999995 ms=13960 turns=4

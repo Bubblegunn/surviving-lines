@@ -1,0 +1,58 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files '*.py' | wc -l && git ls-files '*.py' && git log --oneline | wc -l && git shortlog -sne HEAD | head -20 && cat .mailmap 2>/dev/null
+ - Bash: for f in $(git ls-files '*.py'); do git blame -w -M -C -C --line-porcelain HEAD -- "$f" | sed -n 's/^author-mail //p' | sed "s|^|$f |"; done > /tmp/blame.txt; wc -l /tmp/blame.txt; awk '{print $2}' /tmp/blame.txt | sort | uniq -c | sort -rn | head -25; echo; for e in $(awk '{print $2}' /tmp/blame.txt | sort -u); do echo "$e: $(git log --format='%an' --author="${e//[<>]/}" | sort -u | tr '\n' ';')"; done
+ - Bash: grep dana /tmp/blame.txt | awk '{print $1}' | sort | uniq -c | sort -rn; echo; git log --format='%h %ad %an <%ae> | %s' --date=short --author=dana --author=priya --stat | head -80; echo; wc -l $(git ls-files '*.py') | sort -rn | head
+ - Bash: head -15 colorama/_vendor/_typing_compat.py; cat colorama/_vendor/__init__.py; echo ---; for f in $(git ls-files '*.py' | grep -v _vendor); do git blame -w -M -C -C --ignore-rev c73f380 --line-porcelain HEAD -- "$f" | sed -n 's/^author-mail //p' | sed "s|^|$f |"; done > /tmp/blame2.txt
+norm(){ sed -e 's/<<email redacted>>/<<email redacted>>/' -e 's/<<email redacted>>/<<email redacted>>/'; }
+echo "ALL non-vendored:"; awk '{print $2}' /tmp/blame2.txt | norm | sort | uniq -c | sort -rn | head -12; wc -l < /tmp/blame2.txt
+echo "LIBRARY only (colorama/):"; grep '^colorama/' /tmp/blame2.txt | awk '{print $2}' | norm | sort | uniq -c | sort -rn | head -10
+ - Bash: for a in tartley 'arnony\|wiggin15' njs Delgan\|adrien szakmeister Segev dana priya; do echo "$a: $(git log --format=%ad --date=short --author="$a" | tail -1) .. $(git log --format=%ad --date=short --author="$a" | head -1), $(git log --oneline --author="$a" | wc -l) commits"; done; git log --format='%ad %an' --date=short | sed -n '1,15p'
+FINAL ANSWER:
+## Who wrote the Python code
+
+Jonathan Hartley and Arnon Yaari wrote most of it. Excluding vendored code and formatting-only changes, they account for about two-thirds of every line that exists today.
+
+| Author | Library (`colorama/`) | All non-vendored Python (library + tests + demos) | Active |
+|---|---|---|---|
+| Jonathan Hartley | 456 / 909 (50%) | 1,083 / 1,936 (56%) | 2014 – Jul 2026 |
+| Arnon Yaari | 158 (17%) | 232 (12%) | 2014 – May 2026 |
+| Nathaniel J. Smith | 73 (8%) | 196 (10%) | 2022 only |
+| John Szakmeister | 42 | 62 | 2014 only |
+| Segev Finer | 37 | 37 | 2017 only |
+| Dana Kessler | 14 | — | Jul–Aug 2026 |
+| Priya Nair | 13 | — | Jun–Sep 2026 |
+
+Hartley is the top author of all six library modules. Yaari is second in four of them: `ansi.py`, `ansitowin32.py`, `win32.py` and `winterm.py`.
+
+**A raw `git blame` gets this wrong.** It names Dana Kessler as the biggest author, with 1,324 of 3,040 lines, even though Dana made only 4 commits. Most of those lines aren't really Dana's:
+- **1,103 lines** are `colorama/_vendor/_typing_compat.py`, which was copied in from `typing_extensions` 4.12.2. Its header says "DO NOT EDIT", so it's third-party code.
+- **About 220 lines** come from one commit (`c73f380`) that only changed string quote style across 20 files.
+- The commit that moved the tests to `tests/` changed no lines. I traced the blame through the move so the original authors keep credit.
+
+After correcting for these, Dana wrote about 14 lines, mainly NO_COLOR support. Priya Nair wrote about 13 (cursor helpers and `is_windows_terminal()`).
+
+Arnon Yaari commits under two names (Arnon Yaari and wiggin15) and two email addresses, so I merged them into one person. Without that, his share would look split up.
+
+## How exposed you are
+
+**Very exposed. In practice only two people know this code: Hartley and Yaari.**
+
+- Together they wrote about 68% of the library. Nobody else has more than 8%.
+- The next three largest contributors each worked on the project for a few months, between 2014 and 2022. They are not a backup.
+- The two recent contributors, Dana and Priya, together wrote under 3% of the library. Most of their work is on the edges, not the core.
+- The hardest code is the Windows console layer (`win32.py`, `winterm.py`, `ansitowin32.py`). Hartley and Yaari wrote about 480 of its 672 lines. It's also the part a new team is least likely to be able to test without a real Windows setup.
+- Both are still active: Hartley committed in July 2026 and Yaari in May 2026. You can still reach them now, but they are volunteers, not staff you employ.
+
+**Before the handover:**
+1. Book walkthrough sessions with both of them now, starting with the Windows code, and record them.
+2. Ask them to write down how the ANSI-to-Win32 translation works and the edge cases they know about.
+3. Write down the regeneration process for the vendored file (the header points to `tools/vendor.sh`) so nobody edits it by hand.
+4. Add a `.mailmap` file to merge the duplicate identities, and a `.git-blame-ignore-revs` file listing `c73f380`. Then `git blame` will show the correct authors for the new team.
+
+**Caveat:** this counts surviving lines, which shows who wrote the code, not necessarily who understands it best. The figures are from `git blame` with whitespace ignored and code moves and copies followed. They don't include non-Python files such as packaging and CI configuration.
+META cost=0.20093819999999998 ms=42264 turns=6

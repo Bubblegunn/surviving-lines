@@ -1,0 +1,51 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 10}
+ - Bash: ls lib/grape_entity lib/grape_entity/exposure; grep -ril delegator lib
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/f6r/HZ4-hist-2/runs/HZ4-hist-2/repo/lib/grape_entity/exposure"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/f6r/HZ4-hist-2/runs/HZ4-hist-2/repo/lib/grape_entity/delegators"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/f6r/HZ4-hist-2/runs/HZ4-hist-2/repo"}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/f6r/HZ4-hist-2/runs/HZ4-hist-2/repo"}
+ - Bash: for p in lib/grape_entity/exposure lib/grape_entity/delegator.rb lib/grape_entity/delegators lib/grape_entity/exposure/delegator_exposure.rb; do echo "== $p"; git shortlog -sne --no-merges HEAD -- $p | head -8; git log --no-merges --format='%an %ad' --date=short -- $p | awk '!s[$1$2]++' | head -0; done
+FINAL ANSWER:
+**Short answer:** Marco Silva and Lena Brandt are the reviewers for both areas. Nearly everyone else in the history is gone. Repo-wide, the top committer is not the top code owner.
+
+**Reviewers**
+- **`lib/grape_entity/exposure`:**
+  - Marco Silva is the best choice. They own 100% of `grouped_exposure.rb` (143 lines) and last committed on 2026-09-15. They are the only active person who owns a whole file here.
+  - Lena Brandt (last commit 2026-07-14) is the second reviewer. They own only 2.4% of the directory, but they have small edits across most of its files.
+  - Anna Kowalczyk (2026-08-10) owns only 5 lines. They are a fallback for small changes.
+- **Delegator code** (`delegator.rb`, `delegators/`, `exposure/delegator_exposure.rb`):
+  - Lena Brandt is the main reviewer. They are the only active author with surviving lines in `delegators/` (10.7%), and they have also touched `delegator.rb` and `delegator_exposure.rb`.
+  - Marco Silva is the second reviewer, since they have commits in both `delegator.rb` and `delegators/`.
+  - Neither is a deep owner. About 89% of `delegators/` and 87–95% of the exposure files are still written by people who have left. Treat both as reviewers who know the area, not as its authors.
+
+**Who has effectively left** (no commits since 2026-04-24; last commit in parentheses)
+- Vladimir Kochnev (2015-09). They wrote the original exposure and delegator code.
+- Alexander Yunin (2016-07), who wrote most of `nesting_exposure/output_builder.rb`.
+- James McCarthy (2017-04).
+- Dmitry Tsepelev (2018-01).
+- Mikael Henriksson (2019-10).
+- LeFnord (2020-02).
+- Dmitriy Nesteryuk (2020-07).
+- Ahmed Naguib (2021-09).
+- Paul Padier (2023-12).
+- peter scholz (2024-04), plus a few others with a handful of lines.
+
+As a result, 9 of the 10 files in `exposure/` and all 4 in `delegators/` are orphaned. That means more than 50% of their lines belong to people who are no longer active. `nesting_exposure.rb`, `nested_exposures.rb` and `output_builder.rb` have no active owner at all, so Marco Silva and Lena Brandt will be reviewing code they didn't write.
+
+**Is the top committer also the top code owner?**
+- **Repo-wide:** No.
+  - dblock has the most commits (38), and about 54 once you add their `Daniel Doubrovkine…` aliases. They own only 8.5% of surviving lines.
+  - Kochnev has the most surviving code (17.2%, 21 files as main owner) from just 11 commits.
+  - Both have left.
+- **Within `lib/grape_entity/exposure`:** Yes. Kochnev has the most commits (5) and the most lines (53%), but they last committed in 2015.
+
+**Caveats**
+- Author names are not fully merged. `LeFnord` and `peter scholz` share an email address, and `Andrei Subbota` and `Andrey Subbota` look like one person. Their commit and line totals are therefore understated.
+- The commit counts for `delegators/` are probably too low. The path-scoped history showed only one commit there, but blame shows several authors. The files were likely moved, and the older history sits under their previous paths, which I didn't trace.
+META cost=0.1189021 ms=21796 turns=8

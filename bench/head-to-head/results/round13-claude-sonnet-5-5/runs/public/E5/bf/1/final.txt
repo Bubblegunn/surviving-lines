@@ -1,0 +1,67 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -80; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo; git blame -w -M -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+`lib/index.js` is the core of the `cors` package. Troy Goode created it and still owns most of it. Other contributors added individual features and fixes, and a recent reformat now shows up as a large block of lines in blame.
+
+**Who shaped it**
+
+- **Troy Goode** is the author and main maintainer. He made the first commit on 2013-01-30 and 29 of the 56 file-history commits. His work includes:
+  - the core request flow and case-insensitive header lookup;
+  - `origin: false` disabling CORS;
+  - pausing and resuming the request for async middleware;
+  - `Access-Control-Expose-Headers`;
+  - Express 4 and non-Express (Connect) support;
+  - the move to the `vary` module and the switch to ESLint.
+- **2013, early contributors.**
+  - Simon Mansfield added the early check for a missing `Origin` header and sent the credentials header on non-OPTIONS requests.
+  - Damien Klinnert limited `Access-Control-Allow-Methods` to preflight responses.
+  - Eric di Domenico let `origin` be a callback.
+  - Mathias Buus switched to non-Express request and response APIs, which enabled Connect use.
+- **2014–2015, features and fixes.**
+  - Typicode added PATCH to the default methods.
+  - Alberto Leal fixed the `origin` callback being overridden.
+  - Shane Tomlinson made method names compare in uppercase.
+  - Igor Soarez added `Vary: Origin` for specific origins.
+  - Eran Tiktin stopped `Vary: Origin` being added for `*`.
+  - Raymond Feng removed the closure in `applyHeaders`.
+  - max.laverse let the preflight request pass through to `next()`.
+  - DracoBlue added exposed headers to OPTIONS responses.
+  - Alejandro Caravaca Puchades (also committing as alex94puchades) added RegExp and array support for `options.origin`.
+  - jordandenison made non-object options work in strict mode.
+- **2016–2018, maintenance.**
+  - Hannah Wolfe named the anonymous middleware function.
+  - Saad Tazi fixed frozen options.
+  - Tomek Kopczuk added `Vary: Origin` for regex origins.
+  - Benjamin Eidelman worked around a Safari preflight bug.
+  - Tom Arad fixed `maxAge: 0`.
+  - Douglas Christopher Wilson did the following:
+    - `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders`;
+    - a fix for a missing `methods` option in the options delegate;
+    - ESLint and lint cleanups.
+  - Chima Alaebo removed an unreachable branch.
+- **2021–2026.** LuisEGR removed unused function parameters (2021). Troy Goode committed "annotate handlers" (2026-04-10). Fiona Formatter reformatted the file to 4-space indent and double quotes (2026-04-12).
+
+**Whose code is still there** (`git blame -w -M -C -C`, by line count)
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 138 |
+| Fiona Formatter | 32 |
+| Douglas Christopher Wilson | 18 |
+| Alejandro Caravaca Puchades (+ alex94puchades) | 12 (+3) |
+| Raymond Feng | 7 |
+| LuisEGR | 6 |
+| max.laverse | 5 |
+| Simon Mansfield, Igor Soarez | 3 each |
+| Mathias Buus, Eric di Domenico, Benjamin Eidelman, Alberto Leal | 2 each |
+| Saad Tazi, Hannah Wolfe, Chima Alaebo | 1 each |
+
+- **Fiona Formatter's 32 lines** come from the quote-style change. The `-w` flag ignores whitespace but not quote changes, so blame credits those lines to the reformat. The logic on them is probably still the earlier authors'. Running blame with `--ignore-rev 62628c0` would show the real attribution.
+- **Raymond Feng's 7 lines** are the `applyHeaders` optimization. Both that and Douglas Wilson's `Vary` logic are central to the current behavior.
+- **Contributors with no surviving lines:** Damien Klinnert, Typicode, Shane Tomlinson, Eran Tiktin, DracoBlue, jordandenison, Tomek Kopczuk and Tom Arad. Their changes were rewritten or absorbed by later edits, so none of their lines remain in blame.
+META cost=0.057343099999999994 ms=14990 turns=2

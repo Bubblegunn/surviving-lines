@@ -1,0 +1,18 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>/dev/null; echo ---; git log --format='%an <%ae>' --follow -- lib/index.js | sort | uniq -c | sort -rn | head; echo ---; git log --since=2 years ago --format='%h %ad %an %s' --date=short --follow -- lib/index.js | head -15; echo ---; cat .git-blame-ignore-revs
+ - Bash: git log -8 --format='%h %ad %an %s' --date=short --follow -- lib/index.js; echo ---; git blame --ignore-revs-file .git-blame-ignore-revs -e -w lib/index.js | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+**Troy Goode** (<email redacted>) should review it.
+
+- **Most history:** Troy has 28 of the roughly 50 commits that touched `lib/index.js` (counting renames). Ignoring the reformat commit, `git blame` attributes about 147 of the file's current lines to Troy. A second identity, troy@laptop.example, accounts for another 12.
+- **Most recent real change:** Troy's "lib: annotate handlers" (b2005d9, 2026-04-10) is the last substantive edit. The only later commit is Fiona Formatter's whitespace and quote reformat (62628c0), which `.git-blame-ignore-revs` already excludes. Fiona isn't a meaningful owner of the logic.
+- **Second reviewer:** Douglas Christopher Wilson (<email redacted>) has 4 commits and about 22 blamed lines. His last commit was in 2017, so he may not be active.
+- **No CODEOWNERS:** The repo has no CODEOWNERS file, so this comes only from git history.
+
+Nobody other than Troy has touched the file in years. If Troy isn't available, there's no obvious backup. The most recent contributor after Troy is LuisEGR, who made a 2021 lint-only change.
+META cost=0.0424949 ms=9785 turns=3

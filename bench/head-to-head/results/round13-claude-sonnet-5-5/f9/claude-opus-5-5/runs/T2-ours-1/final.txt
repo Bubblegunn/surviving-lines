@@ -1,0 +1,48 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ours-1/repo; SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; $SL -- lib; echo ======; $SL --merge-identities -- lib; echo =====; $SL --files -- lib; echo ====; ls lib
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ours-1/repo; sl(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; sl -- lib; echo ======; sl --merge-identities -- lib; echo =====; sl --files -- lib; echo ====; ls lib
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ours-1/repo; S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --merge-identities -- lib 2>&1 | head -30; printf '%s\n' ----; node $S --files --merge-identities -- lib 2>&1 | head -30; printf '%s\n' ----; node $S --without "Troy Goode" -- lib 2>&1 | head -40
+FINAL ANSWER:
+**The bus factor of `lib/` is 1.** One person, Troy Goode, holds more than half of the surviving lines, so losing that one person would leave most of the code with nobody who wrote it.
+
+`lib/` is a single file, `lib/index.js`: 214 non-blank lines, 238 counting blank lines. All figures below come from surviving-lines (git blame with `-w -M -C`).
+
+**Who holds the lines.** Troy Goode appears under two addresses, which look like the same person. Counting them as one is a guess from the name and addresses; nothing has been written to `.mailmap`.
+
+| Author | Non-blank lines | Counting blank lines | Last commit |
+|---|---|---|---|
+| Troy Goode (both addresses) | 144 (67.3%) | 159 (66.8%) | 2026-04-10 |
+| ↳ <email redacted> | 132 (61.7%) | 147 (61.8%) | 2019-05-27 |
+| ↳ troy@laptop.example | 12 (5.6%) | 12 (5.0%) | 2026-04-10 |
+| Douglas Christopher Wilson | 20 (9.3%) | 22 (9.2%) | 2021-09-07 |
+| Alejandro Caravaca Puchades | 14 (6.5%) | 16 (6.7%) | 2015-05-28 |
+| LuisEGR / Raymond Feng | 6 each (2.8%) | 6 (2.5%) / 7 (2.9%) | 2021 / 2015 |
+| 18 more authors | rest | | |
+
+**Bus factor figures.** The bus factor here is the smallest number of authors whose surviving lines add up to 50% of the lines.
+- **50% threshold:** 1 (Troy Goode) on both line bases. It is still 1 without the merge: the gmail address alone holds 61.7% of non-blank lines and 61.8% counting blank lines.
+- **80% threshold:** 3 authors with the merge, 4 without.
+- **Active people only:** 1. This is counted only on the 144 lines held by people who committed in the 365 days before 2026-04-12. Troy Goode is the only one, and the other 17 authors (32.7% of the lines) have not committed since.
+
+**If Troy Goode leaves** (`--without "Troy Goode"`):
+- 144 of 214 lines (67.3%) lose their author.
+- `lib/index.js` gets flagged as a file nobody remaining would know. The best remaining author is Douglas Christopher Wilson with 9.3%, and he hasn't committed since 2021.
+- The bus factor of what's left is 3. That figure is counted only on the remaining lines.
+- The people who would inherit the most are Douglas Christopher Wilson (20 lines), Alejandro Caravaca Puchades (14) and LuisEGR (6). None of them has committed in the last year.
+
+So to your question: **one departure is enough.** Troy Goode is both the main source of knowledge and the only active contact. That makes `lib/` a single point of failure, but the tool doesn't call it orphaned yet, because its top owner is still active.
+
+**Adjustments in the counts:**
+- **Reformat commit left out:** commit `62628c0` ("style: reformat js…") rewrote 1,016 lines in 4 files, so its lines go back to their earlier authors. Counting the reformat anyway, Troy Goode would hold 123 lines (57.5%) and the bus factor would still be 1.
+- **Possible mechanical commit kept:** `fcd2b56` (the ESLint switch) also looks mechanical but was kept in the counts. It holds only 5 of Troy's lines, so it can't change the bus factor.
+- **Lines credited to the author, not the committer:** 11 lines committed by Troy Goode are credited to Alejandro Caravaca Puchades, and 6 committed by Wilson are credited to LuisEGR.
+- **Same address, two names:** Alejandro Caravaca Puchades also appears as "alex94puchades" under the same address, and is counted once.
+
+Two limits on these numbers. They measure whose code is still there, not who actually understands it: reviewers and past maintainers may know `lib/index.js` without holding any lines in it. And the history starts with an import in 2013-01-30, so any code older than that is credited to whoever imported it.
+META cost=0.2537424 ms=45325 turns=6

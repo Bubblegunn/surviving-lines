@@ -1,0 +1,22 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --since="2026-03-29" --until="2026-04-13" --format='%h|%an|%ae|%ad|%s' --date=short; echo; git log -1 --format='%ad %s'
+ - Bash: git log --since="2026-03-29" --format='%h %an <%ae> %cn' ; cat .mailmap 2>/dev/null; git shortlog -sne HEAD | head -20; git ls-files | head -50
+for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep '^author-mail'; done | sort | uniq -c | sort -rn | head
+ - Bash: for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f 2>/dev/null | grep '^author-mail'; done | sort | uniq -c | grep -Ei 'vansh|troy|formatter'; git show 5317ebe --stat --format=%s | tail -3
+FINAL ANSWER:
+In the 14 days up to 2026-04-12 (2026-03-29 to 2026-04-12), two people made qualifying commits.
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (04-10)<br>`b2005d9` lib: annotate handlers (04-10) | **810** |
+| **Vansh Sharma** | `5317ebe` docs: app.del() → app.delete() in README (#411) (04-07) | **1** |
+
+- **Troy's two identities:** Troy Goode appears under two emails, `<email redacted>` and `troy@laptop.example`. I counted them as one person. His 810 lines are 762 under the first email and 48 under the second. The two window commits use the laptop email.
+- **Excluded:** I left out Fiona Formatter's `62628c0` (04-12), a formatting-only reindent and quote change. I also left out dependabot, whose last commit falls before the window.
+- **How I counted lines:** I ran `git blame` on every tracked file, ignoring whitespace changes and treating `62628c0` as an ignored revision. That way the reformat doesn't take credit for everyone's lines.
+META cost=0.056159 ms=14071 turns=4

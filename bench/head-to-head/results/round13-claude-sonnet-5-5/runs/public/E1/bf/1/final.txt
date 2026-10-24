@@ -1,0 +1,41 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: ls <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ && node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/E1-bf-1/repo --dry-run --no-github 2>&1 | head -100
+ - Bash: git ls-files | wc -l && git log --format='%ad' --date=short | sed -n '1p;$p' && git shortlog -sne --no-merges HEAD | head -15 && echo --- && git log --since=2025-04-12 --no-merges --format='%an <%ae>' | sort | uniq -c | sort -rn && echo --- && for d in lib test examples .github; do echo "$d:"; git log --no-merges --format='%an' -- $d | sort | uniq -c | sort -rn | head -4; done; git ls-files | sed 's|/.*||' | sort | uniq -c | sort -rn | head
+ - Bash: git log --no-merges --format='%ad %an <%ae> %s' --date=short -- lib | head -8; echo; git log --no-merges --since=2025-04-12 --format='%ad %an | %s' --date=short -- lib test | head; echo; git log -1 --format='%ad %an' --date=short --author=Wilson; git log -1 --format='%ad' --date=short --author='Troy Goode' ; git log --author=Wilson --format=%ad --date=short | head -1; git ls-files lib test
+FINAL ANSWER:
+**Short version:** in the tool's output, no zone has a single active owner. Two things need your input before you trust that: the two Troy Goode identities, and whether Douglas Wilson is really gone.
+
+I ran `ownership.mjs` with `--dry-run --no-github`, so nothing was written to the repo. I cross-checked it against `git log` and `git shortlog`.
+
+## Findings
+
+The repo is small: 18 tracked files, with history from 2013-01-30 to 2026-04-12. The 2013 root commit lands 8 of those 18 files at once (44%, above the 25% threshold), so the history looks imported, not young. Ownership therefore reflects work since the import, not who originally wrote the code.
+
+**Orphaned risk (everyone who knew it has left)**
+
+- **Douglas Christopher Wilson** is the top committer with 143 commits, but his last commit was 2021-09-07. He is the main prior contributor to `test/` (23 commits) and `.github/` (10 commits). The tool names no active owner for `.github/` other than Ulises Gascón and Ignacio Mangas, who have only 2 to 3 commits each. His deep knowledge of the project's tests and CI is effectively orphaned.
+- **`lib/index.js`** is the entire library (1 file). The older contributors, such as Alejandro Caravaca Puchades, Simon Mansfield and Tom Arad, have no commits since at least 2021.
+
+**Bus factor 1 (a single active person)**
+
+- **Troy Goode** is the person the history points to.
+  - He wrote 33 of the commits touching `lib/` and 32 of those touching `test/`, so he is the dominant author of nearly all the code. That covers `lib/index.js` and all of `test/`.
+  - His last two commits are from 2026-04-10 ("lib: annotate handlers" and "test: vary header coverage"). They use a different email, `troy@laptop.example`.
+  - The tool does not list him in the fallback owners. This is probably because the two identities aren't merged without GitHub lookup, so his weight is split.
+- **Maintenance beyond that** is spread thinly over Ulises Gascón, Jon Church, Ignacio Mangas, Sebastian Beltran and the dependabot bot. Each has 2 to 3 commits, and the fallback owners are `<email redacted>` and `<email redacted>`.
+- **Fiona Formatter** appears in the fallback owners. Her only commit is the 2026-04-12 reformat of the whole tree, so this is the "mechanical refactor looks like expertise" problem the skill warns about. Treat her as an over-credited owner, not a real one.
+
+## Caveats
+
+- **Identity gaps:** `--no-github` leaves emails unresolved, so the two Troy emails are probably counted as two people. That makes the bus factor look better than it is. Please confirm that `<email redacted>` and `troy@laptop.example` are the same person.
+- **Roster check:** I haven't verified that Wilson is really gone. If they are still around as a reviewer without committing, the orphan verdict is wrong. You can override it with `{"<email>": {"active": true}}` in the cache file.
+- **Commit volume is a proxy for knowledge.** Reviewers who never commit are invisible to this analysis.
+
+I haven't written `.github/CODEOWNERS` or `ownership.json`. I also haven't built the HTML report, because the `artifact-design` skill isn't in my available list. I can write both once you've confirmed the identities and roster.
+META cost=0.0777444 ms=25235 turns=6

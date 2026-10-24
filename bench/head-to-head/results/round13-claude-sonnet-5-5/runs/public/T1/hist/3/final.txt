@@ -1,0 +1,45 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__repo_summary", "max_results": 3}
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk", "max_results": 1}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T1-hist-3/repo", "top": 15}
+ - Bash: git log -1 --format='%an <%ae> %h' 62628c0 && git log --author="Fiona" --format='%h %s' | head; for f in $(git ls-files lib test); do git blame -w --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' ; done | sort | uniq -c | sort -rn | head -12
+FINAL ANSWER:
+Surviving lines at HEAD are mostly Troy Goode's and Douglas Christopher Wilson's. A plain `git blame` gives a different answer, because one commit rewrote most of the lines.
+
+**Plain blame (the tool's default)**
+- Fiona Formatter owns about 51% of the lines (1,016).
+- Fiona's only commit is `62628c0`, "style: reformat js with 4-space indent and double quotes". It touched `lib/index.js` and every test file, so it hides who wrote the logic.
+- After Fiona come Troy Goode (13%) and Douglas Christopher Wilson (13%).
+
+**Blame that skips the reformat commit**
+I re-ran blame on `lib/` and `test/` with whitespace ignored and `62628c0` skipped:
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 612 |
+| Douglas Christopher Wilson | 422 |
+| Eric di Domenico | 27 |
+| Alejandro Caravaca Puchades | 27 |
+| Alberto Leal | 26 |
+| Igor Soarez | 17 |
+
+Everyone else has 11 lines or fewer. Troy Goode and Douglas Christopher Wilson hold most of the real code, with Troy ahead. I only re-ran this for `lib/` and `test/`. The tool's full run covered 18 files, and I didn't repeat the corrected blame for the other files: `README.md`, `HISTORY.md`, `package.json`, `LICENSE`, and the CI files.
+
+**Files outside `lib/` and `test/`** (from the tool, unaffected by the reformat)
+- `README.md`: Troy Goode 37%, Jon Church 26%.
+- `HISTORY.md`, `package.json`, `LICENSE`, `.eslintrc.yml`: mostly Douglas Christopher Wilson.
+- CI and workflow files: split among Douglas Christopher Wilson, Ignacio Mangas, Ulises Gascón, Íñigo Marquínez Prado, and Sebastian Beltran.
+
+**Activity**
+- The tool flagged all 18 files as orphaned, meaning authors with no commit since 2026-04-24 own more than 50% of each file.
+- Some of that is an artifact. Even Efe is listed as inactive (last commit 2025-11-30).
+- Douglas Christopher Wilson's last commit was in 2021, so the oldest core code has no recent author.
+- Troy Goode's last commit was 2026-04-10, so they are also inactive by the 6-month cutoff.
+
+If you want a different cutoff, say "inactive since 2025", or per-file numbers for any file, I can re-run it.
+META cost=0.0776728 ms=18239 turns=5

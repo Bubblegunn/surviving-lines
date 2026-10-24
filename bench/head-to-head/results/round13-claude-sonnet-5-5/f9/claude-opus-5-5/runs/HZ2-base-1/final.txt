@@ -1,0 +1,60 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null; for f in time.go version7.go sql.go null.go; do echo "== $f"; git log --format='%ad %an <%ae>' --date=short --follow -- $f | sort -k2 | awk '{print}' | head -50; done
+ - Bash: echo "== database_sql.go"; git log --follow --name-status --format='%h %ad %an <%ae> %s' --date=short -- database_sql.go | head -40; echo; for f in time.go version7.go database_sql.go null.go; do echo "== blame $f"; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "== CONTRIBUTORS"; cat CONTRIBUTORS; echo "== last commit per author (repo-wide)"; git log --format='%ad|%an|%ae' --date=short | sort -t'|' -k2,2 -k1,1r | awk -F'|' '!s[$2]++' | sort -r | head -40
+ - Bash: git log --format='%h %ad %an <%ae>%n  %s%n%b' --date=short -- time.go version7.go | head -60; echo ===; git show --stat 2>/dev/null $(git log --format=%h --author='Sam Okafor' -- time.go) | head -40; echo ===; git log --format='%h %ad %an <%ae> %s' --date=short --author='Rowe' --author='arowe' --author='Ravi' --author='Noor' --author='Sam Okafor' --author='Mei Chen'
+ - Bash: git show --stat --format='%h %an %s' c50c42f | head; echo ---; git blame -w --ignore-rev c50c42f --line-porcelain time.go | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git log --format='%h %ad %an <%ae> %s' --date=short --author='Rowe' --author='arowe' --author='Ravi' --author='Noor' --author='Sam Okafor' --author='Mei Chen'; echo ---; git log -3 --format='%h %ad %an %s' --date=short; grep -n -i -A3 'maintain\|review\|owner' CONTRIBUTING.md README.md | head -30
+ - Bash: cat .mailmap; echo ---; git shortlog -sne --since=2024-01-01 | head -20
+FINAL ANSWER:
+I looked through the git history, blame, CODEOWNERS and `.mailmap`. Git can show who wrote each part and when they last committed. It can't tell you whether anyone is still reachable or willing to review, so treat the "still around" column as last-seen-in-git only.
+
+## Who wrote each part
+
+**`time.go`**
+- Plain `git blame` credits all 152 lines to Sam Okafor. That's misleading: their commit `c50c42f` (2025-04-22) only normalized line endings. With that commit ignored, the real authors are:
+  - **Paul Borman**, 111 lines. He's the original author; his last commit here was 2021. GitHub user `bormanp` (probably him, not confirmed) co-authored a commit in July 2024.
+  - **MikeWang**, 12 lines (v7 monotonic clock). Last commit July 2024.
+  - **Alexander Rowe**, 11 lines (`UnixMillis`). Last commit 2026-03-09.
+  - Nicu Micle (V6 with custom time, Nov 2024), Youngjae Lee (v6 timestamp fix, Jun 2024), plus older bits from David Symonds and Martin Lindhe.
+- To avoid the misleading blame locally, run `git config blame.ignoreRevsFile` with `c50c42f` listed in the file.
+
+**`version7.go`**
+- **MikeWang**, 101 of 117 lines. He wrote v7 and its monotonicity fix (#150). Last activity July 2024.
+- **Mei Chen**, 11 lines (`Time7` accessor, 2025-08-02).
+- **Ravi Menon**, 2 lines (clock step-back docs, 2026-05-05).
+
+**SQL code (`database_sql.go`, formerly `sql.go`)**
+- Ravi Menon renamed it in March 2025, so use `git log --follow`. All of the actual code is older:
+  - **Justin Overfelt** (26 lines, 2015)
+  - **Andrew Stone** (11, 2017)
+  - **David E. Wheeler** (8, 2015–16)
+  - **Daniel Souza** (8, 2016)
+  - Paul Borman (5)
+  - Steven Kaufman (1, 2021)
+- None of them has committed since 2021. `null.go` (`NullUUID`) is mostly Samuel Roth's work from 2021, also inactive since.
+
+## Who to ask for review
+
+The most recent contributors are:
+
+| Person | Last commit | Relevant work |
+|---|---|---|
+| Ravi Menon (harbor.example) | 2026-06-17 | Most recent and most active committer; touched all three areas (v7 docs, SQL rename) |
+| Alexander Rowe | 2026-03-09 | `UnixMillis` in time.go, v8 / `IsV8` |
+| Mei Chen | 2025-08-02 | `Time7` in version7.go |
+| Sam Okafor | 2025-05-06 | Only formatting and helpers, no logic in these files |
+
+My suggestion:
+- **`time.go` and `version7.go`:** Ravi Menon as primary reviewer, with Alexander Rowe or Mei Chen as a second.
+- **SQL code:** nobody active has substantive history with it. Ravi Menon only renamed the file. Any reviewer will be reading the code fresh, so lean on `sql_test.go`/`null_test.go`. For anything subtle, you could try pinging the original authors on GitHub.
+- **Paul Borman / `bormanp`:** worth contacting for design history on `time.go`, but don't count on him for routine review.
+
+## Things to check
+
+- **Possible duplicate identity:** `.mailmap` merges `arowe` into Alex Rowe <alex@rowe.example>, but "Alexander Rowe <alex.rowe@mailbox.example>" isn't mapped. They may be the same person; ask before counting them as two reviewers.
+- **CODEOWNERS** routes every review to `@google/go-uuid-contributors`. Since you're taking over, check that team's current membership on GitHub; it's the authoritative list of who can approve.
+META cost=0.1928992 ms=35262 turns=6

@@ -1,0 +1,34 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | grep -vE '(package-lock\.json|\.png|\.ico|\.jpg)$' | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo ---; git ls-files | wc -l; git log --format=%an | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Surviving lines by author, from `git blame -w -M -C` with the reformat commit `62628c0` ignored:
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+Eric di Domenico, Alberto Leal, max.laverse, dependabot[bot] and Saad Tazi each have about 10–16 lines. These are the top 15 authors only, and I didn't compute percentages.
+
+- **Troy Goode** owns the most code still here, about 810 lines, even though Douglas Christopher Wilson has more commits (143 vs 122). Together the two own the large majority of the surviving lines.
+- **Everyone else** owns small slices, and none has more than about 95 lines.
+- **Counted files:** the 18 tracked files, minus lockfiles and images.
+- **Reformat commit:** this repo's history has the reformat commit (`62628c0`) sitting on top. Ignoring it, and using `-w`, means the lines go back to whoever wrote them before the reformat. A few lines the reformat rewrote may still be misattributed.
+- **Moved code:** `-M -C` follows code that was moved or copied between files, so authors who only relocated code don't get credit for it.
+- **Identities:** I counted names as they appear in git. If someone has commits under more than one name or email, their lines are split across those entries. A `.mailmap` would merge them.
+
+I can break this down per file or directory, or merge duplicate identities, if you want.
+META cost=0.0469404 ms=11934 turns=2

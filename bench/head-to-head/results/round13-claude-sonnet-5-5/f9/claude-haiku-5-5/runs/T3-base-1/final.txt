@@ -1,0 +1,27 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn && echo --- && git shortlog -sne --all | head -50
+ - Bash: ls -la | head -30; test -f .mailmap && cat .mailmap; echo ---; git log --format='%h %an <%ae> %ad' --author='troy@laptop' ; git log --format='%h %an <%ae> %ad' --author='alex94puchades' ; git log --format='%h %an <%ae>' --author='Alejandro Caravaca' ; echo ---; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{print tolower($1)"|"$2}' | sort | awk -F'|' '{n[$1]=n[$1]" "$2} END{for(k in n) print k":"n[k]}' | awk -F: 'NF>0' | grep -E '[^ ]+ [^ ]+' | head -20
+ - Write: {"file_path": "/private/tmp/r13/final/f9/claude-haiku-5-5/runs/T3-base-1/repo/.mailmap", "content": "Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>>\n"}
+ - Bash: git shortlog -sne HEAD | head -8 && echo --- && git shortlog -sne HEAD | grep -Ei 'troy|alejandro caravaca|alex94'
+FINAL ANSWER:
+Yes, two people were each showing up under two identities. I fixed it with a `.mailmap` file, and the top author is still Douglas Christopher Wilson, now at 143 commits.
+
+**Duplicates found:**
+- **Troy Goode**: `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits, both from April 2026). Now counted as 122.
+- **Alejandro Caravaca Puchades**: the same email `<email redacted>` appears under "Alejandro Caravaca Puchades" (4) and "alex94puchades" (1). Now counted as 5.
+
+I added `.mailmap` at the repo root with two lines:
+```
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>>
+```
+
+`git shortlog` and `git log --format=%aN` now merge these. The file is uncommitted, and I did not rewrite history. The raw `git log` output still shows the old names and emails. If you want the history itself rewritten, say so, since that changes every affected commit hash.
+
+**Not merged:** `Efe <<email redacted>>` (1 commit). The name matches yours, but the email differs from `<email redacted>` and I had no evidence they are the same person. Tell me if they are and I'll add a mapping.
+META cost=0.00474005 ms=16025 turns=5

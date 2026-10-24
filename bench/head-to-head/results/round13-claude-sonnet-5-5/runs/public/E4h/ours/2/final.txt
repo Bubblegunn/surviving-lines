@@ -1,0 +1,35 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/E4h-ours-2/repo; $SL --merge-identities --tree 2>&1 | head -40; for d in lib test .github; do echo "== $d"; $SL --merge-identities -- $d 2>&1 | head -8; done
+ - Bash: SL(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; cd /private/tmp/r13/final/out-F/runs/E4h-ours-2/repo; for d in lib test .github; do echo "== $d"; SL --merge-identities -- $d 2>&1 | head -9; done; echo "== root"; SL --merge-identities --tree 2>&1 | head -30
+ - Bash: SL(){ node /private/tmp/r13/final/ours-src/bin/surviving-lines.js "$@"; }; cd /private/tmp/r13/final/out-F/runs/E4h-ours-2/repo; SL --merge-identities -- . ':!lib' ':!test' ':!.github' 2>&1 | sed -n 1,12p
+FINAL ANSWER:
+Suggested CODEOWNERS, with the two Troy Goode addresses (<email redacted> and troy@laptop.example) counted as one person. That merge is only a guess from the shared name, so please confirm it. Bots (dependabot, 10 lines) are excluded, and the formatting-only commit 62628c0 is set aside. Counts are non-blank lines. Every number below comes from surviving-lines run with `--merge-identities`, once per directory (`-- lib`, `-- test`, `-- .github`, and the root files via `-- . ':!lib' ':!test' ':!.github'`).
+
+```
+# Only where one person holds at least half of the surviving lines
+/lib/    @troygoode
+/test/   @troygoode
+```
+
+| Path | Top holder | Lines | Share | Owner? |
+|---|---|---|---|---|
+| `lib/` | Troy Goode | 144 of 214 | 67.3% (66.8% counting blank lines) | Yes |
+| `test/` | Troy Goode | 420 of 820 | 51.2% (53.5% counting blank lines) | Yes, but only just over half |
+| `.github/` | Douglas Christopher Wilson | 92 of 305 | 30.2% | No |
+| Root files | Douglas Christopher Wilson | 95 of 323 | 29.4% | No |
+
+- **`.github/`:** Nobody holds half. Douglas Christopher Wilson leads with 92 lines (30.2%), and Íñigo Marquínez Prado is next with 80 lines (26.2% of `.github/`). Wilson's last commit was 2021-09-07, so I wouldn't assign him anyway.
+- **Root files:** Nobody holds half. Wilson has 95 lines (29.4%), Troy Goode 85 (26.3%) and Jon Church 59 (18.3%). Ownership varies by file. Wilson holds most of `LICENSE`, `HISTORY.md`, `.gitignore` and `.eslintrc.yml`, and `package.json` is a 50% split. `README.md` is spread out, with Troy Goode's 33% the largest share.
+- **Whole repository, for scale:** Troy Goode holds 605 of 1,662 lines (36.4%) before the identity merge, which is the largest single share. Wilson holds 551 (33.2%). Both figures are below half, so no repo-wide owner is suggested.
+
+**Without the merge:** the lines under `test/` split between the two Troy Goode addresses, so the 51.2% would likely drop below half. `test/` is the more fragile of the two suggestions. If you don't want to rely on the merge, leave it unowned too.
+
+**Wilson's inactivity:** Wilson has no commit since 2021-09-07, so I left him out of every line, even in the places where he leads.
+
+`test/` has sub-areas Wilson still holds. `test/support/` and `test/.eslintrc.yml` are 100% his, and `test/test.js` is 50% his. They're all inactive, so I didn't add separate rules.
+META cost=0.08996399999999999 ms=29949 turns=5

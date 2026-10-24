@@ -1,0 +1,37 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/f6r/T1-hist-1/runs/T1-hist-1/repo", "top": 15}
+ - Bash: git log --format='%h %an %ad %s' --date=short -3 && echo --- && for f in $(git ls-files); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1; c[NR]=$0} END{for(i=1;i<=NR;i++){split(c[i],a," "); printf "%s  (%.1f%%)\n", c[i], a[1]*100/t}; print "total",t}' | head -25
+FINAL ANSWER:
+Most of the surviving code belongs to **Troy Goode** (about 41%) and **Douglas Christopher Wilson** (about 32%). The rest is spread thinly across many contributors.
+
+I counted the lines that survive at HEAD across all 18 tracked files, about 2,000 in total. I used `git blame` with whitespace changes ignored, copied lines followed, and the reformat commit `62628c0` skipped.
+
+**Why I skipped the reformat commit:** the plain blame says "Fiona Formatter" owns 51% of the lines. That is wrong. Their only commit is the 4-space and double-quote reformat, so blame credits them with nearly every line in `lib/` and `test/`. Skipping that commit gives the real owners.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 810 | 40.6% |
+| Douglas Christopher Wilson | 629 | 31.5% |
+| Íñigo Marquínez Prado | 95 | 4.8% |
+| Jon Church | 72 | 3.6% |
+| Sebastian Beltran | 67 | 3.4% |
+| Ulises Gascón | 52 | 2.6% |
+| Ignacio Mangas | 44 | 2.2% |
+| Everyone else | — | about 11% combined |
+
+- **Troy Goode:** wrote most of `lib/index.js` and the test suite, and is the top owner of the README. These are the core code and tests.
+- **Douglas Christopher Wilson:** owns most of the project scaffolding, such as CI, `package.json`, `HISTORY.md`, `LICENSE` and `.eslintrc.yml`. His last commit was in 2021, so that scaffolding hasn't been touched by its main author for years.
+- **Íñigo Marquínez Prado, Sebastian Beltran and Ulises Gascón:** own the `.github` workflows and dependabot config, so they are the CI and security automation owners.
+
+**Activity:** by the tool's "inactive after 6 months" rule, every author counts as inactive, so every file is flagged as orphaned. That is partly a snapshot effect: the latest commits are from April 2026 and today is October 2026. Troy Goode's last commit was on 2026-04-10, so the code that matters most has no recent maintainer.
+
+**Caveats:**
+- Ignoring the reformat can hide some real edits, because lines that were both reformatted and changed in the same commit may be credited to the earlier author. The shares are approximate, but the ranking is solid.
+- The author names come from the git history after the repo's `.mailmap` is applied. If the same person committed under several identities that `.mailmap` doesn't merge, their share is split across those names.
+META cost=0.0757999 ms=16531 turns=4

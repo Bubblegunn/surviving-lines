@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log -1 --format='%H %ad %an <%ae>' && echo --- && git log --since='2026-03-29' --until='2026-04-13' --no-merges --format='%h|%ad|%an|%ae|%s' --date=short && echo --- && git log --all --format='%an|%ae' | sort | uniq -c
+ - Bash: git log --since='2026-03-29' --until='2026-04-12 23:59' --format='%h|%cd|%an|%s' --date=short --all && echo --- merges && git log --since='2026-03-29' --until='2026-04-12 23:59' --merges --oneline && echo --- && git ls-files | wc -l && echo --- && git ls-files -z | xargs -0 git blame -e -w --line-porcelain HEAD -- 2>/dev/null | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{ if(m!=""){cnt[a" "m]++} } END{for(k in cnt) print cnt[k], k}' | sort -rn | head -40
+ - Bash: git ls-files | tr '\n' '\0' | xargs -0 git blame -e -w --line-porcelain HEAD -- > /tmp/blame_all.txt; echo "exit $?"; wc -l /tmp/blame_all.txt; awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{cnt[a" "m]++} END{for(k in cnt) print cnt[k], k}' /tmp/blame_all.txt | sort -rn | head -40
+ - Bash: tally(){ git ls-files | while IFS= read -r f; do git blame -e -w --line-porcelain "$@" HEAD -- "$f" 2>/dev/null; done | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{cnt[a" "m]++} END{for(k in cnt) print cnt[k], k}' | sort -rn; }; echo "== plain blame"; tally | head -30; echo "== ignoring 62628c0 (formatter)"; tally --ignore-rev 62628c0 | head -30; echo "== files"; git ls-files | tr '\n' ' '
+ - Bash: tally(){ git ls-files | while IFS= read -r f; do git blame -e -w --line-porcelain "$@" HEAD -- "$f" 2>/dev/null; done | awk '/^author /{a=substr($0,8)} /^author-mail /{m=$2} /^\t/{cnt[a" "m]++} END{for(k in cnt) print cnt[k], k}' | sort -rn; }; echo "== ignore formatter"; tally --ignore-rev 62628c0 | grep -iE 'vansh|troy|fiona'; echo "== plain"; tally | grep -iE 'vansh|troy|fiona'; echo; git show --stat 5317ebe | tail -3; git show --stat b2005d9 | tail -2; git show --stat 02afce3 | tail -2; git show --stat 62628c0 | tail -2
+FINAL ANSWER:
+Two people committed in the 14-day window (2026-03-29 to 2026-04-12). Formatting-only commits are set aside, and no bots committed in the window.
+
+| Person | Commits in window | Lines still in code today |
+|---|---|---|
+| Troy Goode | 2: `02afce3` test: vary header coverage (Apr 10); `b2005d9` lib: annotate handlers (Apr 10) | 746 |
+| Vansh Sharma | 1: `5317ebe` docs: app.del() with app.delete() in README example (#411) (Apr 7) | 1 |
+
+Notes on the counts:
+
+- **Line counts are from `git blame -w` across all 18 tracked files at HEAD**, ignoring the formatting commit `62628c0` (Fiona Formatter, Apr 12). Without that exclusion, the reformat takes over 98 of Troy's lines and shows Troy at 651. I used the exclusion because the reformat rewrote lines rather than changing what Troy wrote.
+- **Troy Goode appears under two emails** (`<email redacted>` with 698 lines and `troy@laptop.example` with 48 lines). I counted them as one person because the name matches. If they are different people, Troy's count is 698 and 48.
+- Fiona Formatter is excluded as a formatting-only commit. Their line count would otherwise be 291 (from reformatting).
+META cost=0.00675977 ms=29703 turns=6

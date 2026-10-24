@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-pp-1/repo; ls -a; cat CODEOWNERS .github/CODEOWNERS 2>/dev/null; for f in time.go version7.go sql.go; do echo "== $f"; git log --format='%an <%ae>' -- $f | sort | uniq -c | sort -rn | head; echo "last:"; git log -3 --format='%ad %an' --date=short -- $f; done; echo "== overall last 12 months"; git log --since=2025-10-24 --format='%an <%ae>' | sort | uniq -c | sort -rn
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-pp-1/repo; for f in database_sql.go null.go; do echo "== $f"; git log --format='%an' -- $f | sort | uniq -c | sort -rn; git log -4 --format='%ad %an %s' --date=short -- $f; done; echo "== last activity per author (repo-wide)"; git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -40; echo; cat .mailmap | head; git log -8 --format='%h %ad %an %s' --date=short
+FINAL ANSWER:
+There's no named owner for these files. `CODEOWNERS` only has `* @google/go-uuid-contributors`, a team alias, and I can't see its membership from the repo. Below is who actually wrote the code, judged from git history. Today is 2026-10-24.
+
+| Area | Main authors | Last touched | Still active? |
+|---|---|---|---|
+| `version7.go` | Ravi Menon (latest), Mei Chen (`Time7` accessor), MikeWang ×2, David Kaufman, Andreas Deininger, Alex Bozhenko | Menon 2026-05; Chen 2025-08; the rest 2024 | Menon yes. Chen last committed 2025-08-02. The rest haven't committed since 2024. |
+| `time.go` | Paul Borman (6 commits), Sam Okafor, Alexander Rowe, Nicu Micle, and a few one-off contributors | Okafor 2025-04; Rowe 2025-02 | Rowe was active in 2026-03. Okafor's last commit was 2025-05. Borman's last was 2021. |
+| SQL (`sql.go`, now `database_sql.go`) | David E. Wheeler ×3, Justin Overfelt ×2, Andrew Stone ×2, Steven Kaufman, Daniel Souza, Paul Borman, Ravi Menon | Menon 2025-03 (rename); real changes mostly 2017–2021 | Only Menon is recent. The original authors haven't committed here since 2021 or earlier. |
+
+`git log` on `database_sql.go` alone shows only Menon's rename, so I used the old `sql.go` path to get the real history.
+
+**Who to ask**
+- **Ravi Menon** is the best first reviewer for all three areas. They have touched each file, made the last three-plus commits (up to 2026-06-17), and wrote the recent clock step-back docs and options scaffolding.
+- **Alexander Rowe** is the best second reviewer for `time.go` and general review. Their commits also appear as "Alex Rowe" and "arowe", which `.mailmap` merges. Their last commit was 2026-03-09.
+- **Mei Chen** is worth pinging for `version7.go`, but they've been quiet since August 2025.
+- **Kofi Mensah** is also recently active (the Domain strings commit), but the commit date reads 1970-01-01, which looks like a bad timestamp. I can't tell when they were last active.
+
+**Authors who are effectively gone**
+- **Paul Borman**, the original author and `time.go` main author, hasn't committed since 2021, apart from a 2023 commit under another name (`bormanp`).
+- **The SQL authors** (Wheeler, Overfelt, Stone, Kaufman, Souza) haven't committed since 2021 or earlier.
+- **The v7 contributors** MikeWang, Kaufman, Deininger and Bozhenko haven't committed since 2024.
+
+My activity judgments come only from commit dates. Someone could still be reviewing PRs or issues without committing. Also, if you're taking over the library, check the actual membership of `@google/go-uuid-contributors` on GitHub. If Menon and Rowe aren't on it, they won't be auto-requested. Adding path-specific CODEOWNERS lines would fix that.
+META cost=0.0655416 ms=17837 turns=3

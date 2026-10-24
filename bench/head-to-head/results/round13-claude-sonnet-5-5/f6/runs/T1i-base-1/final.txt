@@ -1,0 +1,32 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '(package-lock|\.png|\.jpg|\.ico)$' | while read f; do git blame --line-porcelain --ignore-revs-file .git-blame-ignore-revs -w -M -C -- "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+Here is who owns the lines that survive in the current tree, by `git blame`. I ignored the 4-space/double-quote reformat commit (`62628c0`) via `.git-blame-ignore-revs`, and used `-w -M -C` so whitespace changes and moved code don't count either. Lockfiles and images are excluded.
+
+| Lines | Author |
+|---|---|
+| 810 | Troy Goode |
+| 629 | Douglas Christopher Wilson |
+| 95 | Íñigo Marquínez Prado |
+| 72 | Jon Church |
+| 67 | Sebastian Beltran |
+| 52 | Ulises Gascón |
+| 44 | Ignacio Mangas |
+| 30 | Alejandro Caravaca Puchades |
+| 26 | Linus Unnebäck |
+| 17 | Ollie Buck |
+
+Below those, a long tail of contributors each own 20 lines or fewer. The tail includes Eric di Domenico, Alberto Leal, dependabot[bot], Efe and others.
+
+- **Troy Goode and Douglas Christopher Wilson own most of the code.** Together they own the large majority of surviving lines.
+- **Counts cover every tracked file.** That includes docs, tests and config as well as `lib/`. A file with many lines, such as a long README or test fixture, can inflate one author's total.
+- **Blame credits whoever last touched a line.** Without the ignore file, the reformat would have made whoever ran it look like the owner of nearly everything. A line that was later edited slightly goes to the editor, not the original author.
+- **A few commits can still distort the numbers.** Bulk renames and mass lint fixes are examples.
+
+I can break this down for `lib/` only, or exclude tests and docs, if that's closer to what you mean by "the code".
+META cost=0.038906300000000005 ms=11118 turns=2

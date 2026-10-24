@@ -1,0 +1,50 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "time.go version7.go SQL code"}
+ - Bash: git ls-files | grep -iE 'time\.go|version7\.go|sql' ; echo ---; git ls-files | grep -E '\.go$' | wc -l; echo ---; git ls-files | grep -iE '\.sql$'
+ - Bash: for f in time.go version7.go sql.go; do [ -f "$f" ] && { echo "== $f"; git log --all --no-merges --format='%an <%ae>' -- "$f" | sort | uniq -c | sort -rn; echo "last commits:"; git log -3 --format='%h %ad %an %s' --date=short -- "$f"; }; done; echo "== now"; date +%F
+ - Bash: for f in database_sql.go sql_test.go; do echo "== $f"; git log --all --no-merges --format='%an' -- "$f" | sort | uniq -c | sort -rn; git log -3 --format='%h %ad %an %s' --date=short -- "$f"; done; echo "== last activity per author (repo-wide)"; git log --all --no-merges --format='%an|%ad' --date=short | sort -t'|' -k1,1 -k2,2r | awk -F'|' '!seen[$1]++'; echo "== files touched by time/version7/sql authors, repo-wide"; for a in "Paul Borman" "Sam Okafor" "Alexander Rowe" "Ravi Menon" "Mei Chen" "Alex Bozhenko" "MikeWang" "Nicu Micle"; do echo "$a: $(git log --all --no-merges --author="$a" --format='' --name-only | sort -u | wc -l) files"; done; echo "== database_sql.go lines"; wc -l database_s
+ - Bash: echo "== time.go history"; git log --all --no-merges --format='%h %ad %an %s' --date=short -- time.go; echo "== version7.go history"; git log --all --no-merges --format='%h %ad %an %s' --date=short -- version7.go; echo "== Paul Borman last commit repo-wide"; git log --all --no-merges --author='Paul Borman' -1 --format='%h %ad %s' --date=short; echo "== commits since 2026-07-26"; git log --all --no-merges --since=2026-07-26 --format='%h %ad %an %s' --date=short; echo "== Ravi Menon commits"; git log --all --no-merges --author='Ravi Menon' --format='%h %ad %s' --date=short | head; echo "== importers of sql/time/version7 in-repo (same package = n/a)"; grep -rl 'uuid' --include='*.go' . | grep -
+ - Bash: git log --all --no-merges --follow --format='%an' -- database_sql.go | sort | uniq -c | sort -rn; echo ---; git log --all --no-merges --follow --format='%h %ad %an %s' --date=short -- database_sql.go | tail -5; echo ---; git log --all --no-merges --follow --format='%an' -- time.go | sort | uniq -c | sort -rn | head -3; echo ---; git log --all --no-merges --follow --format='%an' -- version7.go | sort | uniq -c | sort -rn | head -3; echo ---; git log --all --no-merges --follow --format='%an' -- sql_test.go | sort | uniq -c | sort -rn | head -3; cat .mailmap 2>/dev/null | head -20
+FINAL ANSWER:
+**Short answer:** Ask **Ravi Menon** about `version7.go` and the SQL code, and **Alexander Rowe** about `time.go`. Nobody on any of these files has committed in the last 90 days, so treat all of them as "reachable only if they reply."
+
+The bus-factor analysis (`project-pilot:bus-factor`) ran on this clone. Git history here is my only evidence for activity, so someone can be active elsewhere (GitHub reviews, issues) without showing up.
+
+### Per-area findings
+
+| Area | Distinct authors (lifetime) | Most recent maintainer | Last commit in repo | Original author, still around? |
+|---|---|---|---|---|
+| `time.go` | 8 | Alexander Rowe (`Add UUID.UnixMillis for version 7`, 2025-02-18) | 2025-04-22 (Sam Okafor, line-ending normalization) | Paul Borman wrote the file (2011) but last committed 2021-07-12 |
+| `version7.go` | 6 | Ravi Menon (`Document v7 clock step-back handling`, 2026-05-05) | 2026-05-05 | MikeWang wrote v7 support (2023), last active 2024-07-02 |
+| SQL (`database_sql.go`, `sql_test.go`) | 7 (with `--follow`) | Ravi Menon (renamed `sql.go` → `database_sql.go`, 2025-03-10) | `sql_test.go`: 2024-02-23 (kotaro.yamazaki) | David E. Wheeler, Justin Overfelt, Andrew Stone: last active 2016–2017 |
+
+Notes:
+- **Raw bus factor is not 1 for any of these files**, because many people have touched them. The risk is staleness: the people who designed the logic are gone.
+- For SQL, I traced history with `--follow`. Without it, `database_sql.go` looks like it has one author (Ravi), which is misleading.
+- `.mailmap` maps `Paul Borman` and `Alex Rowe`/`arowe` to single identities. I didn't re-run every count against it, so "Alexander Rowe" and "Alex Rowe" may be the same person, which would make Alexander's footprint slightly larger.
+
+### Activity check
+
+The 90-day window starts 2026-07-26. The newest commit in this repo is 2026-06-17, so no commit in the window. Most recent activity per relevant person:
+
+- Ravi Menon: 2026-06-17 (about 4 months ago)
+- Alexander Rowe: 2026-03-09
+- Mei Chen: 2025-08-02
+- Sam Okafor: 2025-05-06
+- MikeWang: 2024-07-02
+- Paul Borman: 2021-07-12
+
+### Recommendations
+
+1. **Ask Ravi Menon first.** They are the newest maintainer of `version7.go` and the SQL code, and wrote the clock step-back docs.
+2. **Ask Alexander Rowe about `time.go`.** They added `UnixMillis`, the most recent functional change there.
+3. **Ask MikeWang about the original v7 monotonicity logic** if the clock or ordering behavior comes up. Their fix is in `a2b2b32`.
+4. **Ask the group to confirm they will still review.** The silence is a risk signal. Sort out review ownership before the first change.
+
+I covered only the three areas you named, not all 29 `.go` files, and I did not measure importers. The root-package files are core to `UUID` generation, but that's my judgment, not a count.
+META cost=0.0075857500000000005 ms=32665 turns=8

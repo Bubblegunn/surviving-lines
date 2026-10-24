@@ -1,0 +1,43 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: node <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor/scripts/ownership.mjs . --dry-run --no-github 2>&1 | head -80; git shortlog -sne HEAD | head; git log --reverse --format='%h %ad' --date=short | sed -n '1p;$p'; git rev-list --count HEAD
+ - Bash: git ls-files | grep -E '\.zig$' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | sort -rn | head -20; echo; git log --since=2025-10-24 --format='%ae' | sort | uniq -c | sort -rn; echo; git log -8 --format='%ad %ae' --date=short
+ - Bash: git ls-files | grep -E '\.zig$' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author-mail ' ; done | sort | uniq -c | awk '{t+=$1} END{print t" total lines"}'; for e in <email redacted> <email redacted> <email redacted> <email redacted> <email redacted> wen.li@fjord.example tobias.ek@fjord.example <email redacted> <email redacted>; do echo "$e $(git log --author=$e --format=%ad --date=short | sed -n '1p;$p' | tr '\n' ' ') n=$(git log --author=$e --oneline | wc -l)"; done; git log --format='%an <%ae>' | grep -iE 'wen|tobias'| sort | uniq -c
+FINAL ANSWER:
+**The bus factor is about 2 by line count. The original author, Felix "xq" Queißner, still wrote about 35% of the current code.**
+
+I ran the busfactor script with `--dry-run --no-github`, so nothing was written to the repo. I also ran `git blame` over the 2,120 lines of `.zig` source. The history is 132 commits, from 2020-03-04 to 2026-11-04.
+
+**If xq stopped answering**
+- xq committed under four emails: `mq32.de`, `masterq32.de`, `ib-queissner.de` and `random-projects.net`. Merged, they account for about 751 of 2,120 lines (35%).
+- That code would have no author left to ask. It is the original foundation and not tied to one subsystem.
+- xq is not fully gone from the project. The last commits were on 2026-04-16, so they count as active under the tool's 12-month window.
+- The tool also lists one of xq's emails (`<email redacted>`) as part of the repo-wide fallback owners. That fallback is where review requests would land.
+
+**Who else holds the code**
+
+| Author | Lines | Share |
+|---|---|---|
+| Wen Li | 552 | 26% |
+| xq (merged) | 751 | 35% |
+| jnagpaul | 188 | 9% |
+| Vincent Rischmann | 130 | 6% |
+| mochalins | 77 | 4% |
+| everyone else | the remaining ~20% | |
+
+- **Bus factor 2:** xq alone is under half the code, but xq plus Wen Li is about 61%. Losing both would leave most of the code without an author.
+- **Concentration in the last month:** Wen Li and Tobias Ek made 6 commits in the last month (since 2026-10-06). All of Wen Li's commits are in that window, and the tool names Wen Li and Tobias as the `/src/` owners.
+- **Fresh, not proven:** so most of the current ownership signal is a few weeks old. That is a thin basis for calling anyone the lasting owner.
+- **Already gone:** jnagpaul's last commit was in July 2023 and they have only 7 commits, so their 188 lines (about 9%) are effectively orphaned. Other one-time contributors add a bit more.
+- **Ownership split:** the rest of the code is spread across many one-off contributors, so no single other person is a risk.
+
+**Caveats**
+- Line blame measures who wrote the code, not who understands it. Reviewers and maintainers who rarely commit don't show up.
+- I didn't write `.github/CODEOWNERS` or `ownership.json` and didn't check whether anyone marked inactive is still around. Say so if you want me to run it for real.
+- The tool produced a very short CODEOWNERS (a fallback plus one `/src/` rule), so it found no meaningful per-directory split.
+META cost=0.0813886 ms=25524 turns=6

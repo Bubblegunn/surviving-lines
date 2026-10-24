@@ -1,0 +1,80 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "Focus on surviving code ownership (git blame on current HEAD lines), not commit counts."}
+ - Bash: git ls-files | grep -vE '^(node_modules|vendor|dist|build)/' | grep -E '\.(js|ts|jsx|tsx|py|go|rs|java|rb|php|cs)$' > /tmp/files.txt; wc -l /tmp/files.txt; git log --oneline | wc -l; git log -1 --format=%ad; git shortlog -sne HEAD | head -20
+ - Bash: cat /tmp/files.txt; git ls-files | head -50; echo ---; for f in $(cat /tmp/files.txt); do echo "== $f"; git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author ' | sort | uniq -c | sort -rn | head -6; done; echo; git log -1 --format='%an %ad' ; git log --since="90 days ago" --format=%an | sort | uniq -c
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $(cat /tmp/files.txt) | grep '^author ' | sort | uniq -c | sort -rn | head -12; echo; git log --format='%an|%ad' --date=short -n 400 | awk -F'|' '{if(!($1 in l))l[$1]=$2} END{for(k in l)print l[k],k}' | sort -r | head -10
+ - Bash: for f in $(cat /tmp/files.txt); do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- $f | grep '^author '; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0; c[NR]=$1} END{for(i=1;i<=NR&&i<=10;i++)printf "%s  (%.1f%%)\n",a[i],100*c[i]/t; print "total",t}'; echo; for f in $(cat /tmp/files.txt); do printf "%s " $f; grep -rlE "require\(.*$(basename $f .js)|lib/index|\.\./lib" --include=*.js . --exclude-dir=node_modules 2>/dev/null | wc -l; done | head -3; git log --since="2026-07-26" --no-merges --format='%an' | sort | uniq -c
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-24 | Method: `git blame -w -M -C` on HEAD, ignoring the reformat commit `62628c0`
+
+### Project-level bus factor: 1
+
+> Troy Goode owns 56.2% of the lines that exist today. If they left, more than half the codebase would have no knowledgeable maintainer.
+
+The repo has 7 source files and 1,202 surviving lines. Ownership by those lines:
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Troy Goode | 676 | 56.2% |
+| Douglas Christopher Wilson | 394 | 32.8% |
+| Alejandro Caravaca Puchades | 30 | 2.5% |
+| Eric di Domenico | 16 | 1.3% |
+| Alberto Leal | 15 | 1.2% |
+| ~15 others | 71 combined | about 6% |
+
+Troy and Wilson together own about 89%. Everyone else is a minor contributor.
+
+**Commit counts mislead here.** Wilson has more commits (143 vs 120), but Troy has about 70% more surviving code. Commit counts would have named the wrong primary owner. The reformat commit would also have made a plain blame credit most lines to "Fiona Formatter", so I excluded it.
+
+### Per-file ownership
+
+| File | Top owner | Share | Second | Dependents | Risk |
+|---|---|---|---|---|---|
+| `lib/index.js` | Troy Goode | 159 of about 220 lines (~72%) | Wilson, 22 lines | All tests import it, and it is the only runtime source file | **HIGH** |
+| `test/test.js` | Wilson (339) and Troy (317) | about 40% each | Caravaca Puchades, 18 | None (a leaf) | LOW (shared) |
+| `test/example-app.js` | Troy | 67 of 81 lines (83%) | Wilson | None | LOW |
+| `test/error-response.js` | Troy | 57 of 66 lines (86%) | Wilson | None | LOW |
+| `test/issue-2.js` | Troy | 40 of 48 lines (83%) | Wilson | None | LOW |
+| `test/vary.js` | Troy | 100% | none | None | LOW (single owner, but a small, recent test) |
+| `test/support/env.js` | Wilson | 100% | none | None | LOW (2 lines) |
+
+I did not count dependents rigorously. The shell glob failed in my dependents grep. The "all tests import it" claim comes from the repo layout, not from that grep.
+
+### Is the owner still around?
+
+- Troy's last commit was 2026-04-10, about 6.5 months ago.
+- No one has committed in the last 90 days, so the project looks dormant.
+- The last non-bot commits were Vansh Sharma (2026-04-07) and Ulises Gascón (2026-01-22). Neither owns meaningful surviving code.
+- Wilson's last commit is further back. I only checked recent authors, not his exact date.
+
+### Heat map
+
+```
+repo/
+├── lib/index.js          [████████░░] 🔴 BF 1  Troy ~72%   <- the only runtime file
+└── test/
+    ├── test.js           [█████░░░░░] 🟢 BF 2  Troy/Wilson split
+    ├── example-app.js    [████████░░] 🟡 Troy 83%
+    ├── error-response.js [█████████░] 🟡 Troy 86%
+    ├── issue-2.js        [████████░░] 🟡 Troy 83%
+    ├── vary.js           [██████████] 🟡 Troy 100% (small)
+    └── support/env.js    [██████████] 🟡 Wilson 100% (2 lines)
+```
+
+### Recommendations
+
+1. **Immediate:** Have a second person review `lib/index.js`, which is where nearly all the risk sits. Wilson is the only other substantial owner there, with 22 lines.
+2. **Short-term:** Identify who currently maintains this. Neither top owner has committed recently, and the recent commits are from drive-by contributors and bots.
+3. **Ongoing:** Document the intent of `lib/index.js` in the README or a comment. Add a `.git-blame-ignore-revs` file listing `62628c0` so future blame isn't polluted by the formatting commit.
+
+**Caveats:**
+- Authors are matched by name, not email. For example, "Troy Goode" also appears under a `troy@laptop.example` address.
+- Blame with `-M -C` can occasionally misattribute moved code.
+- The sample is tiny, with 7 files, so percentages shift a lot per line.
+META cost=0.09407860000000001 ms=28823 turns=7

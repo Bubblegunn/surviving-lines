@@ -1,0 +1,30 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | sed -E 's/.*\///' | awk -F. '{print (NF>1?$NF:"(none)")}' | sort | uniq -c | sort -rn; git log --format='%h %an <%ae> %s' -n 8; ls .git-blame-ignore-revs 2>/dev/null; git show --stat 62628c0 | tail -3; git show --stat b2005d9 | tail -3
+ - Bash: git show b2005d9 | head -40; run(){ for f in $(git ls-files); do b=$(basename $f); case $b in *.*) e=${b##*.};; *) e="(none)";; esac; git blame --line-porcelain "$@" -- $f | sed -n 's/^author //p' | sed "s|^|$e\t|"; done | sort | uniq -c | sort -k2,2 -k1,1nr; }; echo RAW; run; echo IGNORE-FMT; run --ignore-rev 62628c0
+ - Bash: for f in $(git ls-files '*.js'); do git blame --line-porcelain --ignore-rev 62628c0 -- $f | awk -v f=$f '/^[0-9a-f]{40} /{c=$1} /^author /{sub(/^author /,"");print f"\t"$0"\t"substr(c,1,7)}'; done | sort | uniq -c | sort -rn | head -15; git show --stat 02afce3 | tail -2
+ - Bash: for f in $(git ls-files '*.js'); do git blame -w -M --line-porcelain --ignore-rev 62628c0 -- $f | sed -n 's/^author //p'; done | sort | uniq -c | sort -rn | head -4
+FINAL ANSWER:
+Here is who owns the most surviving lines (by `git blame` on `HEAD`) for each file type:
+
+| Extension | Files | Top owner | Lines | Runner-up |
+|---|---|---|---|---|
+| `.js` | 7 | **Troy Goode** | 676 | Douglas Christopher Wilson (394) |
+| `.md` | 2 | **Troy Goode** | 104 | Jon Church (72) |
+| `.yml` | 6 | **Douglas Christopher Wilson** | 117 | Íñigo Marquínez Prado (94) |
+| `.json` | 1 | **Douglas Christopher Wilson** | 20 | Troy Goode (12) |
+| `.gitignore` | 1 | **Douglas Christopher Wilson** | 4 | Troy Goode (1) |
+| no extension (`LICENSE`) | 1 | **Douglas Christopher Wilson** | 17 | Troy Goode (5) |
+
+**The `.js` result depends on one commit.** The latest commit, `62628c0` by Fiona Formatter ("reformat js with 4-space indent and double quotes"), rewrote 1,016 JS lines. It only changed formatting. A plain `git blame` credits all 1,016 lines to Fiona, which would make her the `.js` owner. I didn't count that commit, and I also ignored whitespace changes. That way each line goes back to whoever actually wrote it. If you ignore the commit but still count whitespace, Fiona keeps 237 lines and Troy still leads with 520.
+
+The repo has no `.git-blame-ignore-revs` file. If you add one listing `62628c0`, GitHub's blame view and `git blame` (once `blame.ignoreRevsFile` is set) will skip the reformat automatically.
+
+Two smaller points:
+- Troy's commit `b2005d9` only adds `// checked` comments to 12 lines in `lib/index.js`. Even without those lines he still leads `.js` by a wide margin.
+- I grouped authors by name. Nobody appears under more than one name, so this doesn't change any result.
+META cost=0.1555888 ms=33999 turns=5

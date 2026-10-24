@@ -1,0 +1,24 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | awk -F/ '{f=$NF; if (f ~ /\./) {n=split(f,a,"."); print a[n]"\t"$0} else print "(none)\t"$0}' > /tmp/files.tsv; cut -f1 /tmp/files.tsv | sort | uniq -c
+ - Bash: cut -f2 /tmp/files.tsv | while read f; do ext="${f##*/}"; case "$ext" in *.*) ext="${ext##*.}";; *) ext="(none)";; esac; git blame -w -M -C --line-porcelain -- "$f" 2>/dev/null | awk -v e="$ext" '/^author /{sub(/^author /,""); print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr
+FINAL ANSWER:
+Top owner of surviving lines (by `git blame -w -M -C`) for each extension:
+
+| Extension | Top owner | Lines | Notes |
+|---|---|---|---|
+| `.js` | Troy Goode | 581 | Fiona Formatter is second with 291. Their lines come from the latest "reformat js" commit. Douglas Christopher Wilson has 219. |
+| `.md` | Troy Goode | 116 | Jon Church has 72 and Douglas Christopher Wilson has 67. |
+| `.yml` | Douglas Christopher Wilson | 127 | Íñigo Marquínez Prado has 95. |
+| `.json` | Douglas Christopher Wilson | 20 | Troy Goode has 12. |
+| `.gitignore` | Douglas Christopher Wilson | 4 | Troy Goode has 1. |
+| no extension | Douglas Christopher Wilson | 17 | This is one file. Troy Goode has 5 lines in it. |
+
+The `.js` result depends on how the reformat commit is counted. `-w` ignores whitespace changes but not the quote changes, so Fiona Formatter still gets 291 lines. Some of those lines would probably go back to the original authors if the quote-only changes were ignored too. Troy Goode leads either way.
+
+The counts cover only the files git tracks, and only the lines that survive at HEAD.
+META cost=0.047729099999999997 ms=9805 turns=3

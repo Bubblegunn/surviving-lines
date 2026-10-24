@@ -1,0 +1,56 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: git log --format='%h %an <%ae> %s' | head -5; echo; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -30; ls -a; cat .mailmap 2>/dev/null
+ - Bash: git log --format='%h %s' | grep -iE 'format|style|lint|indent|prettier|whitespace|quote' 
+for area in lib test .github ROOT; do
+ if [ $area = ROOT ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files $area); fi
+ echo "== $area"
+ for f in $files; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" 2>/dev/null | grep -E '^author-mail '; done | sed 's/author-mail //' | sed -E 's/<(troy@laptop.example|<email redacted>)>/<TROY>/; s/<<email redacted>>/<ALEX>/' | sort | uniq -c | sort -rn | head -5
+done
+ - Bash: git ls-files | head -40; git ls-files | grep -v / 
+ - Bash: bash -c '
+for area in lib test .github ROOT; do
+ if [ $area = ROOT ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files $area); fi
+ echo "== $area"
+ for f in $files; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep -E "^author-mail "; done | sed "s/author-mail //" | sed -E "s/<(troy@laptop.example|<email redacted>)>/<TROY>/; s/<<email redacted>>/<ALEX>/" | sort | uniq -c | sort -rn | head -4
+done'
+ - Bash: bash -c '
+for area in lib test .github ROOT; do
+ if [ $area = ROOT ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files $area); fi
+ echo "== $area"
+ for f in $files; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep -E "^author-mail "; done | grep -v "\[bot\]" | sed "s/author-mail //" | sed -E "s/<(troy@laptop.example|<email redacted>)>/<TROY>/; s/<<email redacted>>/<ALEX>/" | sort | uniq -c | sort -rn | awk "{a[NR]=\$0;t+=\$1} END{for(i=1;i<=2;i++){split(a[i],p,\" \"); printf \"%s  %.1f%%\n\",a[i],100*p[1]/t}; print \"total\",t}"
+done'; git log --format='%an <%ae>' | grep -i troy | sort | uniq -c
+FINAL ANSWER:
+I counted surviving lines at HEAD with `git blame`. The blame skipped the formatting commit `62628c0`, ignored whitespace changes and counted moved lines under their original author. Bot lines were excluded. Troy Goode appears under two emails (`<email redacted>` and `troy@laptop.example`), so I counted those as one person.
+
+Without skipping `62628c0`, Fiona Formatter would own nearly every JS line.
+
+| Path | Top owner | Share of surviving lines |
+|---|---|---|
+| `lib/` | Troy Goode | 66.8% (159 of 238) |
+| `test/` | Troy Goode | 53.5% (517 of 966) |
+| `.github/` | Douglas Christopher Wilson | 32.2% (second is Íñigo Marquínez Prado at 26.0%) |
+| Root files | Troy Goode | 32.3% (second is Douglas Christopher Wilson at 27.7%) |
+
+Troy Goode has at least half of `lib/` and `test/`. Nobody reaches half of `.github/` or the root files.
+
+I didn't have GitHub handles, only names and emails, so `@troygoode` below is a guess. Please check it.
+
+```
+# lib/ and test/: one person holds at least half of the surviving lines
+/lib/   @troygoode
+/test/  @troygoode
+
+# .github/ and root files: nobody holds half, so no owner is named
+# /.github/
+# /*
+```
+
+- **`test/`:** At 53.5%, Troy Goode is only just over the line. Douglas Christopher Wilson holds 38.7%.
+- **`.github/` and root files:** I left these without an owner on purpose. If you want a default reviewer, make it a team rather than naming the top contributor.
+META cost=0.086711 ms=31159 turns=7

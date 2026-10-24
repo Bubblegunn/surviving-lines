@@ -1,0 +1,59 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -20; echo ---; git ls-files | grep -E '\.py$'; echo ---; git log --format='%an' | wc -l
+ - Bash: for f in $(git ls-files | grep -E '\.py$'); do git blame -w -M -C --line-porcelain "$f" 2>/dev/null | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | head -20
+ - Bash: git log --author='Dana Kessler' --format='%h %ad %s' --date=short --shortstat; echo ---; git log -5 --format='%h %an %ad %s' --date=short --shortstat; echo --- per dir; for d in colorama tests demos; do echo "== $d"; for f in $(git ls-files "$d" | grep -E '\.py$'); do git blame -w -M -C --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -6; done
+ - Bash: git show --stat --format='%h %s' aa872f7 | head; head -15 colorama/_vendor/_typing_compat.py; printf 'c73f380\n994fda9\naa872f7\n' > /tmp/ignore-revs; echo --- ; for f in $(git ls-files | grep -E '\.py$' | grep -v _vendor); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sed 's/wiggin15/Arnon Yaari/' | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=12;i++) print a[i]; print "total",t}'
+ - Bash: git rev-parse c73f380 994fda9 > /tmp/ignore-revs; cat /tmp/ignore-revs; for f in $(git ls-files | grep -E '\.py$' | grep -v _vendor); do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sed 's/wiggin15/Arnon Yaari/' | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=10;i++) print a[i]; print "total",t}'; echo; git log --format='%an' --since=2025-10-24 | sort | uniq -c | sort -rn | head
+ - Bash: for f in colorama/__init__.py colorama/ansi.py colorama/ansitowin32.py colorama/initialise.py colorama/win32.py colorama/winterm.py; do git blame -w -M -C --ignore-revs-file /tmp/ignore-revs --line-porcelain "$f" | grep '^author ' | sed 's/^author //;s/wiggin15/Arnon Yaari/' | sort | uniq -c | sort -rn | awk -v f=$f '{t+=$1; a[NR]=$2" "$3" "$1} END{printf "%-26s %4d lines  top: %s | %s | %s\n", f,t,a[1],a[2],a[3]}'; done
+FINAL ANSWER:
+Raw `git blame` gives a misleading picture here. Once you correct for three bulk commits, the code is mostly Jonathan Hartley's, with Arnon Yaari second. Exposure is high, concentrated in Hartley.
+
+**Why raw blame is wrong**
+
+Raw blame says Dana Kessler wrote about 1,324 lines, the most of anyone. Dana has only 4 commits, and three of them aren't authorship:
+- `aa872f7` adds `colorama/_vendor/_typing_compat.py`, 1,103 lines. Its header says it is vendored from `typing_extensions` 4.12.2 and marked "DO NOT EDIT", so it isn't Dana's code. Its repeated `_compat_NNN` functions don't look like the real library either. I'd check that file before the handover, but I didn't dig further.
+- `c73f380` is a repo-wide quote-style rewrite that touches 221 lines.
+- `994fda9` moves the tests and changes no lines.
+
+Dana's one other commit adds `NO_COLOR` handling (4 lines). I excluded the vendored file and the two formatting and move commits, then re-ran blame. Dana drops out of the top 10 authors. I treated `wiggin15` and Arnon Yaari as one person, since they share an email address.
+
+**Who wrote the current code**
+
+This covers 1,936 non-vendored Python lines.
+
+| Author | Surviving lines |
+|---|---|
+| Jonathan Hartley | 1,080 (56%) |
+| Arnon Yaari (also `wiggin15`) | 232 (12%) |
+| Nathaniel J. Smith | 196 |
+| Delgan | 107 |
+| John Szakmeister | 62 |
+| Everyone else | each 37 or fewer |
+
+**Exposure by file (library core)**
+
+| File | Top author's share |
+|---|---|
+| `win32.py` | Hartley, 115 of 193 lines; Segev Finer is next with 28 |
+| `ansitowin32.py` | Hartley, 142 of 277 lines; Arnon Yaari 54 |
+| `winterm.py` | Hartley, 97 of 202 lines; Arnon Yaari 48 |
+| `initialise.py` | Hartley, 53 of 121 lines; Nathaniel J. Smith 35 |
+| `ansi.py` | Hartley, 44 of 109 lines; Arnon Yaari 22 |
+
+**What losing the top two would mean**
+
+- **Hartley is the real risk.** He wrote about half or more of every core file, and the Windows console layer (`win32.py`, `winterm.py`) leans on him most. He also has 130 commits, the most of anyone.
+- **Arnon Yaari is a secondary risk.** Arnon is the second author on `ansitowin32.py`, `winterm.py` and `ansi.py`. Losing both would leave `ansitowin32.py` and `winterm.py` with no author who wrote more than a small share. Nathaniel J. Smith (`initialise.py`) and Segev Finer (`win32.py`) are the fallback authors for some files.
+- **Recent activity is thin.** Over the last 12 months, Hartley made 2 commits and Arnon 1. The recent work has come from Dana Kessler (4 commits), Priya Nair (2), Brian Wing (2) and Tomás Ibarra (1). Those people have touched the code, but each has little surviving core code. The people who know the Windows console behaviour are mostly the two you'd lose.
+
+**Before the handover**
+- Ask Hartley and Arnon to document the Windows console quirks in `win32.py`, `winterm.py` and `ansitowin32.py`, and why they were written that way. That knowledge isn't in the code.
+- Add `.git-blame-ignore-revs` with `c73f380`, `994fda9` and `aa872f7`, so the new team's blame output isn't skewed the same way.
+
+I haven't looked at the non-`.py` files, or at issue and PR history, which could change who the domain experts are.
+META cost=0.09644570000000001 ms=32332 turns=7

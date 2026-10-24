@@ -1,0 +1,27 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__repo_summary", "max_results": 5}
+ - Bash: git ls-files | sed -E 's/.*\///' | awk '{n=split($0,a,"."); print (n>1? "."a[n] : "(none)")}' | sort | uniq -c | sort -rn
+ - Bash: for w in "" "-w"; do echo "== blame $w"; for f in $(git ls-files); do e=".${f##*.}"; [ "$f" = "${f##*/}" ] && [[ "$f" != *.* ]] && e="(none)"; [[ "$f" == .gitignore ]] && e=".gitignore"; git blame $w -M --line-porcelain -- "$f" | sed -n 's/^author //p' | sed "s/^/$e\t/"; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; e=$2; $1="";$2=""; if(!(e in s)){s[e]=1; print e, c, $0}}'; done
+FINAL ANSWER:
+Top owner of surviving lines (`git blame` at HEAD) for each file type:
+
+| Type | Top owner | Lines |
+|---|---|---|
+| `.js` (7 files) | Fiona Formatter | 1016 |
+| `.yml` (6 files) | Douglas Christopher Wilson | 127 |
+| `.md` (2 files) | Troy Goode | 104 |
+| `.json` (1 file) | Douglas Christopher Wilson | 20 |
+| `.gitignore` (1 file) | Douglas Christopher Wilson | 4 |
+| no extension (1 file) | Douglas Christopher Wilson | 17 |
+
+The `.js` result is misleading. Fiona Formatter owns those lines only because of the latest commit, `62628c0`, which reformatted all the JS to 4-space indent and double quotes. Rerunning blame with `-w` (ignore whitespace) shows Troy Goode as the top `.js` owner, with 581 lines. The quote changes still count as edits under `-w`, so some lines stay credited to Fiona Formatter. Troy Goode's `.js` share is probably an undercount.
+
+The `-w` rerun also moved `.md` from 104 to 116 lines for Troy Goode. The other types came out the same either way.
+
+I ran `git blame` directly across all tracked files rather than the git-historian `blame_summary` tool, because that tool handles one file at a time. I haven't checked how many of these lines are original code and how many were changed later.
+META cost=0.0486359 ms=11893 turns=4

@@ -1,0 +1,29 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines", "args": "--for-diff lib/index.js"}
+ - Bash: node /private/tmp/r13/final/ours-src/bin/surviving-lines.js --reviewers lib/index.js
+ - Bash: cat .git-blame-ignore-revs; git show --stat --format='%h %an %s' fcd2b56 | head -20
+FINAL ANSWER:
+**Main reviewer: Troy Goode.** No one else has a meaningful claim to this file.
+
+These figures count surviving lines in `lib/index.js` (from `surviving-lines --reviewers lib/index.js`). That shows whose code is still in the file, not who understands it best.
+
+**Line-ranked reviewers:**
+1. **Troy Goode**: 144 non-blank lines (67.3%), 159 counting blank lines (66.8%). This merges two addresses: `<email redacted>` (132 lines, 61.7% / 147, 61.8%) and `troy@laptop.example` (12 lines, 5.6% / 12, 5.0%). The tool rates this as a strong same-name match, but it's a guess. It isn't in `.mailmap` and nobody has confirmed it. Troy is the only active person on this file: the last commit is from 2026-04-10, under the laptop address.
+2. **Douglas Christopher Wilson**: 20 lines (9.3%) / 22 (9.2%). Inactive. Their last commit to this file was 2017-10-04 and their last anywhere in the repo was 2021-09-07, so they've left the project, not just this file.
+3. **Alejandro Caravaca Puchades**: 14 lines (6.5%) / 16 (6.7%). Inactive, with a last commit on 2015-05-28. This count already combines the "alex94puchades" name, because both names use the same email address. 11 of the 14 lines came from e64e854, which Troy committed for them.
+
+**Risk:** the file's bus factor is 1, counting surviving lines (the fewest authors who together hold 50%). On the unmerged figures, Troy's main address alone holds 61.7% of 214 non-blank lines (61.8% of 238 counting blank lines). Reaching 80% takes 4 authors. As of 2026-04-12, only 1 of 18 authors had committed to this file in the past year, and that author holds 67.3% of its lines. The file is not orphaned.
+
+**Caveats:**
+- The reformat commit 62628c0 is listed in `.git-blame-ignore-revs`, so it doesn't count toward anyone's lines.
+- fcd2b56 ("switch to ESLint; clean up", Troy's own commit) looks mechanical, but the tool didn't set it aside. It holds only 6 surviving lines, so it doesn't change the ranking.
+- The history starts with an import on 2013-01-30. Lines older than that are credited to whoever made the import.
+- Line counts leave out review, design work and code that was deleted.
+
+Once your change exists, run `surviving-lines --for-diff main...HEAD` to see who wrote the specific lines you replace or delete. New lines and pure insertions have no earlier owner.
+META cost=0.1958402 ms=29603 turns=5

@@ -1,0 +1,21 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | while read f; do case "$f" in *.*) ext="${f##*.}";; *) ext="(none)";; esac; git blame --line-porcelain -w -- "$f" 2>/dev/null | awk -v e="$ext" '/^author /{sub(/^author /,""); print e"\t"$0}'; done | sort | uniq -c | sort -k2,2 -k1,1nr | awk '{c=$1; e=$2; if(e!=p){print; p=e}}'
+FINAL ANSWER:
+Top owner by surviving lines (`git blame -w`, grouped by file extension):
+
+| Extension | Top owner | Lines |
+|---|---|---|
+| `.js` | Troy Goode | 517 |
+| `.md` | Troy Goode | 116 |
+| `.yml` | Douglas Christopher Wilson | 117 |
+| `.json` | Douglas Christopher Wilson | 20 |
+| `.gitignore` | Douglas Christopher Wilson | 4 |
+| no extension (e.g. `LICENSE`) | Douglas Christopher Wilson | 17 |
+
+The counts are only the top owner's lines, not file totals. The latest commit reformatted the JS to 4-space indent and double quotes. `-w` ignores whitespace changes, but the quote changes can still shift blame onto whoever made that commit. I didn't check whether it did.
+META cost=0.034524599999999996 ms=7806 turns=2

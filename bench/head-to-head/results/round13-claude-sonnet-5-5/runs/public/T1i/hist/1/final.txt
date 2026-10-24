@@ -1,0 +1,35 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 3}
+ - Bash: cat .git-blame-ignore-revs && git ls-files | head -50
+ - Bash: for f in $(git ls-files | grep -vE 'LICENSE|HISTORY.md'); do git blame -w -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo ---raw-no-ignore; for f in $(git ls-files | grep -vE 'LICENSE|HISTORY.md'); do git blame --line-porcelain "$f" 2>/dev/null | grep '^author ' ; done | sort | uniq -c | sort -rn | head -5; echo ---by-dir; for f in lib/index.js; do git blame -w -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | head -6; done
+FINAL ANSWER:
+By surviving lines, **Troy Goode** owns the most code today, with **Douglas Christopher Wilson** second.
+
+I ran `git blame` on every tracked file except `LICENSE` and `HISTORY.md`. I used `-w -C` and `--ignore-revs-file .git-blame-ignore-revs`. I did this because commit `62628c0` ("reformat js with 4-space indent and double quotes") touched nearly every line. Plain blame credits 1,018 lines to "Fiona Formatter" and understates everyone else. With that commit ignored, the counts show who wrote the code:
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 805 |
+| Douglas Christopher Wilson | 562 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 46 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Everyone else | 10–17 each, or fewer |
+
+- **Core library:** In `lib/index.js`, Troy Goode owns 159 lines and Douglas Christopher Wilson 22. The rest is spread thinly across contributors such as Alejandro Caravaca Puchades, Raymond Feng, max.laverse and LuisEGR.
+- **Tests:** Most of the other lines are in the test files.
+- **Counts versus ownership:** These are line counts, not a measure of importance. A single line of the core logic counts the same as a line of test boilerplate.
+- **Excluded files:** I left out `LICENSE` and `HISTORY.md`. They are mostly text and would add noise.
+- **Moved code:** `-C` follows lines that were moved or copied, but a rewrite of a line still moves credit to whoever rewrote it.
+
+I haven't checked who is still active. The git-historian `knowledge_risk` tool can show which of these owners have gone quiet. Do you want me to run it?
+META cost=0.0567931 ms=14201 turns=4

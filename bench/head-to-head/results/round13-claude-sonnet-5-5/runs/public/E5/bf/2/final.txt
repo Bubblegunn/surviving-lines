@@ -1,0 +1,53 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn | head -15; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | head -40; echo ---; git log --follow --format='%h %ad %an %s' --date=short -- lib/index.js | tail -5; echo ---; wc -l lib/index.js; git blame -w -C -C -M --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w -C -C -M --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show --stat --format='%h %an %s' b2005d9 -- lib/index.js | tail -3
+FINAL ANSWER:
+`lib/index.js` is 238 lines. Troy Goode created it and still owns most of it. Douglas Christopher Wilson is the next biggest contributor. A long tail of small fixes from other people is still in the code.
+
+**Who shaped it**
+
+- **Troy Goode** made the first commit on 2013-01-30 and wrote about 29 of the file's commits. In the first weeks he added case-insensitive header lookup, `origin: false` to disable CORS, and request pause/resume to handle async middleware. He then added `Access-Control-Expose-Headers` support (2013–14) and Express 4+ support (2.3.2, mid-2014). In late 2014 he switched to the `vary` module. In 2015 he moved the project to ESLint. His 2.8.0 release in 2016 fixed #66 and #73. His most recent change, `b2005d9` (2026-04-10), annotated the handlers.
+- **Alejandro Caravaca Puchades** (and his other account, alex94puchades) added regexp and array support for `options.origin` in May 2015.
+- **Douglas Christopher Wilson** (expressjs maintainer) made the 2017 fixes. He added `Vary: Access-Control-Request-Headers` for dynamic `allowedHeaders` and fixed the crash when an options delegate had no `methods`. He also did lint and ESLint cleanups.
+- **One-off contributors:**
+  - Igor Soarez: the first `Vary: Origin` header.
+  - Eran Tiktin: the `Vary` fix for `*`.
+  - Raymond Feng: removed a closure in `applyHeaders`.
+  - max.laverse: lets the preflight request pass to `next()`.
+  - DracoBlue: exposed headers on OPTIONS requests.
+  - jordandenison: fixed strict-mode handling in the middleware wrapper.
+  - Hannah Wolfe: named the anonymous middleware function.
+  - Saad Tazi: fix for frozen options objects.
+  - Tomek Kopczuk: `Vary: Origin` for regexp origins.
+  - Benjamin Eidelman: Safari workaround in the default preflight response.
+  - Tom Arad: fix for `maxAge` set to 0.
+  - LuisEGR: lint cleanup in 2021.
+  - Typicode: added PATCH to the default methods.
+  - Alberto Leal: stopped the `options.origin` callback being overridden.
+  - Shane Tomlinson: uppercase method names before comparison.
+
+**Whose code is still there**
+
+The latest commit, `62628c0`, is a mass reformat to 4-space indent and double quotes by "Fiona Formatter". Plain `git blame` credits it with 32 lines. I re-ran blame with `--ignore-rev 62628c0` and `-w -C -C -M`, and that gives the surviving lines by original author:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades (plus alex94puchades, 4) | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+About two-thirds of the file is still Troy's. Most of the rest is Wilson's 2017 hardening, plus the regexp/array origin matching, Feng's `applyHeaders` optimization, and many small one-line fixes.
+
+Blame counts only surviving lines. Features that were later rewritten or removed, such as the request pause/resume, don't show up in it.
+META cost=0.0580757 ms=14948 turns=3

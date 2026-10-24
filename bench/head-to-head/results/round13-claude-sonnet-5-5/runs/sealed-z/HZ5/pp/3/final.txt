@@ -1,0 +1,52 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ5-pp-3/repo; cat .mailmap; ls .git-blame-ignore-revs 2>/dev/null; git log --format='%h %an <%ae> %s' | head -5; git rev-list --count HEAD; for d in src tests; do echo "== $d"; git ls-files $d | xargs -n1 git blame -w -M -C --line-porcelain 2>/dev/null | grep -E '^author-mail ' | sort | uniq -c | sort -rn; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ5-pp-3/repo; git shortlog -sne HEAD | head -20; git log --format='%h %an %s' --grep='cs-fixer\|Apply\|generated' | head
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ5-pp-3/repo; git show --stat --format='%h %an' 3eac4de 093e431 | head -20; echo; for f in $(git ls-files src); do n=$(git blame -w -M -C --line-porcelain $f | grep -c '^author-mail <tomasz'); [ $n -gt 0 ] && echo "$n $f"; done; echo; git blame -w --line-porcelain $(git ls-files src) 2>/dev/null | grep -c 'twrona@laptop' ; git ls-files src tests | xargs wc -l | tail -1
+FINAL ANSWER:
+**Short answer:** Ben Ramsey wrote most of the code that exists today, and losing them would be a real loss. Nobody else comes close.
+
+I ran `git blame` (`-w -M -C`, with `.mailmap` applied) on every file in `src/` and `tests/`. Counts are surviving lines.
+
+**`src/` (about 3,470 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 2,171 | 63% |
+| Tomasz Wrona | 358 | 10% |
+| Carlos C Soto (eclipxe13) | 270 | 8% |
+| zf2timo | 223 | 6% |
+| icanhazstring | 199 | 6% |
+| Kévin Gomez | 145 | 4% |
+| Everyone else (about 10 people) | about 100 | 3% |
+
+Wrona's number is misleading. 295 of their 358 lines are the generated `src/Generated/TypeMap.php`. Their hand-written code is `Support/ChunkTrait.php` (51 lines) plus about 12 scattered lines. Without the generated file, Ben's share of `src/` is about 68%. Carlos, Timo and icanhazstring are the real second tier.
+
+**`tests/` (about 3,625 lines)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | 1,964 | 54% |
+| icanhazstring | 594 | 16% |
+| Kévin Gomez | 329 | 9% |
+| Carlos C Soto | 204 | 6% |
+| zf2timo | 174 | 5% |
+| Simone Todaro | 113 | 3% |
+| peter279k | 91 | 3% |
+
+icanhazstring wrote far more of the tests (594 lines) than of the source (199). Whoever inherits the test suite should know that.
+
+**If Ben leaves**
+- Ben wrote the large majority of both source and tests, and nobody else has more than about 10% of `src/` or 16% of `tests/`. Whatever design reasoning lives only in Ben's head goes with them.
+- The contributors with real context on the code are Carlos C Soto, icanhazstring, Timo (zf2timo) and Kévin Gomez. Kévin's lines are mostly older code, and I haven't checked whether they're still active.
+- Tomasz Wrona is the only recent contributor, with one feature in `ChunkTrait` plus the generated map. The other names are mostly historical.
+
+**Caveats**
+- Blame shows who last touched a line, not who designed it. Ben's own bulk commit "Apply new coding standards and static analysis clean-up" (5f4055d) may have taken over lines that others originally wrote. Ben's share is likely a bit inflated.
+- 12 `src/` lines are attributed to github-actions (php-cs-fixer). Those aren't real authorship.
+- I didn't break ownership down per file, so I can't say which files Ben alone understands. I can run that if you want a list of the riskiest ones for the handover.
+META cost=0.0691373 ms=24639 turns=4

@@ -1,0 +1,24 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-base-1/repo; git log --since=2026-03-29 --format='%h|%ad|%an|%ae|%cn|%s' --date=iso --shortstat --all | head -100; echo; git log -1 --format=%ad --date=iso
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-base-1/repo; git log --since=2026-03-20 --format='%h|%ad|%an|%ae|%cn|%s' --date=iso; echo; git shortlog -sne --all | head -30; cat .mailmap 2>/dev/null; git show --stat 62628c0 | head; git show 02afce3 b2005d9 | head -120
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-base-1/repo; for f in $(git ls-files); do git blame --line-porcelain --ignore-rev 62628c0 HEAD -- "$f" 2>/dev/null | awk -v f="$f" '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author /{a=substr($0,8)} /^author-mail /{print c"|"a"|"$2"|"f}'; done > /tmp/bl.txt; wc -l < /tmp/bl.txt; grep -Ei 'troy|vansh|fiona' /tmp/bl.txt | cut -d'|' -f1-4 | sort | uniq -c
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-base-1/repo; grep -c 'Troy Goode' /tmp/bl.txt; grep -c 'troygoode@' /tmp/bl.txt; grep -n 'checked' lib/index.js | head -20; git show 62628c0 -- lib/index.js | grep checked
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-base-1/repo; git blame --ignore-rev 62628c0 -s HEAD -- lib/index.js | grep checked
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/E2k-base-1/repo; git diff --stat 62628c0^ 62628c0 | tail -1; for f in $(git ls-files); do git blame --line-porcelain 62628c0^ -- "$f" 2>/dev/null | awk '/^[0-9a-f]{40} /{c=substr($1,1,7)} /^author-mail /{print c"|"$2}'; done > /tmp/bl2.txt; wc -l < /tmp/bl2.txt; git ls-files | xargs cat | wc -l; grep -E '02afce3|b2005d9|5317ebe' /tmp/bl2.txt | sort | uniq -c; grep -c 'troy' /tmp/bl2.txt; grep -c troygoode@ /tmp/bl2.txt
+FINAL ANSWER:
+Two people committed in the window (2026-03-29 to 2026-04-12), once the formatting commit is set aside.
+
+| Person | Commits in window | Lines from those commits still in the code | All their lines still in the code |
+|---|---|---|---|
+| **Troy Goode** | `02afce3` test: vary header coverage (Apr 10, +36)<br>`b2005d9` lib: annotate handlers (Apr 10, 12 lines changed) | 48 (36 + 12, all of them) | 757 |
+| **Vansh Sharma** | `5317ebe` docs: app.del() with app.delete() in README example (#411) (Apr 7) | 1 | 1 |
+
+- **Troy counted once:** the two window commits use `troy@laptop.example`, but Troy also has 709 surviving lines under `<email redacted>` from older work. That's how the total reaches 757.
+- **Left out:** Fiona Formatter's `62628c0` (Apr 12) only reformatted the code (4-space indent and double quotes; 1016 lines out, 1016 back in), so it isn't counted for anyone. The most recent bot commit (dependabot, `ee714bd`) is older than the window, so no bots were in it anyway.
+- **How I counted lines:** the reformat is the latest commit, so I ran blame on the code as it was just before it. Because the reformat swapped lines one-for-one, those counts match the current code with each line credited to the person who actually wrote it. Plain blame on today's code credits most lines in the four reformatted files to Fiona. Blame's "ignore this commit" option got a few lines wrong: it gave 3 of Troy's 12 annotated lines to older commits.
+META cost=0.20230099999999998 ms=31814 turns=7

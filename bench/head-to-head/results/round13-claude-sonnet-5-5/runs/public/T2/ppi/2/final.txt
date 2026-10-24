@@ -1,0 +1,52 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T2-ppi-2/repo; ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; for f in $(git ls-files lib); do echo "== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; done; echo ---; git log --no-merges --pretty=format:"%an|%ad" --date=short -- lib | sort -t'|' -k1,1 -u | head -50; git log --format='%an %ad' --date=short -1
+FINAL ANSWER:
+## Bus Factor: `lib/`
+
+**Short answer:** the headline count is 25, but the effective bus factor is **1**. It's Troy Goode, and that is a soft 1.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files | 1 (`lib/index.js`) |
+| Distinct contributors, all history | 25 (this includes the reformat commit author) |
+| Total non-merge commits to `lib/` | 58 |
+| Files with bus factor 1 | 0 |
+| Top contributor share | Troy Goode, 33 of 58 commits (57%) |
+
+### Who holds the knowledge
+
+| Contributor | Commits | Share |
+|---|---|---|
+| Troy Goode | 33 | 57% |
+| Douglas Christopher Wilson | 4 | 7% |
+| Alejandro Caravaca Puchades | 4 | 7% |
+| Simon Mansfield | 3 | 5% |
+| jordandenison | 2 | 3% |
+| 20 others | 1 each | 21% total |
+
+### How many departures it takes
+
+- **Troy Goode leaves:** the remaining contributors hold only 43% of the commit history, so no one holds a majority. This is the bus factor of 1.
+- **Troy, Douglas, Alejandro and Simon leave:** about 76% of the history is gone, so the people left have each made one or two small commits. By then nobody can be said to understand the module.
+- **Everyone with 3 or more commits leaves:** the remaining 20 people each made a single commit. They are mostly drive-by fixes from 2013–2021, and I'd count them as having little working knowledge.
+
+### Caveats
+
+- **Commit counts only.** I didn't run `git blame`. The latest commits (`style: reformat js…`, `lib: annotate handlers`) rewrote many lines. They would inflate the blame share of whoever made them and understate the original authors.
+- **Activity is unclear.** The commit dates show 2026 activity for Troy Goode and Fiona Formatter, but my date lookup wasn't reliable. I can't say from this who is still active in the last 90 days.
+- **One file.** `lib/` is a single file, so it has no per-module spread. Every risk here is concentrated in `lib/index.js`.
+
+### Recommendations
+
+1. **Immediate:** make sure at least one more active maintainer reviews every change to `lib/index.js`.
+2. **Short-term:** check `git blame -w -C lib/index.js` to see who owns the surviving lines. Run `/project-pilot:bus-factor lib --period 1y` to see who is active now.
+3. **Ongoing:** write down why the non-obvious parts of `lib/index.js` exist, since most of the original authors were one-time contributors.
+META cost=0.0650621 ms=20080 turns=4

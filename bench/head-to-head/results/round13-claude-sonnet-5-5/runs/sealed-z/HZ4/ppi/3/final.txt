@@ -1,0 +1,57 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/grape_entity/exposure and delegator code; reviewer routing, departed contributors, commits vs ownership"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-3/repo; ls lib/grape_entity lib/grape_entity/exposure; grep -rli delegator lib | head; echo ---; git log --all --no-merges --pretty='%an' | sort | uniq -c | sort -rn | head -15; echo --- exposure; git log --all --no-merges --pretty='%an' -- lib/grape_entity/exposure lib/grape_entity/exposure.rb | sort | uniq -c | sort -rn; echo --- delegator; git log --all --no-merges --pretty='%an' -- lib/grape_entity/delegator lib/grape_entity/delegator.rb | sort | uniq -c | sort -rn; date
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-3/repo; git log --all --no-merges --pretty='%an|%ad' --date=short | awk -F'|' '{if(!($1 in l)){l[$1]=$2} f[$1]=$2} END{for(a in l)print a, "last="l[a], "first="f[a]}' | sort -k2 -r | head -20
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-3/repo; echo "== blame exposure"; for f in lib/grape_entity/exposure.rb lib/grape_entity/exposure/*.rb lib/grape_entity/exposure/*/*.rb; do git blame -w -M -C --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -10; echo "== blame delegator"; for f in lib/grape_entity/delegator.rb lib/grape_entity/delegators/*.rb lib/grape_entity/exposure/delegator_exposure.rb; do git blame -w -M -C --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -10; echo "== last commit per author (email) in these paths"; git log --all --no-merges --pretty='%an <%ae>|%ad' --date=short -- lib/grape_entity/exposure li
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ppi-3/repo; for n in "Vladimir Kochnev" "Marco Silva" "Lena Brandt" "Anna Kowalczyk" "Dmitry Tsepelev" "James McCarthy" "Alexander Yunin" "Paul Padier" "peter scholz" "LeFnord" "dblock"; do echo "$n: $(git log --all --no-merges --author="$n" --pretty=%ad --date=short | sed -n '1p;$p' | tr '\n' ' ') n=$(git log --all --no-merges --author="$n" --oneline | wc -l)"; done; echo; git log --all --no-merges --since=2026-01-01 --pretty='%an|%ad|%s' --date=short -- lib | head -20
+FINAL ANSWER:
+The best reviewers for both areas are Andrey Subbota (also committing as Andrei) for gatekeeping and Marco Silva for context. The person with the most commits does not own the most code. Dates below are relative to the latest commit, 2026-10-05.
+
+## Who to route to
+
+**`lib/grape_entity/exposure`**
+- **Marco Silva** is the best-informed active reviewer. They made 3 commits from 2026-07 to 2026-09: GroupedExposure, the `delegator` → `delegators` rename, and related work. They hold about 143 blamed lines.
+- **Andrey/Andrei Subbota** is the active maintainer (about 18 commits repo-wide, releases through 2026-04). They have no commits under `exposure/` itself. Use them as the approver, not the domain expert.
+- **Anna Kowalczyk** (1 commit, 2026-08, error message and `inspect` for exposures) and **Lena Brandt** (1 commit, 2026-07, a copyright-header sweep) are active but shallow. Add them as secondary reviewers only.
+
+**Delegator code** (`delegator.rb`, `delegators/`, `exposure/delegator_exposure.rb`)
+- Delegator history is thin: about 10 contributors with one commit each.
+- The only active people are Marco Silva (the rename) and Lena Brandt (the header sweep). Neither wrote the logic.
+- Route to Marco Silva with Subbota as approver, and expect to read the code closely yourself.
+
+## Who has effectively left
+
+Everyone below is inactive for more than 2.5 years.
+
+| Person | Last commit | Their stake |
+|---|---|---|
+| **Vladimir Kochnev** | 2015-09 | Roughly 433 lines in `exposure` and 71 in delegator code. This is the biggest knowledge gap. |
+| Dmitry Tsepelev | 2018-01 | About 63 lines |
+| Alexander Yunin | 2016-07 | About 59 lines |
+| James McCarthy | 2017-04 | About 58 lines |
+| Paul Padier | 2023-12 | Delegator and exposure edits |
+| peter scholz / LeFnord (same email) | 2024-04 | 24+10 commits repo-wide, so the second-largest historical contributor |
+| dblock | 2016-11 | The top committer overall (about 52) |
+
+## Commits versus ownership
+
+No. The two measures point at different people.
+- **Most commits:** dblock leads repo-wide at about 52 (38 under one name). Peter scholz/LeFnord is next at about 34. Both are inactive.
+- **Most code in these areas:** Vladimir Kochnev owns about 433 lines of `exposure` and 71 of the delegator code, from only 11 commits repo-wide.
+- **Paths with the most commits:** within these paths, commit counts are flat, at most 5 per person.
+
+Commit count therefore tells you little here. Kochnev wrote the foundations in a few large commits in 2015, and nobody active has touched most of that code.
+
+## Caveats
+
+- Blame is inflated for recent contributors. Lena Brandt's lines come from one header sweep, and some of Marco Silva's come from GroupedExposure, which is a copy of NestingExposure. Their real depth is lower than the blame numbers suggest.
+- Some people appear under several author names or emails (Marco Silva has two emails; Peter scholz and LeFnord share one). I merged these by hand, so counts are approximate.
+- I didn't compute the full per-file bus factor or dependent counts the skill template asks for. The repo is small, so these direct checks answer your three questions.
+
+**Bus factor for these areas:** effectively 1 (Marco Silva), with Subbota as an approver who lacks local history. The original design knowledge has left with Kochnev.
+META cost=0.10044290000000002 ms=29183 turns=7

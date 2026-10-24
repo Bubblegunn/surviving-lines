@@ -1,0 +1,28 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 2}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/T2-hist-2/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T2-hist-2/repo", "path": "lib"}
+FINAL ANSWER:
+**By commit history, the bus factor of `lib/` is 2.** Troy Goode made 33 of the 66 non-merge commits (50%). Adding the next author, Alejandro Caravaca Puchades (4 commits), takes the total past 50%. In total, 25 people have committed there. The history doesn't call `lib/` a knowledge silo, because no one has more than 80% of the commits.
+
+**By who understands the current code, the risk is much worse.** `lib/` contains a single file, `lib/index.js` (238 lines), and the tool flags it as orphaned. Every author who owns lines in it has had no commits for 6 months, since 2026-04-24:
+
+| Author | Share of lines | Last commit |
+|---|---|---|
+| "Fiona Formatter" | 89.9% | 2026-04-12 |
+| Troy Goode | 8.4% | 2026-04-10 |
+| Raymond Feng | 0.8% | 2015 |
+| Douglas Christopher Wilson | 0.4% | 2021 |
+| Eric di Domenico | 0.4% | 2013 |
+
+- **Line ownership is mostly an artifact of the reformat.** "Fiona Formatter" looks like the author of the latest commit, "style: reformat js with 4-space indent and double quotes". That commit rewrote nearly every line, so blame credits it with about 90% of the file. It doesn't mean that person designed the code.
+- **The real knowledge is probably with Troy Goode.** Troy Goode wrote half the commit history and is also inactive. Counting the two together, the people who understand `lib/` best have gone quiet.
+- **Reading the numbers.** Counting only people who are still active, nobody currently owns `lib/index.js`. By that measure it already has no maintainer. By authorship, the practical answer is that losing Troy Goode and one more contributor would leave very little institutional knowledge.
+
+To get a truer picture of who understands the code, I can re-run the blame analysis while ignoring the formatting commit, for example with `git blame --ignore-rev 62628c0`.
+META cost=0.0512703 ms=10651 turns=4

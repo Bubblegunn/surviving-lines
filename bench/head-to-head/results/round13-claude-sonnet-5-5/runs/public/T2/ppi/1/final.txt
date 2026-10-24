@@ -1,0 +1,54 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T2-ppi-1/repo; ls lib; echo ---; git log --all --no-merges --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; echo ---; for f in lib/*.js lib/**/*.js; do [ -f "$f" ] && echo "$f|$(git log --all --no-merges --pretty=format:%an -- $f | sort | uniq -c | sort -rn | awk '{c=$1; $1=""; printf "%s(%d);", $0, c}')|imports=$(grep -rl "$(basename $f .js)" --include=*.js lib index.js test 2>/dev/null | grep -v "^$f$" | wc -l)"; done; echo ---; git log --all --no-merges --since="90 days ago" --pretty=format:"%an" -- lib | sort | uniq -c; echo; git log -1 --format=%cd
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T2-ppi-1/repo; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib | awk -F'|' '!s[$1]++' | head -8; echo; git log --all --no-merges --since="1 year ago" --pretty=format:"%an" -- lib | sort | uniq -c | sort -rn; wc -l lib/index.js
+FINAL ANSWER:
+## Bus Factor Analysis: `lib/`
+Period: all history | Generated: 2026-10-24
+
+### Bus factor: 1
+
+Losing one person, **Troy Goode**, would leave most of `lib/` without a knowledgeable maintainer.
+
+`lib/` has one source file, `lib/index.js` (238 lines). The module and the file are the same thing, so the numbers match.
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 1 |
+| Files with bus factor 1 | 0 by the "unique contributors" count (25 people have touched it) |
+| Effective ownership | Troy Goode has 29 of 46 non-merge commits to the file, about 63% |
+| Commits to `lib/` (any author) | 33 for Troy Goode, of 62 total |
+
+### Why the headline is 1 even though 25 people have contributed
+- **Concentration:** Troy Goode wrote about 63% of the file's commits. The next-largest contributors have 4 commits each (Douglas Christopher Wilson, Alejandro Caravaca Puchades). Everyone else has 1–3.
+- **Long tail of drive-by commits:** 20 of the 25 authors made a single commit. A one-off patch doesn't mean someone understands the file.
+- **Dormant contributors:** the most recent commits from other named contributors are old. LuisEGR's was in 2021, Tom Arad's in 2018, Douglas Christopher Wilson's in 2017, and the rest are 2017 or earlier.
+- **Recent activity is thin:** in the last 12 months there are 2 commits to `lib/`. One is from Troy Goode (2026-04-10). The other is from "Fiona Formatter" (2026-04-12), which is the style reformat commit (`62628c0`, 4-space indent and double quotes) and shows nothing about who understands the code. Nobody has committed to `lib/` in the last 90 days.
+
+### How many people leaving it takes
+| People who leave | Result |
+|---|---|
+| 1 (Troy Goode) | The only active maintainer is gone, and what remains is a set of long-inactive contributors. |
+| 2 (add Douglas Christopher Wilson or Alejandro Caravaca Puchades) | Effectively nobody with recent working knowledge. |
+| About 5 | Everyone with more than 2 commits is gone, which leaves only the one-time authors. |
+
+The first departure is the one that hurts. After Troy Goode, nobody has recent context.
+
+### Heat map
+```
+lib/
+└── index.js  [██████████] 🔴 Bus Factor: 1 (Troy Goode ~63%, other authors dormant)
+```
+
+### Recommendations
+1. **Immediate:** have a second person review and make the next few changes to `lib/index.js`, so a current maintainer other than Troy Goode builds context.
+2. **Short-term:** write down the non-obvious behavior and history. The `history` command can reconstruct the reasoning behind past changes.
+3. **Ongoing:** the file is small enough (238 lines) that one person can read it end to end. Making a second reader a standing part of release prep would raise the bus factor to 2 at low cost.
+
+I couldn't run the dependents count the command asks for. `lib/index.js` is the only module, so there is nothing else in `lib/` to rank it against. I didn't launch the contributor-analyzer agent, since `git log` answered the question directly for a single file. The Troy Goode figure comes from `git log` author names, so anyone who committed under more than one name or email is counted as separate people.
+META cost=0.0700664 ms=18620 turns=5

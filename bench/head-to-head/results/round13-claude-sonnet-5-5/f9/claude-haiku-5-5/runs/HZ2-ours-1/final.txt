@@ -1,0 +1,35 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | grep -iE '\.sql$|sql' ; echo "---"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --help 2>&1 | head -60
+ - Bash: for f in time.go version7.go; do echo "=== $f"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" -- "$f" 2>&1 | head -40; done
+ - Bash: for f in database_sql.go sql_test.go; do echo "=== $f"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" -- "$f" 2>&1 | head -30; done; echo "=== reviewers"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --reviewers -- time.go version7.go database_sql.go 2>&1 | head -40
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --reviewers -- time.go 2>&1 | head -30; echo "=== version7"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --reviewers -- version7.go 2>&1 | head -30; echo "=== database_sql"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --reviewers -- database_sql.go 2>&1 | head -30; echo "=== Ravi"; git log -1 --format='%h %an <%ae> %ad %s' 2>/dev/null; git log --format='%h %an %ad %s' -3 -- database_sql.go version7.go | head
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --reviewers --include time.go --include version7.go --include database_sql.go --include sql_test.go 2>&1 | head -40
+FINAL ANSWER:
+**Short answer:** Ask Ravi Menon for all three areas. For `time.go` and `version7.go`, ask the one or two active people who hold lines in each file. The original authors hold most of the surviving code, but none of them has committed recently, so they're unlikely to be the right reviewers.
+
+| File | Top holder (non-blank lines) | Other holders with recent commits | Most recent commit |
+|---|---|---|---|
+| `time.go` (134 lines) | Paul Borman: 95 (70.9%), last commit 2016-11-28 | Alexander Rowe: 10 (7.5%), last commit 2026-03-09 | Alexander Rowe, 2026-03-09 |
+| `version7.go` (103 lines) | MikeWang: 84 (81.6%), last commit 2024-07-02 | Mei Chen: 10 (9.7%), last commit 2025-08-02; Ravi Menon: 2 (1.9%), last commit 2026-06-17 | Ravi Menon, 2026-06-17 |
+| `database_sql.go` (48 lines) | Justin Overfelt: 19 (39.6%), last commit 2016-02-08 | None: no one holding lines has committed in the last 365 days | Ravi Menon, 2026-06-17 (renamed `sql.go` in 2025, but holds 0 surviving lines) |
+| `sql_test.go` (94 lines) | Justin Overfelt: 62 (66.0%), last commit 2016-02-08 | None | Ravi Menon's commits don't hold lines here |
+
+Per-file counts come from `surviving-lines` with the default blame options (`-w -M -C`). The repo-wide brief says 4 of 52 people committed in the last 365 days, and they hold 4.3% of the non-blank lines.
+
+**Who to ask:**
+- **Ravi Menon** is the only person with recent commits in all three areas. The latest commits are the v7 clock step-back doc (`b94e0ae`) and the functional options scaffolding (`08af9ee`). He has no surviving lines in the SQL files, though, so he can speak to the design and recent direction, not the original SQL code.
+- **Alexander Rowe** is the only active holder of `time.go` lines.
+- **Mei Chen** is the active holder of `version7.go` lines, including the `Time7` accessor (`b6e9972`).
+- **SQL:** nobody who wrote the surviving SQL code has committed recently. Justin Overfelt and Paul Borman are the original authors, last active in 2016.
+
+**Caveats:**
+- "Still around" here means "committed in the last 365 days." That doesn't confirm anyone's employment or whether they'd respond. I haven't checked that.
+- The brief's identity hints suggest Alex Rowe and Alexander Rowe may be the same person. I haven't merged them, so the count above treats them as separate.
+- Paul Borman's commit emails include Google and Amazon addresses. That's a lead to verify, not a contact method.
+- I tried `--reviewers` to get formal suggestions for these files, but the flag rejected the path arguments in every form I tried, so the suggestions above come from the per-file owner tables instead.
+META cost=0.00704056 ms=31409 turns=6

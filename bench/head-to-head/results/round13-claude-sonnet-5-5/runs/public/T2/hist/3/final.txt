@@ -1,0 +1,31 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 5}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/T2-hist-3/repo/lib"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T2-hist-3/repo", "path": "lib"}
+FINAL ANSWER:
+**By commit count, the bus factor of `lib/` is 2. By who still understands the code today, it's effectively 0.**
+
+**Commit history (66 commits, 25 authors)**
+- Troy Goode wrote 33 commits (50%). Alejandro Caravaca Puchades and Douglas Christopher Wilson have 4 each, and Simon Mansfield has 3.
+- Losing Troy and any one other top contributor would take out more than half the history.
+- The tool doesn't flag `lib/` as a knowledge silo, because no one author has more than 80% of the commits.
+
+**Current code at HEAD**
+- `lib/` has one tracked file, `lib/index.js` (238 lines), and every author who owns lines in it has been inactive for 6+ months.
+- "Fiona Formatter" owns 89.9% of the lines (214), but that comes from the recent commit `62628c0 style: reformat js with 4-space indent and double quotes`. It is a formatting pass, not authorship of the logic. The last commit from that name was 2026-04-12.
+- Troy Goode owns 20 lines (8.4%), and his last commit was 2026-04-10.
+- Raymond Feng (2 lines), Douglas Wilson (1) and Eric di Domenico (1) are also inactive.
+- The tool marks the file as orphaned, since 100% of its lines belong to authors with no commits since 2026-04-24.
+
+**Caveats**
+- Line ownership is skewed by the reformat commit. The people who wrote the logic are hidden behind the formatter's blame. Running `git blame -w` or using `--ignore-rev` on `62628c0` would show the real owners.
+- Commit share is only a proxy for understanding. Several contributors made a single commit, and I can't tell from this data how deep their knowledge goes.
+- "Inactive" means no commits in this repo. Someone could still be around and just not committing here.
+
+I can re-run the ownership check ignoring the reformat commit if you want a more accurate picture.
+META cost=0.051026100000000005 ms=10073 turns=4

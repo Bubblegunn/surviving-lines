@@ -1,0 +1,49 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --no-merges --format='%H|%an|%ae|%s' | head -2000 | awk -F'|' '{print $2"|"$3}' | sort | uniq -c | sort -rn | head -30; git log --oneline | wc -l; ls -a; git log -3 --stat --format='%h %an %s' | head -30
+ - Bash: for d in lib test .github .eslintrc.yml HISTORY.md LICENSE README.md package.json .gitignore; do echo "== $d"; git ls-files $d | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author ' ; done | sed 's/^author //' | sort | uniq -c | sort -rn | head -5; done
+ - Bash: t(){ git ls-files "$@" | while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain -- "$f" | grep '^author '; done | sed 's/^author //' | grep -v '\[bot\]' | sort | uniq -c | sort -rn | awk '{n=$1; s+=n; c[NR]=$0} END{print "total",s; print c[1]; print c[2]}'; }
+for d in lib test .github; do echo $d; t $d; done; echo root; t .eslintrc.yml HISTORY.md LICENSE README.md package.json .gitignore; for f in .eslintrc.yml HISTORY.md LICENSE README.md package.json .gitignore; do echo $f; t $f; done
+FINAL ANSWER:
+Blame-based shares of surviving lines, ignoring the `62628c0` reformat commit and bots (`git blame -w -M -C --ignore-rev`), counting each author name once:
+
+| Path | Top author | Share | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 (67%) | Yes |
+| `test/` | Troy Goode | 517/966 (54%) | Yes (Doug is next at 39%) |
+| `.github/` | Douglas Christopher Wilson | 118/366 (32%) | No |
+| Root files combined | Troy Goode | 134/415 (32%) | No (Doug has 28%) |
+
+Root files individually:
+- `.eslintrc.yml`: Doug has 7/7.
+- `HISTORY.md`: Doug has 50/64 (78%).
+- `LICENSE`: Doug has 17/22 (77%).
+- `.gitignore`: Doug has 4/5 (80%).
+- `package.json`: Doug has 20/40, exactly 50%.
+- `README.md`: Troy has 116/277 (42%), so no owner.
+
+Suggested CODEOWNERS (I don't know their GitHub handles, so these are placeholders):
+
+```
+# lib/ and test/: Troy Goode holds at least half of the surviving lines
+/lib/    @troygoode
+/test/   @troygoode
+
+# Root files where Douglas Christopher Wilson holds at least half
+/.eslintrc.yml  @dougwilson
+/HISTORY.md     @dougwilson
+/LICENSE        @dougwilson
+/.gitignore     @dougwilson
+/package.json   @dougwilson
+
+# No owner: .github/ (Doug 32%, Íñigo Marquínez Prado 26%) and README.md (Troy 42%, Jon Church 26%)
+```
+
+- **`package.json`:** Doug's 50% is exactly at the threshold, so it qualifies but only just.
+- **`.github/`:** Ownership is spread across several people, including Íñigo Marquínez Prado, Sebastian Beltran and Ulises Gascón. I'd leave it to a team rather than an individual.
+- **Identity matching:** I matched authors by name only. Troy Goode appears under two emails with the same name, so those are merged. I didn't check for people who appear under different names.
+META cost=0.05954670000000001 ms=17885 turns=4

@@ -1,0 +1,78 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: surviving-lines:surviving-lines
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "surviving-lines:surviving-lines"}
+ - Bash: SL="node /private/tmp/r13/final/ours-src/bin/surviving-lines.js"; cd /private/tmp/r13/final/out-F/runs/HZ4-ours-2/repo; $SL --reviewers lib/grape_entity/exposure; echo ======; $SL --reviewers lib/grape_entity/exposure --merge-identities | head -40; echo =====; git ls-files | grep -i deleg
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-2/repo; S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --reviewers lib/grape_entity/exposure; echo ======; node $S --reviewers lib/grape_entity/exposure --merge-identities | head -30; echo =====; git ls-files | grep -i deleg
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-2/repo; S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; git ls-files | grep -i deleg; grep -rniE "delegator" lib | head; node $S --reviewers lib/grape_entity/delegator | head -40
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ4-ours-2/repo; S=/private/tmp/r13/final/ours-src/bin/surviving-lines.js; node $S --reviewers lib/grape_entity/delegator.rb lib/grape_entity/delegators 2>&1 | head -50; node $S --reviewers lib/grape_entity/delegators | sed -n 1,30p; node $S --reviewers lib/grape_entity/delegator.rb | sed -n 5,14p
+FINAL ANSWER:
+I've run the ownership tool on both paths, and I have enough to answer. One caveat first: the tool treats one of Marco Silva's two addresses as a placeholder, so I've been careful about naming Marco as a contact.
+
+**`lib/grape_entity/exposure/`** (609 non-blank lines, 732 counting blank lines; includes `delegator_exposure.rb`)
+
+| Author | Non-blank lines (share) | Counting blank lines (share) | Last commit here | Status |
+|---|---|---|---|---|
+| Vladimir Kochnev | 331 (54.4%) | 400 (54.6%) | 2015-09-18 | inactive |
+| Marco Silva | 117 (19.2%) | 143 (19.5%) | 2026-08-03 | active |
+| Alexander Yunin | 55 (9.0%) | 61 (8.3%) | 2016-07-04 | inactive |
+| James McCarthy | 48 (7.9%) | 58 (7.9%) | 2017-04-05 | inactive |
+
+- **Best reviewer:** Vladimir Kochnev is the top owner. They own `base.rb` (117 lines, 61.5%), `nesting_exposure.rb` (111 lines, 77.5%), `nested_exposures.rb` (74 lines, 66.2%) and `represent_exposure.rb` (42 lines, 92.9%). They have not committed since 2015-09-18, so they are probably not reachable. Alexander Yunin (second by lines among the inactive owners) owns `nesting_exposure/output_builder.rb` (59 lines, 86.4%) and is also inactive.
+- **Active contact:** Marco Silva is the active owner. They hold `grouped_exposure.rb` outright (117 lines, 100%). The tool flags the address `<email redacted>` as a placeholder identity, so those 117 lines (19.2%) can't be firmly tied to a person. Treat Marco as a lead, not a confirmed owner. The only other active author is Anna Kowalczyk, with 4 lines (0.7%).
+- **Concentration:** The bus factor is 1 by lines: Vladimir Kochnev alone holds 54.4% (54.6% counting blank lines). Reaching 80% takes 3 authors.
+- **Orphaned code:** 9 files, 80.8% of the lines, have an inactive top owner and no active author holding 20% or more.
+- **Files only one person wrote:** `grouped_exposure.rb`, `represent_exposure.rb`, `formatter_exposure.rb`, `block_exposure.rb` and `formatter_block_exposure.rb`.
+
+**Delegator code**
+
+This is `lib/grape_entity/delegator.rb` plus `lib/grape_entity/delegators/` (4 files). The tool took them as two separate paths, so I didn't merge them.
+
+- **`delegators/`** (61 non-blank lines, 69 counting blank lines):
+  - Vladimir Kochnev holds 47 (77.0%; 50 counting blank lines, 72.5%).
+  - Paul Padier holds 5 (8.2%), James McCarthy 4 (6.6%), Dmitriy Nesteryuk 3 (4.9%).
+  - **Nobody has committed there in the last year.** All 4 files are orphaned, and the bus factor is 1.
+- **`delegator.rb`** (24 non-blank lines):
+  - Vladimir Kochnev holds 11 (45.8%), Paul Padier 6 (25.0%), Marco Silva 4 (16.7%, active, last commit 2026-07-21).
+  - **Reviewer:** Vladimir Kochnev is the top owner. Marco Silva is the only active contact.
+- **`delegator_exposure.rb`:** I haven't run a separate check on it. It sits inside the `exposure/` directory above.
+
+**Who has effectively left (no commit in the last 365 days, as of 2026-10-05)**
+
+- In `exposure/`, that is Vladimir Kochnev, Alexander Yunin, James McCarthy and one more author. Together they leave 80.1% of the lines with people who haven't committed in the last year. Only 2 of 18 authors there have been active.
+- In `delegators/`, all 5 authors are inactive.
+- Vladimir's last commit anywhere in the repo was 2015-09-18. Paul Padier's was 2021-10-15, so Paul has left the project, not just the path.
+
+**Does the most commits mean the most code?**
+
+No. The whole-repository figures:
+
+| Author | Non-blank lines (share) | Counting blank lines (share) | Commits (share) |
+|---|---|---|---|
+| Vladimir Kochnev | 1,010 (18.7%) | 1,180 (17.6%) | 11 (3.8%) |
+| Mark Madsen | 731 (13.5%) | 921 (13.7%) | 8 (2.8%) |
+| dblock | 565 (10.4%) | 725 (10.8%) | 52 (18.2%) |
+| peter scholz | 427 (7.9%) | 586 (8.7%) | 34 (11.9%) |
+
+- dblock has the most commits (52) but ranks third by surviving lines.
+- Vladimir Kochnev owns the most code, with only 11 commits. The ratio of lines share to commit share is about 5×, and Mark Madsen's is about 4.8×.
+- Some of that gap is not the author's own work. peter scholz committed 276 of Brian van de Boogaard's lines in `6a4686e`, but those lines are credited to Brian, not to peter.
+- Commit counts show who was busy, and surviving lines show whose code is still there. For review routing, use the lines.
+
+**Scope and caveats**
+
+- The numbers use `git blame -w -M -C`.
+- Left out of the counts:
+  - **Bot:** dependabot[bot] (5 lines, 7 commits).
+  - **Generated file:** one generated file (55 lines).
+  - **Boilerplate commit:** `b26feca` (copyright header). Its lines are excluded because no earlier author wrote them.
+- Identity guesses (unconfirmed, and I haven't written a `.mailmap`):
+  - peter scholz also appears as LeFnord.
+  - dblock also appears as Daniel Doubrovkine.
+  - Yannis Zhang also appears as u2.
+  - Marco Silva's two addresses may be one person. The tool rates that strong, but one of the two addresses is flagged as a placeholder.
+- Line counts measure code that survives, not who understands it.
+META cost=0.1363641 ms=37229 turns=7

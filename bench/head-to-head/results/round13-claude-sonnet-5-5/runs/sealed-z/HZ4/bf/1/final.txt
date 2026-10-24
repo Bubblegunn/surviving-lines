@@ -1,0 +1,54 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ4-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git log -1 --format=%ci && echo "--- all" && git shortlog -sne --no-merges HEAD && for p in lib/grape_entity/exposure lib/grape_entity/delegator lib/grape_entity/delegators; do echo "--- $p"; git shortlog -sne --no-merges HEAD -- $p; git log --no-merges --format='%ae %ad' --date=short -- $p | awk '{l[$1]=(l[$1]==""?$2:l[$1]); f[$1]=$2} END{for(k in l) print k, "last="l[k], "first="f[k]}'; done; echo "--- lines surviving"; git ls-files lib | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep '^author-mail'; done | sort | uniq -c | sort -rn
+FINAL ANSWER:
+**Short answer:** Lena Brandt and Marco Silva are the only people who can review these areas today. The top committer, dblock, doesn't own the most code.
+
+I ran the busfactor script with `--no-github`, so people are identified by git email, not GitHub handle. Marco appears under two emails (`marco.silva@kestrel.example` and `<email redacted>`). I merged them by hand and assumed they're the same person.
+
+## Who to route to
+
+| Area | Best reviewers | Notes |
+|---|---|---|
+| `lib/grape_entity/exposure/` | **Lena Brandt**, then **Anna Kowalczyk** and **Marco Silva** | Each has made a single commit here (Jul–Aug 2026), and Marco's was the laptop email. |
+| Delegator code (`delegator.rb` and `delegators/`) | **Marco Silva**, then **Lena Brandt** | Marco made the only commit in `delegators/` (2026-07-21). |
+
+All three are recent but thin. Between them they have 1–2 commits in these areas. They are the only active reviewers, not deep experts.
+
+The script flags both delegators and `spec/grape_entity/exposure/` as bus factor 1. In practice, Marco and Lena cover each other, so a single absence stalls reviews rather than leaving nobody who can approve.
+
+## Who has effectively left
+
+The repo history runs to 2026-10-05, and I treated anyone with no commit since about October 2025 as gone. Most of the historical authors fall in that group.
+
+- **Vladimir Kochnev** (`<email redacted>`) wrote the original exposure and delegator code in 2015. His last commit is 2015-09-18. He still has about 756 surviving lines in `lib/`, by far the most.
+- **Peter Scholz / LeFnord** (`<email redacted>`) was the longest-running exposure contributor. His last commit is 2020-12-26.
+- **Dmitry Tsepelev** (2018), **Alexander Yunin** (2016), **James McCarthy** (2017) and **Mikael Henriksson** (2019) are also gone.
+- The other past contributors to these areas, from 2016–2023, have likewise been inactive for years.
+
+Don't request reviews from any of these people. GitHub would block PRs on someone who can't respond.
+
+## Does the top committer own the most code?
+
+No, on either measure.
+
+- **Most commits:** dblock, with 38 under that email and about 60 across his aliases. Most of that is maintenance and releases.
+- **Most surviving code in `lib/`:** Vladimir Kochnev (about 756 lines), who has been gone since 2015. Next are Mark Madsen (237) and Marco Silva (143, laptop email). dblock has only about 34.
+- **Active ownership:** Marco and Lena are the only people active in the last 12 months.
+
+So the most-committing author owns little of the live code, and the person with the most surviving code left over a decade ago.
+
+## Caveats
+
+- **Imported history:** The script reports the repo as imported, with a bulk first commit of 18 files in 2013. Early ownership is therefore unreliable.
+- **Commits are a proxy:** Commit counts don't measure who actually understands the code.
+- **No files written:** I used `--dry-run`, so no CODEOWNERS file was written.
+
+I can write `.github/CODEOWNERS` and the ownership JSON if you want, or build the HTML risk report.
+META cost=0.0923914 ms=23902 turns=5

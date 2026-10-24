@@ -1,0 +1,41 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== contributors (commits) ==" && git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/index.js | sort | uniq -c | sort -rn && echo && echo "== last commit per author ==" && git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++' && echo && echo "== recent 10 ==" && git log --no-merges -10 --pretty=format:"%h %ad %an %s" --date=short -- lib/index.js && echo && echo "== blame share ==" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo "== dependents ==" && grep -rl "lib/index\|require(['\"]\.\./lib['\"])\|require(['\"]\./lib['\"])\|require(['\"]\.\./['\"])" --include="*.js" --include="*
+ - Bash: git blame -w --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo; git log --no-merges --since="2025-10-24" --pretty=format:"%an" | sort | uniq -c; echo; git log --pretty=format:"%an" | sort | uniq -c | sort -rn | head -5; echo; git log -3 --format='%h %an %ad %s' --date=short -- test/
+FINAL ANSWER:
+## Bus factor for `lib/index.js`
+
+**Bus factor: 1, with Troy Goode as the main owner.** The file is the package entry point (`"main": "./lib/index.js"`). The tests in `test/` also load it, so it's a high-importance file.
+
+| Metric | Value |
+|---|---|
+| Contributors (non-merge commits) | 26 distinct names |
+| Troy Goode's commits | 29 of 58 (about 50%) |
+| Troy Goode's surviving lines, ignoring the reformat | 159 of about 240 (about 66%) |
+| Last Troy Goode commit | 2026-04-10, so active |
+| Douglas Christopher Wilson | 4 commits, 22 surviving lines, last touched 2017 |
+| Everyone else | Mostly one-off commits, last touched in 2021 or earlier |
+
+Plain `git blame` credits "Fiona Formatter" with 214 lines. That's the 2026-04-12 reformat commit (`62628c0`), so I ignored it. It isn't real ownership.
+
+**Reviewer suggestions**
+1. **Troy Goode** is the best reviewer. They wrote most of the file, committed to it two weeks ago (`b2005d9`, "annotate handlers"), and are still active.
+2. **Douglas Christopher Wilson** is the best second reviewer. They have the most commits across the repo (143) and wrote the `Vary` header, the dynamic `allowedHeaders` and the missing-`methods` fixes in this file. Their last commit to this file was in 2017, though. I didn't check whether they're active recently, so confirm before tagging them.
+3. **Alejandro Caravaca Puchades** is optional. They have 12 surviving lines, but their last commit to the file was in 2015.
+
+The other contributors made one-off lint or fix commits, so they aren't useful as reviewers.
+
+**Before you change it**
+- The 4-space and double-quote reformat is recent. Match that style, or your diff will mix style changes with logic.
+- `test/error-response.js`, `test/issue-2.js` and `test/example-app.js` exercise this file. Run `npm test` before requesting review.
+- Troy Goode is also the most recent person to touch the tests, so a single review from them covers both the code and the test expectations.
+
+**Longer-term:** nearly all knowledge of this file sits with Troy Goode. Adding Wilson or a current maintainer as a second reviewer on changes here would raise the bus factor to 2.
+
+I only analyzed this one file, not the whole repo. I also skipped the per-directory heat map and the project-level bus factor from the full report. If you want those, I can run the full analysis.
+META cost=0.0739214 ms=18019 turns=5

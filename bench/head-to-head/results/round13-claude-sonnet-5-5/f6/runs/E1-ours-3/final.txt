@@ -1,0 +1,44 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+FINAL ANSWER:
+**The bus factor is 2 by line ownership, but only 1 among people who are still active. That one person is Troy Goode, as the tool counts him.**
+
+I didn't re-run anything. These figures come from the surviving-lines brief for HEAD 62628c0. It counts lines that survive in `git blame`, excludes merges and bots, and sets aside the 4-space reformat commit so it doesn't take over ownership.
+
+**A caveat on Troy Goode's figures:** the tool counts `<email redacted>` and `troy@laptop.example` as separate authors. Treating them as one person is only a proposal, based on matching names and addresses. It is unconfirmed, and I haven't applied it.
+- Unmerged, `<email redacted>` holds 605 non-blank lines (36.4%) with 93 commits. `troy@laptop.example` holds 44 lines with 2 commits.
+- If they are the same person, he holds 649 lines (39.0%).
+- The figures below use the unmerged 605 lines for Troy Goode. The only activity figure that depends on the other address is the active-only bus factor of 1, which counts him on those 605 lines.
+
+**Whole repository (1,662 non-blank lines, 1,985 counting blank lines)**
+- Troy Goode (`<email redacted>`) holds 605 non-blank lines (36.4%), or 762 counting blank lines (38.4%). He has 93 commits.
+- Douglas Christopher Wilson holds 551 non-blank lines (33.2%), or 629 counting blank lines (31.7%). He has 143 commits.
+- Those two together pass 50% of the lines, so the bus factor is 2. Reaching 80% takes 5 people.
+
+**Activity**
+- Only 9 of 44 people committed in the last 365 days, and they hold 51.7% of the lines.
+- The other 48.3% belongs to people with no commit in that window. The largest of these is Douglas Christopher Wilson (33.2%).
+- Counting only active people, the bus factor is 1: Troy Goode.
+- The brief is dated 2026-04-12 and today is 2026-10-24, so the active window has moved on. Re-run it to refresh.
+
+**Where single-person dependence shows up**
+- **`lib/`** (214 lines, 12.9% of the repo): Troy Goode owns 61.7%.
+- **`test/`** (820 lines, 49.3%): Troy Goode owns 47.3%. `test/vary.js` is 90% or more his, at 32 lines.
+- **`.github/`** (305 lines): Douglas Christopher Wilson owns 30.2%. Two workflow files are almost entirely one person's:
+  - `scorecard.yml` (61 lines) is by Íñigo Marquínez Prado. The name is garbled in the tool output.
+  - `codeql.yml` (53 lines) is by Sebastian Beltran.
+  - GitHub committed both on their behalf, but the lines are credited to the authors.
+- **Root files** (323 lines): Douglas Christopher Wilson owns 29.4%.
+
+**Orphaned files**
+- 6 of 18 files, holding 7.8% of the lines, have an inactive top owner, and no active person holds 20% or more.
+- The largest are `.github/workflows/scorecard.yml` (Íñigo Marquínez Prado, 61 lines), `HISTORY.md` (Douglas Christopher Wilson, 41) and `LICENSE` (Douglas Christopher Wilson, 18).
+
+**Takeaway:** Troy Goode is the main risk, because he owns most of the active code in `lib/` and `test/`. Douglas Christopher Wilson's code is the largest block with no active maintainer, mostly in the root files, `.github/` and the history and license docs. The two CI workflows each depend on one author.
+
+I can run the per-directory tree or the `--without` simulation for Troy Goode if you want more detail.
+META cost=0.06937410000000001 ms=22253 turns=2

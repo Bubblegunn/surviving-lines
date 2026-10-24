@@ -1,0 +1,47 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -20; git log --format='%an' | wc -l; ls; git ls-files | grep -v node_modules | head -80
+ - Bash: for f in lib/index.js test/test.js test/vary.js test/error-response.js test/example-app.js test/issue-2.js README.md HISTORY.md package.json .github/workflows/ci.yml; do echo "== $f"; git log --format='%an' --follow -- $f | sort | uniq -c | sort -rn | head -3; echo "-- blame (ignoring reformat)"; git blame -w -C --ignore-rev 62628c0 --line-porcelain $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -3; done; echo; git log --since=2023-01-01 --format='%an' | sort | uniq -c | sort -rn | head; git log -3 --format='%h %an %ad %s' --date=short -- lib/index.js; git log --format='%an %ad' --date=short | grep -E 'Troy' | head -1; git log --format='%an %ad' --date=short | grep -E 'D
+FINAL ANSWER:
+## Bus factor: about 1 for the core code, 2 overall
+
+This is the `cors`-style Express middleware, a small repo of 354 commits and one source file. I measured authorship with `git blame -w -C`, ignoring the 62628c0 reformat commit, which would otherwise credit all the code to "Fiona Formatter". I also looked at commit counts per file.
+
+**Overall commits:** Douglas Christopher Wilson 143, Troy Goode 120, dependabot 11. Everyone else has 4 or fewer.
+
+### Single-contributor areas
+
+| Area | Main contributor | Share of lines |
+|---|---|---|
+| `lib/index.js`, the whole implementation | **Troy Goode** | 159 of about 193 lines (82%) |
+| `test/vary.js` | Troy Goode | 100% |
+| `test/example-app.js` | Troy Goode | 67 of 81 lines (83%) |
+| `test/error-response.js` | Troy Goode | 57 of 66 lines (86%) |
+| `test/issue-2.js` | Troy Goode | 40 of 48 lines (83%) |
+| `README.md` | Troy Goode | 116 of about 214 lines (54%) |
+
+**Troy Goode** is the main bus-factor risk. They wrote most of the library and almost all of its smaller test files. Their latest commits are from 2026-04-10 (`lib: annotate handlers`, `test: vary header coverage`), and the two other recent maintainers (below) have hardly touched `lib/index.js`. If Troy leaves, nobody else knows the core logic in depth.
+
+### Better-spread areas
+
+- **`test/test.js`** is shared roughly evenly: Douglas Christopher Wilson 339 lines, Troy Goode 317, Alejandro Caravaca Puchades 18.
+- **`.github/workflows/ci.yml`** is mostly Douglas Christopher Wilson (118 lines). Ignacio Mangas (44) and Ulises Gascón (30) also contributed, so it has some redundancy.
+- **`package.json`, `HISTORY.md` and the release process** are mostly Douglas Christopher Wilson, who has 68 `package.json` commits and wrote 50 lines of `HISTORY.md`. This is a second, separate single point of failure for releases and changelog. Their last commit was 2021-09-07, so they may no longer be active.
+- **`README.md`** has real secondary contributors: Jon Church wrote 72 lines and Linus Unnebäck 26.
+
+### Recent activity
+
+Since 2023, the active human contributors have been Ulises Gascón (3 commits), Jon Church (3), Íñigo Marquínez Prado (2), Sebastian Beltran (2), Ignacio Mangas (2) and Troy Goode (2). Dependabot made 11 commits. These people are mostly doing maintenance (dependencies, CI, docs). None of them has built up deep knowledge of `lib/index.js`.
+
+### Recommendations
+
+1. Have a second person review and co-own `lib/index.js`. Ulises Gascón and Jon Church are the likeliest candidates because they are already active.
+2. Document the release process (npm publish, `HISTORY.md` updates). Right now it appears to depend on Douglas Christopher Wilson's habits.
+3. Confirm that more than one person has npm publish rights and repo admin access. Git history can't show this.
+
+**Limits of this analysis:** Git authorship is only a proxy for knowledge. Some contributors appear under more than one identity, such as the two Troy Goode emails. I did not merge identities beyond that.
+META cost=0.055791600000000004 ms=16505 turns=3

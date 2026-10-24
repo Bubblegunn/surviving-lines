@@ -1,0 +1,25 @@
+PLUGIN_NAME: surviving-lines
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: surviving-lines
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --identities 2>&1 | head -80; echo "---"; ls -la .mailmap 2>&1; git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -60
+ - Write: {"file_path": "/private/tmp/r13/final/f9/claude-haiku-5-5/runs/T3-ours-1/repo/.mailmap", "content": "# Proposed identity merges, from names and addresses in this repository's history.\n# These are unconfirmed guesses; remove any line that maps two different people.\nTroy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>\n"}
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" --identities 2>&1 | head -30; echo "--- git shortlog (with .mailmap) ---"; git shortlog -sne HEAD | head -8; echo "--- SL top owners ---"; node "/private/tmp/r13/final/ours-src/bin/surviving-lines.js" 2>&1 | head -40
+FINAL ANSWER:
+Yes, two people show up under more than one identity. I added a `.mailmap` that merges them, and Troy Goode is still the top author.
+
+**Duplicates found**
+- **Troy Goode** appears as `<email redacted>` (93 commits) and `troy@laptop.example` (2 commits). The same name on both addresses makes this a strong match.
+- **Alejandro Caravaca Puchades** appears as `Alejandro Caravaca Puchades` and as `alex94puchades`, both on `<email redacted>`. The shared address makes this a match too.
+
+**Fix**
+I wrote `.mailmap` at the repo root with the two suggested lines, under a comment marking them as unconfirmed guesses. Git and surviving-lines both read it, so every count now treats each person once. The file is uncommitted. If either pairing is wrong, delete that line; I can't confirm from the history alone that both addresses belong to one person.
+
+**Top author after the fix (surviving-lines)**
+- **Troy Goode:** 649 of 1,662 non-blank lines (39.0%), 810 counting blank lines (40.8%), 95 commits (30.2%).
+- Douglas Christopher Wilson is second with 551 lines (33.2%) and 143 commits.
+
+**Caveat:** commit 62628c0 is a formatting-only reformat. surviving-lines counts it by default. If you set it aside, Troy Goode is still top at 554 lines (33.3%), and Douglas Christopher Wilson drops to 376 lines (22.6%).
+META cost=0.00485029 ms=20809 turns=4

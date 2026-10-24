@@ -1,0 +1,77 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -80; echo; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git show --stat --format='%h %an <%ae> %s' b2005d9 62628c0 | head -20; git blame -w -M -C --line-porcelain lib/index.js | awk '/^[0-9a-f]{40} /{c=$1} /^author /{print c, $0}' | sort | uniq -c | sort -rn | head -5; git blame -w --line-porcelain 62628c0^ -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -4; wc -l lib/index.js
+FINAL ANSWER:
+`lib/index.js` is the `cors` middleware. It has 238 lines and about 60 commits, running from January 2013 to April 2026.
+
+## Who shaped it
+
+**Troy Goode (author, 2013–2016).** The first commit (`bcd03d9`, 2013-01-30) is theirs. They made 29 of the roughly 60 commits and set the file's structure:
+- Case-insensitive header lookup, and `origin: false` to disable CORS.
+- Pausing and resuming the request to handle async middleware.
+- Preflight-only headers.
+- Connect support without Express.
+- `Access-Control-Expose-Headers`.
+- The move to the `vary` module and the ESLint switch.
+- Releases up to 2.8.0.
+
+**Douglas Christopher Wilson (maintainer, 2017).** They made 4 commits:
+- `Vary: Access-Control-Request-Headers` when headers are dynamic.
+- A fix for an options delegate that has no `methods`.
+- Lint and build upkeep.
+
+**Alejandro Caravaca Puchades (2015).** They made 4 commits, plus one more under the `alex94puchades` name. These added RegExp support for `origin` and arrays of matching conditions.
+
+**Other contributors of one fix or feature each:**
+- Simon Mansfield: early `Origin` checks and credentials handling.
+- Eric di Domenico: `origin` as a callback.
+- Mathias Buus: non-Express request/response methods, which made Connect usage possible.
+- Igor Soarez: `Vary: Origin`.
+- Raymond Feng: removed a closure in `applyHeaders`.
+- Typicode: added PATCH to the default methods.
+- Damien Klinnert: `Access-Control-Allow-Methods` only on OPTIONS.
+- Shane Tomlinson: uppercase method names.
+- jordandenison: strict-mode fix.
+- DracoBlue: exposed headers on OPTIONS.
+- max.laverse: pass preflight to `next()`.
+- Others: Eran Tiktin, Tomek Kopczuk, Saad Tazi, Hannah Wolfe, Benjamin Eidelman (Safari preflight workaround), Tom Arad (`maxAge: 0`), Chima Alaebo, LuisEGR, Alberto Leal.
+
+**The two latest commits:**
+- Troy Goode's `b2005d9` (2026-04-10, "annotate handlers") touched 12 lines.
+- Fiona Formatter's `62628c0` (2026-04-12) reformatted to 4-space indent and double quotes. It changed 428 lines of `lib/index.js`, and `git blame` credits them with 32 of the file's lines.
+
+## Whose code is still there
+
+The blame figures below skip whitespace-only changes and track moved lines. They are lines currently credited to each person:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 138 |
+| Fiona Formatter | 32 |
+| Douglas Christopher Wilson | 18 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| LuisEGR | 6 |
+| max.laverse | 5 |
+| alex94puchades, Simon Mansfield, Igor Soarez | 3 each |
+| Mathias Buus, Eric di Domenico, Benjamin Eidelman, Alberto Leal | 2 each |
+| Saad Tazi, Hannah Wolfe, Chima Alaebo | 1 each |
+
+Most of Troy Goode's surviving lines come from three commits:
+- The 2013 initial commit "wrapping up" (`4f13c63`): 46 lines.
+- The 2015 ESLint cleanup (`8ec22a9`): 27 lines.
+- The first commit (`bcd03d9`): 15 lines.
+
+Wilson's 18 lines are mainly from the 2017 `Vary` fix (`075c4b5`).
+
+Two caveats:
+- Fiona Formatter's 32 lines are a formatting artifact. Those lines still hold logic written earlier, so the original authors wrote them.
+- Troy Goode's 138 comes from blame that skips whitespace changes. A check before the reformat gave 159, so the reformat accounts for the difference.
+
+In short, Troy Goode wrote the core of the file and Douglas Wilson refined it as maintainer. A long tail of contributors added single fixes, and a few of those lines are still in the file.
+META cost=0.0640006 ms=16578 turns=3

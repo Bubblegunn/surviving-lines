@@ -1,0 +1,84 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: find lib -type f | sort && echo "---" && for f in $(find lib -type f -name "*.js" | sort); do echo "== $f"; git log --all --no-merges --format="%an" -- "$f" | sort | uniq -c | sort -rn; done
+ - Bash: echo "--- lib-wide:" && git log --all --no-merges --format="%an" -- lib | sort | uniq -c | sort -rn && echo "--- last activity per author:" && git log --all --no-merges --format="%an|%ad" --date=short -- lib | sort -t'|' -k1,1 -k2,2r | awk -F'|' '!seen[$1]++' && echo "--- importers of lib:" && grep -rn "require(['\"]\.\./lib\|require(['\"]\./\|lib/" --include="*.js" . 2>/dev/null | grep -v node_modules | grep -v "^./test" | head -40
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis: `lib/`
+Period: all history | Generated: 2026-10-24
+
+---
+
+### Project-Level Bus Factor: 1 (by commit share), effectively 0 active maintainers
+
+> Losing Troy Goode alone removes 50% of the commits to `lib/`. Losing two people (Troy and Douglas Christopher Wilson) takes it past 50%. But no one who has committed to `lib/` in the past 90 days remains, so the code has no active maintainer today.
+
+### Overview
+
+| Metric | Value |
+|--------|-------|
+| Source files in `lib/` | 1 (`lib/index.js`) |
+| Files with bus factor 1 | 1 (100%) |
+| Total non-merge commits touching `lib/` | 66 |
+| Distinct authors | 25 |
+| Top author share | Troy Goode, 33 of 66 (50%) |
+| Authors active in last 90 days | 0 |
+
+Most recent commits to `lib/`: Troy Goode on 2026-04-10 and Fiona Formatter on 2026-04-12, about six months ago.
+
+### Critical Risk Areas
+
+| File | Sole Owner | Owner Active? | Dependents | Risk |
+|------|-----------|---------------|------------|------|
+| `lib/index.js` | Troy Goode (50%) | ❌ Inactive (~196 days) | Test suite (3 files) and every npm consumer via `main` | **[HIGH]** |
+
+The dependents inside this repo are three test files (`test/error-response.js`, `test/example-app.js`, `test/issue-2.js`). Downstream npm users are the real dependency and aren't visible from here. `lib/index.js` is the whole package, so its importance is high even though the file is small.
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary Owner | Ownership % | Bus Factor |
+|--------|-------------|---------------|-------------|------------|
+| `lib/` | 25 | Troy Goode | 50% | 1 (2 to pass 50%) |
+
+Contributor history (commit counts):
+
+| Author | Commits | Last commit |
+|--------|---------|-------------|
+| Troy Goode | 33 | 2026-04-10 |
+| Douglas Christopher Wilson | 4 | 2017-10-04 |
+| Alejandro Caravaca Puchades | 4 | 2015-05-28 |
+| Simon Mansfield | 3 | 2013-05-22 |
+| jordandenison | 2 | 2015-06-22 |
+| 20 others | 1 each | 2013–2026 |
+
+Fiona Formatter (2026-04-12) is the only other recent committer. Everyone else last touched the file between 2013 and 2021, except LuisEGR (2021).
+
+### Knowledge Heat Map (Text)
+
+```
+lib/
+└── index.js  [██████████] 🔴 Bus Factor: 1 (Troy Goode 50%, INACTIVE)
+```
+
+### Answer to your question
+
+If people leave, it takes **2 departures** to get past half the historical knowledge, since Troy alone holds exactly 50%. **Nobody understands it in the sense of being an active maintainer** after roughly 25 departures, but that's a hypothetical. In practice, the current situation is that every committer has been inactive for at least six months, so the answer is effectively zero.
+
+The commit-count view overstates the risk in one way. This is a small, stable middleware file where most knowledge is probably in the code and tests and the upstream project's README. The count can't tell how much of that is understood. Treat this as a documentation and review gap rather than proof that no one can work on it.
+
+### Caveats
+
+- I ran this analysis inline instead of through the contributor-analyzer agent, since `lib/` is one file.
+- Per-file counts (Troy 29) and directory counts (Troy 33) differ because the directory history includes deleted files that were once in `lib/`. The totals above use the directory count.
+- Commit counts measure activity, not understanding. Authorship doesn't show who has reviewed or can debug the code.
+
+### Recommendations
+
+1. **Immediate**: Get a second maintainer to review and merge changes to `lib/index.js`. Fiona Formatter is the most recent committer and a natural candidate.
+2. **Short-term**: Document the design decisions in `lib/index.js` (the CORS option handling and the preflight behavior), or link them to the README.
+3. **Ongoing**: Add CODEOWNERS for `lib/` so reviews don't depend on one person.
+META cost=0.00465672 ms=19703 turns=5

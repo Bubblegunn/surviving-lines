@@ -1,0 +1,49 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne HEAD; echo; git ls-files | grep -v -E '^\.git' | head -50; echo; git log --format='%an' | wc -l
+ - Bash: for f in $(git ls-files | grep -E '\.zig$|README|build'); do git blame -w -M -C --line-porcelain HEAD -- $f | grep '^author-mail ' | sed "s|^|$f |"; done > /tmp/blame.txt
+awk '{m=$3; if(m ~ /mq32|masterq32|random-projects|ib-queissner/) m="<felix>"; c[m]++; t++; f[$1" "m]++; ft[$1]++} END{for(k in c) printf "%6d %5.1f%% %s\n",c[k],100*c[k]/t,k; print t" total"}' /tmp/blame.txt | sort -rn | head -12
+echo; awk '{m=$3; if(m ~ /mq32|masterq32|random-projects|ib-queissner/) m="<felix>"; f[$1" "m]++; ft[$1]++} END{for(k in f){split(k,a," "); printf "%s %s %d/%d\n",a[1],a[2],f[k],ft[a[1]]}}' /tmp/blame.txt | sort | awk '{print}' | sort -k1,1 -k3 -t' ' | head -40
+git log --since='12 months ago' --fo
+ - Bash: awk '$1 ~ /^src/ {m=$3; if(m ~ /mq32|masterq32|random-projects|ib-queissner/) m="felix"; f[$1" "m]++; ft[$1]++} END{for(k in f){split(k,a," "); printf "%s %s %d/%d %.0f%%\n",a[1],a[2],f[k],ft[a[1]],100*f[k]/ft[a[1]]}}' /tmp/blame.txt | sort -k1,1 -k3,3nr | awk '{c[$1]++} c[$1]<=3'
+git log --since='6 months ago' --format='%ae' | sed 's/.*/&/' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+Ownership is concentrated in the core parser and spread out everywhere else. The bus factor is 1 for `src/args.zig` and 2 for the repo as a whole. I based this on `git blame` of the 2,254 lines in `HEAD`, with `-w -M -C` so whitespace changes and moved or copied lines don't count as authorship.
+
+**Who wrote the current code**
+
+Felix Queißner (xq) committed under 6 name and email variants. I merged them into one person. This is a judgment call, and a different merge would change the numbers.
+
+| Author | Surviving lines | Share |
+|---|---|---|
+| Felix Queißner (merged) | 858 | 38.1% |
+| Wen Li | 552 | 24.5% |
+| jnagpaul | 188 | 8.3% |
+| Vincent Rischmann | 132 | 5.9% |
+| Everyone else (about 30 people) | | about 23% |
+
+**If Felix stopped answering**
+
+About 38% of the lines would have no author left who could explain them. That is 858 of 2,254 lines. The share is much higher in the core:
+
+- **`src/args.zig` (the parser):** Felix wrote 705 of 1,049 lines (67%). The next largest contributors have about 6% each, so this is a bus factor of 1.
+- **`README.md`:** Felix wrote 70 of 90 lines (78%).
+- **`src/help.zig`:** He wrote almost none of it. jnagpaul wrote 49%, Dhole 22% and Bob Farrell 12%.
+- **`demo_verb.zig`:** Vincent Rischmann wrote 58% of it.
+
+**Bus factor**
+
+- **Whole repo:** The bus factor is 2 if you count the fewest people who together wrote over 50% of the code. Felix alone is at 38%, and Felix plus Wen Li is at 63%.
+- **Excluding generated data:** Wen Li's share is inflated by `src/width_table.zig`, 484 lines that are 100% theirs, and the other 24 lines of `src/width.zig` are theirs too. Without that table, Felix is about 48%, so the repo is close to a bus factor of 1.
+- **Core parser:** The bus factor is 1 for `src/args.zig`, as above.
+
+**Activity**
+
+Felix is no longer the main source of change. Over the last 12 months he made 7 commits. The other recent commits come from Wen Li, Tobias Ek, Krzysztof Wolicki and several one-off contributors. Maintenance is spread out, but the parser's design knowledge is still mostly in one person's head.
+
+Commit dates in the log run past today's date (the latest is 2026-11-04). I didn't investigate why. The 12-month window above assumes the dates are right.
+META cost=0.07577329999999999 ms=24168 turns=4

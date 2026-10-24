@@ -1,0 +1,65 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -50; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+FINAL ANSWER:
+`lib/index.js` is mostly Troy Goode's code. That's the creator and long-time maintainer of the `cors` package, whose history this repo carries. Details below come from `git log --follow` and `git blame -w -M -C`.
+
+**Who shaped it**
+- **Troy Goode** made 29 of the roughly 55 commits, from the first ones in April 2013 through 2016, with a few more later.
+  - He set up the origin check and the `config.origin` callback.
+  - He added the Connect support that works without Express, the Express 4 support, and `Access-Control-Expose-Headers`.
+  - He moved to the `vary` module and switched the linting to ESLint.
+- **Early contributors (2013–2014):**
+  - Simon Mansfield added the checks for a missing `Origin` header.
+  - Eric di Domenico let `origin` be a callback.
+  - Mathias Buus switched to non-Express request and response methods.
+  - Shane Tomlinson normalised method names to uppercase.
+  - Typicode added `PATCH` to the default methods.
+  - Alberto Leal fixed `options.origin` being overridden.
+- **Vary, preflight and origin matching (2014–2015):**
+  - Igor Soarez and Eran Tiktin worked on the `Vary: Origin` header.
+  - Raymond Feng removed the closure in `applyHeaders`.
+  - max.laverse added passing the preflight to `next()`, and DracoBlue added exposed headers on `OPTIONS`.
+  - Alejandro Caravaca Puchades (also committing as alex94puchades) added RegExp and array values for `origin`.
+- **Douglas Christopher Wilson** made 4 commits in 2017.
+  - He added `Vary: Access-Control-Request-Headers`.
+  - He fixed the error when an options delegate has no `methods` option.
+  - He did ESLint and lint cleanups.
+- **Later fixes, one commit each:**
+  - Saad Tazi fixed an error with frozen options.
+  - Tomek Kopczuk added `Vary: Origin` for regular expressions.
+  - Benjamin Eidelman added the Safari preflight workaround.
+  - Chima Alaebo removed an unreachable branch.
+  - Tom Arad fixed `maxAge` set to 0.
+  - LuisEGR removed unused function parameters.
+  - Jordan Denison made the strict-mode fix to the middleware wrapper.
+  - Hannah Wolfe named the anonymous middleware function.
+- **Recent commits (April 2026):**
+  - Troy Goode's `annotate handlers` commit.
+  - Fiona Formatter's `reformat js with 4-space indent and double quotes` commit.
+
+**Whose code is still there**
+Blame on the current file covers about 220 lines:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 138 |
+| Fiona Formatter | 32 |
+| Douglas Christopher Wilson | 18 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| LuisEGR | 6 |
+| max.laverse | 5 |
+| Others (one to three lines each) | the rest |
+
+The "others" are alex94puchades, Simon Mansfield, Igor Soarez, Mathias Buus, Eric di Domenico, Benjamin Eidelman, Alberto Leal, Saad Tazi, Hannah Wolfe and Chima Alaebo.
+
+**Caveats**
+- Fiona Formatter's 32 lines are only the latest reformat, which changed quotes. The `-w` flag ignores whitespace changes, but quote changes still count as edits. Many of those lines are probably still logically Goode's or Wilson's, so use `git blame --ignore-rev 62628c0` to see through it.
+- Some contributors (Tom Arad, Tomek Kopczuk, Damien Klinnert, jordandenison and others) have commits in the history but no surviving lines. Later rewrites replaced their code.
+- My `git log` listing was cut off at 50 lines. Damien Klinnert appears in the author count but not in the list above, so I haven't seen their commit.
+META cost=0.0597319 ms=15513 turns=2

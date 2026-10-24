@@ -1,0 +1,25 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git ls-files | wc -l && git ls-files | sed -n 's/.*\.\([^./]*\)$/\1/p' | sort | uniq -c | sort -rn | head -30
+ - Bash: for f in $(git ls-files); do ext="${f##*.}"; [ "$ext" = "$f" ] && ext="(none)"; git blame --line-porcelain -- "$f" 2>/dev/null | sed -n 's/^author //p' | sed "s|^|$ext\t|"; done | sort | uniq -c | sort -k2,2 -k1,1rn
+ - Bash: git show -s --format='%H %an <%ae> %s' 62628c0 && git ls-files | grep -v '\.' ; echo ---; for f in $(git ls-files); do ext="${f##*.}"; [ "$ext" = "$f" ] && ext="(none)"; git blame --ignore-rev 62628c0 --line-porcelain -- "$f" 2>/dev/null | sed -n 's/^author //p' | sed "s|^|$ext\t|"; done | sort | uniq -c | sort -k2,2 -k1,1rn | awk '{print}' | head -80
+FINAL ANSWER:
+Surviving lines per file extension, from `git blame` on HEAD. The repo has 18 tracked files.
+
+| Extension | Files | Top owner (surviving lines) | Share |
+|---|---|---|---|
+| `.js` | 7 | Troy Goode, 520 | ~43% |
+| `.md` | 2 | Troy Goode, 104 | ~30% |
+| `.yml` | 6 | Douglas Christopher Wilson, 117 | ~31% |
+| `.json` | 1 | Douglas Christopher Wilson, 20 | ~48% |
+| `LICENSE` (no extension) | 1 | Douglas Christopher Wilson, 17 | ~77% |
+| `.gitignore` | 1 | Douglas Christopher Wilson, 4 | ~80% |
+
+The `.js` result needs a caveat. Commit `62628c0` ("style: reformat js with 4-space indent and double quotes") by "Fiona Formatter" rewrote most JavaScript lines. Without excluding it, Fiona Formatter owns 1,016 lines, which is misleading. Re-running blame with `--ignore-rev 62628c0` gives Troy Goode 520, Douglas Christopher Wilson 339, and Fiona Formatter 237. Git can't fully exclude the reformat because it changed quotes as well as whitespace, so some of those 237 lines are still the formatter's. Troy Goode is the top `.js` owner either way.
+
+Other counts are by author name as recorded in git, so one person committing under two names would be split across two rows.
+META cost=0.00474368 ms=22173 turns=4

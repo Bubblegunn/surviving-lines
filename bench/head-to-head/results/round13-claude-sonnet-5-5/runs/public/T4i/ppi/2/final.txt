@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: echo "== commits per author (lib/index.js)" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn; echo; echo "== last commit per author"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- lib/index.js | awk -F'|' '!s[$1]++'; echo; echo "== blame (current lines, ignoring revs)"; git blame --ignore-revs-file .git-blame-ignore-revs -e -w lib/index.js 2>/dev/null | sed -E 's/^[^(]*\(<([^>]*)>.*/\1/' | sort | uniq -c | sort -rn; echo; echo "== dependents"; grep -rlE "require\(.*(lib/index|\./lib|\.\./lib)|from .*lib" --include="*.js" . 2>/dev/null | grep -v node_modules | head -20; echo; echo "== total commits all source"; git log --all 
+FINAL ANSWER:
+## 🚌 Bus Factor: `lib/index.js`
+Period: all | Generated: 2026-10-24
+
+### Who should review
+
+| Role | Reviewer | Why |
+|------|----------|-----|
+| **Primary** | **Troy Goode** | He made 29 of 59 commits (about 49%). He owns about 159 of 233 current lines (about 68%), counting both of his emails, and he committed on 2026-04-10. |
+| **Second** | **Douglas Christopher Wilson** | He made 4 commits to this file and owns 22 current lines. He is the top contributor to the repo overall (143 commits). His last commit to this file was 2017-10-04, so check that he is still active in the project before requesting a review. |
+
+Neither is a clean pick on the evidence I have. Troy is the only active owner of this file. Douglas knows the repo best but hasn't touched this file in years.
+
+### Risk assessment
+- **File-level bus factor: 1 to 2.** Troy holds about 68% of current lines. That is below the 80% single-owner threshold, but no one else is close. The next largest holders are Douglas (about 9%) and Alejandro Caravaca Puchades (about 7%).
+- **Wide tail.** 25 people have committed to the file, but most made one commit. Only Troy and Douglas have a real chance of being familiar with the current code.
+- **Inactive contributors.** Everyone other than Troy has been inactive on this file for over 4 years. The last one before the recent activity is LuisEGR, in 2021.
+- **Importance: moderate.** Three test files reference it directly (`test/example-app.js`, `test/issue-2.js`, `test/error-response.js`). It is also likely the package entry point, so downstream users depend on it.
+- **Overall rating: MEDIUM.** Troy is active, so this isn't critical.
+
+### Notes
+- The "Fiona Formatter" commit (2026-04-12) is the 4-space/double-quote reformat. I excluded it from blame using `.git-blame-ignore-revs`, so it doesn't distort ownership.
+- `troy@laptop.example` is the same person as Troy Goode. I merged those lines into Troy's total. Treat that as a likely match rather than a certainty.
+- I did not run the full contributor-analyzer agent. For a single file, the git log and blame output above covers it. I can run the repo-wide version if you want the project-level bus factor.
+
+### Recommendations
+1. **Immediate:** Ask Troy to review, and add Douglas as an optional second reviewer for API-surface changes.
+2. **Short-term:** If you're the one making the change, pair with Troy on the parts of the file that only he has worked on.
+3. **Ongoing:** Have someone besides Troy review changes to this file. That is the cheapest way to spread knowledge of it.
+META cost=0.0648253 ms=17384 turns=4

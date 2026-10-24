@@ -1,0 +1,70 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --follow --format='%h %an %ad %s' --date=short -- lib/index.js | head -80; echo ---; git log --follow --format='%an' -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: git blame -w -M -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; wc -l lib/index.js; git show b2005d9 --stat --format=%s | head
+FINAL ANSWER:
+`lib/index.js` is the `cors` middleware. It has about 56 commits in its history, and Troy Goode wrote most of it and still owns most of it.
+
+## Who shaped it
+
+**Troy Goode (2013–2016, plus one in 2026).** Troy made the first commit on 2013-01-30 and 29 of the file's commits. In 2013 they added:
+- case-insensitive header lookup
+- `origin: false` to disable CORS
+- request pausing and resuming for async middleware
+- the `use strict` pragma
+- the JSLint cleanups
+
+In 2014 they added Express 4 support and `Access-Control-Expose-Headers`, and switched to the `vary` module. In 2015 they moved linting to ESLint. Their last big release commit was 2.8.0 in 2016. They also made the recent "annotate handlers" commit (b2005d9, April 2026).
+
+**Contributors who added features:**
+- Simon Mansfield (2013) added the early check for an undefined `Origin` and moved where the credentials header is sent.
+- Damien Klinnert (2013) limited `Allow-Methods` to preflight (OPTIONS) responses.
+- Eric di Domenico (2013) let `origin` be a callback.
+- Mathias Buus (2013) switched to non-Express request and response methods, which allowed use with plain Connect.
+- Typicode (2014) added PATCH to the default methods.
+- Alberto Leal (2014) fixed the `options.origin` callback being overridden.
+- Shane Tomlinson (2014) uppercased method names before comparing them.
+- Igor Soarez (2014) added `Vary: Origin` for specific origins.
+- Raymond Feng (2015) removed the closure in `applyHeaders`.
+- Eran Tiktin (2015) fixed `Vary: origin` being added for `*`.
+- max.laverse (2015) let the preflight request pass to `next()`.
+- DracoBlue (2015) added exposed headers to OPTIONS responses.
+- Alejandro Caravaca Puchades, working under two author names (the second is alex94puchades), (2015) added RegExp and array values for `origin`.
+- Jordan Denison (2015) added a strict-mode fix.
+- Hannah Wolfe (2016) named the anonymous middleware function.
+
+**Douglas Christopher Wilson (2017).** Doug did the maintenance work:
+- the `Vary: Access-Control-Request-Headers` header for dynamic `allowedHeaders`
+- a fix for options delegates missing `methods`
+- the ESLint 2.13.1 upgrade
+- paren-spacing lint fixes
+
+Other 2017 changes came from Tomek Kopczuk (`Vary: Origin` for regex origins), Saad Tazi (frozen options), Benjamin Eidelman (a Safari preflight workaround) and Chima Alaebo (removing an unreachable branch).
+
+**Later changes:** Tom Arad fixed `maxAge: 0` in 2018, and LuisEGR removed unused parameters in 2021. After that the file was quiet until April 2026, when Troy's annotation commit and the "Fiona Formatter" reformat (62628c0) landed.
+
+## Whose code is still there
+
+The file has 238 lines. I ran `git blame` with whitespace, move and copy detection, and I told it to skip the 4-space/double-quote reformat. That reformat otherwise credits Fiona Formatter with 32 lines that were only restyled. Here is the surviving authorship:
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+| alex94puchades (the second author name for Puchades's commits) | 4 |
+| Simon Mansfield, Igor Soarez, Benjamin Eidelman | 3 each |
+| Saad Tazi, Mathias Buus, Eric di Domenico, Alberto Leal | 2 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+Troy's 159 lines are about two-thirds of the file. Most of the rest comes from Doug and from the 2015 regex/array-origin work. Combining Puchades's two author names gives them 16 lines.
+
+Blame has two limits. The skipped reformat means some lines are really a mix of the original author and the reformatting. Troy's count also includes the recent annotation commit, which touched 12 lines.
+META cost=0.0621134 ms=16729 turns=3

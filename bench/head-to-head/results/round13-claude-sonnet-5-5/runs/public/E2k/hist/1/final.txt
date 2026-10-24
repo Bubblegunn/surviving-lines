@@ -1,0 +1,23 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --no-merges --since=2026-03-29 --until=2026-04-13 --format='%h|%an|%ae|%ad|%s' --date=short; echo; git log -1 --format='%h %ad %an'; cat .mailmap 2>/dev/null
+ - Bash: git log --format='%h|%an|%ae|%ad' --date=short | head -15; for a in "Troy Goode" "Vansh Sharma"; do echo "== $a"; git ls-files | while read f; do git blame -w --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c; break; done
+ - Bash: git ls-files | while read f; do git blame -w --ignore-rev 62628c0 --line-porcelain HEAD -- "$f" 2>/dev/null | grep -a '^author '; done | sort | uniq -c | grep -E 'Troy|Vansh|Fiona'
+git show --stat --format=%h b2005d9 02afce3 5317ebe | cat
+FINAL ANSWER:
+Two people made qualifying commits in the 14 days up to 2026-04-12 (2026-03-29 to 2026-04-12):
+
+| Person | Commits in window | Lines still in the code today |
+|---|---|---|
+| Troy Goode | `02afce3` test: vary header coverage (04-10), `b2005d9` lib: annotate handlers (04-10) | 746 |
+| Vansh Sharma | `5317ebe` docs: app.del() with app.delete() in README example (#411) (04-07) | 1 |
+
+- **Excluded:** Fiona Formatter's `62628c0` (04-12) is formatting-only. No bot commits fall in the window. The last dependabot commits are from 2026-03-02.
+- **Line counts:** These come from `git blame` with the formatting commit `62628c0` ignored (`--ignore-rev`) and whitespace changes ignored (`-w`). Without that, the reformat would credit 291 lines to Fiona that belong to other authors.
+- **Troy's 746 lines:** This is every line in the repo that blame attributes to Troy, not only the lines from his two commits in the window. He has earlier history in the repo. His two window commits added 36 lines in `test/vary.js` and changed 12 lines in `lib/index.js`.
+- **Vansh's 1 line:** This is the single README line he changed.
+META cost=0.05388230000000001 ms=12878 turns=4

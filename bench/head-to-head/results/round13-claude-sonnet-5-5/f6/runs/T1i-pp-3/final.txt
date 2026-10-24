@@ -1,0 +1,38 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '\.(png|ico|jpg|svg|lock)$|package-lock' | wc -l; git log --oneline | wc -l
+ - Bash: cd . && for mode in raw ignored; do echo "== $mode"; for f in $(git ls-files | grep -vE '\.(png|ico|jpg|svg|lock)$|package-lock'); do
+ if [ $mode = ignored ]; then git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" 2>/dev/null; else git blame --line-porcelain -- "$f" 2>/dev/null; fi | grep -a '^author ' | sed 's/^author //'
+done | sort | uniq -c | sort -rn | head -12; done
+ - Bash: git ls-files | grep -vE '\.(png|ico|jpg|svg|lock)$|package-lock'; git shortlog -sn --all | head -5
+ - Bash: for f in $(git ls-files lib test); do git blame -w -M -C --ignore-revs-file .git-blame-ignore-revs --line-porcelain -- "$f" | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{c[NR]=$0; t+=$1} END{print "total",t; for(i=1;i<=6;i++) print c[i]}'
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that's still here.
+
+I counted surviving lines with `git blame`, following moved or copied code and ignoring whitespace changes. I skipped commit 62628c0 (the 4-space/double-quote reformat) through the repo's `.git-blame-ignore-revs`.
+
+**Lines in `lib/` and `test/` (1,204 total)**
+
+| Author | Lines | Share |
+|---|---|---|
+| Troy Goode | 676 | ~56% |
+| Douglas Christopher Wilson | 396 | ~33% |
+| Alejandro Caravaca Puchades | 30 | ~2.5% |
+| Eric di Domenico | 16 | ~1.3% |
+| Alberto Leal | 15 | ~1.2% |
+| max.laverse | 9 | <1% |
+
+Across all tracked non-binary files, including docs, config and CI, the order is the same. Troy Goode has 810 lines, Douglas Christopher Wilson 629, Íñigo Marquínez Prado 95, Jon Church 72 and Sebastian Beltran 67.
+
+- **The reformat hides the real picture.** Without ignoring it, "Fiona Formatter" would own 1,018 lines, the most of anyone, because that commit rewrote the indentation and quotes on most lines. The reformat isn't real authorship, so I excluded it.
+- **Commit counts point the other way.** Douglas leads on commits (143 vs 122 for Troy), but Troy's code has survived more. That fits Troy writing the original core and Douglas making many smaller later changes.
+- **Some of the surviving code is old.** Both top owners' lines may be from the original implementation. I didn't check line ages.
+- **Blame can't tell who wrote a line from who last touched it.** A line that was edited stays attributed to the last editor, not the original author.
+- **Commits made on a contributor's behalf can shift credit.** Squashed or maintainer-applied PRs give the line to the committer.
+
+I can break this down per file or directory. I can also add a bus-factor view showing which files have a single owner.
+META cost=0.058530399999999996 ms=17683 turns=5

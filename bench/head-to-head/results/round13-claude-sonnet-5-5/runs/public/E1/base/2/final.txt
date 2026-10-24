@@ -1,0 +1,43 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git log --format='%an' | sort | uniq -c | sort -rn | head -15; echo; git ls-files | awk -F/ '{print (NF>1?$1:".")}' | sort | uniq -c
+ - Bash: git ls-files; for f in $(git ls-files | grep -v -e '^\.github'); do echo "== $f"; git log --format='%an' --follow -- $f | sort | uniq -c | sort -rn | head -3; git blame -w --line-porcelain -- $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -2; done; git log --since='2 years ago' --format='%an' | sort | uniq -c | sort -rn | head -5
+ - Bash: for a in "Troy Goode" "Douglas Christopher Wilson"; do echo "$a: $(git log --author="$a" --format=%ad --date=short | sed -n '1p;$p' | tr '\n' ' ')"; done; git log --format='%an|%s' | grep -i fiona
+FINAL ANSWER:
+## Bus factor: about 2
+
+This is a tiny project: one source file (`lib/index.js`), 7 test files, and some config and docs. Two people account for most of the history. I counted commits (`git log --follow`) and surviving lines (`git blame -w`) per file.
+
+| Area | Main contributor | Evidence |
+|---|---|---|
+| `lib/index.js` (the whole library) | **Troy Goode** | 29 of about 40 commits. Blame shows 138 lines by Troy Goode and 32 by "Fiona Formatter". |
+| `test/error-response.js`, `example-app.js`, `issue-2.js`, `vary.js` | **Troy Goode** | He wrote nearly all the original lines. |
+| `README.md` | **Troy Goode** (Jon Church second) | 116 lines by Troy Goode and 72 by Jon Church. |
+| `test/test.js` (main suite) | Troy Goode and Douglas Christopher Wilson | Split almost evenly, 220 lines to 208. |
+| `package.json`, `HISTORY.md`, `LICENSE`, `.eslintrc.yml`, `.gitignore`, `test/.eslintrc.yml`, `test/support/env.js` | **Douglas Christopher Wilson** | He wrote nearly all of the lines, and most of the commits to `package.json`. |
+| `.github/*` | Mostly bots | Dependabot, plus a few other people. |
+
+Overall commit counts are Douglas Christopher Wilson 143, Troy Goode 122, dependabot 11. Everyone else has 4 or fewer.
+
+## Findings
+
+- **The core library depends on Troy Goode.** Almost no one else has meaningfully touched `lib/index.js`. The 32 lines attributed to "Fiona Formatter" come from one formatting commit (`62628c0`, 4-space indent and double quotes). That commit changed whitespace and quotes, not logic, so it doesn't count as real ownership. Treat the file as single-owner.
+- **Release and maintenance knowledge sits with Douglas Christopher Wilson.** He owns the packaging, changelog and lint setup. His last commit was 2021-09-07, so he looks inactive. That makes this the riskiest area, because the knowledge is concentrated in someone who may no longer be involved.
+- **Troy Goode is still active.** His latest commit is 2026-04-10. Over the last two years the commits have been mostly dependabot (11), Ulises Gascón (3), Jon Church (3) and Troy Goode (2).
+- **Secondary contributors are shallow.** Jon Church has written much of the README, and Alejandro Caravaca Puchades and Ulises Gascón have a few commits each. None of them has deep ownership of the code.
+
+## Caveats
+
+- This only measures git authorship. It misses npm publish rights, repo admin access and review practice, which often matter more for bus factor.
+- The history appears partly squashed or rewritten (the "Fiona Formatter" commit), so blame numbers are approximate.
+
+## Suggestions
+
+1. Get a second maintainer reviewing and committing to `lib/index.js`.
+2. Confirm that someone other than Douglas Christopher Wilson has npm publish and repo admin rights.
+3. Write down the release process, since it currently lives only in his `package.json` and `HISTORY.md` habits.
+META cost=0.054572999999999997 ms=19315 turns=4

@@ -1,0 +1,67 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ppi-1/repo; ls -R lib; echo; git log --no-merges --format='%h %an <%ae> %ad %s' --date=short -5; echo; for f in $(git ls-files lib); do echo "== $f"; git log --all --no-merges --format='%an' -- $f | sort | uniq -c | sort -rn | head -5; echo "-- blame:"; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn | head -5; echo "-- blame -w ignoring last 2 commits:"; git blame -w -M -C --line-porcelain --ignore-rev 62628c0 --ignore-rev b2005d9 $f 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -5; done
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ppi-1/repo; f=lib/index.js; wc -l $f; git show --stat 62628c0 | tail -3; git show --stat b2005d9 | tail -3; echo "-- blame ignoring formatter only:"; git blame -w -M -C --line-porcelain --ignore-rev 62628c0 $f | grep '^author ' | sort | uniq -c | sort -rn; echo "-- commits+last date:"; git log --no-merges --format='%an|%ae|%ad' --date=short -- $f | awk -F'|' '{c[$1]++; if(!($1 in d)) d[$1]=$3; e[$1]=e[$1]" "$2} END{for(a in c) print c[a], a, "last:", d[a]}' | sort -rn; echo; git log --no-merges --format='%an <%ae>' -- $f | sort | uniq -c | sort -rn | head; echo; git log --no-merges --format=%ad --date=short -- $f | tail -1; grep -rln "requ
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ppi-1/repo; git show b2005d9 -- lib/index.js | head -40; git log --no-merges --format='%ad %ae' --date=short --author=troygoode -- lib/index.js | head -3; git log --no-merges --since=2025-10-24 --format='%ad %an %s' --date=short | head; grep -rln "require(" --include='*.js' . --exclude-dir=node_modules | xargs grep -ln "lib\|require(\"\.\./\?\")\|require('\.\./\?')" ; grep '"main"' package.json
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/T2-ppi-1/repo; git blame -w -M -C --line-porcelain --ignore-rev 62628c0 --ignore-rev b2005d9 lib/index.js | grep '^author-mail ' | sort | uniq -c | sort -rn | head -6; git log --no-merges --format='%ad %an' --date=short -- lib/index.js | grep -v -e Fiona -e 'troy@laptop' | head -3
+FINAL ANSWER:
+The bus factor of `lib/` is **1**. If Troy Goode leaves, nobody is left who knows most of the code.
+
+`lib/` is a single file, `lib/index.js` (238 lines). It's the package's `main` entry point, so all of the CORS middleware lives there. With only one file, I ran the git history and blame commands myself and skipped the skill's contributor-analyzer agent step.
+
+## 🚌 Bus Factor Analysis: `lib/`
+Period: all history (2013-01-30 → 2026-04-12) | Generated: 2026-10-24
+
+### Bus Factor: 1
+
+> If Troy Goode left, about two-thirds of `lib/` would have no author who still knows it. The next largest contributor wrote 9% of the lines and hasn't touched the file since 2017.
+
+### The raw numbers are misleading at first
+
+A plain `git blame` says **Fiona Formatter owns 214 of 238 lines (90%)**. That comes from a single commit, `62628c0`, which only changed indentation and quote style. Troy's latest commit, `b2005d9`, only added `// checked` comments to 12 lines. Neither commit adds real understanding of the code, so I re-ran blame with both ignored (`-w -M -C --ignore-rev`). I also merged two names that share the same email (Alejandro Caravaca Puchades and alex94puchades).
+
+| Author | Lines (blame, cosmetic commits ignored) | Share | Commits | Last real change to lib |
+|---|---|---|---|---|
+| Troy Goode | 157 | **66%** | 29 | 2016-08-23 |
+| Douglas Christopher Wilson | 22 | 9% | 4 | 2017-10-04 |
+| Alejandro Caravaca Puchades | 16 | 7% | 5 | 2015-05-28 |
+| Raymond Feng | 9 | 4% | 1 | 2015-01-13 |
+| 15 others | ≤6 each | ~14% | 1–3 each | 2013–2021 |
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files in `lib/` | 1 |
+| Files with bus factor 1 | 1 (100%) |
+| Critical single-owner files | 1 |
+| Total contributors ever | 24 |
+| Last real logic change | 2021-07-20 (LuisEGR) |
+
+### Critical Risk Areas
+
+| File | Main owner | Owner active? | Dependents | Risk |
+|---|---|---|---|---|
+| `lib/index.js` | Troy Goode (66%) | ⚠️ Committed 2026-04-10, but only comments. Last real change 2016 | Package entry point; all 5 test files; every downstream user | **[CRITICAL]** |
+
+### Knowledge Heat Map
+```
+lib/
+└── index.js  [███████░░░] 🔴 Bus Factor: 1 (Troy Goode 66%, next is 9%)
+```
+
+### Why this matters more than the number suggests
+- **Nobody really knows this code anymore.** No one has made a real logic change to `lib/` in over five years. Even Troy's own detailed knowledge may be stale.
+- **The repo is active, just not here.** Recent commits from people like Jon Church, Ulises Gascón and Phillip Barta in 2026 are docs, release and CI work. They are the people most likely to pick up `lib/`, but blame shows none of them have changed its logic.
+- **The file is small (238 lines), so this is fixable.** The risk is high, but the effort to fix it is low.
+
+### Recommendations
+1. **Immediate:** Have one of the current maintainers write down how `configureOrigin`, `isOriginAllowed` and the preflight handling work, ideally reviewed by Troy. This alone could take the bus factor to 2.
+2. **Short-term:** Add a `.git-blame-ignore-revs` file listing `62628c0` and `b2005d9`. Then `git blame` and GitHub's blame view will show who actually wrote each line, not the formatter.
+3. **Ongoing:** Route the next real `lib/` change, such as a bug fix or option, to someone other than Troy, with Troy as reviewer.
+META cost=0.20580980000000001 ms=49994 turns=7

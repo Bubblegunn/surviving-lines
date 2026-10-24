@@ -1,0 +1,54 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cat .git-blame-ignore-revs; git ls-files '*.js' '*.ts' | grep -v node_modules | wc -l; echo; echo "== surviving lines by author (ignoring reformat) =="; for f in $(git ls-files '*.js' '*.ts' | grep -v node_modules); do git blame --ignore-revs-file .git-blame-ignore-revs -w -C -M --line-porcelain "$f" | grep '^author ' ; done | sort | uniq -c | sort -rn | head -15; echo; echo "== commits (for contrast) =="; git shortlog -sn --no-merges | head -8; echo; echo "== last commit per top author =="; git log --format='%an|%ad' --date=short | awk -F'|' '!s[$1]++' | head -10
+ - Bash: for f in $(git ls-files '*.js' | grep -v node_modules); do git blame --ignore-revs-file .git-blame-ignore-revs -w -C -M --line-porcelain "$f" | grep '^author ' | sort | uniq -c | sort -rn | awk -v f="$f" '{t+=$1; if(NR==1){n=$1; $1=""; a=$0}} END{printf "%s\t%d lines\t%s (%d%%)\n", f,t,a,n*100/t}'; done | sort -t$'\t' -k2 -rn | head -20; git log --format='%an' | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+**Two people own almost all of the surviving code: Troy Goode and Douglas Christopher Wilson.** I used `git blame` with the reformat commit (`62628c0`) ignored, plus `-w -C -M` to see through whitespace changes and moved or copied lines. Without that, the reformat would take credit for nearly every line.
+
+**Lines still in the code, across 7 JS files**
+
+| Author | Surviving lines |
+|---|---|
+| Troy Goode | 676 |
+| Douglas Christopher Wilson | 394 |
+| Alejandro Caravaca Puchades (plus alex94puchades, probably the same person) | 34 |
+| Eric di Domenico | 16 |
+| Alberto Leal | 15 |
+| about 10 others | 9 or fewer each |
+
+Troy Goode and Douglas Wilson together account for about 85% of the 1,200-odd lines. Commit counts alone put Wilson ahead (143 commits to Goode's 122). By surviving code, Goode owns far more.
+
+**Ownership by file**
+
+| File | Lines | Top owner |
+|---|---|---|
+| `lib/index.js` (the core) | 238 | Troy Goode, 66% |
+| `test/test.js` | 731 | Douglas Wilson, 46% |
+| `test/example-app.js` | 81 | Troy Goode, 82% |
+| `test/error-response.js` | 66 | Troy Goode, 86% |
+| `test/issue-2.js` | 48 | Troy Goode, 83% |
+| `test/vary.js` | 36 | Troy Goode, 100% |
+| `test/support/env.js` | 2 | Douglas Wilson, 100% |
+
+**Bus factor**
+- The project-level bus factor is **2**. Losing Goode and Wilson would leave nobody who wrote most of the code.
+- `lib/index.js` is the riskiest file because it's the core. Goode wrote two-thirds of what's still there, and the rest is spread thinly across others.
+- `test/vary.js` is a single-author file (Goode, 100%), but it's small and low-impact.
+- Wilson's share is mostly in `test/test.js`, where his 46% is the largest block but not a majority.
+
+**Activity**
+- The latest commit by anyone is from 2026-04-12 (Fiona Formatter), and Goode's last commit is 2026-04-10. Both are about six months before today (2026-10-24).
+- I only pulled last-commit dates for the 10 most recent committers. Wilson wasn't among them, so I haven't checked whether he's still active. Every author in that list last committed more than 90 days ago.
+
+**Caveats**
+- I didn't run the skill's importance cross-check (how many files import each one) or the contributor-analyzer agent. With only 7 source files, the per-file table covers the same ground.
+- The 7-file count covers tracked `.js` and `.ts` files only.
+- Blame can't tell a line someone wrote from one they moved or copied unchanged, so a few lines may be credited to the wrong person.
+
+**Recommendation:** have someone other than Goode review or pair on `lib/index.js` changes, and spread `test/test.js` ownership beyond Wilson.
+META cost=0.0696687 ms=20075 turns=5

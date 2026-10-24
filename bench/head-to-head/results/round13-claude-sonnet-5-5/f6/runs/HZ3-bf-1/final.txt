@@ -1,0 +1,44 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls; node scripts/ownership.mjs /private/tmp/r13/final/f6r/HZ3-bf-1/runs/HZ3-bf-1/repo --dry-run --no-github 2>&1 | head -80
+ - Bash: git shortlog -sne HEAD | head -20; echo; git log --format='%an <%ae> %ad' --date=short | sed -n '1p;$p'; echo; git ls-files | wc -l; git ls-files -z | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author-mail' | sort | uniq -c | sort -rn | head -15
+ - Bash: git ls-files -z | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author-mail' | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{print "total",t; print NR" authors"}'; echo; for e in 'mq32.de' 'masterq32.de' 'ib-queissner.de' 'random-projects.net' 'linusgroh' 'fjord.example' 'bloomberg' 'rischmann'; do echo "$e: $(git log -1 --format=%ad --date=short --author="$e") first $(git log --reverse --format=%ad --date=short --author="$e"|head -1)"; done; git log --since=2025-11-04 --format='%an' | sort | uniq -c | sort -rn; git ls-files | grep -v '^src/' | head -20
+ - Bash: git ls-files -z | xargs -0 -n1 git blame -w -M -C --line-porcelain HEAD -- 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head -8; git log --author=fjord.example --format='%h %ad %s' --date=short --shortstat; git log --format='%ad' --date=short --author=Queißner | head -3; git log --since=2025-10-24 --format='%ae' | sort -u | wc -l
+FINAL ANSWER:
+**Short answer:** The original author wrote about 40% of today's lines and hasn't committed in six months. They aren't the whole risk, because the next-largest owner is a recent contributor whose lines are mostly mechanical. I'd call the bus factor 2 on paper and about 1 in practice. Only about 12 of the 33 contributors with surviving lines have committed in the last year.
+
+I ran the busfactor script with `--dry-run --no-github`, so nothing was written. The script only produced the coarse CODEOWNERS output, so I also used `git blame` on the current tree.
+
+**Who wrote the current 2,279 lines** (`git blame`, whitespace and moves ignored):
+
+| Author | Lines | Share | Last commit |
+|---|---|---|---|
+| Felix "xq" Queißner (five emails merged) | about 910+ | about 40% | 2026-04-16 |
+| Wen Li | 552 | 24% | 2026-10 |
+| jnagpaul | 188 | 8% | 2023-07 |
+| Vincent Rischmann | 132 | 6% | 2025-03 |
+| The other ~28 authors | the rest | each under 4% | various |
+
+I grouped Felix's lines by name. The five emails are `mq32.de`, `masterq32.de`, `ib-queissner.de`, `random-projects.net` and one more. Counting by email alone makes him look like several smaller contributors. His count is approximate because I summed it by hand.
+
+**If Felix stopped answering:**
+- About 40% of the code would have no author left to ask. This includes the early core of the parser and the build setup.
+- Several other authors have also gone quiet. jnagpaul's 188 lines come from a single 2023 burst, and Rischmann has been silent since March 2025. Together with Felix that is roughly half the codebase.
+- The script's roster still counts Felix as active, because its window is 12 months and his last commit is about 6 months old. It also lists him, via `<email redacted>`, as a fallback owner. You should check that roster before trusting it. If he really is gone, the repo has no live fallback owner.
+
+**Why "2 on paper" is closer to 1 in practice:**
+- Wen Li's 552 lines come from only three commits in October 2026. One is a 508-line codepoint-width helper. Another is a move of the sources into `src/`.
+- Those commits are new code and file moves rather than long familiarity with the whole library.
+- Wen Li and Tobias Ek (also three commits, all from the last three weeks) are the only active people the script names as owners under `/src/`.
+- Both are brand new to the project. Their expertise is thin, even though their share of the lines is large.
+
+**Caveats:**
+- Commit volume is only a proxy for who understands the code. Reviewers who never commit are invisible to it.
+- The history has commit dates later than today's date of 2026-10-24, up to 2026-11-04. I didn't investigate this, but it affects any "recent" cutoff.
+- I didn't build the HTML risk report or write `.github/CODEOWNERS`. I can do that if you want. I'd first confirm with you whether Felix and the two `fjord.example` authors are still active.
+META cost=0.08805370000000001 ms=29887 turns=7

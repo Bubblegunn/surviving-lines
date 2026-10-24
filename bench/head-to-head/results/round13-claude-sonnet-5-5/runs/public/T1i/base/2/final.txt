@@ -1,0 +1,47 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; git ls-files | head -100; git ls-files | wc -l
+ - Bash: cd . && for f in $(git ls-files | grep -v -e LICENSE); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain "$f" 2>/dev/null | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -20
+echo ---code only
+for f in $(git ls-files 'lib/*.js'); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head
+echo ---commits; git shortlog -sn HEAD | head -5
+FINAL ANSWER:
+Troy Goode owns the most surviving code, and Douglas Christopher Wilson comes second. Troy's lead is largest in the library itself.
+
+I ran `git blame` on every tracked file (except `LICENSE`) at HEAD. It skipped the reformat commit `62628c0` through `.git-blame-ignore-revs`, ignored whitespace changes, and followed lines moved or copied between files.
+
+**Surviving lines, all files**
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 805 |
+| Douglas Christopher Wilson | 612 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+
+**`lib/` only (the actual source)**
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades | 12 |
+| Raymond Feng | 7 |
+| max.laverse | 6 |
+| LuisEGR | 6 |
+
+- **Commits versus code:** Doug leads on commits (143 against Troy's 122). Troy still owns about 5 times as much of the library code, so his original code has mostly survived.
+- **Where Doug's lines are:** His surviving lines are mostly outside `lib/`, in tests, docs and the changelog (`HISTORY.md`).
+- **Blame limits:** Blame credits the last person to touch a line. Small edits like renames or lint fixes can take ownership from the original author, and the `lib/` lines the reformat commit rewrote were restored to their earlier authors. Also, `HISTORY.md` and `README.md` count as "code" in the all-files table.
+
+I can break it down per file or exclude docs from the totals if you want.
+META cost=0.0457546 ms=14569 turns=3

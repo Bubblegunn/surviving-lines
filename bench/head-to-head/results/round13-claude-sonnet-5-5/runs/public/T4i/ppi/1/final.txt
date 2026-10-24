@@ -1,0 +1,46 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "lib/index.js"}
+ - Bash: ls lib; echo ---; git log --all --no-merges --pretty=format:"%an <%ae>" -- lib/index.js | sort | uniq -c | sort -rn; echo ---; git log --no-merges --pretty=format:"%ad %an" --date=short -- lib/index.js | head -5; echo ---; git log -1 --pretty=format:"%ad" --date=short; echo; git blame -w -M -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head; echo ---; grep -rlE "require\(['\"](\.\./|\./)+lib(/index)?['\"]\)|lib/index" --include=*.js . --exclude-dir=node_modules | head -20; echo ---; git log --since="90 days ago" --pretty=format:"%an" | sort | uniq -c | sort -rn
+ - Bash: grep -n '"main"' package.json; grep -rlE "lib(/index)?['\"]|\.\./lib|\./lib" --include='*.js' . --exclude-dir=node_modules --exclude-dir=.git | head; echo ---; git log --since="2026-01-01" --no-merges --pretty=format:"%ad %an %s" --date=short -- lib/index.js; echo ---; git log -3 --pretty=format:"%h %an %s" -- lib/index.js | cat; echo; git blame -w -M -C --line-porcelain lib/index.js | grep -c '^author '
+FINAL ANSWER:
+## Bus factor: `lib/index.js`
+
+**Suggested reviewer: Troy Goode.** For a second reviewer, pick Douglas Christopher Wilson or Alejandro Caravaca Puchades.
+
+| Metric | Value |
+|---|---|
+| Contributors (commit authors) | 26 |
+| Primary owner | Troy Goode: 29 of 56 commits (about 52%), 138 of 238 surviving lines (about 58%) |
+| File bus factor | 2 to 3. It is not single-owner, but ownership is concentrated. |
+| Role | It is the package `main` entry point (`package.json`). Three test files reference it: `test/example-app.js`, `test/error-response.js` and `test/issue-2.js`. |
+| Importance | High, because every consumer goes through this file. |
+
+### Who to ask
+
+| Reviewer | Why | Active? |
+|---|---|---|
+| **Troy Goode** | Most commits and lines. He made the latest substantive change, "lib: annotate handlers", on 2026-04-10. | ⚠️ No commits in the repo since 2026-04-12, which is more than 90 days ago |
+| Douglas Christopher Wilson | 4 commits and 18 surviving lines. Last touched the file in 2017. | ❓ Not in the last 90 days |
+| Alejandro Caravaca Puchades | 5 commits (two author spellings) and 15 surviving lines. | ❓ Not in the last 90 days |
+| LuisEGR | Most recent human edit before Troy, "lint: remove unused function parameters" (2021). | ❓ Not in the last 90 days |
+
+### Caveats
+
+- **Fiona Formatter** shows 32 blamed lines, but that comes from the reformat commit (`62628c0`, 4-space indent and double quotes). She isn't a domain expert, so don't pick her as reviewer. The `.git-blame-ignore-revs` commit should keep that reformat out of future blame. I ran `git blame` without `--ignore-revs-file`, so the 32 lines are still counted above.
+- **No contributor has committed anywhere in the repo in the last 90 days.** The latest commit is 2026-04-12 and today is 2026-10-24. Nobody on the list is demonstrably active, so check who is currently on the team. Based on your email, that may include you.
+- **Duplicate identities:** Troy Goode appears under two emails and Alejandro under two names. Both are merged in the numbers above.
+- I counted dependents by grepping for `lib` imports. That only covers this repo, not downstream npm consumers.
+
+### Recommendations
+
+1. **Now:** Ask Troy Goode for review if they're reachable. Otherwise ask whichever of Douglas or Alejandro is available.
+2. **Short-term:** The test files that load `lib/index.js` are the safety net, so run the full suite before merging.
+3. **Ongoing:** Have a second person review changes to this file so ownership spreads beyond Troy.
+
+I used the bus-factor workflow's git commands directly and skipped the contributor-analyzer subagent, since this is a single file.
+META cost=0.07114590000000001 ms=18530 turns=5

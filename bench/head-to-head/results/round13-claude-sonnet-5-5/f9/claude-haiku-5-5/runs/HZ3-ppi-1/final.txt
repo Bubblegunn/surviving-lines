@@ -1,0 +1,80 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git rev-list --all --no-merges --count && git ls-files | head -200 && echo --- && git ls-files | wc -l && echo --- && git shortlog -sn --all --no-merges | head -20
+ - Bash: echo "== authors by email (all)"; git log --all --no-merges --format='%ae|%an' | sort | uniq -c | sort -rn; echo "== per-file blame lines by email"; for f in $(git ls-files | grep -E '\.zig$'); do echo "-- $f ($(wc -l < $f) lines)"; git blame --line-porcelain -- $f | grep '^author-mail' | sort | uniq -c | sort -rn; done; echo "== per-file commits"; for f in $(git ls-files | grep -E '\.zig$'); do echo "$f: $(git log --all --no-merges --format='%ae' -- $f | sort | uniq -c | sort -rn | tr '\n' ' ')"; done; echo "== last commit dates"; git log --all --format='%ad %ae %s' --date=short | head -15; echo "== imports"; grep -rn '@import' --include='*.zig' . | grep -v '"std"' 
+ - Bash: echo "== last commit per person (email-merged Felix)"; git log --all --no-merges --format='%ad|%ae|%an' --date=short | awk -F'|' '{ if ($2 ~ /mq32|random-projects|ib-queissner/) p="Felix"; else p=$2; if (!(p in last)) last[p]=$1; cnt[p]++ } END { for (p in last) print last[p], cnt[p], p }' | sort -r; echo "== merged blame per file"; for f in $(git ls-files | grep -E '\.zig$'); do git blame --line-porcelain -- $f | grep '^author-mail' | sed -E 's/author-mail <//; s/>//' | awk -v F="$f" '{ if ($0 ~ /mq32|random-projects|ib-queissner/) p="Felix Queissner"; else if ($0 ~ /fjord.example|wen.li/) p=$0; else p=$0; c[p]++; t++ } END { for (p in c) printf "%s\t%d\t%.0f%%\n", F, c[p], 100*c[p]/t }' ; 
+FINAL ANSWER:
+## Bus Factor Analysis
+Period: all history (blame reflects current code) | Generated: 2026-10-24
+
+**Short answer:** Felix Queißner wrote most of the code that matters. Felix is the last author of 772 of 2,120 lines (36%) and 64% of `src/args.zig`, the core library file. Losing Felix would leave the project's main file with no recently active author. The project-level bus factor is **2** by line-share, but that number hides the problem: the people still active can't cover half the code between them.
+
+### Project-Level Bus Factor: 2
+
+> Removing Felix alone leaves 64% of lines with other authors. Removing Felix and Wen Li (the next-largest owner) drops coverage below 50%, so two departures are needed. For `args.zig`, the answer is effectively 1.
+
+I merged Felix's identities: 5 email addresses (`<email redacted>`, `<email redacted>`, `<email redacted>`, `<email redacted>`, `<email redacted>`) and 3 name spellings. This is an inference from matching names and emails. If you keep them separate, `<email redacted>` alone is still the largest single owner of `args.zig` (32%), but the concentration looks smaller.
+
+### Overview
+
+| Metric | Value |
+|---|---|
+| Source files (`.zig`) | 7 |
+| Total lines analyzed | 2,120 |
+| Lines last touched by Felix | 772 (36%) |
+| Lines last touched by an author active in the last 90 days | 903 (43%) |
+| Lines last touched by an author inactive for 90+ days | 1,217 (57%) |
+| Active authors (commit since 2026-07-26) | 3: Wen Li, Tobias Ek, Dmitri Volkov |
+
+Felix's last commit was 2026-04-16, about six months ago.
+
+### Critical Risk Areas
+
+| File | Lines | Main owner (share) | Owner active? | Dependents in repo | Risk |
+|---|---|---|---|---|---|
+| `src/args.zig` | 1,049 | Felix (64%) | ❌ Felix inactive since Apr; only 5.5% of lines last touched by active authors | `demo.zig`, `demo_verb.zig`, plus external users of the library | **CRITICAL** |
+| `src/width_table.zig` + `src/width.zig` | 508 | Wen Li (100%) | ✅ Last commit 2026-10-27 | None wired in yet (`width.zig` isn't imported) | HIGH (single author, but not yet used) |
+| `src/help.zig` | 337 | Tobias Ek (100%) | ✅ Last commit 2026-10-21 | Imported by `args.zig` | HIGH (single author, active) |
+| `demo.zig` | 63 | Felix (81%) | ❌ | Demo only | LOW |
+| `demo_verb.zig` | 83 | Felix (47%), Vincent (17%) | ❌ | Demo only | MEDIUM |
+| `build.zig` | 80 | Mochalins (28%), spread over 9 identities | ❌ No active author | Build | MEDIUM |
+
+`args.zig` is the only file where a departure hurts the most. It has the most lines, the most history, and is the library's main API surface. Its active-author share is 5.5%, almost all of it from Wen Li (40 lines) and Dmitri Volkov (16 lines).
+
+### Knowledge Distribution by Module
+
+| Module | Contributors (identities) | Primary owner | Ownership % | Bus factor |
+|---|---|---|---|---|
+| `src/args.zig` | ~20 | Felix | 64% | 1 (effective) |
+| `src/help.zig` | 1 | Tobias Ek | 100% | 1 (active) |
+| `src/width*.zig` | 1 | Wen Li | 100% | 1 (active) |
+| `demo*.zig` | ~9 | Felix | 47–81% | 1 |
+| `build.zig` | ~9 | Mochalins | 28% | 3+ (but all inactive) |
+
+### Knowledge Heat Map (Text)
+
+```
+src/
+├── args.zig        [██████████] 🔴 Bus Factor: 1 (Felix 64%, inactive since Apr)
+├── help.zig        [██████████] 🟡 Bus Factor: 1 (Tobias 100%, active)
+├── width_table.zig [██████████] 🟡 Bus Factor: 1 (Wen 100%, active)
+├── width.zig       [██████████] 🟡 Bus Factor: 1 (Wen 100%, active)
+demo.zig, demo_verb.zig, build.zig  🟢 low importance, low risk
+```
+
+### Recommendations
+
+1. **Immediate:** Get a second person to review and understand `src/args.zig`. Wen Li or Dmitri Volkov are the active people with the most touchpoints. Pair them with Felix while Felix is still reachable, if possible.
+2. **Short-term:** Document the parser's design in `args.zig` (or a short `ARCHITECTURE` note), since its author has been silent for six months. Ask Tobias and Wen to review each other's files so each single-author area gets a second reader.
+3. **Ongoing:** Keep `width_table.zig` (generated-looking data) documented with its generation source, since it has one author and no in-repo consumer yet.
+
+### Caveats
+
+- Blame shows last modification, not original authorship. Lines Felix last touched may have been written by someone else first, so the "nobody left who wrote it" figure is an upper bound on pure single-author code. Checking per-line history with `git log -L` would tighten it.
+- Two commits are dated after today (2026-10-27 and 2026-11-04, the latter by Dmitri Volkov). The clock on those commits may be off, which affects the 90-day activity cutoff.
+META cost=0.00920669 ms=48471 turns=6

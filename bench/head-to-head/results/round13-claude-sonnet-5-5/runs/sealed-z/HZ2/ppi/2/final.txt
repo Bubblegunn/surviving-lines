@@ -1,0 +1,42 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "time.go version7.go sql.go"}
+ - Bash: ls time.go version7.go sql.go; for f in time.go version7.go sql.go; do echo "=== $f"; git log --all --no-merges --pretty=format:"%an <%ae>" -- $f | sort | uniq -c | sort -rn; echo "-- last commit per author:"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short -- $f | awk -F'|' '!s[$1]++'; echo "-- blame lines:"; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done; echo "=== most recent repo activity per author"; git log --all --no-merges --pretty=format:"%an|%ad" --date=short | awk -F'|' '!s[$1]++'
+ - Bash: git log --all --follow --name-status --pretty=format:"%h %ad %an %s" --date=short -- sql.go | head -20; echo ---; grep -lE "sql/driver|func \(.*\) (Scan|Value)\(" *.go; echo ---; git log -1 --format=%ad --date=short; git log --all --no-merges --since=2026-07-26 --pretty=format:"%an %ad" --date=short | head
+ - Bash: for f in $(grep -lE "sql/driver|func \(.*\) (Scan|Value)\(" *.go | grep -v _test); do echo "=== $f"; git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done
+FINAL ANSWER:
+## Bus factor: `time.go`, `version7.go`, SQL
+
+The people who wrote most of this code are mostly gone. For `time.go` and the SQL code, the current owners are different from the original authors.
+
+I used `git blame` to see who wrote the lines that exist today. `git log` shows who touched a file, which is often a different set of people. "Active" is measured against the repo's latest commit (2026-06-17), because no one has committed in the 90 days before today (2026-10-24).
+
+**The SQL code is no longer in `sql.go`.** It was renamed to `database_sql.go` in March 2025 (cfc4a55, Ravi Menon). `git log` on the old path stops at the rename, so I checked the new file. `null.go` also holds `Scan`/`Value` code, so you may want it in scope.
+
+| File | Who wrote the current lines (blame) | Still around? | Risk |
+|---|---|---|---|
+| `time.go` | Sam Okafor, 100% (152 lines) | Last commit 2025-04-22, last repo activity 2025-05-06. Inactive for about 5 months at the repo's last commit. | High |
+| `version7.go` | MikeWang 101 lines (about 86%), Mei Chen 11, Ravi Menon 2, three others 1 each | MikeWang last committed 2024-07-02, so inactive for about 2 years. Mei Chen's last commit was 2025-08. Ravi Menon is active. | Medium |
+| `database_sql.go` | Justin Overfelt 26, Andrew Stone 11, David E. Wheeler 8, Daniel Souza 8, Paul Borman 5, Steven Kaufman 1 | All of these authors last committed between 2015 and 2021. Only Ravi Menon (the rename) is recent. | High |
+| `null.go` | Samuel Roth, 107 of 118 lines | Last commit 2021-07-12 | High |
+
+### Who to ask
+
+- **Ravi Menon** is the best first reviewer for all three areas. They are the most recently active contributor (2026-06-17). They have commits in `version7.go` and `database_sql.go` (the rename), but wrote only 2 lines of `version7.go` and 1 commit in the SQL code. They are a recent maintainer, not a deep expert.
+- **Mei Chen** is the next person to ask about `version7.go`. They wrote 11 lines and last committed in 2025-08.
+- **Sam Okafor** wrote all of `time.go` as it stands, but looks inactive since mid-2025. The `Add functional options scaffolding` and `Document v7 clock step-back handling` commits are the latest work on this area, so check who authored them.
+- **Alexander Rowe** is the other recent contributor to `time.go` (2025-02 commit) and was active as late as 2026-03-09. The `Alex Rowe` and `arowe` names in the log are probably the same person, but I haven't confirmed that. They are worth contacting for a second opinion on `time.go`.
+- For the SQL code, no original author is a realistic reviewer. Paul Borman (original maintainer, last commit 2021-07) is the only name there that carries real authority.
+
+### What I'd do
+
+1. Treat Ravi Menon as your required reviewer for these files and Mei Chen or Alexander Rowe as the second.
+2. Add tests around the SQL `Scan`/`Value` and nil handling. Nobody who wrote it is around to explain it.
+3. Write down the intent of the v7 clock step-back handling. The latest commit documents it, but MikeWang's original logic is the part nobody active has deep context on.
+
+I didn't run the full-repo bus-factor workflow (all files, importer counts, project-level score), since you only asked about these files. I can run it if you want a project-wide number.
+META cost=0.0845259 ms=23115 turns=6

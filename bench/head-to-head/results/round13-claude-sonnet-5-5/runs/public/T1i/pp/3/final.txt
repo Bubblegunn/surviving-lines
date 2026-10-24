@@ -1,0 +1,32 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .git-blame-ignore-revs; echo ---; git ls-files | grep -vE '(package-lock\.json|\.min\.|\.png|\.jpg|\.ico)$' | while read f; do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -20
+FINAL ANSWER:
+Here is who owns the surviving lines, counted with `git blame`, for all tracked files except lockfiles and binaries. I ignored whitespace changes, followed moved or copied lines, and skipped the 4-space/double-quote reformat commit (`62628c0`) so it doesn't take credit for every line.
+
+| Author | Lines surviving |
+|---|---|
+| Troy Goode | 810 |
+| Douglas Christopher Wilson | 629 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+| Eric di Domenico | 16 |
+| Alberto Leal | 15 |
+
+The rest is a long tail of contributors with 10 lines or fewer. That tail includes dependabot[bot] with 10 and Efe with 6.
+
+- **Two people own most of the code.** Troy Goode and Douglas Christopher Wilson hold about 1,440 of roughly 2,000 lines, which is around 70%. Troy Goode has the most at about 40%, ahead of Wilson at about 31%.
+- **Ownership is concentrated.** Nobody else has more than about 5%, so most of the code has only one or two people who know its history.
+- **Counts include non-code files.** Docs, tests and config are in the totals. I can break it down by directory, for example `lib/` only, if you want to know who owns the runtime code.
+- **Author names may be split.** Git groups by name, so someone who committed under two names or emails would show up as two rows. I can merge them with a `.mailmap` if you spot any.
+META cost=0.045699 ms=11263 turns=2

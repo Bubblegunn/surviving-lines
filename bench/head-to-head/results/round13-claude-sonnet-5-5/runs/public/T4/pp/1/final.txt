@@ -1,0 +1,17 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne HEAD -- lib/index.js | head; echo ---; git log -n 8 --format='%h %an %ad %s' --date=short -- lib/index.js; echo ---; ls .github CODEOWNERS 2>/dev/null; cat .github/CODEOWNERS CODEOWNERS 2>/dev/null
+FINAL ANSWER:
+I'd pick **Troy Goode**. The repo has no CODEOWNERS file, so this comes from git history for `lib/index.js`.
+
+- **Troy Goode** has 29 commits on the file, far more than anyone else. They also made the latest substantive change, "lib: annotate handlers" on 2026-04-10.
+- **Douglas Christopher Wilson** has 4 commits, including lint and build changes, and is a good second reviewer.
+
+Fiona Formatter's 2026-04-12 reformat (62628c0) is the newest commit, but it only changed style. I'd ignore it when picking a reviewer, and `git blame` will point at it for most lines unless you use `--ignore-rev 62628c0`.
+
+Among older contributors, Tom Arad fixed the `maxAge: 0` handling and Benjamin Eidelman added the Safari pre-flight workaround. If your change touches either of those, their commits are worth reading for context.
+META cost=0.0411909 ms=7690 turns=2

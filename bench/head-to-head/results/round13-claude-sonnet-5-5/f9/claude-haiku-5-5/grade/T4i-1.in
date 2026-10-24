@@ -1,0 +1,206 @@
+You grade 3 answers to one task about a git repository.
+For each criterion listed and each answer, decide pass (true) or fail (false).
+For every entry write the reason FIRST (one to three sentences: what the answer says, what the ground truth and the criterion require, and where they differ or agree), then give the verdict in the field pass. Decide the verdict only after writing the reason.
+Use the ground truth for every number. A criterion that asks for a hedge passes only when the answer hedges.
+Reply with ONLY a JSON object: {"A": [{"n": 1, "reason": "...", "pass": true}], "B": [{"n": 1, "reason": "...", "pass": true}], "C": [{"n": 1, "reason": "...", "pass": true}]}
+with one entry per listed criterion, using its number n (1, 2, 3, 4, 5); in each entry the key reason comes before the key pass.
+
+TASK PROMPT:
+I'm about to change lib/index.js. Who should review it?
+
+CRITERIA:
+1. Names Troy Goode first, or as the main reviewer.
+2. Gives evidence with numbers for him (surviving lines or share) rather than only commit counts.
+3. Does not name Fiona Formatter as the main owner and does not name dependabot at all as a reviewer.
+4. Counts Troy's two addresses as one person (a Troy figure above 150 lines, or share above 60%).
+5. Names at least one second reviewer.
+
+GROUND TRUTH (computed by a script with git blame):
+ALL total(non-bot) 1987 bots 10
+  Troy Goode                         810  40.8%
+  Douglas Christopher Wilson         629  31.7%
+  Íñigo Marquínez Prado               95   4.8%
+  Jon Church                          72   3.6%
+  Sebastian Beltran                   67   3.4%
+  Ulises Gascón                       52   2.6%
+  Ignacio Mangas                      44   2.2%
+  Alejandro Caravaca Puchades         34   1.7%
+  bus factor (min authors >=50%): 2
+lib/ total(non-bot) 238 bots 0
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+  Raymond Feng                         7   2.9%
+  max.laverse                          6   2.5%
+  LuisEGR                              6   2.5%
+  Simon Mansfield                      3   1.3%
+  Igor Soarez                          3   1.3%
+  bus factor (min authors >=50%): 1
+test/ total(non-bot) 966 bots 0
+  Troy Goode                         517  53.5%
+  Douglas Christopher Wilson         374  38.7%
+  Alejandro Caravaca Puchades         18   1.9%
+  Eric di Domenico                    14   1.4%
+  Alberto Leal                        13   1.3%
+  Saad Tazi                            7   0.7%
+  Tom Arad                             5   0.5%
+  Shane Tomlinson                      4   0.4%
+  bus factor (min authors >=50%): 1
+lib/index.js total(non-bot) 238 bots 0
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+  Raymond Feng                         7   2.9%
+  max.laverse                          6   2.5%
+  LuisEGR                              6   2.5%
+  Simon Mansfield                      3   1.3%
+  Igor Soarez                          3   1.3%
+  bus factor (min authors >=50%): 1
+plain blame lib/index.js [('Fiona Formatter', 214), ('Troy Goode', 20), ('Raymond Feng', 2), ('Eric di Domenico', 1)]
+commits lib/index.js [('Troy Goode', 29), ('Alejandro Caravaca Puchades', 5), ('Douglas Christopher Wilson', 4), ('Simon Mansfield', 3), ('jordandenison', 2)]
+BY EXTENSION
+(none) total 29
+  Douglas Christopher Wilson          21  72.4%
+  Troy Goode                           6  20.7%
+  Fiona Formatter                      2   6.9%
+.js total 1202
+  Troy Goode                         676  56.2%
+  Douglas Christopher Wilson         394  32.8%
+  Alejandro Caravaca Puchades         34   2.8%
+.json total 40
+  Douglas Christopher Wilson          20  50.0%
+  Troy Goode                          12  30.0%
+  Sebastian Beltran                    4  10.0%
+.md total 341
+  Troy Goode                         116  34.0%
+  Jon Church                          72  21.1%
+  Douglas Christopher Wilson          67  19.6%
+.yml total 375
+  Douglas Christopher Wilson         127  33.9%
+  Íñigo Marquínez Prado               95  25.3%
+  Sebastian Beltran                   63  16.8%
+BY TOP-LEVEL DIRECTORY
+. total 417
+  Troy Goode                         134  32.1%
+  Douglas Christopher Wilson         115  27.6%
+  Jon Church                          72  17.3%
+.github total 366
+  Douglas Christopher Wilson         118  32.2%
+  Íñigo Marquínez Prado               95  26.0%
+  Sebastian Beltran                   63  17.2%
+lib total 238
+  Troy Goode                         159  66.8%
+  Douglas Christopher Wilson          22   9.2%
+  Alejandro Caravaca Puchades         16   6.7%
+test total 966
+  Troy Goode                         517  53.5%
+  Douglas Christopher Wilson         374  38.7%
+  Alejandro Caravaca Puchades         18   1.9%
+COMMITS IN WINDOW 2026-03-29..2026-04-12
+  Fiona Formatter                      2
+  Troy Goode                           2
+  Vansh Sharma                         1
+HISTORY lib/index.js
+  Troy Goode                         159
+  Damien Klinnert                      0
+  Simon Mansfield                      3
+  Eric di Domenico                     2
+  Mathias Buus                         2
+  Typicode                             0
+  Alberto Leal                         2
+  Shane Tomlinson                      1
+  Igor Soarez                          3
+  Raymond Feng                         7
+  Eran Tiktin                          1
+  max.laverse                          6
+  DracoBlue                            0
+  Alejandro Caravaca Puchades         16
+  jordandenison                        0
+  Hannah Wolfe                         1
+  Saad Tazi                            2
+  Tomek Kopczuk                        0
+  Douglas Christopher Wilson          22
+  Benjamin Eidelman                    3
+  Chima Alaebo                         1
+  Tom Arad                             1
+  LuisEGR                              6
+  Fiona Formatter                      0
+
+=== ANSWER A ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "Who should review a change to lib/index.js? Use --for-diff scoped to lib/index.js."}
+ - Bash: node "/private/tmp/r13/final/ours-src/bin/<tool>" --reviewers lib/index.js
+FINAL ANSWER:
+**Short answer: Troy Goode is the person to review changes to `lib/index.js`, and no one else is currently active in this file.** You have no diff yet, so I ran `--reviewers` on the file rather than `--for-diff`. Once the change is committed, `--for-diff <base>..<head>` will show who wrote the lines it replaces.
+
+Troy Goode holds the file. The identity split is the first thing to know:
+
+- **Merged, as one person (strong guess):** 144 lines (67.3%) of 214 non-blank lines, 159 of 238 counting blank lines (66.8%). The guess rests on the two addresses `<email redacted>` and `troy@laptop.example`. Only you can confirm it's one person.
+- **Unmerged:** `<email redacted>` holds 132 lines (61.7%); `troy@laptop.example` holds 12 (5.6%), with its last commit on 2026-04-10.
+
+The tool's output line for the top author reads: `top: Troy Goode <<email redacted>> holds 132 non-blank lines (61.7%), 147 counting blank lines (61.8%)`.
+
+**Other owners, all inactive in this file:**
+- Douglas Christopher Wilson: 20 lines (9.3%), last commit 2017-10-04.
+- Alejandro Caravaca Puchades: 14 lines (6.5%), last commit 2015-05-28. The same address also appears as `alex94puchades`, which the tool counts as one name.
+- LuisEGR: 6 lines (2.8%), last commit 2021-07-20.
+
+**Risk:**
+- Bus factor is 1 for this file: Troy Goode alone holds 61.7% of the non-blank lines (50% is the threshold). Four authors are needed to reach 80%.
+- As of 2026-04-12, 1 of 18 authors committed in the last 365 days, and they hold 67.3% of the non-blank lines; 32.7% belong to people with no commit in that time.
+- The file is not orphaned: the top owner is active.
+
+**Second reviewer:** The tool names no second active owner. Since `lib/index.js` is one file, nobody else has a half share of it. The only option from the history is Douglas Christopher Wilson, who is inactive here, so a second reviewer would have to come from outside the repository's history.
+
+**Lines credited elsewhere:**
+- 11 lines from `e64e854` ("Allow array of matching conditions as options.origin") are credited to Alejandro Caravaca Puchades, though Troy Goode committed them.
+- 6 lines from `f038e77` ("lint: remove unused function parameters") are credited to LuisEGR, though Douglas Christopher Wilson committed them.
+
+**Left out:** The tool did not set aside any mechanical rewrites in this file. One commit, `fcd2b56` ("issue #42: (WIP) switch to ESLint; clean up", Troy Goode, 6 surviving lines), looks mechanical but was not set aside. Inspect it with `git show --stat fcd2b56`.
+
+Counts come from `surviving-lines --reviewers lib/index.js` at HEAD (9f866e1). The analysis is on lines, not on who understands the code.
+
+=== ANSWER B ===
+COMMANDS RUN:
+ - Bash: ls -a && echo --- && cat CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>/dev/null; echo --- && git log --format='%an <%ae> %ad %s' --date=short -n 20 -- lib/index.js && echo --- && git shortlog -sne HEAD -- lib/index.js && echo --- && git blame --line-porcelain lib/index.js 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | head
+ - Bash: find .github -type f && echo --- && grep -n -i '"author"\|maintainers\|contributors' package.json; echo ---; grep -n -i 'maint\|review\|contribut' README.md HISTORY.md | head -20
+FINAL ANSWER:
+There's no formal owner for `lib/index.js`. The repo has no CODEOWNERS file, no contributing guide, and no review policy. So the choice is yours, based on history.
+
+- **Troy Goode** is the best pick for logic changes. They're the package author in `package.json`, and they wrote 20 of the file's line-level changes, including the handler annotations commit (`b2005d9`) and earlier CORS behaviour fixes.
+- **Douglas Christopher Wilson** has the most recent substantive logic work, such as the `Vary` header fixes in 2017. They're a good second reviewer if the change touches headers or preflight handling, but they haven't committed to this file since 2017.
+- **Fiona Formatter** shows as the top blamer (214 lines), but only because of the recent reformat commit (`62628c0`). Don't pick them for review on that basis. Running `git blame --ignore-revs-file .git-blame-ignore-revs lib/index.js` will show the real authors.
+
+If you want a non-author check, Tom Arad and Tomek Kopczuk have each made a single fix to this file (maxAge handling and `Vary: Origin`).
+
+=== ANSWER C ===
+COMMANDS RUN:
+ - Skill: {"skill": "tool:skill", "args": "lib/index.js"}
+ - Bash: ls lib && echo "--- authors (all time, no merges)" && git log --all --no-merges --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- last 6 months" && git log --all --no-merges --since="6 months ago" --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn && echo "--- recent commits" && git log --all --no-merges --pretty=format:"%h %an %ad %s" --date=short -15 -- lib/index.js && echo && echo "--- importers" && grep -rn "lib/index\|require(.*lib\|from.*lib'" --include="*.js" --include="*.json" . 2>/dev/null | grep -v node_modules | grep -v "^./.git/" | head -30
+ - Bash: echo "--- current line ownership (blame)" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8 && echo "--- total lines" && wc -l < lib/index.js && echo "--- today" && date +%F && echo "--- Troy Goode & Fiona recent activity across repo" && git log --all --no-merges --since="2025-10-01" --pretty=format:"%h %an %ad %s" --date=short --author="Troy Goode" | head -5; echo; git log --all --no-merges --since="2025-10-01" --pretty=format:"%h %an %ad %s" --date=short | head -10 && echo "--- scope of 62628c0" && git show --stat --format= 62628c0 | tail -3 && echo "--- scope of b2005d9" && git show --stat --format= b2005d9 | tail -3
+ - Bash: git blame --ignore-revs-file .git-blame-ignore-revs --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head -8; echo "--- Troy's commits to lib/index.js by year"; git log --all --no-merges --pretty=format:"%ad" --date=format:%Y -- lib/index.js | sort | uniq -c
+FINAL ANSWER:
+**Short answer:** Troy Goode is the person who knows this file best, but he hasn't touched it in about six months. No one active on the project has recent history in `lib/index.js`, so review it with a reviewer who can reach Troy if the change is risky.
+
+**Ownership of `lib/index.js`** (period: all history, excluding merges)
+
+| Contributor | Commits | Current lines (ignoring the reformat commit) | Last commit to this file |
+|---|---|---|---|
+| Troy Goode | 29 | 109 of 238 (~46%) | 2026-04-10 |
+| Fiona Formatter | 1 (reformat) | 57 | 2026-04-12 (whitespace and quote style only) |
+| Douglas Christopher Wilson | 4 | 36 | 2017 |
+| Raymond Feng, LuisEGR, Tom Arad, and others | a few each | the rest | 2013–2021 |
+
+- **Raw blame is misleading.** Fiona's reformat commit (`62628c0`) makes her look like the owner with 214 of 238 lines. Ignoring that commit, Troy is the clear primary owner. The repo already has `.git-blame-ignore-revs` for this reason; `git blame` should be run with `--ignore-revs-file` to see the real picture.
+- **Activity:** Nothing has changed in this file in the last six months. Troy's last commit to it (`b2005d9`, "lib: annotate handlers") was about six months ago. Fiona's commit was formatting only. Other recent repo activity (Vansh Sharma, Ulises Gascón, Phillip Barta, Jon Church, and dependabot) doesn't touch this file.
+- **Importance is high.** `package.json` names `lib/index.js` as the package `main` entry, and `test/example-app.js`, `test/error-response.js`, and `test/issue-2.js` all require it. This is the core of the CORS middleware.
+
+**Who should review**
+
+1. **Troy Goode**, if you can reach him. He wrote most of the logic, and his April commit is the most recent substantive change.
+2. **Fiona Formatter** for style. She is active and knows the current formatting conventions, but she is not a domain expert on this code.
+3. Someone from the active contributor group, for a second pair of eyes, since no one active has deep knowledge of this file.
+
+Before merging, run the test suite. The tests in `test/` are the best substitute for the knowledge that has left the team.
+
+**Limits of this check:** I ran the file-level analysis directly rather than through the contributor-analyzer agent, and I did not run the project-wide bus-factor sweep. The importer check was a text search, not a full dependency graph.

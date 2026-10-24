@@ -1,0 +1,60 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -20; echo ---; git ls-files | grep -E '\.(js|ts)$' | grep -v node_modules | wc -l; git ls-files | grep -E '\.(js|ts)$' | head -80; echo ---; git log -1 --format=%cd; git log --no-merges --since="90 days ago" --pretty=format:"%an" | sort | uniq -c
+ - Bash: for f in $(git ls-files | grep -v -E 'node_modules|package-lock'); do n=$(git log --all --no-merges --pretty=format:"%an" -- $f | wc -l); u=$(git log --all --no-merges --pretty=format:"%an" -- $f | grep -v bot | sort | uniq -c | sort -rn | head -3 | awk '{c=$1;$1="";printf "%s(%d);",$0,c}'); echo "$f | commits=$n | $u"; done; echo; git log -3 --format='%an %cd'; git log --no-merges --since="2025-07-12" --format=%an | sort | uniq -c; grep -rn "require(" lib/index.js | head; wc -l lib/index.js
+FINAL ANSWER:
+## Bus Factor Analysis
+Period: all history | Generated: 2026-10-24
+
+This is a small repo with 7 JS files and about 18 tracked files in total. Ownership is concentrated in two people, and neither has a strict sole-owner file.
+
+### Project-level bus factor: 2
+Douglas Christopher Wilson has 143 commits and Troy Goode has 95. Together that is about 85% of the roughly 280 non-bot commits. Losing both would leave most of the code without a knowledgeable maintainer. Wilson alone is about half of all commits.
+
+### Who is the single point of dependency?
+- **Troy Goode** is the dominant author of the actual source and tests.
+  - `lib/index.js` is the only runtime file, at 238 lines. Goode has 29 of its 61 commits (48%). Wilson has 4 and Alejandro Caravaca Puchades has 4.
+  - Goode also owns most of the tests: `issue-2.js` (10 of 11 commits), `example-app.js` (10 of 12) and `error-response.js` (4 of 7).
+  - Goode is still active, with two commits as of 2026-04-10.
+- **Douglas Christopher Wilson** owns the project infrastructure.
+  - `package.json`: 68 of 112 commits (61%).
+  - `test/test.js`: 8 of 10 commits (80%).
+  - `.github/workflows/ci.yml`: 10 of 15 commits (67%).
+  - `HISTORY.md` and `.gitignore`: the largest share.
+  - Wilson has no commits in the last year, so they look inactive. That makes the release and CI knowledge the most at-risk part.
+
+### Files at or near bus factor 1
+| File | Top contributor | Share | Contributors | Risk |
+|---|---|---|---|---|
+| `test/issue-2.js` | Troy Goode | 10/11 (91%) | 2 | Low (a regression test) |
+| `test/vary.js` | Troy Goode | 1/1 | 1 | Low (new file, single commit) |
+| `test/test.js` | Douglas Wilson | 8/10 (80%) | 3 | Medium (main test suite) |
+| `test/example-app.js` | Troy Goode | 10/12 (83%) | 3 | Low |
+| `package.json` | Douglas Wilson | 68/112 (61%) | 3 | Medium (release and dependency process) |
+| `lib/index.js` | Troy Goode | 29/61 (48%) | 4+ | **Medium-high**: it is the only runtime module, so every test and consumer depends on it |
+
+No file has literally one contributor except `test/vary.js`, which has only one commit. `lib/index.js` has 4 or more contributors, but Goode is its main author.
+
+### Knowledge distribution by module
+| Module | Primary owner | Ownership | Bus factor |
+|---|---|---|---|
+| `lib/` | Troy Goode | ~48% | 2 |
+| `test/` | Troy Goode and Douglas Wilson | ~45% and ~35% | 2 |
+| `.github/` (CI) | Douglas Wilson | ~67% | 2 (Ulises Gascón is a secondary contributor) |
+| Docs (`README.md`) | Troy Goode | 45% | 2–3 |
+
+### Recommendations
+1. **Immediate:** Have a second person review and document `lib/index.js` (Goode's code). Have someone other than Wilson handle the next release, so the `package.json` and CI knowledge gets shared. Ulises Gascón, who already has CI commits, is a good candidate.
+2. **Short-term:** Expand `test/test.js` ownership, since Wilson wrote 80% of it, and add tests with other authors.
+3. **Ongoing:** Document the release process in the README or CONTRIBUTING, and rotate reviewers on `lib/`.
+
+### Caveats
+- Commit counts, not lines, drive these numbers. A recent `style: reformat js` commit by "Fiona Formatter" touches many files. I excluded it from the ownership shares because it is a mechanical change.
+- Activity is judged against the repo's last commit date (2026-04-12). Some of the dates in this history look synthetic, so treat the "inactive" label on Wilson as approximate.
+- I did not run the dependents count, because `lib/index.js` is the only runtime module and everything else depends on it.
+META cost=0.07464319999999999 ms=23875 turns=5

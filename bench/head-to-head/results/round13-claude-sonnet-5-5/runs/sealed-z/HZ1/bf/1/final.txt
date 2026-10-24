@@ -1,0 +1,56 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: cd <home>/claude-kredi-runs/2026-10-22/sl-gate/src/bf-plugin/skills/busfactor && ls && node scripts/ownership.mjs /private/tmp/r13/final/out-F/runs/HZ1-bf-1/repo --no-github --dry-run
+ - Bash: git log --format='%an <%ae>' | sort | uniq -c | sort -rn | head -15; git log --reverse --format='%h %ad %s' --date=short | head -2; git log -1 --format=%ad --date=short; git rev-parse --is-shallow-repository; git ls-files | wc -l; git show --stat --format= $(git rev-list --max-parents=0 HEAD) | tail -1
+ - Bash: git log --all --format='%an %ae' | grep -i -c -E 'dana|northwind'; git ls-files '*.py' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -a '^author-mail' ; done | sort | uniq -c | sort -rn; echo; git ls-files '*.py' | xargs wc -l | tail -1; echo; for e in <email redacted> <email redacted> <email redacted>; do echo $e $(git log -1 --format=%ad --date=short --author=$e); done
+ - Bash: git log --author=northwind --format='%h %ad %an <%ae> %s' --date=short; git ls-files '*.py'; git ls-files '*.py' | while read f; do echo "$f $(git blame -w --line-porcelain HEAD -- $f | grep -a -c 'author-mail <dana')"; done
+ - Bash: R=$(git rev-parse c73f380); for set in 'colorama/*.py' 'tests/*.py'; do echo "== $set (excl _vendor, ignoring reformat commit)"; git ls-files "$set" | while read f; do git blame -w -M -C --ignore-rev $R --line-porcelain HEAD -- "$f" | grep -a '^author-mail'; done | sort | uniq -c | sort -rn | head -8; done; git ls-files colorama | xargs wc -l | sort -rn | head -8
+FINAL ANSWER:
+Status: I ran the busfactor script and checked its output against `git blame`. I have what I need.
+
+## Who wrote the Python code that's in the repo today
+
+The current blame numbers (3,039 lines of Python) are misleading unless you exclude one file.
+
+| Author | Lines surviving | Notes |
+|---|---|---|
+| Dana Kessler (northwind) | 1,324 | 1,103 are in `colorama/_vendor/_typing_compat.py`, a vendored file. Only about 220 lines are hand-written, mostly tests. |
+| Jonathan Hartley (tartley) | 943 | Original author and the largest real contributor. Last commit 2026-07-03. |
+| Arnon Yaari (infinidat / wiggin15) | 196 | Last commit 2022-06-20 under the wiggin15 address and 2020-01-25 under the infinidat address. |
+| Nathaniel J. Smith | 194 | Old contributions. |
+| About 25 others | ≤105 each | A long tail of one-off contributors. |
+
+Excluding the vendored file, the core package (`colorama/*.py`, about 830 lines) is:
+- **Hartley:** about 456 lines.
+- **Yaari:** about 158.
+- **Smith:** about 73.
+- **Dana:** about 15.
+
+Tests are even more concentrated. Hartley wrote about 470 of roughly 900 test lines, and Smith, Gabillaud and Yaari wrote most of the rest.
+
+## Exposure if the two biggest contributors go quiet
+
+The two biggest contributors by commits are Hartley (130) and Yaari (about 114 across their two emails).
+
+- **Yaari is already gone.** They haven't committed in over four years, so the tool treats them as inactive. Their code is the Windows console and ANSI-conversion logic in `ansitowin32.py` and `winterm.py`. Nobody currently active has deep history there.
+- **Hartley is the real single point of failure.** They are the only active person with deep knowledge of most of the package and the tests. If they stop answering, effectively nobody is left who understands why the core code is shaped the way it is.
+- **Dana and Priya (northwind) are your newest knowledge holders.** They have recent commits, but those are mostly small features, a reformat and the vendored shim. They haven't yet shown depth in the Windows terminal code, which is the riskiest area. Treat them as the people to pair with Hartley before handover.
+
+## Problems with the tool's output
+
+- **The generated CODEOWNERS is not usable as is.** It only has a `.github/` rule and a fallback. It names Dana and Hartley as owners, even though `.github/` was last touched by Hugo van Kemenade and Hartley. Hartley is also named as active while the rule is flagged orphaned.
+- **The history is imported.** The root commit (2014-04-17, "Make it so") contains 30 of 51 files, so authorship before that date is lost. Colorama is older than this history, so the blame numbers understate the original authors.
+- **It's all inferred.** The numbers measure surviving lines and commits, not knowledge. Hartley may also be reviewing and answering issues without committing.
+- **Nothing was written to the repo.** I used `--dry-run`, so there are no `.github/CODEOWNERS` or `ownership.json` files. I also skipped the HTML report. I can generate both if you want them.
+
+## Suggested handover actions
+
+1. Have Hartley write down the design rationale for `ansitowin32.py` and `winterm.py` before they stop answering questions.
+2. Get Dana or Priya to take ownership of the Windows console code now, while Hartley is still reachable.
+3. Replace the generated CODEOWNERS with a hand-written one that names the new team.
+META cost=0.09895009999999999 ms=33798 turns=8

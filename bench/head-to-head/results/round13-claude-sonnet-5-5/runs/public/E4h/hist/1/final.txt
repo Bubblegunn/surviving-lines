@@ -1,0 +1,48 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary", "max_results": 5}
+ - Bash: git shortlog -sne HEAD | head -40; git ls-files | awk -F/ '{print (NF>1)?$1:"(root)"}' | sort | uniq -c
+ - Bash: git log --format='%h %an %s' --author=Fiona; git log --format='%h %an %s' | grep -iE 'format|style|lint|prettier|indent' | head; git ls-files | grep -v '^\(lib\|test\|\.github\)/' 
+ - Bash: for g in lib test .github root; do
+if [ $g = root ]; then files=$(git ls-files | grep -v /); else files=$(git ls-files $g); fi
+echo "== $g"
+for f in $files; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done | sed 's/^Troy Goode.*/Troy Goode/' | grep -v 'bot\]' | sort | uniq -c | sort -rn | head -5
+done
+ - Bash: for g in lib test .github root; do
+if [ $g = root ]; then git ls-files | grep -v / > /tmp/fl; else git ls-files $g > /tmp/fl; fi
+echo "== $g"
+while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done < /tmp/fl | sed 's/^Troy Goode.*/Troy Goode/' | grep -v 'bot\]' | sort | uniq -c | sort -rn | head -4
+done
+ - Bash: for g in lib test .github root; do
+if [ $g = root ]; then git ls-files | grep -v / > /tmp/fl; else git ls-files $g > /tmp/fl; fi
+while read f; do git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f" | grep '^author ' | sed 's/^author //'; done < /tmp/fl | sed 's/^Troy Goode.*/Troy Goode/' | grep -v 'bot\]' | sort | uniq -c | sort -rn | awk -v g=$g '{t+=$1; if(NR==1){n=$1;$1="";a=$0}} END{printf "%s: %s %d/%d = %.1f%%\n",g,a,n,t,100*n/t}'
+done
+FINAL ANSWER:
+Suggested `CODEOWNERS`:
+
+```
+# Owner only where one person holds >= 50% of surviving lines
+/lib/     <email redacted>
+/test/    <email redacted>
+
+# /.github/ and root files: no majority owner, so none assigned
+```
+
+I counted surviving lines with `git blame -w -M -C`. I ignored the formatting-only reformat commit `62628c0` (Fiona Formatter), so it doesn't take over blame. I excluded dependabot and merged Troy Goode's two author identities (`<email redacted>` and `troy@laptop.example`) into one person.
+
+| Path | Top holder | Share of surviving lines | Owner? |
+|---|---|---|---|
+| `lib/` | Troy Goode | 159/238 = 66.8% | Yes |
+| `test/` | Troy Goode | 517/966 = 53.5% | Yes, narrowly |
+| `.github/` | Douglas Christopher Wilson | 118/366 = 32.2% | No |
+| Root files | Troy Goode | 134/415 = 32.3% | No |
+
+- **`.github/`:** Wilson leads, followed by Íñigo Marquínez Prado (95 lines), Sebastian Beltran (63) and Ulises Gascón (45).
+- **Root files:** Troy Goode leads, followed by Wilson (115 lines) and Jon Church (72). The root files are `.eslintrc.yml`, `.gitignore`, `HISTORY.md`, `LICENSE`, `README.md` and `package.json`.
+- **Handles:** I used email addresses from the git history because I don't know anyone's GitHub handle. Swap in `@handle`s if you have them.
+- **Activity:** Blame shows who wrote the lines, not who is still active. I didn't check recent activity, so confirm that Troy Goode is still the right reviewer before adopting this.
+META cost=0.081274 ms=24574 turns=7

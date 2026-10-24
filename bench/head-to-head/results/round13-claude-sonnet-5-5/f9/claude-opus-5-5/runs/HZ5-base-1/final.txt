@@ -1,0 +1,68 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cat .mailmap; echo ---; git log --format='%h %an <%ae> %s' | head -30; echo; git shortlog -sne HEAD | head -20; ls; cat .git-blame-ignore-revs 2>/dev/null
+ - Bash: for c in b607d90 3a3c10f 093e431 3b40daf 3eac4de c3611fa e5909f5 96dd608; do echo "=== $c"; git show --stat --format='%an <%ae> | committer %cn%n%B' $c | head -40; done
+ - Bash: head -15 src/Generated/TypeMap.php; ls build; grep -rn "TypeMap" --include=*.php --include=*.json --include=*.neon* . | grep -v "^./src/Generated" | head; git show 3b40daf | head -60
+ - Bash: cat > /tmp/blame.sh <<'EOF'
+# usage: blame.sh <dir> [extra blame args]
+d=$1; shift
+for f in $(git ls-files "$d" | grep -v '^src/Generated/'); do
+  git blame -w -M -C --line-porcelain "$@" HEAD -- "$f" | grep '^author-mail ' 
+done | sed 's/author-mail //' | sort | uniq -c | sort -rn
+EOF
+for d in src tests; do echo "== $d raw"; bash /tmp/blame.sh $d | head -12; echo "== $d ignoring bot fixer + mechanical rename"; bash /tmp/blame.sh $d --ignore-rev 3b40daf --ignore-rev c3611fa | head -15; done; git ls-files src tests | xargs wc -l | tail -1; wc -l src/Generated/TypeMap.php
+ - Bash: for f in src/Grouping.php tests/GroupingTest.php; do echo $f; git blame -w -M -C --ignore-rev 3b40daf --ignore-rev c3611fa --line-porcelain HEAD -- $f | grep -E '^[0-9a-f]{40} ' | cut -c1-7 | sort | uniq -c; done; echo; for d in src tests; do echo "== $d total"; git ls-files $d | grep -v Generated | xargs cat | wc -l; done; echo; git log --format='%aN|%ad' --date=short -- src tests | awk -F'|' '!s[$1]++{print $2, $1}' | head -20
+ - Bash: for f in $(git ls-files src | grep -v Generated); do t=$(wc -l <$f); b=$(git blame -w -M -C --ignore-rev 3b40daf --ignore-rev c3611fa --line-porcelain HEAD -- $f | grep -c '^author-mail <<email redacted>>'); echo "$((100*b/t))% $t $f"; done | sort -rn | awk '$1+0>=80' | wc -l; git ls-files src | grep -v Generated | wc -l; git log --author=Ben --format='%ad %s' --date=short -- src | head -5
+FINAL ANSWER:
+Ben Ramsey wrote most of the code in both directories. If he left, the loss would be large and very concentrated in him. No second person holds a meaningful share.
+
+I counted who last wrote each line that exists today (`git blame`, following moved and copied code, ignoring whitespace), then corrected for four things:
+- **Squashed PR #57**: commit `96dd608` is filed under Ben, but its message says the original author is Katarzyna Nowak. Kasia Nowak, who made the follow-up commit `e5909f5`, is very likely the same person, though `.mailmap` doesn't link the two. I moved those lines to her.
+- **Bot reformatting**: `3b40daf` (github-actions) only reordered `null` comparisons, so I ignored it and kept the original authors.
+- **Namespace rename**: `c3611fa` (Tomasz Wrona) only moved `Tool` to `Support` and changed namespace lines, so I ignored that too.
+- **Generated file**: I left out `src/Generated/TypeMap.php` (295 lines). Its header says it's produced by `bin/generate-types.php`, so nobody wrote it by hand. It was committed by Tomasz under a second email address, which `.mailmap` maps to him.
+
+**src/** (3,175 lines written by hand)
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | ~2,093 | ~66% |
+| Carlos C Soto | 275 | 9% |
+| zf2timo (Timo Tewes) | 225 | 7% |
+| icanhazstring | 202 | 6% |
+| Kévin Gomez | 145 | 5% |
+| Katarzyna/Kasia Nowak | 93 | 3% (`Grouping.php`) |
+| Tomasz Wrona | 51 | 1.6% (`ChunkTrait`) |
+| Others (Todaro, Santana, Stockton, …) | ~90 | ~3% |
+
+**tests/** (3,625 lines)
+
+| Author | Lines | Share |
+|---|---|---|
+| Ben Ramsey | ~1,907 | ~53% |
+| icanhazstring | 596 | 16% |
+| Kévin Gomez | 329 | 9% |
+| Carlos C Soto | 208 | 6% |
+| zf2timo | 174 | 5% |
+| Simone Todaro | 113 | 3% |
+| peter279k | 91 | 2.5% |
+| Katarzyna/Kasia Nowak | 59 | 1.6% |
+| Tomasz Wrona | 53 | 1.5% |
+
+**The raw history overstates some people:**
+- Ben's commit counts include work he squashed for others. The real number is a little lower but still dominant.
+- Tomasz Wrona has made most of the recent changes, but his own code is about 100 lines (`ChunkTrait` and its test). The rest is a rename and a generated file.
+- The bots and dependabot wrote no code that survives today.
+
+**If Ben left:**
+- He wrote about two thirds of the library's code and over half its tests. He's the main author of about 10 of the 32 source files; I didn't remove PR #57 from that file count, so it may be 9.
+- The other big contributors (Carlos C Soto, zf2timo, icanhazstring, Kévin Gomez) last touched `src/` or `tests/` between 2016 and 2019, so they're not around to ask.
+- The only recent people are Tomasz Wrona (July 2026) and Kasia Nowak (May 2026). Each knows one feature, not the core classes.
+- Ben's last real code fix was in March 2025. Since then he's only merged the squashed PR and reworded a docblock (August 2026), so even his memory of the details may be fading.
+
+Before the handover, I'd spend time with Ben going through the core abstract classes (`AbstractArray`, `AbstractCollection`, `AbstractSet`, the maps and queues). I'd also add Kasia Nowak's two addresses to `.mailmap` so future counts show her as one person.
+META cost=0.22324159999999996 ms=52575 turns=7

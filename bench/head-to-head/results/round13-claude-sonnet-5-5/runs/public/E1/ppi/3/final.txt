@@ -1,0 +1,73 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E1-ppi-3/repo; git log --all --no-merges --pretty=format:"%an" | sort | uniq -c | sort -rn | head -15; echo ---; git log -1 --format=%cd; echo ---; for f in $(git ls-files | grep -E '\.(js|ts)$' | grep -v node_modules); do n=$(git log --all --no-merges --pretty=format:"%an" -- $f | sort | uniq -c | sort -rn); tot=$(echo "$n" | awk '{s+=$1} END{print s}'); u=$(echo "$n" | wc -l); top=$(echo "$n" | head -1 | sed 's/^ *//'); echo "$f|$u|$tot|$top"; done
+ - Bash: cd /private/tmp/r13/final/out-F/runs/E1-ppi-3/repo; git ls-files | head -30; for a in "Douglas Christopher Wilson" "Troy Goode"; do echo "$a: $(git log --all --author="$a" -1 --format=%cd)"; done; git log --since="90 days ago" --format=%an | sort | uniq -c; grep -rl "require(.*lib\|require(\"\.\./\|require('\.\./" test lib 2>/dev/null | wc -l
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis
+Period: all history | Generated: 2026-10-24
+
+### Project-Level Bus Factor: 2
+
+Two people, **Douglas Christopher Wilson** (143 commits) and **Troy Goode** (95), account for about 85% of the roughly 280 non-merge commits. If both left, almost nobody would be left who knows the codebase.
+
+**No single contributor owns the project.** The "single contributor" risk is a few small files and the test suite, not the core library.
+
+### Overview
+
+Only 7 JS source files exist (`lib/index.js` plus 6 test files). Everything else is config or docs.
+
+| Metric | Value |
+|---|---|
+| Source files analyzed | 7 |
+| Files with bus factor 1 (one author ever) | 2 (29%): `test/vary.js`, `test/support/env.js` |
+| Files with bus factor 2 (two authors) | 1 (14%): `test/issue-2.js` |
+| Files with bus factor 3+ | 4 (57%) |
+| Critical single-owner files | 0 |
+
+### Single-contributor files
+
+| File | Sole owner | Commits | Owner active? | Dependents | Risk |
+|---|---|---|---|---|---|
+| `test/vary.js` | Troy Goode | 1 | ✅ Last commit 2026-04-10 | 0 (test file) | [LOW] |
+| `test/support/env.js` | Douglas Christopher Wilson | 1 | ❌ Last commit 2021-09 | test helper | [LOW–MED] |
+
+### Knowledge Distribution by Module
+
+| Module | Contributors | Primary owner | Ownership % | Bus factor |
+|---|---|---|---|---|
+| `lib/` (`index.js`) | 25 | Troy Goode | 29 of 62 commits (47%) | 3+ |
+| `test/` | 1–4 per file | Troy Goode | 4 of 5 files' top author | 1–3 |
+
+Top authors per test file:
+- `test/example-app.js`: Goode, 10 of 13 commits (77%).
+- `test/issue-2.js`: Goode, 10 of 12 commits (83%).
+- `test/error-response.js`: Goode, 4 of 8 commits (50%).
+- `test/test.js`: Wilson, 8 of 11 commits (73%).
+
+### Knowledge Heat Map
+
+```
+.
+├── lib/      [█████░░░░░] 🟢 Bus Factor: 3+ (25 authors; Goode 47%)
+└── test/     [███████░░░] 🟡 Bus Factor: 1–2 (Goode 77–83% of example-app / issue-2)
+```
+
+### Activity concern
+
+- **Wilson** last committed in September 2021, so he is **inactive**. He is the top committer overall and primary author of `test/test.js`.
+- **Goode** is the more recent of the two. His last commit is dated 2026-04-10, and the most recent commit in the repo is 2026-04-12.
+- **No one has committed in the last 90 days.** The repo's current activity comes from dependabot and occasional maintenance.
+
+### Recommendations
+
+1. **Immediate:** Get a second reviewer familiar with `lib/index.js`. Most of the 25 authors made one-off contributions, so the real depth sits with Goode and Wilson.
+2. **Short-term:** Spread knowledge of `test/example-app.js` and `test/issue-2.js` (Goode, over 75% of commits). Add a co-maintainer or reviewer for them.
+3. **Ongoing:** Document the intent of `test/support/env.js` and the test conventions. Wilson is inactive, and the one-off authors haven't been active either.
+
+**Caveats:** The sample is tiny, with only 7 source files. Authorship is by git author name, so contributors who used multiple identities would be counted separately. The "dependents" count is approximate. The library is a single file, so the test files have no importers.
+META cost=0.0702397 ms=19711 turns=5

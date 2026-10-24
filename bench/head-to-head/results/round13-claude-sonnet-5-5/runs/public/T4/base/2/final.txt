@@ -1,0 +1,21 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T4-base-2/repo; ls -a . .github docs 2>/dev/null | head -50; find . -iname CODEOWNERS -not -path './node_modules/*'; git log --format='%an <%ae>' -- lib/index.js | sort | uniq -c | sort -rn | head
+ - Bash: cd /private/tmp/r13/final/out-F/runs/T4-base-2/repo; git log --since=2024-01-01 --format='%an | %ad | %s' --date=short -- lib/index.js | head; grep -n -A8 -i 'contributors\|maintainer\|author' package.json
+FINAL ANSWER:
+There's no CODEOWNERS file, so I went by git history and `package.json`.
+
+- **Troy Goode** (<email redacted>) is the best first reviewer. They're the `package.json` author and have made 30 of the commits to `lib/index.js`, including the most recent real change, "lib: annotate handlers" (2026-04-10).
+- **Douglas Christopher Wilson** (<email redacted>) is a good second reviewer for anything that affects middleware behavior. They have 4 commits to the file, and this repo is `expressjs/cors`, so they're also part of the wider Express maintainer group.
+- **Alejandro Caravaca Puchades** also has 5 commits to the file, across two author identities. They're another option if you want someone who has worked in it.
+
+I left out Fiona Formatter. Their only commit to the file is the style reformat, so they probably aren't a useful reviewer for logic changes.
+
+Because the last commit reformatted the file to 4-space indent and double quotes, run `git blame -w` before you edit. Otherwise blame will point at that reformat.
+
+If the change touches CORS header logic, ask for a reviewer who also checks `test/`. The recent commit "test: vary header coverage" shows header behavior is tested closely.
+META cost=0.038616500000000005 ms=9051 turns=3

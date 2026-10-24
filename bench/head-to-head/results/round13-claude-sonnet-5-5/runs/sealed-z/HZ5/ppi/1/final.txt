@@ -1,0 +1,86 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor"}
+ - Bash: git log --all --no-merges --format='%an <%ae>' | sort | uniq -c | sort -rn | head -20; echo; cat .mailmap; echo; git ls-files src tests | wc -l; git ls-files src tests | sed 's/\.[^.]*$//;s/.*\.//' | head -0; git ls-files src tests | awk -F. '{print $NF}' | sort | uniq -c; git log -1 --format=%cd; git rev-list --count HEAD
+ - Bash: 
+blame(){ # $1 dir, $2 extra args
+for f in $(git ls-files "$1"); do git blame -w -M -C --line-porcelain $2 HEAD -- "$f" | grep -E '^author(-mail)? ' | paste - - ; done | sed 's/^author //;s/\tauthor-mail / /' | while IFS= read -r l; do echo "$l"; done | while read -r line; do printf '%s\n' "$line"; done | sed -E 's/ <(.*)>$/ <\1>/' > /tmp/b_$3.txt; }
+for d in src tests; do
+ for mode in plain ign; do
+  args=""; [ $mode = ign ] && args="--ignore-rev 3b40daf"
+  rm -f /tmp/o; for f in $(git ls-files $d); do git blame -w -M -C --line-porcelain $args HEAD -- "$f" | grep -E '^author(-mail)? ' | paste - - >> /tmp/o; done
+  echo "== $d ($mode) =="; python3 -I - <<'E'
+import re,collections
+mm={'ben@ra
+ - Bash: 
+for d in src tests; do
+ for mode in plain ign; do
+  rm -f /tmp/o; for f in $(git ls-files $d); do
+   if [ $mode = ign ]; then git blame -w -M -C --line-porcelain --ignore-rev=3b40daf HEAD -- "$f"; else git blame -w -M -C --line-porcelain HEAD -- "$f"; fi | grep -E '^author(-mail)? ' | paste - - >> /tmp/o; done
+  echo "== $d ($mode) =="; python3 -I - <<'E'
+import re,collections
+mm={'<email redacted>':'Ben Ramsey','<email redacted>':'Ben Ramsey','<email redacted>':'Tomasz Wrona'}
+c=collections.Counter()
+for l in open('/tmp/o'):
+    m=re.match(r'author (.*)\tauthor-mail <(.*)>',l.rstrip('\n'))
+    c[mm.get(m.group(2),m.group(1))]+=1
+t=sum(c.values())
+for n,v in c.most_common(8): print(f"{v:5
+ - Bash: 
+git log --use-mailmap --format='%aN|%ad' --date=short | awk -F'|' '{if(!($1 in l))l[$1]=$2; f[$1]=$2; n[$1]++} END{for(k in n)print n[k],k,"first="f[k],"last="l[k]}' | sort -rn | head -12
+echo; for d in src tests; do for f in $(git ls-files $d); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep -E '^author-mail ' | sed 's/author-mail <\(.*\)>/\1/' | sed 's/<email redacted>/<email redacted>/;s/<email redacted>/tomasz.wrona@brightmail.example/' | sort | uniq -c | sort -rn | awk -v f=$f '{t+=$1; if(NR==1){a=$1;n=$2}} END{printf "%s %d %.0f%% %s\n",f,t,100*a/t,n}'; done; done > /tmp/files.txt
+echo "files where Ben >=80%:"; awk '$4=="<email redacted>" && $3+0>=80' /tmp/files.txt | wc
+FINAL ANSWER:
+## Bus factor: 1. Ben Ramsey is the project.
+
+I used `git blame` (`-w -M -C`, with the `.mailmap` applied) instead of the skill's commit counts. Blame shows who wrote the lines that exist today. I also re-ran it ignoring the php-cs-fixer commit `3b40daf`, which barely changed the numbers.
+
+### Who wrote `src/` (3,470 lines, 65 files in `src/` and `tests/` together)
+| Author | Lines | Share | Active? |
+|---|---|---|---|
+| **Ben Ramsey** | 2,181 | **63%** | Yes (last commit 2026-08-05) |
+| Tomasz Wrona | 358 | 10% | Recent (Jun–Jul 2026), but see below |
+| Carlos C Soto | 270 | 8% | No, May 2016 |
+| zf2timo | 223 | 6% | No, May 2016 |
+| icanhazstring | 200 | 6% | No, 2018–19 |
+| Kévin Gomez | 145 | 4% | No, Oct 2018 |
+| 11 others | ~90 | ~3% | No |
+
+Wrona's share is mostly not hand-written. 295 of the 358 lines are `src/Generated/TypeMap.php`, a generated file. The hand-written remainder is `Support/ChunkTrait.php`, 51 lines. Their real authorship is about 1–2% of `src/`.
+
+### Who wrote `tests/` (3,625 lines)
+- Ben Ramsey: 54%
+- icanhazstring: 16%
+- Kévin Gomez: 9%
+- Carlos C Soto: 6%
+- zf2timo: 5%
+- Simone Todaro: 3%
+- peter279k: 2.5%
+- Wrona: 1.7%
+
+### If Ben Ramsey left
+- Ben alone holds a majority of lines in both `src/` and `tests/`, so the project-level bus factor is 1.
+- Ben is the top author in 38 of the 65 files, and owns 80% or more of 27 files. That includes most of the core collection classes.
+- Every other meaningful contributor has been inactive for 7 to 10 years. Nobody remaining has working knowledge of the code, and no one is a ready backup.
+- Wrona is the only recent contributor. Their work is limited to the generated type map and `ChunkTrait`, so they can't take over Ben's role.
+
+### Where the remaining knowledge sits, all with departed authors
+- `src/Map/TypedMap.php`, `AbstractTypedMap.php`, `Set.php`, `AbstractSet.php` and `Support/ValueToStringTrait.php` are mostly Carlos C Soto's (50–70%).
+- `src/Queue.php` and `tests/QueueTest.php` are mostly zf2timo's (32–54%).
+- `src/DoubleEndedQueue.php` and its 525-line test are mostly Kévin Gomez's (46–49%).
+- `tests/Support/ValueExtractorTraitTest.php` is mostly icanhazstring's (44%).
+
+These areas have a bus factor of 1 as well, and the owners are gone. That makes them effectively unowned. Your team will be the first people to maintain them.
+
+### Recommendations before handoff
+1. **Immediate:** Ask Ben for a walkthrough of the design decisions in the core classes. Record it or write it up as docs.
+2. **Immediate:** Have Ben document the release process, the type map generation (and how `TypeMap.php` is produced), and the CI and dependabot setup.
+3. **Short-term:** Have the new team review the Queue, DoubleEndedQueue and TypedMap/Set areas first. They have no active owner, so they are the most likely to be misunderstood.
+4. **Ongoing:** Have a second maintainer review every PR, so line ownership spreads out. Add commit access and maintainer rights for the new team before Ben steps away.
+
+**Caveat:** `.mailmap` merges Ben's two emails and Wrona's alias. Contributors who used other identities may still show under separate names, which would slightly understate their share.
+META cost=0.11484530000000001 ms=41988 turns=7

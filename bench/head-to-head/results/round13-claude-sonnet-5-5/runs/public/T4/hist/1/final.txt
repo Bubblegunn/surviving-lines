@@ -1,0 +1,20 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__knowledge_risk,mcp__git-historian__blame_summary,mcp__git-historian__file_history", "max_results": 5}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4-hist-1/repo", "file": "lib/index.js"}
+ - mcp__git-historian__file_history: {"repo_path": "/private/tmp/r13/final/out-F/runs/T4-hist-1/repo", "file": "lib/index.js", "limit": 30}
+FINAL ANSWER:
+**Troy Goode** is the best first reviewer. Douglas Christopher Wilson is a good second if they're still active.
+
+- **Don't go by blame.** It lists Fiona Formatter as the owner of 90% of `lib/index.js`. That comes from the formatting commit `62628c0` (4-space indent, double quotes), which rewrote 214 lines and changed no behavior. Fiona is a poor choice of reviewer for logic.
+- **Troy Goode** wrote the file in 2013 and made most of the early design changes (the `vary` module, non-Express support, the ESLint move). They also made the latest non-formatting commit, `b2005d9` ("annotate handlers", 2026-04-10).
+- **Douglas Christopher Wilson** made the main correctness fixes in 2017. Those cover the `Vary: Access-Control-Request-Headers` header, the missing-`methods` bug, and linting. If your change touches `Vary` or header handling, they know the edge cases best.
+
+I didn't check whether either of them is still active in the repo. Troy's April 2026 commit suggests they are. Wilson's last commit to this file was in 2017, so I'd confirm they're still around before tagging them.
+
+If you'd like, I can run `knowledge_risk` to check which authors have gone inactive.
+META cost=0.0559584 ms=9649 turns=4

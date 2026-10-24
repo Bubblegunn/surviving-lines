@@ -1,0 +1,40 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-base-1/repo; ls; for f in time.go version7.go sql.go; do echo "== $f"; git log --format='%an <%ae>' -- $f | sort | uniq -c | sort -rn | head -8; echo "last:"; git log -3 --format='%ad %an' --date=short -- $f; done; echo; ls CODEOWNERS .github/CODEOWNERS 2>&1; git log -1 --format=%ad --date=short; echo recent-authors; git log --since=2024-01-01 --format='%an <%ae>' | sort | uniq -c | sort -rn | head
+ - Bash: cd /private/tmp/r13/final/out-F/runs/HZ2-base-1/repo; cat .github/CODEOWNERS; echo; cat CONTRIBUTORS | head -30; ls database_sql.go; git log --format='%an' -- database_sql.go null.go | sort | uniq -c | sort -rn | head -5; echo; for a in "Ravi Menon" "Sam Okafor" "Alexander Rowe" "Mei Chen" "MikeWang" "Noor Haddad" "Paul Borman"; do echo "$a: $(git log --author="$a" -1 --format=%ad --date=short)  commits=$(git log --author="$a" --oneline | wc -l)"; done
+FINAL ANSWER:
+**Short answer:** CODEOWNERS doesn't name anyone for these files. Ravi Menon is the best first reviewer for all three, and the git history is the only evidence I have for who is still active.
+
+**Who is assigned**
+- `.github/CODEOWNERS` has one rule, `* @google/go-uuid-contributors`. Every file gets the same team, with no per-file owners.
+- I can't see the membership of that GitHub team from the repo. Check it in the GitHub org settings.
+
+**Who wrote each file**
+
+| Area | Main authors by commit count | Most recent changes |
+|---|---|---|
+| `time.go` | Paul Borman (6 commits, last in 2021). Others have 1 each: Youngjae Lee, Nicu Micle, MikeWang, Martin Lindhe, Bryan Matsuo. | Sam Okafor (2025-04), Alexander Rowe (2025-02), Nicu Micle (2024-11) |
+| `version7.go` | MikeWang (2 commits), Ravi Menon, Mei Chen, David Kaufman, Andreas Deininger, Alex Bozhenko | Ravi Menon (2026-05), Mei Chen (2025-08), Alex Bozhenko (2024-07) |
+| SQL: `database_sql.go` and `null.go` (the old `sql.go` is gone) | Original SQL authors: David E. Wheeler, Justin Overfelt, Andrew Stone, Steven Kaufman, Daniel Souza (all 2017–2021). | Ravi Menon (2025-03) |
+
+**Who still looks active** (last commit in this repo; the latest commit overall is 2026-06-17)
+- **Ravi Menon**: 7 commits, last 2026-06-17. They have touched all three areas, so ask them first.
+- **Alexander Rowe**: last commit 2026-03, and they worked on `time.go`.
+- **Sam Okafor**: last commit 2025-05, and they worked on `time.go`.
+- **Mei Chen**: one commit, in 2025-08, on `version7.go`.
+- **Noor Haddad**: last commit 2025-07. They haven't touched these three files, but they are a recent maintainer-type contributor.
+
+**Who has gone quiet**
+- **Paul Borman**, the original author and the only Google-affiliated name, last committed in 2021-07.
+- **The original SQL authors** (Wheeler, Overfelt, Stone, Souza and others) have no commits since 2021 at the latest.
+- **MikeWang** wrote much of v7 but last committed in 2024-07.
+- I can't tell from git whether any of these people still follow the project. Only the commit dates are evidence.
+
+**Suggestions**
+- Ask Ravi Menon to review changes to `time.go`, `version7.go` and the SQL code, with Alexander Rowe or Sam Okafor as a second reviewer on `time.go`.
+- Replace the blanket CODEOWNERS rule with per-file entries once you've confirmed who is still engaged. Tell me if you'd like me to draft that.
+META cost=0.0536121 ms=15818 turns=3

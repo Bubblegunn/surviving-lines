@@ -1,0 +1,20 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -a && echo "--- CODEOWNERS" && (cat CODEOWNERS .github/CODEOWNERS docs/CODEOWNERS 2>/dev/null || echo "none") && echo "--- log" && git log --format='%h %an <%ae> %ad %s' --date=short -n 15 -- lib/index.js && echo "--- blame summary" && git blame --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn | head && echo "--- contributors" && git shortlog -sn --all | head -10
+FINAL ANSWER:
+There's no CODEOWNERS file, so the answer comes from git history. The best candidates are:
+
+- **Troy Goode** (`troy@laptop.example`): the last substantive change to `lib/index.js` was his "lib: annotate handlers" commit on 2026-04-10. He has about 122 commits in the repo overall. He's the most natural reviewer for logic changes.
+- **Douglas Christopher Wilson** (`<email redacted>`): the most prolific contributor (about 143 commits), and he authored much of the `lib/index.js` history from 2017 onward. He's a good second reviewer if the change touches CORS option semantics or header handling.
+
+Two caveats:
+
+- The 2026-04-12 commit "style: reformat js with 4-space indent and double quotes" (Fiona Formatter) accounts for 214 of the file's lines in `git blame`. Blame attribution for logic is therefore misleading in places. Use `git blame -w -C` or check the pre-reformat commit if you need the real author of a particular line.
+- Git authorship shows who wrote code, not who currently has merge rights or is active. I can't check GitHub's branch protection or team settings from here. If you want, I can run `gh api repos/{owner}/{repo}/collaborators` or look at the branch protection rules to confirm who can approve.
+
+If you tell me what the change to `lib/index.js` does, I can suggest which of these reviewers fits best.
+META cost=0.0024876000000000004 ms=8686 turns=2

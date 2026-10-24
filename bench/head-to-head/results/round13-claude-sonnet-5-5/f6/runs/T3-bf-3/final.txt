@@ -1,0 +1,25 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: git shortlog -sne --all | head -50; ls -a | grep -i mailmap
+ - Bash: git shortlog -sne --all | tail -n +51; echo ---; git log --all --format='%an <%ae>%n%cn <%ce>' | sort -u | awk -F'[<>]' '{print $2}' | sort | uniq -d; git log --all --format='%an|%ae' | sort -u | awk -F'|' '{c[$1]++} c[$1]>1{print}' ; git log --all --format='%an|%ae' | sort -u | grep -i -E 'troy|doug|fiona'
+ - Bash: cat > .mailmap <<'EOF'
+Troy Goode <<email redacted>> <troy@laptop.example>
+Alejandro Caravaca Puchades <<email redacted>> alex94puchades <<email redacted>>
+EOF
+git shortlog -sne --all | head -4; git shortlog -sne --all | grep -i -E 'puchades|troy'
+FINAL ANSWER:
+Yes, two people appeared under more than one identity:
+
+- **Troy Goode** was listed under `<email redacted>` (120 commits) and `troy@laptop.example` (2 commits). That makes 122 commits.
+- **Alejandro Caravaca Puchades** was listed under that name (4 commits) and as `alex94puchades` (1 commit). Both used `<email redacted>`, so that makes 5 commits.
+
+I added a `.mailmap` at the repo root that merges each pair. I didn't rewrite any history, and I haven't committed the file. `git shortlog` now counts each of them once.
+
+The merges don't change the top author. It's still **Douglas Christopher Wilson** (`<email redacted>`) with 143 commits. Troy Goode is second with 122.
+
+"Fiona Formatter" (`fiona@formatter.example`) has one commit. I left it alone, because nothing in the history shows she's the same person as anyone else.
+META cost=0.0506514 ms=11574 turns=4

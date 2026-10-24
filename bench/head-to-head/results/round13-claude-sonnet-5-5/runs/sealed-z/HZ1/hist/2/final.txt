@@ -1,0 +1,50 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary", "max_results": 5}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-2/repo"}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-2/repo"}
+ - mcp__git-historian__bus_factor: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ1-hist-2/repo"}
+ - Bash: git ls-files '*.py' | while read f; do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //' ; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=NR;i++) print a[i]; print t, "TOTAL"}' | head -20; echo ---; git log --author="Dana Kessler" --format='%h %ad %s' --date=short --shortstat | head -30; echo ---; git ls-files '*.py' | wc -l
+ - Bash: git show --stat --format='%h %an %s' aa872f7 | head; echo ---; for f in $(git ls-files '*.py'); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //' | sort | uniq -c | sort -rn | head -1 | sed "s|^|$f |"; done | column -t; echo; git ls-files '*.py' | grep -v -e typing -e _compat | xargs cat | wc -l
+ - Bash: for f in $(git ls-files '*.py' | grep -v _vendor); do git blame -w -M -C --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | awk '{t+=$1; a[NR]=$0} END{for(i=1;i<=6;i++) printf "%s (%.1f%%)\n", a[i], 100*substr(a[i],1,index(a[i]," ")-1+0)/t; print t, "TOTAL"}'; git ls-files '*.py' | grep -v _vendor | grep -v -e tests/ -e demos/ | while read f; do git blame -w --line-porcelain HEAD -- "$f" | grep '^author ' | sed 's/^author //'; done | sort | uniq -c | sort -rn | head -5
+FINAL ANSWER:
+**Short answer:** your real exposure is Jonathan Hartley, not the pair. Arnon Yaari matters much less than the commit counts suggest.
+
+**Who wrote the Python that exists today**
+
+I used `git blame` on the 25 tracked `.py` files, ignoring whitespace and following moved lines. I left out `colorama/_vendor/_typing_compat.py`, a 1,103-line vendored file. The git-historian report credits it to Dana Kessler, who only added it in a single commit. That would otherwise make Dana look like your second-largest author.
+
+| Author | Surviving lines | Share of 1,936 |
+|---|---|---|
+| Jonathan Hartley | 943 | about 49% |
+| Dana Kessler | 220 | about 11% |
+| Arnon Yaari | 196 | about 10% |
+| Nathaniel J. Smith | 194 | about 10% |
+| Delgan | 105 | about 5% |
+| about 40 others | the remaining ~15% | |
+
+**If the two biggest contributors by commits go quiet (Hartley and Yaari)**
+
+- **Hartley:** He is the main author of 7 of the 9 files in `colorama/` and `tests/` that I checked. That includes `ansitowin32.py` (140 lines, about half the file), `win32.py`, `winterm.py` and `initialise.py`. In the core library he is about 426 of roughly 800 non-demo, non-test lines. This is a genuine concentration of knowledge, and it sits in the Windows console code, which is the hardest part to understand.
+- **Yaari:** He has 64 commits, second only to Hartley, but only about 10% of the surviving code. He is a secondary author on `winterm.py` (about 30%) and `win32.py`. Losing him would cost you history and context more than code.
+- **Combined:** Together they hold about 59% of the Python lines. The other 41% is spread across many people, so no other single person is a gap.
+
+**Context that lowers the risk**
+
+- **Recent activity:** Hartley's last commit was 2026-07-03 and Yaari's was 2026-05-13. Dana Kessler (2026-08-20), Priya Nair (2026-09-12) and Tomás Ibarra (2026-08-04) are the only others who committed in the last three months. Together they own about 11–12% of the Python.
+- **Departed authors:** Nathaniel J. Smith (last commit 2022) and Delgan (2018) have left. Their code is about 15% of the total, and it is in `initialise.py`, `initialise_test.py`, `isatty_test.py` and `tests/utils.py`.
+- **Non-Python files:** `pyproject.toml` and the CI workflows are owned almost entirely by people who are no longer active (Ofek Lev, Hugo van Kemenade, Christian Clauss). That is a handover gap even though it isn't Python.
+
+**Before handover**
+
+1. Ask Hartley for a walkthrough of `ansitowin32.py`, `win32.py` and `winterm.py`, especially how they handle the Windows console API. Make this the top priority.
+2. Ask Yaari for the reasoning behind his `winterm.py` and `win32.py` changes. His commit messages and PRs will have it.
+3. Have the new team make some changes in the Windows-specific code while both are still reachable.
+4. Decide who owns the packaging and CI config, since nobody active does.
+
+The line counts reflect blame at HEAD only. Recent bulk commits (black-style quote changes, moving the tests) can hide earlier authors, even with whitespace and move detection on.
+META cost=0.1148396 ms=32652 turns=8

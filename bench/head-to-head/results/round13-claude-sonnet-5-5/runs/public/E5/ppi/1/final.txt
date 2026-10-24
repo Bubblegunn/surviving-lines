@@ -1,0 +1,63 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:history
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:history", "args": "lib/index.js"}
+ - Bash: ls lib/index.js && git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | head -40; echo; echo TOTAL; git log --follow --oneline -- lib/index.js | wc -l; echo BLAME; git blame -w -C -C -C --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo BLAME-IGNORE-REFORMAT; git blame -w -C -C -C --ignore-rev 62628c0 --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo SHORTLOG; git shortlog -sn --follow -- lib/index.js
+ - Bash: git log --follow --pretty=format:"%h|%s|%an|%ad" --date=short -- lib/index.js | tail -22; echo; git log --follow --pretty=format:"%an" -- lib/index.js | sort | uniq -c | sort -rn | head -8; git show b2005d9 --stat --format=%B | head -15; git log --all --grep=revert -i --oneline -- lib/index.js
+FINAL ANSWER:
+## 🔍 Code History: `lib/index.js`
+
+### Quick Context
+> This is the core of the `cors` Express/Connect middleware. It decides which CORS headers to send and handles preflight `OPTIONS` requests. Troy Goode wrote it in 2013, and he still owns most of the surviving lines. Doug Wilson later took over maintenance and hardened it.
+
+### Decision Timeline
+| Date | Commit | Author | What and why |
+|---|---|---|---|
+| 2013-01-30 | `bcd03d9` and the next few | Troy Goode | First commit, then case-insensitive header lookup, `origin: false` disabling CORS, and lint cleanup. |
+| 2013-02 to 03 | `ed5128c`, `e572aa6`, `b093d7e` | Troy Goode, Damien Klinnert | Pause/resume of the request for async middleware. After a closer read of the CORS spec, most headers were limited to preflight responses. |
+| 2013-04 to 05 | `7bb0686`, `e4ad50b`, `58562c8` | Simon Mansfield | Credentials-header placement and guards for a missing `Origin` header. |
+| 2013-10 | `a8f9fdb`, `580c249`, `9a1b6e4` | Eric di Domenico, Mathias Buus, Troy Goode | `origin` can be a callback. Express-only request/response methods were replaced so Connect works without Express (v2.1.0). |
+| 2014 | `0a80d70`, `e4afa9e`, `c78ed42` | Troy Goode, Typicode | `Access-Control-Expose-Headers`, `PATCH` added to the default methods, and Express 4 support. |
+| 2014-10 to 11 | `37ca05d`, `165f35e`, `fee800f` | Igor Soarez, Troy Goode | `Vary: Origin` for specific origins, then moved to the `vary` module. A regression that dropped non-Express support was fixed. |
+| 2015 | `39c9f29` to `e64e854` and others | Alejandro Caravaca Puchades (as `alex94puchades` on `39c9f29`), Raymond Feng, others | RegExp and array `origin` matching, `applyHeaders` optimized, preflight passthrough via `next()`, and the move to ESLint. |
+| 2016 to 2017 | `5dae6d8`, `e0115b0`, `6d2ff29`, `075c4b5`, `d3304ab` | Troy Goode, Saad Tazi, Tomek Kopczuk, Doug Wilson, Benjamin Eidelman | Fixes for frozen options and `Vary` correctness. A Safari workaround was added for the default preflight response. |
+| 2018 to 2021 | `01477dc`, `f038e77` | Tom Arad, LuisEGR | `maxAge: 0` fix and lint cleanup. |
+| 2026-04 | `b2005d9`, `62628c0` | Troy Goode, Fiona Formatter | "Annotate handlers" (12 lines changed), then a whole-file reformat to 4-space indent and double quotes. |
+
+### Narrative
+The file grew by accretion. Each phase came from a bug report or a spec detail: async middleware, the Connect/Express split, then `Vary` handling. After 2017 almost all changes were small correctness fixes or lint changes. Doug Wilson authored most of these; he is the second-largest contributor to the surviving lines.
+
+The two newest commits change how the blame output reads. `62628c0` is a pure style reformat. A plain blame credits Fiona Formatter with 32 lines that she didn't write the logic for. I ran blame with `-w -C -C -C` and with `--ignore-rev 62628c0`, so the second table is the real picture.
+
+**Whose code is still there** (line counts from blame, ignoring the reformat):
+
+| Author | Lines |
+|---|---|
+| Troy Goode | 159 |
+| Douglas Christopher Wilson | 22 |
+| Alejandro Caravaca Puchades (including `alex94puchades`) | 16 |
+| Raymond Feng | 7 |
+| LuisEGR, max.laverse | 6 each |
+| Simon Mansfield, Igor Soarez | 3 each |
+| Benjamin Eidelman, Mathias Buus, Eric di Domenico, Alberto Leal, Saad Tazi | 2–3 each |
+| Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo | 1 each |
+
+### Key Takeaways
+1. Troy Goode is both the original author and the main contributor (29 of 62 commits). About 159 of roughly 250 lines are still his, so the structure has barely changed since 2013–2015.
+2. Doug Wilson shaped how the file behaves in edge cases: `Vary`, a missing `methods` option, and lint. Alejandro Caravaca Puchades added the RegExp/array origin matching.
+3. Don't trust plain `git blame` here. Use `git blame --ignore-rev 62628c0 lib/index.js`. Adding that commit to a `.git-blame-ignore-revs` file would fix it permanently.
+
+### Metrics
+| Metric | Value |
+|---|---|
+| Total commits | 62 (with `--follow`) |
+| Contributors | About 30; top: Troy Goode (29), Douglas Christopher Wilson (4), Alejandro Caravaca Puchades (4), Simon Mansfield (3) |
+| Age | 2013-01-30 |
+| Last changed | 2026-04-12 |
+| Churn | Medium overall: heavy in 2013–2015, sparse since. Reverts: none found. |
+
+I ran this as a shallow-plus analysis directly with git rather than launching the git-archaeologist agent. I didn't search for related PRs through `gh`.
+META cost=0.0831943 ms=23200 turns=5

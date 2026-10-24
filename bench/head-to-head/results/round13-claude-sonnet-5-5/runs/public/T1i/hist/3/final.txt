@@ -1,0 +1,43 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__blame_summary,mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk", "max_results": 3}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/T1i-hist-3/repo", "max_files": 1000, "top": 15}
+ - Bash: cat .git-blame-ignore-revs; for f in $(git ls-files | grep -E '\.(js|md|json|yml)$|^[A-Za-z]+$'); do git blame --ignore-revs-file .git-blame-ignore-revs -w -M -C --line-porcelain -- "$f" 2>/dev/null | grep -a '^author ' ; done | sort | uniq -c | sort -rn | head -15
+FINAL ANSWER:
+Troy Goode and Douglas Christopher Wilson own most of the code that's still here. The default blame tool gives the wrong answer for this repo.
+
+**Why the default blame is misleading:** the tool credits about 51% of surviving lines (1,018 of ~2,000) to "Fiona Formatter". That is the author of `62628c0 style: reformat js with 4-space indent and double quotes`. Reformatting rewrote nearly every JS line, so plain blame gives those lines to the reformatter instead of the people who wrote them.
+
+I re-ran `git blame` over every tracked file with `--ignore-revs-file .git-blame-ignore-revs -w -M -C`. The repo already lists that commit in `.git-blame-ignore-revs`. This is how ownership looks with the reformat skipped:
+
+| Author | Surviving lines (approx.) |
+|---|---|
+| Troy Goode | 809 |
+| Douglas Christopher Wilson | 625 |
+| Íñigo Marquínez Prado | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 30 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+
+I only looked at the top 10, so I haven't accounted for the remaining lines, which are spread across many smaller contributors. The percentages in this table are relative to the lines I counted, not to a verified total.
+
+**What this shows**
+- **Troy Goode** wrote most of the surviving source code, including `lib/index.js` (about 90% of it once the reformat is skipped) and most of `test/`.
+- **Douglas Christopher Wilson** owns most of the project scaffolding: `package.json`, `LICENSE`, `HISTORY.md`, `.eslintrc.yml`, and about half of `ci.yml`.
+- **CI and security workflows** come from other people. Íñigo Marquínez Prado wrote `scorecard.yml`, Sebastian Beltran wrote `codeql.yml`, and Ulises Gascón wrote `dependabot.yml`.
+- **Docs:** `README.md` is split among Troy Goode, Jon Church and Linus Unnebäck. No one person owns it.
+
+**Caveats**
+- The per-file counts above are from the tool's output. They still include the reformat attribution, so the ignore-revs run is the better number.
+- The tool flags all 19 files as "orphaned" because everyone's last commit is more than 6 months before today (2026-10-24). With that cutoff the flag tells you nothing about this repo. A wider window (for example `inactive_after: "3 years ago"`) would separate the people who have actually left.
+
+I can run that with a longer window, or give per-file ownership with the reformat skipped, if you want either.
+META cost=0.0729763 ms=15835 turns=4

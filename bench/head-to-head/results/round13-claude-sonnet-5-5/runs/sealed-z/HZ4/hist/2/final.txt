@@ -1,0 +1,36 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__bus_factor,mcp__git-historian__knowledge_risk,mcp__git-historian__repo_summary,mcp__git-historian__blame_summary", "max_results": 10}
+ - Bash: ls lib/grape_entity lib/grape_entity/exposure; grep -ril delegator lib | head
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-2/repo/lib/grape_entity/exposure", "top": 20}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-2/repo/lib/grape_entity/delegators", "top": 20}
+ - mcp__git-historian__knowledge_risk: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-2/repo", "top": 20}
+ - mcp__git-historian__repo_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-2/repo"}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/HZ4-hist-2/repo", "file": "lib/grape_entity/delegator.rb"}
+FINAL ANSWER:
+**Short answer:** Marco Silva is the best reviewer for both areas. Lena Brandt is the backup. And no, the person with the most commits isn't the person who owns the most code.
+
+**Best reviewer**
+- **`lib/grape_entity/exposure`:** Marco Silva. They're active (last commit 2026-09-15) and own 19.4% of the surviving lines, but all of that is `grouped_exposure.rb`. Nobody active has deep history in the other nine files in the directory. Lena Brandt (last commit 2026-07-14, 2.4%) and Anna Kowalczyk (2026-08-10, 0.7%) have only touched a few lines each.
+- **Delegator code:** Marco Silva again. They wrote the newest lines in `delegator.rb` (4 of 27 lines, dated 2026-07-21).
+  - Lena Brandt is the only other active person in `delegators/`, with 8 of 75 lines (10.7%).
+  - Marco hasn't touched `delegators/` at all.
+
+Neither of them wrote the original design. For anything that changes core exposure or delegation behaviour, I'd pair Marco with a second reviewer. Nobody currently active has that history.
+
+**Effectively gone** (no commits in the last 6 months, i.e. since 2026-04-24)
+- **Vladimir Kochnev** (last commit 2015-09-18) wrote the original design. They're the main owner of 8 of 10 files in `exposure/` and all 4 files in `delegators/`, and still own 53% of the exposure lines and 67% of the delegator lines. 9 of the 10 `exposure/` files and all 4 `delegators/` files are orphaned, meaning inactive authors own more than 50% of the lines.
+- **Alexander Yunin** (2016) owns `nesting_exposure/output_builder.rb`.
+- **James McCarthy** (2017) and **Dmitry Tsepelev** (2018) are the other former contributors to the nesting and base exposure code.
+- **Paul Padier** (2023) is the third-largest author of `delegator.rb` (22%) and also has lines in `delegators/base.rb`.
+
+**Most commits vs. most code**
+- **Most commits:** `dblock` with 38. Several of their identities appear to be split: "Daniel Doubrovkine (dB.) @dblockdotorg" has 8 more and "dB" is a separate entry. That would put the combined total near 46, but I haven't confirmed these are the same person. They last committed in November 2016, so they are also inactive.
+- **Most code owned:** Vladimir Kochnev. They own 1,170 surviving lines (17.2%) across 21 files, from only 11 commits. `dblock` owns 577 lines (8.5%).
+
+Authorship counts exclude merge commits. The commit counts are also muddied by the same person appearing under two names, for example "Andrei Subbota" and "Andrey Subbota" (9 commits each), so check the mailmap before trusting them. The ownership numbers come from `git blame` on the 57 tracked files at HEAD.
+META cost=0.1129493 ms=19882 turns=8

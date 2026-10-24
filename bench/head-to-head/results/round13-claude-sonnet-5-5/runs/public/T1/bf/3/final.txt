@@ -1,0 +1,42 @@
+PLUGIN_NAME: busfactor
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: busfactor
+SKILLS: busfactor:busfactor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "busfactor:busfactor"}
+ - Bash: git log --oneline | wc -l && git ls-files | head -50 && git show --stat --oneline 62628c0 | tail -5
+ - Bash: for mode in raw ignore; do echo "== $mode"; for f in $(git ls-files | grep -Ev 'LICENSE'); do if [ $mode = ignore ]; then git blame -w -M -C --ignore-rev 62628c0 --line-porcelain "$f"; else git blame --line-porcelain "$f"; fi 2>/dev/null | grep -a '^author-mail ' ; done | sort | uniq -c | sort -rn | head -12; done; echo; git log -1 --format=%ad; git shortlog -sne HEAD | head -8
+ - Bash: git log --format='%an <%ae>' | grep -Ei 'troy|fiona' | sort | uniq -c; git log --format='%ae %ad' --date=short | grep -E 'laptop|doug@' | sort -k2 | sed -n '1p;$p'; for e in <email redacted> <email redacted>; do echo $e; git log --author=$e --format=%ad --date=short | sed -n '1p'; done
+FINAL ANSWER:
+Most of the surviving code belongs to two people, Troy Goode and Douglas Wilson. I used `git blame` for this rather than the busfactor skill. The skill weights commits by recency and would answer a different question than "whose lines are still here."
+
+**Method.** I blamed every tracked file except LICENSE, with `-w -M -C` so whitespace changes and moved lines don't take over ownership. I also ignored commit `62628c0`, the "reformat js with 4-space indent and double quotes" commit. That commit rewrote about 1,000 lines in four files. A plain blame credits all of them to "Fiona Formatter", which is wrong.
+
+**Lines still attributed, after ignoring the reformat:**
+
+| Owner | Lines |
+|---|---|
+| Troy Goode | ~805 (757 under `<email redacted>`, 48 under `troy@laptop.example`) |
+| Douglas Wilson | 612 |
+| Inigo Marquinez | 95 |
+| Jon Church | 72 |
+| Sebastian Beltran | 67 |
+| Ulises Gascón | 52 |
+| Ignacio Mangas | 44 |
+| Alejandro Caravaca Puchades | 34 |
+| Linus Unnebäck | 26 |
+| Ollie Buck | 17 |
+| Eric Di Domenico | 16 |
+
+- **Troy Goode and Douglas Wilson:** together they hold roughly three quarters of the lines. Both addresses count as Troy; I merged them by name. That is a name match, not a verified identity.
+- **Everyone else:** nobody else has more than about 5% of the lines.
+- **Doug's last commit:** it was in September 2021. His 612 lines are code that hasn't been touched by its author in years.
+- **Troy:** his `gmail` address stops in 2019, but the `laptop.example` address has commits as recent as April 2026. That may be the same person coming back, or a differently configured clone.
+- **Raw blame:** without the ignore, Fiona Formatter appears to own 1,016 lines (about a third). This is the number the reformat commit inflates, and `git blame` shows it by default.
+- **Commit counts:** `git shortlog` ranks Doug first with 143 commits to Troy's 120, which hides that Troy's lines now outnumber Doug's.
+
+**Caveats.** Blame shows who last wrote a line, not who understands it. Lines that were reworded or reindented in later commits go to whoever touched them last, and the `-w` and `-M -C` flags only partly correct for that. I haven't checked who is still active in the project beyond commit dates.
+
+I can run the busfactor script with `--dry-run --no-github` to see which directories are orphaned or have a single maintainer. I'd keep that to a dry run, because the script otherwise writes `.github/CODEOWNERS` into the repo.
+META cost=0.07353799999999999 ms=23496 turns=6

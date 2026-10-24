@@ -1,0 +1,51 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - ToolSearch: {"query": "select:mcp__git-historian__file_history,mcp__git-historian__blame_summary", "max_results": 5}
+ - mcp__git-historian__file_history: {"repo_path": "/private/tmp/r13/final/out-F/runs/E5-hist-3/repo", "file": "lib/index.js", "limit": 200}
+ - mcp__git-historian__blame_summary: {"repo_path": "/private/tmp/r13/final/out-F/runs/E5-hist-3/repo", "file": "lib/index.js"}
+ - Bash: git blame --ignore-rev 62628c0 -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; echo ---; git blame --ignore-revs-file /dev/null --ignore-rev 62628c0 --ignore-rev b2005d9 -w --line-porcelain lib/index.js | grep '^author ' | sort | uniq -c | sort -rn; git show b2005d9 --stat --format='%an %s' | head
+FINAL ANSWER:
+`lib/index.js` has 62 commits, from January 2013 to April 2026. Troy Goode wrote it and still owns most of it. The surviving lines have been through many small patches from other contributors.
+
+**Why plain blame is misleading**
+
+Plain `git blame` credits 214 of 238 lines (90%) to "Fiona Formatter". That comes from `62628c0` (April 2026), which reformatted the whole file to 4-space indent and double quotes. It changed only whitespace and quotes, and it replaced the file's original two-space indentation. I re-ran blame ignoring that commit, with `-w`, to see who wrote the logic. The percentages below come from that run (about 238 lines).
+
+**Who shaped it**
+
+- **Troy Goode** (about 159 lines, 67%) created it in the "first commit" (`bcd03d9`, 2013-01-30) with 78 lines. He did most of the early work through 2014:
+  - the origin-false and case-insensitive header handling
+  - pause/resume of the request
+  - the `4f13c63` "wrapping up" rewrite (147 lines added, 102 deleted)
+  - Express 4 and Connect support
+  - `Access-Control-Expose-Headers`
+  - the `vary` module
+
+  He also made the ESLint switch in 2015 and released 2.8.0 in 2016. His commit `b2005d9` (April 2026, "annotate handlers") touched 12 lines, but blame sends those back to earlier authors.
+- **Douglas Christopher Wilson** (about 22 lines) is the second-largest surviving contributor. In 2017 he added the `Vary: Access-Control-Request-Headers` handling for dynamic `allowedHeaders`. He also fixed the missing-`methods` option bug and made lint and build tweaks.
+- **Alejandro Caravaca Puchades** (about 12 lines, plus 4 under the `alex94puchades` name) added regexp and array support for `options.origin` in 2015.
+- **Raymond Feng** (about 7 lines) optimized `applyHeaders` in 2015 by removing the closure.
+- **Other contributors**, with 1–6 lines each:
+  - max.laverse (pass the preflight request on to `next()`)
+  - LuisEGR (the 2021 lint cleanup)
+  - Simon Mansfield (early origin checks)
+  - Igor Soarez (`Vary: origin` for specific origins)
+  - Benjamin Eidelman (a Safari preflight workaround)
+  - Saad Tazi (frozen options)
+  - Mathias Buus (non-Express support)
+  - Eric di Domenico (the origin callback)
+  - Alberto Leal, Tom Arad, Shane Tomlinson, Hannah Wolfe, Eran Tiktin, Chima Alaebo
+
+**How it evolved**
+
+1. **2013, foundation.** Troy Goode built the core: origin handling, preflight versus actual requests, and the credentials, methods and headers logic. Damien Klinnert and Simon Mansfield contributed fixes, and Eric di Domenico added the origin callback.
+2. **2014–2015, features.** Express 4 and Connect support, exposed headers, `Vary`, regexp and array origins, and the preflight pass-through.
+3. **2016–2018, hardening.** Mostly Wilson's fixes for `Vary` and options handling, plus small lint and bug fixes such as `maxAge: 0`.
+4. **2021–2026, maintenance only.** A lint cleanup, then the two April 2026 commits (annotations and the reformat).
+
+Several early contributors, such as Damien Klinnert and Typicode, no longer have any surviving lines. Their changes were later rewritten.
+META cost=0.07895760000000002 ms=18107 turns=5

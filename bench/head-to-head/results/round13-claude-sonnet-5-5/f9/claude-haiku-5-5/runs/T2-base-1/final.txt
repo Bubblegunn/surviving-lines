@@ -1,0 +1,31 @@
+PLUGIN_NAME: baseline
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls lib && echo "--- commits per author in lib (all time)" && git shortlog -sne HEAD -- lib | head -30 && echo "--- total commits touching lib" && git log --oneline -- lib | wc -l
+ - Bash: echo "--- per-file line authorship (blame counts)" && for f in $(git ls-files lib); do echo "$f: $(git blame --line-porcelain -- "$f" 2>/dev/null | grep '^author ' | sort | uniq -c | sort -rn | awk '{c=$1; $1=""; printf "%s(%s) ", $0, c}')"; done
+ - Bash: git log --format='%h %an <%ae> %ad %s' --date=short -- lib | head -15 && echo "--- blame ignoring reformat commit" && git blame --ignore-rev 62628c0 --line-porcelain -- lib/index.js | grep '^author ' | sort | uniq -c | sort -rn && echo "--- recent 12 months authors" && git log --since=2025-10-24 --format='%an' -- lib | sort | uniq -c | sort -rn && wc -l lib/index.js
+FINAL ANSWER:
+**Short answer:** the bus factor is effectively **1**. Troy Goode is the only person who has written a large share of `lib/`, and only two people have committed to it in the past year. Losing both of them would leave nobody with recent context, though the code itself is small enough to be recoverable.
+
+**What the history shows** (`lib/` is a single file, `lib/index.js`, 238 lines):
+
+- **Commits:** 67 touching `lib/`. Troy Goode has 33 of them, about half. The next most active are Alejandro Caravaca Puchades and Douglas Christopher Wilson with 4 each. About 30 other authors have one or two commits.
+- **Surviving lines:** a plain `git blame` is misleading because the April 2026 commit `62628c0` (a whitespace/quote reformat by Fiona Formatter) reattributes 214 lines to her. Ignoring that commit with `--ignore-rev`, the surviving lines break down roughly as Troy Goode 109, Fiona Formatter 57, Douglas Christopher Wilson 36, Raymond Feng 8, LuisEGR 6, Tom Arad 5, and a long tail.
+- **Recent activity (last 12 months):** only two commits, both in April 2026. One is Troy's `b2005d9` ("annotate handlers"), the other is Fiona's formatting commit.
+
+**What that means for "how many leave before nobody understands it":**
+
+- **1 departure (Troy):** the most knowledgeable person is gone. Douglas Christopher Wilson has the next-largest share of surviving code and older design context, so the file is still understood by someone.
+- **2 departures (Troy and Fiona):** nobody has touched the file in the last year. Understanding would rest on the historical authors (Douglas, Raymond Feng, LuisEGR, and others), who may have moved on.
+- **3+ departures:** the practical knowledge is effectively gone. The file would have to be understood from its code, tests and the public package behaviour.
+
+Because the file is 238 lines and implements well-documented CORS middleware, I'd call the real risk moderate rather than severe. The code can be read in an afternoon. The gap is design rationale, such as why the option handling and the header/`Vary` logic are shaped the way they are, and that lives mostly in Troy's commit messages.
+
+**Caveats:**
+- I only checked git history. I didn't verify whether these people are still reachable or active elsewhere.
+- Some author emails (`troy@laptop.example`, `fiona@formatter.example`) use placeholder domains, so the identities of those two commits may be unreliable. Troy's other commits use a real address.
+- `git blame` counts lines, not understanding. Troy's commits are the best proxy for who understands the design.
+META cost=0.0036675 ms=15912 turns=4

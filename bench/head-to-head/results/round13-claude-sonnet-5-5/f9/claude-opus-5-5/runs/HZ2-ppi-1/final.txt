@@ -1,0 +1,51 @@
+PLUGIN_NAME: project-pilot
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: release-notes, adr, analyze, breaking-changes, bus-factor, dashboard, debt, deps, history, impact, onboard, sprint-health
+SKILLS: project-pilot:bus-factor
+SLASH: none
+COMMANDS RUN:
+ - Skill: {"skill": "project-pilot:bus-factor", "args": "time.go version7.go sql.go null.go"}
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ppi-1/repo; ls; git log -1 --format=%ci; git log --all --no-merges --format=%an | sort | uniq -c | sort -rn | head -20; for f in time.go version7.go sql.go null.go; do echo "== $f"; git log --all --no-merges --format="%an|%ae|%ad" --date=short -- $f | sort | awk -F'|' '{print $1" <"$2">"}' | uniq -c | sort -rn; echo "-- blame"; git blame --line-porcelain $f | grep '^author ' | sort | uniq -c | sort -rn; done
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ppi-1/repo; git log --follow --format="%h %ad %an: %s" --date=short --stat -- time.go | head -60; echo ====; git log --follow --format="%h %ad %an: %s" --date=short -- database_sql.go; echo; git blame --line-porcelain database_sql.go | grep '^author ' | sort | uniq -c | sort -rn
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ppi-1/repo; git log --format="%h %ad %an: %s" --date=short -- version7.go; echo ===; for a in "Paul Borman" "Sam Okafor" "MikeWang" "Mei Chen" "Ravi Menon" "Samuel Roth" "David E. Wheeler" "Justin Overfelt" "Andrew Stone" "Noah Dietz" "Alexander Rowe" "Noor Haddad"; do echo "$a: $(git log --all --format=%ad --date=short --author="$a" | head -1) ($(git log --all --oneline --author="$a" | wc -l | tr -d ' ') commits)"; done; echo ===; cat CONTRIBUTORS; ls .github 2>/dev/null; cat .github/CODEOWNERS 2>/dev/null; git log --format="%h %ad %an: %s" --date=short -15
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ppi-1/repo; echo 'TIME -w'; git blame -w -M -C --line-porcelain time.go | grep '^author ' | sort | uniq -c | sort -rn; echo 'SQL'; git log --follow --format="%h %ad %an: %s" --date=short -- database_sql.go; git blame -w --line-porcelain database_sql.go | grep '^author ' | sort | uniq -c | sort -rn; echo 'NULL'; git log --format="%h %ad %an: %s" --date=short -- null.go; echo 'ACTIVITY'; for a in "Paul Borman" "pborman" "Sam Okafor" "MikeWang" "Mei Chen" "Ravi Menon" "Samuel Roth" "David E. Wheeler" "Justin Overfelt" "Andrew Stone" "Noah Dietz" "noahdietz" "Alexander Rowe" "Noor Haddad" "Youngjae Lee" "Nicu Micle"; do echo "$a: last $(git l
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ppi-1/repo; cat .github/CODEOWNERS; echo '--'; git log --all --format="%h %ad %an <%ae>: %s" --date=short --since=2025-01-01; echo '--'; grep -rn "database_sql\|NullUUID\|Scan(" --include=*.go . | grep -v vendor | grep -v _test | head; git blame -w --line-porcelain version7.go | grep '^author-mail' | sort | uniq -c
+ - Bash: cd /private/tmp/r13/final/f9/claude-opus-5-5/runs/HZ2-ppi-1/repo; cat .mailmap; echo '--'; git log --all --no-merges --format=%aN | sort | uniq -c | sort -rn | head -12; for a in "Paul Borman" "Alexander Rowe" "MikeWang"; do echo "$a: last $(git log --all --use-mailmap --format='%ad %aN' --date=short | grep "$a" | head -1)"; done; git log -1 --format='%H %ad %cd' d97a7fa
+FINAL ANSWER:
+## 🚌 Bus Factor Analysis: time.go, version7.go, SQL code
+Period: full history | Generated: 2026-10-24
+
+### Your question in brief
+For all three areas, the people who wrote most of the code have left the project. **Ravi Menon** is the only person still committing who has worked on all three, but only on small edits. Nobody at all has committed in the last 90 days: the most recent commit is from 2026-06-17.
+
+### Who wrote what
+I counted surviving lines with `git blame -w -M -C`. A plain blame credits Sam Okafor with all 152 lines of `time.go`, but that comes from their "Normalize line endings" commit (`c50c42f`). It changed no logic.
+
+| Area | Main author (surviving lines) | Last commit by them | Other authors |
+|---|---|---|---|
+| `time.go` (v1/v6 clock, clock sequence, locking) | **Paul Borman**, 111/152 (73%) | 2021-07-12 ❌ | MikeWang 12 (v6/v7 changes, 2023), Alexander Rowe 11 (`UnixMillis`, 2025-02), Nicu Micle 8, Youngjae Lee 3 |
+| `version7.go` | **MikeWang**, 101/117 (86%) | 2024-07-02 ❌ | Mei Chen 11 (`Time7`, 2025-08, their only commit), Ravi Menon 2 (comments, 2026-05) |
+| `database_sql.go` (was `sql.go`; Ravi renamed it in 2025-03) | **Justin Overfelt**, 26/59 (44%) | 2016-02-08 ❌ | Andrew Stone 11 (2017), David E. Wheeler 8 (2016), Daniel Souza 8, Paul Borman 5 |
+| `null.go` (`NullUUID`) | **Samuel Roth**, 107/118 (91%) | 2021-07-12 ❌ (their only commit) | Paul Borman 11 |
+
+Bus factor for every area is 0 if you only count active maintainers who actually understand the code.
+
+### Who to ask for review
+
+1. **Ravi Menon** (`ravi.menon@harbor.example`) is your best reviewer for all of these. They made the most recent commit and handled the `sql.go` rename and the v7 clock step-back docs (`b94e0ae`). They also reverted the ULID work, which suggests they act as the de facto maintainer. Their knowledge is broad but shallow: they haven't written any of the core logic.
+2. **Alexander Rowe** is the second choice for `time.go`. They added `UnixMillis` for v7, `IsV8` and its tests, and their last commit was 2026-03. One caveat: `.mailmap` merges `arowe` into "Alex Rowe <alex@rowe.example>", but "Alexander Rowe <alex.rowe@mailbox.example>" is still listed separately. They are probably the same person, but I haven't confirmed it.
+3. **Mei Chen** is worth asking about `version7.go` if they can be reached. They have one commit (2025-08) adding `Time7`.
+4. To understand the original design, contact the authors who have left. Use **Paul Borman** for `time.go`/clock sequence and **MikeWang** (`<email redacted>`) for v7 monotonicity (`a2b2b32`, "fix: Monotonicity in UUIDv7"). Treat them as people to ask questions, not as reviewers you can count on.
+5. For the SQL code, there's no one with relevant hands-on knowledge left. Anyone else who has touched it was last active between 2016 and 2021.
+
+`.github/CODEOWNERS` assigns every file to `@google/go-uuid-contributors`. Check who is actually in that GitHub team, because the git history doesn't show it.
+
+### Recommendations
+- **Immediate:** Before changing `version7.go`, read `a2b2b32` and `b94e0ae`. The monotonicity and clock-rollback behaviour there is the most subtle logic in these files, and its author has gone.
+- **Short-term:** Make sure `sql_test.go` and `null_test.go` cover the edge cases from the history: nil values, empty strings, and `[]byte` scans longer than 16 bytes. Those tests are the only safeguard left for the SQL code.
+- **Ongoing:** Add the active maintainers to `CODEOWNERS` per file. Also add an entry to `.mailmap` for both Alexander Rowe email addresses.
+
+### Data issues
+- Commit `d97a7fa` (Kofi Mensah) has an author date of 1970-01-01, but its commit date is 2025-12-02. It doesn't touch these files.
+- Paul Borman commits under two addresses (`<email redacted>` and `<email redacted>`), so their totals may be split.
+META cost=0.2609726 ms=52399 turns=9

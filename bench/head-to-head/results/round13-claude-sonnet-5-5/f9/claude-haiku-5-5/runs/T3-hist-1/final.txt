@@ -1,0 +1,22 @@
+PLUGIN_NAME: git-historian
+PLUGIN_LOADED: yes
+PLUGIN_SKILLS: none
+SKILLS: none
+SLASH: none
+COMMANDS RUN:
+ - Bash: ls -la | head -50 && echo "--- mailmap:" && (cat .mailmap 2>/dev/null || echo "(none)") && echo "--- authors (raw):" && git log --all --no-merges --format='%an <%ae>' | sort | uniq -c | sort -rn
+ - Bash: git log --all --format='%h %an <%ae> | committer: %cn <%ce> | %ad | %s' --date=short | grep -Ei 'troy|alex94|alejandro|fiona|efe|laptop|formatter|example' ; echo "--- HEAD only top authors:"; git shortlog -sne --no-merges HEAD | head -5; echo "--- total commits:"; git rev-list --all --count
+ - Write: {"file_path": "/private/tmp/r13/final/f9/claude-haiku-5-5/runs/T3-hist-1/repo/.mailmap", "content": "Troy Goode <<email redacted>> <troy@laptop.example>\nAlejandro Caravaca Puchades <<email redacted>> <<email redacted>>\n"}
+ - Bash: echo "--- with mailmap (top 8, no merges):" && git shortlog -sn --no-merges --all | head -8 && echo "--- Troy/Alejandro rows:" && git shortlog -sne --no-merges --all | grep -Ei 'troy|alejandro caravaca|alex94' && echo "--- git status:" && git status --short
+FINAL ANSWER:
+Yes. Two people each appeared under more than one identity, and I fixed both with a new `.mailmap` file:
+
+- **Troy Goode**: `<email redacted>` and `troy@laptop.example` are now one author. Count went from 93 to 95.
+- **Alejandro Caravaca Puchades**: the `alex94puchades` name is merged into the same email. Count went from 4 to 5.
+
+I didn't touch the other near-matches. Alejandro García Fernández and Alejandro Oviedo use different emails, and the single-commit `Efe <<email redacted>>` can't be tied to your account, so I left it alone.
+
+**New top author: Douglas Christopher Wilson** with 143 non-merge commits. Troy Goode is second with 95.
+
+The `.mailmap` file is uncommitted in the working tree. Tools like `git shortlog` and git-historian read it, but the commit history itself is unchanged. Say if you want it committed.
+META cost=0.006934730000000001 ms=19694 turns=5
