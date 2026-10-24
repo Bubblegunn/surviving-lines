@@ -127,6 +127,12 @@ Measure who wrote the code that is still alive in a git ref.
                        lines, as --reviewers lists them): unknown name, no commit at the path, no surviving line, below the cut,
                        listed but inactive, or the same person under two addresses; always with the numbers that decided it.
                        Prints its own view, with --json only; the path goes after -- (one path)
+  --check-codeowners [<file>]  compare a CODEOWNERS file with the evidence: files no rule covers, rules that match no file, rules whose
+                       declared owners and observed owners (20%+ of the covered lines) share nobody, declared owners with no line
+                       and no commit there for 365 days, undeclared people holding half, declared owners inactive for --active-days.
+                       GitHub's matching (last match wins, ** crosses directories, a leading / anchors); ! and [...] lines are
+                       reported, not applied. Team handles and handles with no noreply address are listed as not comparable, never as
+                       drift. Default file: .github/CODEOWNERS, CODEOWNERS, docs/CODEOWNERS at --ref. Own view, --json only
   --owned-by <author>[,<author>...]  what these people own: lines on both bases, files, files they own most of or half of, files only
                        they wrote, lines per directory (--group-by dir:<n> sets the depth), commits, last commit and activity.
                        An author is a name or an address (after .mailmap and --merge-identities). Repeatable; prints its own
@@ -171,7 +177,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], whyNot?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -210,6 +216,7 @@ export function parseArgs(argv) {
     else if (a === "--without") o.without.push(next());
     else if (a === "--owned-by") o.ownedBy.push(next());
     else if (a === "--why-not") o.whyNot = next();
+    else if (a === "--check-codeowners") { o.checkCodeowners = ""; const v = argv[i + 1]; if (v !== undefined && v !== "--" && !v.startsWith("-")) o.checkCodeowners = argv[++i]; }
     else if (a === "--for-diff") { o.forDiff = next(); if (!o.forDiff.trim()) throw new Error("--for-diff needs a revision range such as main..feature"); }
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
@@ -263,12 +270,12 @@ export function parseArgs(argv) {
     if (!o.paths.length) throw new Error("--why-not needs the path after --: --why-not <author> -- <path>");
     if (o.paths.length > 1) throw new Error("--why-not takes one path after --");
   }
-  // The views added in round 13 (--for-diff, --owned-by, --why-not) print their own output. Each one is refused with every other view
+  // The views added in round 13 (--for-diff, --owned-by, --why-not, --check-codeowners) print their own output. Each one is refused with every other view
   // and every output format; only --json may be combined with them.
-  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--why-not": o.whyNot !== undefined });
+  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
   const optionsSet = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", ...newViews });
   for (const view of Object.keys(newViews).filter((k) => newViews[k])) {
-    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
+    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
     const clash = Object.keys(own).find((k) => own[k]);
     if (clash) throw new Error(`${view} prints its own view; it can be combined with --json only, not with ${clash}`);
   }
@@ -3216,6 +3223,401 @@ export function renderOwnedBy(r) {
   return out.join("\n");
 }
 
+/** R13 #4: where GitHub looks for the file, in its order; the first one that exists is used. */
+export const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
+/** R13 #4: a file of this size or more gets a warning; GitHub does not read a file above its limit. */
+export const CODEOWNERS_WARN_BYTES = 2 * 1024 * 1024;
+export const CODEOWNERS_LIMIT_BYTES = 3 * 1024 * 1024;
+/** R13 #4: an observed owner holds at least this share of the lines a rule covers, and at most this many are named. */
+export const CODEOWNERS_OBSERVED_MIN_SHARE = 0.2;
+export const CODEOWNERS_OBSERVED_MAX = 3;
+/** R13 #4: an undeclared person who holds this share of the covered lines is a shadow owner. */
+export const CODEOWNERS_SHADOW_SHARE = 0.5;
+/** R13 #4: a declared owner with no line and no commit in the covered files for this many days is a phantom. */
+export const CODEOWNERS_PHANTOM_DAYS = 365;
+/** R13 #4: the text view prints this many findings of each kind. */
+export const CODEOWNERS_SHOWN = 10;
+
+/**
+ * Split one CODEOWNERS line into tokens. Whitespace separates tokens unless a backslash escapes it; a `#` at the start of
+ * a token begins a comment that runs to the end of the line; `\#` at the start of a token is a literal `#`. Backslash
+ * pairs stay in the token, so the matcher can read them.
+ * @param {string} line
+ */
+function splitCodeownersLine(line) {
+  /** @type {string[]} */
+  const tokens = [];
+  let cur = "";
+  let inToken = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === "\\" && i + 1 < line.length) {
+      cur += c + line[++i];
+      inToken = true;
+    } else if (c === " " || c === "\t") {
+      if (inToken) tokens.push(cur);
+      cur = "";
+      inToken = false;
+    } else if (c === "#" && !inToken) {
+      break;
+    } else {
+      cur += c;
+      inToken = true;
+    }
+  }
+  if (inToken) tokens.push(cur);
+  return tokens;
+}
+
+/**
+ * Why GitHub does not apply a pattern, or null. A leading `!` (negation) and `[...]` ranges are not supported.
+ * @param {string} pattern
+ */
+function unsupportedReason(pattern) {
+  if (pattern.startsWith("!")) return "negation (!)";
+  for (let i = 0; i < pattern.length; i++) {
+    if (pattern[i] === "\\") i++;
+    else if (pattern[i] === "[") return "character range ([...])";
+  }
+  return null;
+}
+
+/**
+ * Read a CODEOWNERS file: one rule per line with a pattern and its owners. A rule without owners is kept (it removes
+ * ownership on purpose). Lines GitHub does not apply (`!` negation, `[...]` ranges) are listed in `unsupported` and are
+ * not rules.
+ * @param {string} text
+ * @returns {{ rules: { line: number, pattern: string, owners: string[], text: string }[], unsupported: { line: number, pattern: string, reason: string }[] }}
+ */
+export function parseCodeowners(text) {
+  /** @type {{ line: number, pattern: string, owners: string[], text: string }[]} */
+  const rules = [];
+  /** @type {{ line: number, pattern: string, reason: string }[]} */
+  const unsupported = [];
+  text.split(/\r?\n/).forEach((raw, idx) => {
+    const tokens = splitCodeownersLine(raw);
+    if (!tokens.length) return;
+    const [pattern, ...owners] = tokens;
+    const reason = unsupportedReason(pattern);
+    if (reason) unsupported.push({ line: idx + 1, pattern, reason });
+    else rules.push({ line: idx + 1, pattern, owners, text: tokens.join(" ") });
+  });
+  return { rules, unsupported };
+}
+
+/** @param {string} c */
+const regexEscape = (c) => c.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
+
+/**
+ * The regular expression for one path segment: `*` stays inside the segment, a backslash makes the next character literal.
+ * @param {string} seg
+ */
+function segmentRegex(seg) {
+  let out = "";
+  for (let i = 0; i < seg.length; i++) {
+    const c = seg[i];
+    if (c === "\\" && i + 1 < seg.length) out += regexEscape(seg[++i]);
+    else if (c === "*") {
+      while (seg[i + 1] === "*") i++;
+      out += "[^/]*";
+    } else out += regexEscape(c);
+  }
+  return out;
+}
+
+/**
+ * A matcher for one CODEOWNERS pattern with GitHub's rules. A leading `/` anchors at the root and so does a `/` inside the
+ * pattern; a name without either floats to any depth. `*` stays inside one segment, `**` crosses segments. A trailing `/`
+ * matches the files inside a directory. A pattern naming a directory (not ending in a wildcard segment) also covers
+ * everything inside it, but `dir/*` covers direct children only.
+ * @param {string} pattern
+ * @returns {(path: string) => boolean}
+ */
+export function codeownersMatcher(pattern) {
+  const leading = pattern.startsWith("/");
+  const dirOnly = pattern.endsWith("/");
+  const segs = pattern.replace(/^\//, "").replace(/\/$/, "").split("/").filter((s) => s !== "");
+  if (!segs.length) return () => false;
+  const anchored = leading || segs.length > 1;
+  let source = anchored ? "^" : "^(?:.*/)?";
+  segs.forEach((seg, k) => {
+    const last = k === segs.length - 1;
+    if (seg === "**") {
+      source += segs.length === 1 ? ".*" : last ? ".*" : "(?:.*/)?";
+      return;
+    }
+    source += segmentRegex(seg) + (last ? "" : "/");
+  });
+  const re = new RegExp(`${source}$`);
+  const wildcardLast = /(^|[^\\])\*/.test(segs[segs.length - 1]);
+  const insideOk = dirOnly || !wildcardLast;
+  return (path) => {
+    if (!dirOnly && re.test(path)) return true;
+    if (!insideOk) return false;
+    let at = path.indexOf("/");
+    while (at !== -1) {
+      if (re.test(path.slice(0, at))) return true;
+      at = path.indexOf("/", at + 1);
+    }
+    return false;
+  };
+}
+
+/**
+ * The CODEOWNERS file text to check: the explicit file (the working tree first, then the ref), or the first default
+ * location that exists at the ref. Throws with the locations tried.
+ * @param {Options} o
+ * @returns {Promise<{ path: string, text: string }>}
+ */
+async function readCodeownersFile(o) {
+  const explicit = o.checkCodeowners ? o.checkCodeowners : null;
+  /** @type {string[]} */
+  const tried = [];
+  if (explicit) {
+    tried.push(`${explicit} in the working tree`);
+    try {
+      return { path: explicit, text: readFileSync(resolve(o.cwd, explicit), "utf8") };
+    } catch {
+      // Not on disk: try the same path at the ref.
+    }
+  }
+  for (const loc of explicit ? [explicit.replace(/^\.\//, "")] : CODEOWNERS_LOCATIONS) {
+    tried.push(`${loc} at ${o.ref}`);
+    try {
+      return { path: loc, text: await git(["cat-file", "blob", `${o.ref}:${loc}`], o.cwd) };
+    } catch {
+      // Not there: try the next location.
+    }
+  }
+  throw new Error(`--check-codeowners: no CODEOWNERS file found; tried ${tried.join(", ")}`);
+}
+
+/**
+ * The newest author date (YYYY-MM-DD) of a non-merge commit per file and person, over the whole history of the ref.
+ * Renames are not followed: a file is known by the path it has at the ref.
+ * @param {Options} o
+ * @param {Set<string>} paths
+ * @param {(mail: string) => string} keyOf
+ * @returns {Promise<Map<string, Map<string, string>>>}
+ */
+async function readLastTouch(o, paths, keyOf) {
+  /** @type {Map<string, Map<string, string>>} */
+  const out = new Map();
+  const log = await git(["log", "--no-merges", "--name-only", "--format=%x01%aE%x09%aI", o.ref], o.cwd);
+  for (const chunk of log.split("\x01")) {
+    if (!chunk) continue;
+    const [head, ...files] = chunk.split("\n");
+    const [mail, date] = head.split("\t");
+    if (!mail || !date) continue;
+    const key = keyOf(mail.toLowerCase());
+    const day = date.slice(0, 10);
+    for (const f of files) {
+      if (!f) continue;
+      const path = unquoteGitPath(f);
+      if (!paths.has(path)) continue;
+      const m = out.get(path) ?? new Map();
+      if ((m.get(key) ?? "") < day) m.set(key, day);
+      out.set(path, m);
+    }
+  }
+  return out;
+}
+
+/**
+ * R13 #4: compare a CODEOWNERS file with the evidence of the run. Pure: every input is passed in.
+ * Findings (each with its CODEOWNERS line number):
+ * - missing: files no rule covers, by top directory.
+ * - stale: rules that match no file.
+ * - changed: the declared owners and the observed owners (people with at least 20% of the lines the rule covers, at most
+ *   three) share nobody.
+ * - phantom: a declared owner with no line in the covered files and no commit there for 365 days.
+ * - shadow: one undeclared person holds at least half of the covered lines while owners are declared.
+ * - inactiveDeclared: a declared owner with no commit anywhere in the active window.
+ * - notComparable: team handles and handles or addresses that cannot be mapped to a person offline. They are listed and
+ *   never counted as drift; a rule that names one skips the changed and shadow checks, because the missing person could
+ *   be the observed one.
+ * A rule without owners removes ownership on purpose: its files count as covered and it is not checked further.
+ * @param {{
+ *   file: string, text: string, ref: string, asOf: string, activeDays: number, sampleEvery: number,
+ *   files: { path: string, lines: Map<string, number> }[],
+ *   names: Map<string, string>,
+ *   days: Map<string, { first: string, last: string }>,
+ *   keyOf: (mail: string) => string,
+ *   lastTouch: Map<string, Map<string, string>>,
+ * }} a
+ */
+export function checkCodeownersOf(a) {
+  const { rules, unsupported } = parseCodeowners(a.text);
+  const bytes = Buffer.byteLength(a.text);
+  /** @type {string[]} */
+  const warnings = [];
+  if (bytes > CODEOWNERS_LIMIT_BYTES) warnings.push(`the file is ${bytes.toLocaleString("en-US")} bytes, above GitHub's limit of ${CODEOWNERS_LIMIT_BYTES.toLocaleString("en-US")} bytes (3 MB); GitHub does not read it at all`);
+  else if (bytes >= CODEOWNERS_WARN_BYTES) warnings.push(`the file is ${bytes.toLocaleString("en-US")} bytes, close to GitHub's limit of ${CODEOWNERS_LIMIT_BYTES.toLocaleString("en-US")} bytes (3 MB)`);
+  const matchers = rules.map((r) => codeownersMatcher(r.pattern));
+  /** @type {Map<string, string>} */
+  const lastByKey = new Map();
+  for (const [mail, d] of a.days) {
+    const key = a.keyOf(mail);
+    if ((lastByKey.get(key) ?? "") < d.last) lastByKey.set(key, d.last);
+  }
+  const daysBefore = (/** @type {string} */ day, /** @type {string} */ from) => (Date.parse(from) - Date.parse(day)) / 86400000;
+
+  /** @param {string} token */
+  const resolveOwner = (token) => {
+    /** @type {Set<string>} */
+    const keys = new Set();
+    const byLogin = (/** @type {string} */ login) => {
+      for (const mail of a.days.keys()) if (githubLogin(mail) === login) keys.add(a.keyOf(mail));
+    };
+    if (token.startsWith("@")) {
+      const body = token.slice(1);
+      if (body.includes("/")) return { token, keys, comparable: false, reason: "team handle" };
+      byLogin(body.toLowerCase());
+      return keys.size ? { token, keys, comparable: true, reason: "" } : { token, keys, comparable: false, reason: "no noreply address for this handle in the history" };
+    }
+    if (token.includes("@")) {
+      const mail = token.toLowerCase();
+      if (a.days.has(mail)) keys.add(a.keyOf(mail));
+      else {
+        const login = githubLogin(mail);
+        if (login) byLogin(login);
+      }
+      return keys.size ? { token, keys, comparable: true, reason: "" } : { token, keys, comparable: false, reason: "no commit under this address in the history" };
+    }
+    return { token, keys, comparable: false, reason: "not a handle, team or address" };
+  };
+
+  /** @type {Set<number>} */
+  const matchedAny = new Set();
+  /** @type {Map<number, { path: string, lines: Map<string, number> }[]>} */
+  const covered = new Map();
+  /** @type {string[]} */
+  const uncovered = [];
+  for (const f of a.files) {
+    let owner = -1;
+    for (let i = rules.length - 1; i >= 0; i--) {
+      if (!matchers[i](f.path)) continue;
+      matchedAny.add(i);
+      if (owner === -1) owner = i;
+    }
+    if (owner === -1) uncovered.push(f.path);
+    else covered.set(owner, [...(covered.get(owner) ?? []), f]);
+  }
+  /** @type {Map<string, number>} */
+  const byDir = new Map();
+  for (const p of uncovered) {
+    const dir = p.includes("/") ? `${p.slice(0, p.indexOf("/"))}/` : "(root files)";
+    byDir.set(dir, (byDir.get(dir) ?? 0) + 1);
+  }
+  const missing = [...byDir].map(([dir, files]) => ({ dir, files })).sort((x, y) => y.files - x.files || x.dir.localeCompare(y.dir));
+  const stale = rules.flatMap((r, i) => (matchedAny.has(i) ? [] : [{ line: r.line, rule: r.text }]));
+
+  /** @type {{ line: number, rule: string, declared: string[], observed: { name: string, lines: number, share: number }[], files: number, lines: number }[]} */
+  const changed = [];
+  /** @type {{ line: number, rule: string, owner: string, lines: number, lastCommitAtPath: string | null, files: number }[]} */
+  const phantom = [];
+  /** @type {{ line: number, rule: string, author: string, share: number, declared: string[], files: number, lines: number }[]} */
+  const shadow = [];
+  /** @type {{ line: number, rule: string, owner: string, lastCommit: string, files: number, lines: number }[]} */
+  const inactiveDeclared = [];
+  /** @type {{ line: number, rule: string, owner: string, reason: string }[]} */
+  const notComparable = [];
+  const floor = new Date(Date.parse(a.asOf) - CODEOWNERS_PHANTOM_DAYS * 86400000).toISOString().slice(0, 10);
+  rules.forEach((r, i) => {
+    if (!r.owners.length) return;
+    const owners = r.owners.map(resolveOwner);
+    for (const ow of owners) if (!ow.comparable) notComparable.push({ line: r.line, rule: r.text, owner: ow.token, reason: ow.reason });
+    const files = covered.get(i) ?? [];
+    if (!files.length) return;
+    /** @type {Map<string, number>} */
+    const agg = new Map();
+    let total = 0;
+    for (const f of files) for (const [key, n] of f.lines) { agg.set(key, (agg.get(key) ?? 0) + n); total += n; }
+    const ranked = [...agg].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
+    const observed = ranked.filter(([, n]) => total > 0 && n / total >= CODEOWNERS_OBSERVED_MIN_SHARE).slice(0, CODEOWNERS_OBSERVED_MAX).map(([key, n]) => ({ key, name: a.names.get(key) ?? key, lines: n, share: n / total }));
+    const comparable = owners.filter((ow) => ow.comparable);
+    const declaredKeys = new Set(comparable.flatMap((ow) => [...ow.keys]));
+    const allComparable = comparable.length === owners.length;
+    const here = { line: r.line, rule: r.text, files: files.length, lines: total };
+    const shown = observed.map(({ name, lines, share }) => ({ name, lines, share }));
+    if (allComparable && observed.length && !observed.some((ob) => declaredKeys.has(ob.key))) changed.push({ ...here, declared: r.owners, observed: shown });
+    const top = observed[0];
+    if (allComparable && declaredKeys.size && top && top.share >= CODEOWNERS_SHADOW_SHARE && !declaredKeys.has(top.key)) shadow.push({ ...here, author: top.name, share: top.share, declared: r.owners });
+    for (const ow of comparable) {
+      const held = [...ow.keys].reduce((s, k) => s + (agg.get(k) ?? 0), 0);
+      let last = "";
+      for (const f of files) for (const k of ow.keys) { const d = a.lastTouch.get(f.path)?.get(k); if (d && d > last) last = d; }
+      if (held === 0 && last < floor) phantom.push({ ...here, owner: ow.token, lines: held, lastCommitAtPath: last || null, files: files.length });
+      let seen = "";
+      for (const k of ow.keys) { const d = lastByKey.get(k); if (d && d > seen) seen = d; }
+      if (seen && daysBefore(seen, a.asOf) > a.activeDays) inactiveDeclared.push({ ...here, owner: ow.token, lastCommit: seen });
+    }
+  });
+  changed.sort((x, y) => y.lines - x.lines || x.line - y.line);
+  phantom.sort((x, y) => y.files - x.files || x.line - y.line);
+  shadow.sort((x, y) => y.share - x.share || x.line - y.line);
+  inactiveDeclared.sort((x, y) => y.lines - x.lines || x.line - y.line);
+  return {
+    file: a.file,
+    ref: a.ref,
+    asOf: a.asOf,
+    activeDays: a.activeDays,
+    phantomDays: CODEOWNERS_PHANTOM_DAYS,
+    sampleEvery: a.sampleEvery,
+    bytes,
+    rules: rules.length,
+    unsupported,
+    filesChecked: a.files.length,
+    filesWithoutRule: uncovered.length,
+    warnings,
+    missing,
+    stale,
+    changed,
+    phantom,
+    shadow,
+    inactiveDeclared,
+    notComparable,
+  };
+}
+
+/**
+ * The --check-codeowners view: counts and the worst CODEOWNERS_SHOWN of each kind, with line numbers.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderCodeownersCheck(r) {
+  const c = r.codeownersCheck;
+  if (!c) throw new Error("renderCodeownersCheck needs a result from --check-codeowners");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const out = [];
+  if (r.shallow) out.push(SHALLOW_MARK);
+  out.push(`CODEOWNERS (${c.file}, ${n(c.rules)} rule${c.rules === 1 ? "" : "s"}), checked against ${n(c.filesChecked)} file${c.filesChecked === 1 ? "" : "s"} at ${c.ref}${c.sampleEvery > 1 ? ` (sample 1 in ${c.sampleEvery})` : ""}, as of ${c.asOf}.`);
+  for (const w of c.warnings) out.push(`Warning: ${w}.`);
+  if (c.unsupported.length) out.push(`Not supported by GitHub, skipped and not applied: ${c.unsupported.slice(0, CODEOWNERS_SHOWN).map((u) => `line ${u.line} "${u.pattern}" (${u.reason})`).join("; ")}${c.unsupported.length > CODEOWNERS_SHOWN ? `; ${c.unsupported.length - CODEOWNERS_SHOWN} more` : ""}.`);
+  /** @template T @param {string} label @param {T[]} list @param {(x: T) => string} line */
+  const section = (label, list, line) => {
+    if (!list.length) return out.push(`${label}: none.`);
+    out.push(`${label}: ${list.length}.`);
+    for (const x of list.slice(0, CODEOWNERS_SHOWN)) out.push(`  ${line(x)}`);
+    if (list.length > CODEOWNERS_SHOWN) out.push(`  ... and ${n(list.length - CODEOWNERS_SHOWN)} more (--json lists all).`);
+  };
+  const lineOf = (/** @type {{ line: number, rule: string }} */ x) => `line ${x.line} "${x.rule}"`;
+  const pctOf = (/** @type {number} */ x) => `${Math.round(x * 100)}%`;
+  if (c.filesWithoutRule) out.push(`Missing: ${n(c.filesWithoutRule)} of ${n(c.filesChecked)} files have no rule (${c.missing.slice(0, CODEOWNERS_SHOWN).map((m) => `${m.dir} ${n(m.files)}`).join(", ")}${c.missing.length > CODEOWNERS_SHOWN ? `, ${c.missing.length - CODEOWNERS_SHOWN} more directories` : ""}).`);
+  else out.push("Missing: none.");
+  section("Stale (rules that match no file)", c.stale, lineOf);
+  section("Changed (declared and observed owners share nobody)", c.changed, (x) => `${lineOf(x)}: declared ${x.declared.join(" ")}; observed ${x.observed.map((o) => `${o.name} ${pctOf(o.share)}`).join(", ")} of ${n(x.lines)} lines in ${n(x.files)} file${x.files === 1 ? "" : "s"}`);
+  section("Phantom (declared, no line and no recent commit there)", c.phantom, (x) => `${lineOf(x)}: ${x.owner} holds 0 lines there and has ${x.lastCommitAtPath ? `no commit since ${x.lastCommitAtPath}` : "no commit there"} (${c.phantomDays}-day window before ${c.asOf})`);
+  section("Shadow (an undeclared person holds half or more)", c.shadow, (x) => `${lineOf(x)}: ${x.author} holds ${pctOf(x.share)} and is not listed`);
+  section("Inactive declared (no commit anywhere in the window)", c.inactiveDeclared, (x) => `${lineOf(x)}: ${x.owner} has no commit since ${x.lastCommit} (window ${c.activeDays} days before ${c.asOf})`);
+  if (c.notComparable.length) {
+    out.push(`Not comparable offline (not counted as drift): ${c.notComparable.length}.`);
+    for (const x of c.notComparable.slice(0, CODEOWNERS_SHOWN)) out.push(`  ${lineOf(x)}: ${x.owner} (${x.reason})`);
+    if (c.notComparable.length > CODEOWNERS_SHOWN) out.push(`  ... and ${n(c.notComparable.length - CODEOWNERS_SHOWN)} more (--json lists all).`);
+  } else out.push("Not comparable offline: none.");
+  out.push("", "This compares the file with surviving lines and commit dates. It does not judge who should own the code, and rules that name teams or unmapped handles are not checked.");
+  return out.join("\n");
+}
+
 /** R13 #3: --why-not suggests the three people with the most lines, as the reviewers view does. */
 const WHY_NOT_CUT = 3;
 
@@ -4180,6 +4582,8 @@ export async function analyse(o) {
     throw new Error(`no files sampled from ${all.length} files with --sample ${o.sample}${o.seed ? ` and --seed "${o.seed}"` : ""}`);
   }
 
+  // R13 #4: the CODEOWNERS file is read before any blame, so a missing file fails at once.
+  const codeownersFile = o.checkCodeowners !== undefined ? await readCodeownersFile(o) : null;
   const errStream = o.stderr ?? process.stderr;
   const showProgress = !o.quiet && Boolean(errStream && errStream.isTTY);
 
@@ -4478,6 +4882,26 @@ export async function analyse(o) {
     const view = await reviewersView(o, wnPath, rows, applied, membersOf, pathCommits, lastCommits);
     whyNotResult = whyNotOf({ selector: o.whyNot, path: wnPath, ref: o.ref, repoPeople: await readAddressNames(o), rows, membersOf, view, ranked: rankReviewers(view.authors, rows, (mail) => membersOf?.get(mail) ?? [mail]), pathCommits, days: await readCommitDays(o), groups: suggested, sampleEvery: o.sample });
   }
+  /** @type {ReturnType<typeof checkCodeownersOf> | null} */
+  let codeownersResult = null;
+  if (codeownersFile) {
+    const keyOf = (/** @type {string} */ mail) => ownerMerge.get(mail)?.mail ?? mail;
+    /** @type {Map<string, string>} */
+    const names = new Map();
+    const checkFiles = [...main.perFile].map(([path, counts]) => {
+      /** @type {Map<string, number>} */
+      const lines = new Map();
+      for (const [mail, c] of counts) {
+        const name = nameOf.get(mail) ?? c.fullName ?? c.name;
+        if (!o.includeBots && isBotIdentity(name, mail)) continue;
+        const key = keyOf(mail);
+        lines.set(key, (lines.get(key) ?? 0) + c.lines);
+        if (!names.has(key)) names.set(key, ownerMerge.get(mail)?.author ?? name);
+      }
+      return { path, lines };
+    });
+    codeownersResult = checkCodeownersOf({ file: codeownersFile.path, text: codeownersFile.text, ref: o.ref, asOf: asOfDay, activeDays: o.activeDays, sampleEvery: o.sample, files: checkFiles, names, days: await readCommitDays(o), keyOf, lastTouch: await readLastTouch(o, new Set(checkFiles.map((f) => f.path)), keyOf) });
+  }
   const forDiffResult = diffPlan ? await forDiffOf(o, diffPlan, main, rows, ownerMerge, nameOf, mainArgs, leaveOut, credit, membersOf) : null;
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
@@ -4525,6 +4949,7 @@ export async function analyse(o) {
     forDiff: forDiffResult,
     ownedBy: ownedByResult,
     whyNot: whyNotResult,
+    codeownersCheck: codeownersResult,
     committedByOthers: committedElsewhere,
     reappliedCredit: reapplied,
     reviewers,
@@ -6379,6 +6804,8 @@ async function main() {
       const notes = scopeNotes(r, { identityHints: false });
       if (notes.length) output += `\n\n${notes.join("\n")}`;
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
+    } else if (r.codeownersCheck) {
+      output = renderCodeownersCheck(r);
     } else if (r.whyNot) {
       output = renderWhyNot(r);
     } else if (r.ownedBy) {

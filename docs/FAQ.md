@@ -54,6 +54,10 @@ The line `as of <date>: k of n authors committed in the last 365 days and hold x
 
 `surviving-lines --owned-by "Ada Quill"` prints what that person holds: their non-blank lines and share, the files they own most of or half of, the files nobody else has written, their lines per directory, their commits and their last commit with the active mark. Use a name or an address; `.mailmap` and `--merge-identities` apply. It counts surviving lines, so a person who wrote code that was later replaced owns nothing here; the answer then says so and gives their commit dates.
 
+## Is our CODEOWNERS file still right?
+
+`surviving-lines --check-codeowners` compares the file (`.github/CODEOWNERS`, `CODEOWNERS` or `docs/CODEOWNERS` at the ref, or the file you name) with the surviving lines and the commit dates, using GitHub's matching rules. It lists files no rule covers, rules that match no file, rules whose declared owners and observed owners (20% or more of the covered lines) share nobody, declared owners with no line and no commit there for a year, undeclared people who hold half, and declared owners with no recent commit, each with its line number. Teams (`@org/team`) and handles it cannot map to a person offline are listed as not comparable and are never counted as drift. It does not say who should own the code.
+
 ## Why is this person not suggested as a reviewer?
 
 `surviving-lines --why-not "Cy Dunn" -- src/pay/` says why, with the numbers: unknown name, no commit at the path, commits but no line left, ranked below the third place (it prints the lines of the third place), listed but inactive, or the same person under two addresses. It uses the reviewers view's own ranking (the three people with the most surviving lines), so it cannot disagree with `--reviewers`.

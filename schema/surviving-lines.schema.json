@@ -698,6 +698,378 @@
         "closest": { "type": "array", "description": "For an unknown identity: the five closest names.", "items": { "type": "string" } }
       }
     },
+    "codeownersCheck": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "The --check-codeowners view: a CODEOWNERS file compared with the run's surviving lines and commit dates. Null unless --check-codeowners was given. Rules that name teams or unmapped handles are listed in notComparable and never counted as drift.",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "ref",
+        "asOf",
+        "activeDays",
+        "phantomDays",
+        "sampleEvery",
+        "bytes",
+        "rules",
+        "unsupported",
+        "filesChecked",
+        "filesWithoutRule",
+        "warnings",
+        "missing",
+        "stale",
+        "changed",
+        "phantom",
+        "shadow",
+        "inactiveDeclared",
+        "notComparable"
+      ],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The path of the file that was read."
+        },
+        "ref": {
+          "type": "string"
+        },
+        "asOf": {
+          "type": "string"
+        },
+        "activeDays": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "phantomDays": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The window of the phantom check."
+        },
+        "sampleEvery": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rules": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Rules GitHub applies (unsupported lines are not counted)."
+        },
+        "unsupported": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "pattern",
+              "reason"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "pattern": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "filesChecked": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filesWithoutRule": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dir",
+              "files"
+            ],
+            "properties": {
+              "dir": {
+                "type": "string"
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "stale": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "rule"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "rule": {
+                "type": "string",
+                "description": "The rule as written: the pattern and its owners."
+              }
+            }
+          }
+        },
+        "changed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "rule",
+              "declared",
+              "observed",
+              "files",
+              "lines"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "rule": {
+                "type": "string",
+                "description": "The rule as written: the pattern and its owners."
+              },
+              "declared": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "observed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "lines",
+                    "share"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "lines": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "share": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  }
+                }
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lines": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "phantom": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "rule",
+              "owner",
+              "lastCommitAtPath",
+              "files",
+              "lines"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "rule": {
+                "type": "string",
+                "description": "The rule as written: the pattern and its owners."
+              },
+              "owner": {
+                "type": "string"
+              },
+              "lastCommitAtPath": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lines": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "shadow": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "rule",
+              "author",
+              "share",
+              "declared",
+              "files",
+              "lines"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "rule": {
+                "type": "string",
+                "description": "The rule as written: the pattern and its owners."
+              },
+              "author": {
+                "type": "string"
+              },
+              "share": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "declared": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lines": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "inactiveDeclared": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "rule",
+              "owner",
+              "lastCommit",
+              "files",
+              "lines"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "rule": {
+                "type": "string",
+                "description": "The rule as written: the pattern and its owners."
+              },
+              "owner": {
+                "type": "string"
+              },
+              "lastCommit": {
+                "type": "string"
+              },
+              "files": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lines": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "notComparable": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "line",
+              "rule",
+              "owner",
+              "reason"
+            ],
+            "properties": {
+              "line": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The CODEOWNERS line number."
+              },
+              "rule": {
+                "type": "string",
+                "description": "The rule as written: the pattern and its owners."
+              },
+              "owner": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
     "ownedBy": {
       "type": ["object", "null"],
       "description": "The --owned-by view: what the named people own, from the run's per-file blame counts. Null unless --owned-by was given. It counts surviving lines, not understanding.",
