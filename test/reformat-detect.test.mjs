@@ -146,6 +146,7 @@ const SNAPSHOT_BOTS_TABLE = [
   `top: Ada holds 11 non-blank lines (47.8%), 11 counting blank lines (47.8%)`,
   ``,
   `bus factor 2: Ada and Bob together hold 73.9% of 23 surviving lines · to reach 80%: 3 authors`,
+  `active bus factor 2 (50% of the 23 lines held by the 4 authors active in the last 365 days): Ada and Bob together; everyone who holds lines committed in that window`,
   `bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.`,
   ``,
   `bots excluded: 2 identities (dependabot[bot], renovate[bot]), 20 lines, 3 commits (--include-bots counts them)`,

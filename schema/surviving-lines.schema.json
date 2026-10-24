@@ -63,6 +63,25 @@
               "filesSampled": { "type": "integer", "minimum": 0, "description": "Sampled files in the group, so a group resting on one file is visible." },
               "lines": { "type": "integer", "minimum": 0 },
               "linesWithBlank": { "type": "integer", "minimum": 0, "description": "The group's lines counting blank lines (lines leaves them out)." },
+              "activeBusFactor": {
+                "type": ["object", "null"],
+                "description": "The active bus factor: the fewest people, among those with a commit in the activity window, whose non-blank lines reach thresholdPercent of the lines the active people hold. Its base is activeLines, not the lines of the headline bus factor. value is null when no active person holds a line. Null when no line is held.",
+                "additionalProperties": false,
+                "required": ["thresholdPercent", "activeDays", "value", "authors", "covered", "activeLines", "activePeople", "people", "allLines", "inactiveShare"],
+                "properties": {
+                  "thresholdPercent": { "type": "number" },
+                  "activeDays": { "type": "integer", "minimum": 1 },
+                  "value": { "type": ["integer", "null"], "minimum": 1 },
+                  "authors": { "type": "array", "items": { "type": "string" } },
+                  "covered": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of activeLines that those people hold." },
+                  "activeLines": { "type": "number", "minimum": 0 },
+                  "activePeople": { "type": "integer", "minimum": 0, "description": "People with lines and a commit in the window." },
+                  "people": { "type": "integer", "minimum": 1, "description": "All people with lines." },
+                  "allLines": { "type": "number", "minimum": 0 },
+                  "inactiveShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of all lines held by people with no commit in the window." }
+                }
+              },
+              "verdict": { "type": "array", "maxItems": 2, "uniqueItems": true, "items": { "type": "string", "enum": ["single point", "orphaned"] }, "description": "Two separate findings, never one risk rank: single point (the active bus factor is 1) and orphaned (the top owner of the group has no commit in the window and nobody active holds 20% of its lines)." },
               "authors": {
                 "type": "array",
                 "items": {
@@ -536,6 +555,24 @@
             }
           }
         }
+      }
+    },
+    "activeBusFactor": {
+      "type": ["object", "null"],
+      "description": "The active bus factor: the fewest people, among those with a commit in the activity window, whose non-blank lines reach thresholdPercent of the lines the active people hold. Its base is activeLines, not the lines of the headline bus factor. value is null when no active person holds a line. Null when no line is held.",
+      "additionalProperties": false,
+      "required": ["thresholdPercent", "activeDays", "value", "authors", "covered", "activeLines", "activePeople", "people", "allLines", "inactiveShare"],
+      "properties": {
+        "thresholdPercent": { "type": "number" },
+        "activeDays": { "type": "integer", "minimum": 1 },
+        "value": { "type": ["integer", "null"], "minimum": 1 },
+        "authors": { "type": "array", "items": { "type": "string" } },
+        "covered": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of activeLines that those people hold." },
+        "activeLines": { "type": "number", "minimum": 0 },
+        "activePeople": { "type": "integer", "minimum": 0, "description": "People with lines and a commit in the window." },
+        "people": { "type": "integer", "minimum": 1, "description": "All people with lines." },
+        "allLines": { "type": "number", "minimum": 0 },
+        "inactiveShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "The share of all lines held by people with no commit in the window." }
       }
     },
     "historyQuality": {

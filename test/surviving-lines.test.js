@@ -161,6 +161,7 @@ test("the table of a small repository with no reformat suspect is exactly the he
       "top: Ada holds 11 non-blank lines (52.4%), 11 counting blank lines (52.4%)",
       "",
       "bus factor 1: Ada alone holds 52.4% of 21 surviving lines · to reach 80%: 2 authors",
+      "active bus factor 1 (50% of the 21 lines held by the 2 authors active in the last 365 days): Ada alone; everyone who holds lines committed in that window",
       "bus factor = the smallest number of authors whose surviving lines together reach 50% of the lines counted (change with --bus-factor-threshold). It measures how concentrated the code that is left is, not who understands it.",
       "",
       "mechanical rewrites checked: examined 2 commits holding surviving lines, set aside 0; no other commit looks mechanical (at least 10 files with the same small change, or a formatter, lint fix, codemod or rename tool in the subject).",

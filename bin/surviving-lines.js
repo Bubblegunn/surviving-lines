@@ -2279,6 +2279,77 @@ export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
   };
 }
 
+/**
+ * R13 #6: the active bus factor, shared by the default view, the brief, the group blocks and the JSON so they cannot
+ * disagree. It is the smallest number of people, among those with a commit in the activity window, whose lines reach
+ * the threshold of the lines held by active people. That base is not the base of the headline bus factor (all lines):
+ * the printed sentence names both. `value` is null when no active person holds a line.
+ * @param {Map<string, { author: string, lines: number, active: boolean }>} people the people of peopleActivity, or of one group
+ * @param {number} thresholdPercent
+ * @param {number} activeDays
+ * @returns {{ thresholdPercent: number, activeDays: number, value: number | null, authors: string[], covered: number, activeLines: number, activePeople: number, people: number, allLines: number, inactiveShare: number } | null} null when no line is held
+ */
+export function activeBusFactorOf(people, thresholdPercent, activeDays) {
+  const all = [...people.values()].filter((p) => p.lines > 0);
+  const allLines = all.reduce((s, p) => s + p.lines, 0);
+  if (allLines <= 0) return null;
+  const active = all.filter((p) => p.active).sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+  const activeLines = active.reduce((s, p) => s + p.lines, 0);
+  const bf = busFactor(active.map((p) => ({ author: p.author, lines: p.lines })), thresholdPercent);
+  return {
+    thresholdPercent,
+    activeDays,
+    value: bf ? bf.value : null,
+    authors: bf ? bf.authors : [],
+    covered: bf ? bf.covered : 0,
+    activeLines,
+    activePeople: active.length,
+    people: all.length,
+    allLines,
+    inactiveShare: (allLines - activeLines) / allLines,
+  };
+}
+
+/**
+ * R13 #6: the one sentence that states the active bus factor, or null when no line is held.
+ * @param {ReturnType<typeof activeBusFactorOf>} a
+ */
+export function activeBusFactorLine(a) {
+  if (!a) return null;
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const tail = a.inactiveShare > 0 ? `; ${pct(a.inactiveShare)} of all lines belong to people with no commit in that window` : "; everyone who holds lines committed in that window";
+  if (a.value === null) return `active bus factor none (no one who holds lines committed in the last ${a.activeDays} days)${tail}`;
+  const who = a.value === 1 ? `${a.authors[0]} alone` : `${listNames(a.authors)} together`;
+  return `active bus factor ${a.value} (${a.thresholdPercent}% of the ${n(a.activeLines)} lines held by the ${a.activePeople} author${a.activePeople === 1 ? "" : "s"} active in the last ${a.activeDays} days): ${who}${tail}`;
+}
+
+/**
+ * R13 #6: the active bus factor of one group block and its verdict. The verdict holds up to two separate labels and is
+ * never one risk rank: `single point` (the active bus factor is 1) and `orphaned` (the group's top owner has no commit
+ * in the window and nobody active holds the orphan share of the group; the same rule as for one file).
+ * @param {{ lines: number, authors: { author: string, lines: number }[] }} group
+ * @param {Map<string, { active: boolean }>} people the run's people, for who is active
+ * @param {number} thresholdPercent
+ * @param {number} activeDays
+ */
+export function groupActivityOf(group, people, thresholdPercent, activeDays) {
+  /** @type {Map<string, { author: string, lines: number, active: boolean }>} */
+  const folded = new Map();
+  for (const a of group.authors) {
+    const key = foldIdentity(a.author);
+    const p = folded.get(key) ?? { author: a.author, lines: 0, active: people.get(key)?.active === true };
+    p.lines += a.lines;
+    folded.set(key, p);
+  }
+  const activeBusFactor = activeBusFactorOf(folded, thresholdPercent, activeDays);
+  const owners = [...folded].map(([key, p]) => ({ key, lines: p.lines, author: p.author })).sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+  /** @type {string[]} */
+  const verdict = [];
+  if (activeBusFactor?.value === 1) verdict.push("single point");
+  if (isOrphanFile({ lines: owners.reduce((s, p) => s + p.lines, 0), owners }, folded)) verdict.push("orphaned");
+  return { activeBusFactor, verdict };
+}
+
 /** R13 #5: the oldest commit is an import when it adds more than this share of the files at the ref. */
 const HISTORY_IMPORT_MIN_PERCENT = 25;
 /** R13 #5: a history shorter than this many days (from the oldest commit to the ref) is young. */
@@ -4995,6 +5066,9 @@ export async function analyse(o) {
   const asOfDay = await refDay(o);
   const people = peopleActivity(rows, lastCommits, asOfDay, o.activeDays);
   const activity = activityOf(people, asOfDay, o.activeDays);
+  // R13 #6: one function gives the active bus factor of the run and of every group block, so no view recounts it.
+  const activeBusFactor = activeBusFactorOf(people, o.busFactorThreshold, o.activeDays);
+  if (groups) groups = groups.map((g) => ({ ...g, ...groupActivityOf(g, people, o.busFactorThreshold, o.activeDays) }));
   const historyQuality = await readHistoryQuality(o);
   const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
   const withoutResult = o.without.length ? withoutOf(main.perFile, o.includeBots, ownerMerge, nameOf, rows, resolveLeavers(o.without, rows, membersOf), o.busFactorThreshold) : null;
@@ -5068,6 +5142,7 @@ export async function analyse(o) {
     sameAddress,
     lastCommits,
     activity,
+    activeBusFactor,
     historyQuality,
     orphans: orphanScope && { requested: o.orphans, ...orphanScope },
     without: withoutResult,
@@ -5084,15 +5159,13 @@ export async function analyse(o) {
   if (!o.brief) return result;
   // The brief reads the result above and three more facts: the commit id, the single-owner files and the bus factor of
   // the people who still commit (counted on their lines, as --without counts the people who remain).
-  const activePeople = [...people.values()].filter((p) => p.active).map((p) => ({ author: p.author, mail: p.author, lines: p.lines })).sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
-  const activeBf = busFactor(activePeople, o.busFactorThreshold);
   const sha = (await git(["rev-parse", `${o.ref}^{commit}`], o.cwd)).trim();
   const singleOwner = fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf).singleOwnerFiles;
   const brief = briefOf(result, {
     sha,
     scope: { paths: o.paths, include: o.include, exclude: o.exclude, since: o.since ?? null, until: o.until ?? null },
     singleOwner,
-    activeBusFactor: activeBf && { value: activeBf.value, authors: activeBf.authors, people: activePeople.length },
+    activeBusFactor: activeBusFactor && activeBusFactor.value !== null ? { value: activeBusFactor.value, authors: activeBusFactor.authors, people: activeBusFactor.activePeople } : null,
   });
   return { ...result, brief };
 }
@@ -5817,6 +5890,8 @@ export function renderTable(r, top) {
   const activeLine = activityLine(r.activity);
   if (activeLine) lines.push(activeLine);
   const bus = busFactorBlock(r.busFactor, r.authors);
+  const activeBus = activeBusFactorLine(r.activeBusFactor);
+  if (bus.length && activeBus) bus.splice(1, 0, activeBus);
   if (bus.length) lines.push("", ...bus);
   if (r.orphans?.requested) lines.push("", orphansLine(r.orphans) ?? "", ...orphanListLines(r.orphans));
   const notes = scopeNotes(r);
@@ -6049,6 +6124,9 @@ export function renderGroups(r, top) {
     const groupLine = busFactorLine(g.busFactor, g.authors);
     if (groupLine) {
       lines.push("", groupLine);
+      const activeLine = activeBusFactorLine(g.activeBusFactor);
+      if (activeLine) lines.push(activeLine);
+      if (g.verdict?.length) lines.push(`verdict: ${g.verdict.join(", ")} (separate findings, not one risk rank)`);
       groupThreshold = g.busFactor?.thresholdPercent ?? null;
     }
   }
