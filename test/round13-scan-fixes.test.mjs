@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { schemaErrors } from "../scripts/schema-check.mjs";
-import { createRepo, commitAsIdentity, git, lines, removeRepo } from "../scripts/fixtures.mjs";
+import { createRepo, commitAsIdentity, git, lines, removeRepo, SKIP_ON_WINDOWS_SHIM } from "../scripts/fixtures.mjs";
 
 const { parseArgs, analyse, listNonRegularPaths } = await import("../bin/surviving-lines.js");
 
@@ -95,7 +95,7 @@ async function withDocRepo(fn) {
   }
 }
 
-test("when the NUL scan cannot run, the extension list stands in for it and one note says so", async () => {
+test("when the NUL scan cannot run, the extension list stands in for it and one note says so", SKIP_ON_WINDOWS_SHIM, async () => {
   await withDocRepo(async (dir) => {
     await withFakeGrep("128", async () => {
       const { r, stderr } = await runCapturingStderr(dir, []);
@@ -135,7 +135,7 @@ test("when the NUL scan ran, a .pdf holding only text is counted; a real NUL bey
   }
 });
 
-test("without the NUL scan every listed document extension is left out, in any letter case", async () => {
+test("without the NUL scan every listed document extension is left out, in any letter case", SKIP_ON_WINDOWS_SHIM, async () => {
   const dir = createRepo("sl-nulscan-ext-");
   try {
     commitAsIdentity(dir, ANN, DATE, "files", { "plain.txt": lines("p", 8), "doc.PDF": "text only\n", "art.ai": "text only\n", "page.html.br": "text only\n", "pic.eps": "x\n", "img.psd": "x\n" });

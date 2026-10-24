@@ -7,7 +7,7 @@ import { chmodSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "nod
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createRepo, commitAsIdentity, removeRepo } from "../scripts/fixtures.mjs";
+import { createRepo, commitAsIdentity, removeRepo, SKIP_ON_WINDOWS_SHIM } from "../scripts/fixtures.mjs";
 import { schemaErrors } from "../scripts/schema-check.mjs";
 
 const { parseArgs, analyse, renderTable, renderCsv, renderMarkdown, renderJson, renderFiles, busFactorLine, findWhitespaceOnlyCommits, whitespaceOnlyLine } = await import("../bin/surviving-lines.js");
@@ -176,7 +176,7 @@ test("R10-3: a history with no such commit adds no line, and a bot's commit is n
   );
 });
 
-test("R10-3: the check stops at its time limit and says so, and changes no number", async () => {
+test("R10-3: the check stops at its time limit and says so, and changes no number", SKIP_ON_WINDOWS_SHIM, async () => {
   // A git that takes a second on `log`, so the 50 ms limit is reached on any machine (a 1 ms limit is not reliable:
   // on a fast Linux container a small `git log` can finish first).
   const bin = mkdtempSync(join(tmpdir(), "sl-r10-slow-"));
@@ -200,7 +200,7 @@ test("R10-3: the check stops at its time limit and says so, and changes no numbe
   }
 });
 
-test("R10-5: every git call passes core.quotepath=off, log.showSignature=false and color.ui=never", async () => {
+test("R10-5: every git call passes core.quotepath=off, log.showSignature=false and color.ui=never", SKIP_ON_WINDOWS_SHIM, async () => {
   const bin = mkdtempSync(join(tmpdir(), "sl-r10-bin-"));
   const logFile = join(bin, "calls.log");
   const real = execFileSync("which", ["git"], { encoding: "utf8" }).trim();

@@ -9,7 +9,7 @@ import { mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSyn
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commitAsIdentity, createRepo, git, hookEnv, posixPath, removeRepo } from "../scripts/fixtures.mjs";
+import { commitAsIdentity, createRepo, git, hookEnv, posixPath, removeRepo, WINDOWS } from "../scripts/fixtures.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const HOOK = join(ROOT, "hooks", "surviving-lines-hint.sh");
@@ -348,7 +348,7 @@ function repoNamed(name) {
   return { dir, parent };
 }
 
-test("a working directory with a double quote in its name stays silent, and is not replaced by the process directory", () => {
+test("a working directory with a double quote in its name stays silent, and is not replaced by the process directory", { skip: WINDOWS ? "Windows file names cannot contain a double quote" : false }, () => {
   const { dir, parent } = repoNamed('a"b');
   try {
     const result = hook(PROMPT, dir);
@@ -360,7 +360,7 @@ test("a working directory with a double quote in its name stays silent, and is n
   }
 });
 
-test("a working directory with a backslash in its name stays silent, and is not replaced by the process directory", () => {
+test("a working directory with a backslash in its name stays silent, and is not replaced by the process directory", { skip: WINDOWS ? "a backslash is a path separator on Windows" : false }, () => {
   const { dir, parent } = repoNamed("a\\b");
   try {
     const result = hook(PROMPT, dir);

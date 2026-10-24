@@ -8,7 +8,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, w
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commitAsIdentity, createRepo, git, hookEnv, posixPath, removeRepo } from "../scripts/fixtures.mjs";
+import { commitAsIdentity, createRepo, git, hookEnv, posixPath, removeRepo, SKIP_ON_WINDOWS_SHIM } from "../scripts/fixtures.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const HOOK = join(ROOT, "hooks", "surviving-lines-hint.sh");
@@ -101,7 +101,7 @@ test("without the plugin's bin file there is no brief and the text is the hint a
   }
 });
 
-test("without node on the PATH there is no brief, and the hint still prints", () => {
+test("without node on the PATH there is no brief, and the hint still prints", SKIP_ON_WINDOWS_SHIM, () => {
   const dir = two();
   const bin = mkdtempSync(join(tmpdir(), "sl-nonode-"));
   try {
