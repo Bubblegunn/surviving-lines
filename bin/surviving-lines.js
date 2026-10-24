@@ -143,6 +143,11 @@ Measure who wrote the code that is still alive in a git ref.
                        a mark for owners who are not active and for nodes where nobody holds half. Depth counts levels of nodes (default 2,
                        0 = all); a directory whose only child is a directory is printed on one line; --top caps the children per node
                        (default 25); -- <path> scopes it. Prints its own view, with --json only
+  --attention          files that change often and are risky: files with at least 3 commits in the window (--since, default 12 months before the
+                       ref's commit date; renames followed; bots and set-aside commits out) that are orphaned (weight 3), single-owner (one
+                       person holds 80%+, weight 1) or coupled (change together with another file at degree 0.5 or more, weight 1), ranked by
+                       score, commits and path, each with the numbers behind it; --top caps the list (default 10). --min-commits <n> (default 3),
+                       --min-shared <n> (default 3) and --max-files-per-commit <n> (default 30) set the thresholds. Own view, --json only
   --for-diff <base>..<head>  who should review a change: the people who wrote the lines it replaces or deletes (blamed at the base
                        commit, with this run's blame rules), without the change authors, with per-file flags (inactive owners, orphaned,
                        one owner holds 80%+, new, deleted, renamed). Also <base>...<head> (from the merge base) and <base> alone
@@ -183,7 +188,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -191,7 +196,7 @@ groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDay
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, brief: false, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], ownedBy: [], seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, brief: false, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], ownedBy: [], attention: false, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   let refGiven = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -222,6 +227,10 @@ export function parseArgs(argv) {
     else if (a === "--without") o.without.push(next());
     else if (a === "--owned-by") o.ownedBy.push(next());
     else if (a === "--tree") { o.tree = TREE_DEPTH_DEFAULT; if (/^\d+$/.test(argv[i + 1] ?? "")) o.tree = Number(argv[++i]); }
+    else if (a === "--attention") o.attention = true;
+    else if (a === "--min-commits") { o.minCommits = Number(next()); if (!Number.isInteger(o.minCommits) || o.minCommits < 1) throw new Error("--min-commits must be an integer >= 1"); }
+    else if (a === "--min-shared") { o.minShared = Number(next()); if (!Number.isInteger(o.minShared) || o.minShared < 1) throw new Error("--min-shared must be an integer >= 1"); }
+    else if (a === "--max-files-per-commit") { o.maxFilesPerCommit = Number(next()); if (!Number.isInteger(o.maxFilesPerCommit) || o.maxFilesPerCommit < 1) throw new Error("--max-files-per-commit must be an integer >= 1"); }
     else if (a === "--why-not") o.whyNot = next();
     else if (a === "--check-codeowners") { o.checkCodeowners = ""; const v = argv[i + 1]; if (v !== undefined && v !== "--" && !v.startsWith("-")) o.checkCodeowners = argv[++i]; }
     else if (a === "--for-diff") { o.forDiff = next(); if (!o.forDiff.trim()) throw new Error("--for-diff needs a revision range such as main..feature"); }
@@ -279,13 +288,15 @@ export function parseArgs(argv) {
   }
   // The views added in round 13 (--for-diff, --owned-by, --why-not, --check-codeowners) print their own output. Each one is refused with every other view
   // and every output format; only --json may be combined with them.
-  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
+  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--attention": o.attention, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
   const optionsSet = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", ...newViews });
   for (const view of Object.keys(newViews).filter((k) => newViews[k])) {
-    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
+    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--attention" ? { ...optionsSet, "--attention": false, "--sample": o.sample !== 1 } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
     const clash = Object.keys(own).find((k) => own[k]);
     if (clash) throw new Error(`${view} prints its own view; it can be combined with --json only, not with ${clash}`);
   }
+  if (o.minCommits !== undefined && !o.attention) throw new Error("--min-commits works with --attention only");
+  if ((o.minShared !== undefined || o.maxFilesPerCommit !== undefined) && !o.attention) throw new Error("--min-shared and --max-files-per-commit work with --attention");
   if (o.timeBudget !== undefined && !o.brief) throw new Error("--time-budget works with --brief only");
   if (o.brief) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.forDiff !== undefined ? "--for-diff" : o.ownedBy.length ? "--owned-by" : o.whyNot !== undefined ? "--why-not" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
@@ -3603,6 +3614,237 @@ export function renderTree(r) {
   return out.join("\n");
 }
 
+/** R13 #8, #9: the default window is this many months back from the ref's commit date. */
+const CHANGE_WINDOW_MONTHS = 12;
+/** R13 #8: a file needs this many commits in the window to be considered (--min-commits). */
+const ATTENTION_MIN_COMMITS = 3;
+/** R13 #8: files listed unless --top is given. */
+const ATTENTION_SHOWN = 10;
+/** R13 #8: at most this many files, the ones with the most commits, are assessed; the note says so when there are more. */
+const ATTENTION_ASSESSED_MAX = 200;
+/** R13 #8: a file is coupled when some partner changes with it at this degree or more. */
+const ATTENTION_COUPLED_MIN_DEGREE = 0.5;
+/** R13 #8: the weight of each reason; the score of a file is the sum of its reasons. */
+const ATTENTION_WEIGHTS = { orphaned: 3, singleOwner: 1, coupled: 1 };
+/** R13 #8, #9: a partner needs this many shared commits (--min-shared). */
+const COUPLING_MIN_SHARED = 3;
+/** R13 #8, #9: a commit that touches more files than this says nothing about coupling and is skipped (--max-files-per-commit). */
+const COUPLING_MAX_FILES = 30;
+
+/**
+ * R13 #8, #9: the first day of the change window. `--since` is used as given; without it the window starts 12 months before
+ * the ref's commit date (never today). `youngerThanWindow` is true when the history starts inside the window, so the whole
+ * history is used. It is null when --since is not a date that can be read.
+ * @param {string | undefined} since
+ * @param {string} asOf YYYY-MM-DD
+ * @param {string | null} firstCommit YYYY-MM-DD, the oldest commit of the ref
+ * @returns {{ since: string, label: string, start: string | null, youngerThanWindow: boolean | null }}
+ */
+export function changeWindowOf(since, asOf, firstCommit) {
+  let start = null;
+  if (since === undefined) {
+    const d = new Date(`${asOf}T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - CHANGE_WINDOW_MONTHS);
+    start = d.toISOString().slice(0, 10);
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(since.trim())) {
+    start = since.trim();
+  }
+  return {
+    since: since ?? start ?? "",
+    label: since === undefined ? `${CHANGE_WINDOW_MONTHS} months` : `since ${since}`,
+    start,
+    youngerThanWindow: start === null || firstCommit === null ? null : firstCommit >= start,
+  };
+}
+
+/**
+ * R13 #8, #9: the files each commit changed, with renames followed. `log` is the output of
+ * `git log --no-merges --topo-order --name-status -M --format=%x01%H%x1f%aE%x1f%aN`, newest first. Commits are replayed from
+ * the newest: a rename in one commit makes the old name stand for the current file in every older commit, and an add ends
+ * the history of that name (an older file of the same name is another file). Only paths in `present` (the files of the run:
+ * they exist at the ref and passed the drops) are kept. Commits in `skip` (set aside as reformats or rewrites, or ignored by
+ * the user) and bot commits (unless `includeBots`) change nothing here, but their renames are still replayed.
+ * `touched` is the number of paths the commit changed, whether or not they are kept.
+ * @param {string} log
+ * @param {Set<string>} present
+ * @param {Set<string>} skip full commit ids
+ * @param {boolean} includeBots
+ * @returns {{ sha: string, touched: number, files: string[] }[]}
+ */
+export function changeSetsOf(log, present, skip, includeBots) {
+  /** @type {Map<string, string | null>} */
+  const current = new Map();
+  /** @param {string} name */
+  const resolve = (name) => (current.has(name) ? /** @type {string | null} */ (current.get(name)) : name);
+  /** @type {{ sha: string, touched: number, files: string[] }[]} */
+  const out = [];
+  for (const chunk of log.split("\x01")) {
+    if (!chunk) continue;
+    const eol = chunk.indexOf("\n");
+    const [sha, mail, name] = (eol < 0 ? chunk : chunk.slice(0, eol)).split("\x1f");
+    if (!sha) continue;
+    /** @type {Set<string>} */
+    const files = new Set();
+    let touched = 0;
+    for (const line of eol < 0 ? [] : chunk.slice(eol + 1).split("\n")) {
+      if (!line) continue;
+      const parts = line.split("\t");
+      const status = parts[0][0];
+      touched++;
+      if (status === "R" || status === "C") {
+        const from = unquoteGitPath(parts[1]);
+        const to = unquoteGitPath(parts[2]);
+        const now = resolve(to);
+        if (now !== null) files.add(now);
+        current.set(to, null);
+        if (status === "R") current.set(from, now);
+      } else {
+        const path = unquoteGitPath(parts[1]);
+        const now = resolve(path);
+        if (now !== null) files.add(now);
+        if (status === "A") current.set(path, null);
+      }
+    }
+    if (skip.has(sha) || (!includeBots && isBotIdentity(name ?? "", (mail ?? "").toLowerCase()))) continue;
+    out.push({ sha, touched, files: [...files].filter((f) => present.has(f)) });
+  }
+  return out;
+}
+
+/**
+ * R13 #8, #9: the commits per file and the coupling between files. A commit counts for a file when it changed it (through
+ * renames). Coupling uses only commits that touched at most `maxFiles` paths: a larger one is skipped, since a sweeping change
+ * couples everything it touched. For two files, `shared` is the commits that touched both, and
+ * degree = shared / min(commits of the one, commits of the other), both counted over the commits that are not skipped;
+ * jaccard = shared / (commits of the one + commits of the other - shared). Partners need `minShared` shared commits.
+ * @param {{ sha: string, touched: number, files: string[] }[]} sets
+ * @param {number} minShared
+ * @param {number} maxFiles
+ */
+export function changeIndexOf(sets, minShared, maxFiles) {
+  /** @type {Map<string, number>} */
+  const commits = new Map();
+  /** @type {Map<string, number>} */
+  const skipped = new Map();
+  /** @type {Map<string, number>} */
+  const revisions = new Map();
+  /** @type {Map<string, string[][]>} */
+  const byFile = new Map();
+  let skippedTotal = 0;
+  for (const c of sets) {
+    const bulk = c.touched > maxFiles;
+    if (bulk) skippedTotal++;
+    for (const f of c.files) {
+      commits.set(f, (commits.get(f) ?? 0) + 1);
+      if (bulk) {
+        skipped.set(f, (skipped.get(f) ?? 0) + 1);
+        continue;
+      }
+      revisions.set(f, (revisions.get(f) ?? 0) + 1);
+      const list = byFile.get(f) ?? [];
+      list.push(c.files);
+      byFile.set(f, list);
+    }
+  }
+  /**
+   * The partners of one file, best first: degree, then shared commits, then jaccard, then path.
+   * @param {string} target
+   * @returns {{ path: string, shared: number, degree: number, jaccard: number, share: number, commits: number }[]}
+   */
+  const partners = (target) => {
+    /** @type {Map<string, number>} */
+    const shared = new Map();
+    for (const files of byFile.get(target) ?? []) for (const g of files) if (g !== target) shared.set(g, (shared.get(g) ?? 0) + 1);
+    const ra = revisions.get(target) ?? 0;
+    return [...shared]
+      .filter(([, n]) => n >= minShared)
+      .map(([path, n]) => {
+        const rb = revisions.get(path) ?? 0;
+        return { path, shared: n, degree: n / Math.min(ra, rb), jaccard: n / (ra + rb - n), share: n / ra, commits: commits.get(path) ?? 0 };
+      })
+      .sort((x, y) => y.degree - x.degree || y.shared - x.shared || y.jaccard - x.jaccard || x.path.localeCompare(y.path));
+  };
+  return { commits, skipped, revisions, skippedTotal, partners };
+}
+
+/**
+ * R13 #8: the attention list. Files with at least `minCommits` commits in the window (renames followed, set-aside and bot
+ * commits out) are given reasons, each with the number that caused it: orphaned (the --orphans rule, weight 3), single
+ * owner (the top owner holds 80% or more of the file, weight 1) and coupled (a partner changes with it at degree 0.5 or
+ * more, weight 1). The score is the sum of the weights; files with score 0 are left out; files are ranked by score, then
+ * commits, then path. Only the 200 files with the most commits are assessed; the result says so.
+ * @param {{
+ *   sets: { sha: string, touched: number, files: string[] }[],
+ *   perFile: Map<string, Map<string, { name: string, lines: number, fullName?: string }>>,
+ *   includeBots: boolean, canonicalOf: Map<string, { author: string, mail: string }>, nameOf: Map<string, string>,
+ *   people: Map<string, { author: string, lines: number, lastCommit: string | null, active: boolean }>,
+ *   minCommits: number, minShared: number, maxFiles: number, shown: number,
+ * }} a
+ */
+export function attentionOf(a) {
+  const index = changeIndexOf(a.sets, a.minShared, a.maxFiles);
+  const considered = [...index.commits].filter(([, n]) => n >= a.minCommits).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
+  const assessed = considered.slice(0, ATTENTION_ASSESSED_MAX);
+  /** @type {{ file: string, commits: number, score: number, reasons: ({ kind: "orphaned", weight: number, owner: string, share: number, lastCommit: string | null } | { kind: "singleOwner", weight: number, owner: string, share: number } | { kind: "coupled", weight: number, partner: string, degree: number, shared: number })[] }[]} */
+  const items = [];
+  for (const [file, commits] of assessed) {
+    /** @type {(typeof items)[number]["reasons"]} */
+    const reasons = [];
+    const counts = a.perFile.get(file);
+    const f = counts ? foldedOwners(counts, a.includeBots, a.canonicalOf, a.nameOf) : null;
+    if (f && f.lines > 0 && f.owners.length) {
+      const top = f.owners[0];
+      if (isOrphanFile(f, a.people)) reasons.push({ kind: "orphaned", weight: ATTENTION_WEIGHTS.orphaned, owner: top.name, share: top.lines / f.lines, lastCommit: a.people.get(top.key)?.lastCommit ?? null });
+      if (top.lines / f.lines >= FOR_DIFF_SINGLE_OWNER_MIN_SHARE) reasons.push({ kind: "singleOwner", weight: ATTENTION_WEIGHTS.singleOwner, owner: top.name, share: top.lines / f.lines });
+    }
+    const best = index.partners(file)[0];
+    if (best && best.degree >= ATTENTION_COUPLED_MIN_DEGREE) reasons.push({ kind: "coupled", weight: ATTENTION_WEIGHTS.coupled, partner: best.path, degree: best.degree, shared: best.shared });
+    const score = reasons.reduce((s, r) => s + r.weight, 0);
+    if (score > 0) items.push({ file, commits, score, reasons });
+  }
+  items.sort((x, y) => y.score - x.score || y.commits - x.commits || x.file.localeCompare(y.file));
+  return {
+    minCommits: a.minCommits,
+    minShared: a.minShared,
+    maxFilesPerCommit: a.maxFiles,
+    commitsRead: a.sets.length,
+    filesConsidered: considered.length,
+    filesAssessed: assessed.length,
+    total: items.length,
+    items: items.slice(0, a.shown),
+    more: Math.max(0, items.length - a.shown),
+  };
+}
+
+/**
+ * The --attention view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderAttention(r) {
+  const v = r.attention;
+  if (!v) throw new Error("renderAttention needs a result from --attention");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const out = [headerLine(r), `attention (${v.window.label}, files with at least ${v.minCommits} commits):`];
+  for (const [i, it] of v.items.entries()) {
+    const parts = it.reasons.map((x) => {
+      if (x.kind === "orphaned") return `orphaned (${x.owner}, last commit ${x.lastCommit ?? "unknown"}, holds ${Math.round(x.share * 100)}%)`;
+      if (x.kind === "singleOwner") return `single owner (${x.owner} ${Math.round(x.share * 100)}%)`;
+      return `changes with ${x.partner} (degree ${x.degree.toFixed(2)})`;
+    });
+    out.push(`${i + 1}. ${it.file}: ${n(it.commits)} commit${it.commits === 1 ? "" : "s"}; ${parts.join("; ")}`);
+  }
+  if (v.more) out.push(`... ${n(v.more)} more`);
+  if (!v.total) out.push(v.filesConsidered ? `none: no file with at least ${v.minCommits} commits in the window is orphaned, single-owner or coupled` : `none: no file has at least ${v.minCommits} commits in the window`);
+  out.push("");
+  if (v.window.youngerThanWindow) out.push(`The history starts ${v.window.firstCommit}, inside the window, so all of it is used.`);
+  if (v.filesConsidered > v.filesAssessed) out.push(`${n(v.filesConsidered)} files have at least ${v.minCommits} commits; the ${n(v.filesAssessed)} with the most commits were assessed.`);
+  out.push(`Window: commits from ${v.window.start ?? v.window.label} to the ref${r.commitWindow.until ? ` (until ${r.commitWindow.until})` : ""}, merges, bots and set-aside commits left out, renames followed (${n(v.commitsRead)} commits read). Coupling: files that change together in at least ${v.minShared} commits, commits touching more than ${v.maxFilesPerCommit} files skipped.`);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("", "These are surviving lines and commit counts, not defects or who understands the code.");
+  return out.join("\n");
+}
+
 /** R13 #4: where GitHub looks for the file, in its order; the first one that exists is used. */
 export const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 /** R13 #4: a file of this size or more gets a warning; GitHub does not read a file above its limit. */
@@ -5294,6 +5536,16 @@ export async function analyse(o) {
   const history = o.history === undefined ? null : { ...(await historyView(o, o.history, rows, membersOf, pathCommits, suspects, applied)), movedIn: movedInFor(main.origins, o.history), fileOwners };
   const skipShas = new Set([...ignoredByUser, ...(applied ? suspects.map((x) => x.sha) : []), ...strongRewrites.map((c) => c.sha)]);
   const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, credit, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
+  /** @type {(Awaited<ReturnType<typeof attentionOf>> & { window: ReturnType<typeof changeWindowOf> & { firstCommit: string | null, until: string | null } }) | null} */
+  let attentionResult = null;
+  if (o.attention) {
+    const firstDays = [...(await readCommitDays(o)).values()].map((d) => d.first).sort();
+    const firstCommit = firstDays[0] ?? null;
+    const window = changeWindowOf(o.since, asOfDay, firstCommit);
+    const log = await git(["log", "--no-merges", "--topo-order", "--name-status", "-M", "--format=%x01%H%x1f%aE%x1f%aN", `--since=${window.since}`, ...(o.until ? [`--until=${o.until}`] : []), o.ref], o.cwd);
+    const sets = changeSetsOf(log, new Set(all.map((f) => f.path)), skipShas, o.includeBots);
+    attentionResult = { window: { ...window, firstCommit, until: o.until ?? null }, ...attentionOf({ sets, perFile: main.perFile, includeBots: o.includeBots, canonicalOf: ownerMerge, nameOf, people, minCommits: o.minCommits ?? ATTENTION_MIN_COMMITS, minShared: o.minShared ?? COUPLING_MIN_SHARED, maxFiles: o.maxFilesPerCommit ?? COUPLING_MAX_FILES, shown: o.topGiven ? o.top : ATTENTION_SHOWN }) };
+  }
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
   // G12: the strong identity groups count as one person here whether or not --merge-identities merged them.
@@ -5336,6 +5588,7 @@ export async function analyse(o) {
     forDiff: forDiffResult,
     ownedBy: ownedByResult,
     tree: treeResult,
+    attention: attentionResult,
     whyNot: whyNotResult,
     codeownersCheck: codeownersResult,
     committedByOthers: committedElsewhere,
@@ -7243,6 +7496,8 @@ async function main() {
       output = renderOwnedBy(r);
     } else if (r.tree) {
       output = renderTree(r);
+    } else if (r.attention) {
+      output = renderAttention(r);
     } else if (r.forDiff) {
       output = renderForDiff(r, o.topGiven ? o.top : FOR_DIFF_REVIEWERS_SHOWN);
     } else if (r.without) {

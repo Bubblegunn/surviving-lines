@@ -1225,6 +1225,67 @@
         "more": { "type": "integer", "minimum": 0, "description": "Top-level nodes left out by the cap." }
       }
     },
+    "attention": {
+      "type": ["object", "null"],
+      "description": "The --attention view: files with enough commits in the window that are orphaned, single-owner or coupled. Null unless --attention was given.",
+      "additionalProperties": false,
+      "required": ["window", "minCommits", "minShared", "maxFilesPerCommit", "commitsRead", "filesConsidered", "filesAssessed", "total", "items", "more"],
+      "properties": {
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["since", "label", "start", "youngerThanWindow", "firstCommit", "until"],
+          "properties": {
+            "since": { "type": "string", "description": "The value handed to git log --since." },
+            "label": { "type": "string", "description": "\"12 months\" by default, \"since <value>\" with --since." },
+            "start": { "type": ["string", "null"], "description": "First day of the window, YYYY-MM-DD; null when --since is not a date." },
+            "youngerThanWindow": { "type": ["boolean", "null"], "description": "True when the history starts inside the window, so all of it is used." },
+            "firstCommit": { "type": ["string", "null"], "description": "Date of the oldest commit of the ref." },
+            "until": { "type": ["string", "null"] }
+          }
+        },
+        "minCommits": { "type": "integer", "minimum": 1 },
+        "minShared": { "type": "integer", "minimum": 1, "description": "Shared commits a partner needs to count as coupled." },
+        "maxFilesPerCommit": { "type": "integer", "minimum": 1, "description": "A commit that touches more files is skipped for coupling." },
+        "commitsRead": { "type": "integer", "minimum": 0, "description": "Commits of the window after merges, bots and set-aside commits are left out." },
+        "filesConsidered": { "type": "integer", "minimum": 0, "description": "Files with at least minCommits commits." },
+        "filesAssessed": { "type": "integer", "minimum": 0, "description": "At most 200: the considered files with the most commits." },
+        "total": { "type": "integer", "minimum": 0, "description": "Assessed files with a score above 0." },
+        "items": {
+          "type": "array",
+          "description": "Ranked by score, then commits, then path; up to --top (default 10).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "commits", "score", "reasons"],
+            "properties": {
+              "file": { "type": "string" },
+              "commits": { "type": "integer", "minimum": 1 },
+              "score": { "type": "integer", "minimum": 1, "description": "The sum of the weights of the reasons." },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kind", "weight"],
+                  "properties": {
+                    "kind": { "type": "string", "enum": ["orphaned", "singleOwner", "coupled"] },
+                    "weight": { "type": "integer", "minimum": 1, "description": "orphaned 3, singleOwner 1, coupled 1." },
+                    "owner": { "type": "string", "description": "orphaned and singleOwner: the top owner." },
+                    "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "orphaned and singleOwner: the top owner's part of the file's lines." },
+                    "lastCommit": { "type": ["string", "null"], "description": "orphaned: the owner's newest commit anywhere." },
+                    "partner": { "type": "string", "description": "coupled: the file that changes with it most." },
+                    "degree": { "type": "number", "minimum": 0, "maximum": 1, "description": "coupled: shared commits over the smaller commit count of the two files." },
+                    "shared": { "type": "integer", "minimum": 1, "description": "coupled: commits that touched both." }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "more": { "type": "integer", "minimum": 0 }
+      }
+    },
     "forDiff": {
       "type": ["object", "null"],
       "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",

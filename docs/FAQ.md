@@ -58,6 +58,10 @@ The line `as of <date>: k of n authors committed in the last 365 days and hold x
 
 `surviving-lines --tree` prints a tree: for each directory and file, the person with the most surviving lines in it and their share, with `(inactive)` for owners with no commit in the last 365 days and `(no owner above 50%)` where the largest holder has less than half. `--tree 3` shows three levels, `--tree 0` all of them, `-- src` limits it to one path. Use it to see which parts of the code have one clear owner and which have none. It counts surviving lines, not who understands the code.
 
+## Which files change often and have no real owner?
+
+`surviving-lines --attention` lists files with at least 3 commits in the last 12 months (counted back from the ref's commit date; `--since` sets another start) that are orphaned (the top owner has no commit in the activity window and nobody active holds a fifth), single-owner (one person holds 80% or more) or coupled (they change together with another file in at least half of the commits of the smaller one). Each line gives the numbers behind the reason. It ranks by a plain score (orphaned 3, the others 1), then commits. It counts commits and surviving lines, not defects.
+
 ## Is our CODEOWNERS file still right?
 
 `surviving-lines --check-codeowners` compares the file (`.github/CODEOWNERS`, `CODEOWNERS` or `docs/CODEOWNERS` at the ref, or the file you name) with the surviving lines and the commit dates, using GitHub's matching rules. It lists files no rule covers, rules that match no file, rules whose declared owners and observed owners (20% or more of the covered lines) share nobody, declared owners with no line and no commit there for a year, undeclared people who hold half, and declared owners with no recent commit, each with its line number. Teams (`@org/team`) and handles it cannot map to a person offline are listed as not comparable and are never counted as drift. It does not say who should own the code.
