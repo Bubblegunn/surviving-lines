@@ -13,7 +13,7 @@ import { commitAsIdentity, createRepo, lines, removeRepo } from "../scripts/fixt
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const HOOK = join(ROOT, "hooks", "surviving-lines-check.mjs");
-const { TOPIC_PATTERNS, matchesTopic, extractClaims, namedPeople, readTranscript, numberFindings, mergeFindings, bucketFromOutputs } = await import(HOOK);
+const { TOPIC_PATTERNS, matchesTopic, extractClaims, namedPeople, readTranscript, numberFindings, mergeFindings, blockReason } = await import(HOOK);
 
 const D = (d) => `2026-10-${d}T10:00:00Z`;
 const PROMPT = "who owns the parser module in this repo?";
@@ -59,7 +59,7 @@ function blocked(r) {
   const j = JSON.parse(r.stdout);
   assert.equal(j.decision, "block");
   assert.match(j.reason, /^Check your answer against surviving-lines before you finish:\n/);
-  assert.match(j.reason, /Fix what is wrong\. If a number is your own computation, say that and which command produced it\. Do not repeat the whole analysis\. Reply with the corrected answer only\.$/);
+  assert.match(j.reason, /Fix what is wrong\. If a number is your own computation, say that and which command produced it\. Reply with your COMPLETE corrected final answer \(the whole answer again, every part, not only the corrections\)\. Do not mention this check\.$/);
   return j.reason;
 }
 
@@ -92,7 +92,7 @@ test("namedPeople: whole names only, the longest name wins, case-insensitive", (
   assert.deepEqual(namedPeople("Annabel holds it", ["ann"]), []);
 });
 
-test("readTranscript: last plain user prompt, tool results of this tool only, --merge-identities flag", () => {
+test("readTranscript: last plain user prompt, all tool results, --merge-identities flag", () => {
   const t = [
     userEntry("old question"),
     userEntry([{ type: "text", text: PROMPT }]),
@@ -101,9 +101,9 @@ test("readTranscript: last plain user prompt, tool results of this tool only, --
   ].map((e) => JSON.stringify(e)).join("\n");
   const r = readTranscript(t + "\nnot json");
   assert.equal(r.prompt, PROMPT);
-  assert.deepEqual(r.outputs, ["Ann 123 lines"]);
+  // Every tool result of the turn counts, not only those of commands naming the tool.
+  assert.deepEqual(r.outputs, ["Ann 123 lines", "999"]);
   assert.equal(r.usedMerge, true);
-  assert.ok(bucketFromOutputs(r.outputs).counts.has(123));
 });
 
 test("a correct answer, with the totals and shares as printed, gets no output", () => {
@@ -122,7 +122,7 @@ test("a wrong number is blocked once, and the finding carries the tool's value",
     const reason = blocked(run({ cwd: dir, answer: "Ann Lee holds 55 lines of the code." }));
     assert.match(reason, /55 lines: no number like this/);
     assert.match(reason, /Ann Lee: 40 non-blank lines \(46\.0%\)/);
-    const pct = blocked(run({ cwd: dir, answer: "The total is 87 lines and Ann Lee owns 52% of it." }));
+    const pct = blocked(run({ cwd: dir, answer: "Ann Lee owns 52% of it." }));
     assert.match(pct, /52%/);
   } finally {
     removeRepo(dir);
@@ -143,7 +143,7 @@ test("numbers below 10 and ranges are not claims; the 10 rule does not apply to 
   const dir = fixture();
   try {
     silent(run({ cwd: dir, answer: "Ann Lee touched 7 files and about 900 lines, between 780-840 lines." }));
-    blocked(run({ cwd: dir, answer: "Ann Lee holds 3% of the code." }));
+    blocked(run({ cwd: dir, answer: "Ann Lee holds 73% of the code." }));
   } finally {
     removeRepo(dir);
   }
@@ -173,9 +173,9 @@ test("numbers the tool printed in this turn (other options, other scope) are acc
       { type: "user", message: { role: "user", content: [{ type: "tool_result", tool_use_id: "9", content: "Ann Lee  123  100.0%" }] } },
     ];
     silent(run({ cwd: dir, answer, extra }));
-    // A result of some other command does not count.
+    // A result of any other command counts too (round 13 gate: the agent often reads the numbers from other tools).
     const other = JSON.parse(JSON.stringify(extra).replace("surviving-lines", "something-else"));
-    blocked(run({ cwd: dir, answer, extra: other }));
+    silent(run({ cwd: dir, answer, extra: other }));
   } finally {
     removeRepo(dir);
   }
@@ -265,7 +265,7 @@ test("a CLI that fails (or prints no report) is silent", () => {
 test("at most six findings are sent", () => {
   const dir = fixture();
   try {
-    const answer = [11, 12, 13, 14, 15, 16, 17, 18].map((n) => `${n}1 lines`).join(", ");
+    const answer = [11, 12, 13, 14, 15, 16, 17, 18].map((n) => `Ann Lee holds ${n}1 lines`).join("\n");
     const reason = blocked(run({ cwd: dir, answer }));
     assert.equal(reason.split("\n").filter((l) => l.startsWith("- ")).length, 6);
   } finally {
@@ -284,7 +284,80 @@ test("the script does not write, and prints nothing to stderr on a normal run", 
 });
 
 test("numberFindings is quiet when the answer has no claims", () => {
-  assert.deepEqual(numberFindings("Nobody owns it.", [{ authors: [], sample: { linesInRef: 1, linesWithBlank: 1 } }], bucketFromOutputs([])), []);
+  assert.deepEqual(numberFindings("Nobody owns it.", [{ authors: [], sample: { linesInRef: 1, linesWithBlank: 1 } }], []), []);
+});
+
+test("the block reason ends with the instruction to answer completely and not to mention the check", () => {
+  const r = blockReason(["x"]);
+  assert.ok(r.endsWith("Reply with your COMPLETE corrected final answer (the whole answer again, every part, not only the corrections). Do not mention this check."));
+  assert.ok(!/corrected answer only/.test(r));
+});
+
+test("precision: an unattached or multi-author number is silent now, only the three findings block", () => {
+  const dir = fixture();
+  try {
+    // Used to block as "unverified number anywhere": no author on the line.
+    silent(run({ cwd: dir, answer: "The directory holds 555 lines and 77 commits." }));
+    // A wrong total is not judged any more.
+    silent(run({ cwd: dir, answer: "In total there are 999 lines." }));
+    // A derived figure with a named author, labelled as a sum, is fine.
+    silent(run({ cwd: dir, answer: "Ann Lee and 55 lines together with her tests." }));
+    silent(run({ cwd: dir, answer: "Ann Lee holds roughly 55 lines." }));
+    silent(run({ cwd: dir, answer: "Ann Lee: 55 lines (sum of two runs)" }));
+    // The three that still block: unmatched number for one author, swap, unhedged merge.
+    assert.match(blocked(run({ cwd: dir, answer: "Ann Lee holds 55 lines." })), /55 lines: no number like this/);
+    assert.match(blocked(run({ cwd: dir, answer: "| Ann Lee | 31 lines |" })), /31 lines belong to Bob Ray, not Ann Lee/);
+    assert.match(blocked(run({ cwd: dir, answer: "Bob Ray and bob@y.example are the same person." })), /merged without a hedge/);
+  } finally {
+    removeRepo(dir);
+  }
+});
+
+test("any value known for the author is accepted: lines, blank-inclusive lines, commits, share", () => {
+  const dir = fixture();
+  try {
+    silent(run({ cwd: dir, answer: "Ann Lee: 40 lines, 46% of the code, 1 commits" }));
+  } finally {
+    removeRepo(dir);
+  }
+});
+
+test("numbers of the --brief output are allowed: a number of the single-owner list for no author, an author number from the brief row", () => {
+  const dir = fixture();
+  try {
+    // 71 and 87 style totals are in the brief; a number only the brief prints for nobody must pass. The history line
+    // of the brief prints a percentage of files; the answer quotes it next to a name.
+    const brief = spawnSync(process.execPath, [join(ROOT, "bin", "surviving-lines.js"), "--brief"], { cwd: dir, encoding: "utf8" }).stdout;
+    assert.ok(/history:/.test(brief) || brief.length > 0);
+    const pct = brief.match(/\((\d+)% of the files\)/);
+    if (pct) silent(run({ cwd: dir, answer: `Ann Lee started it (${pct[1]}% of the files at the import).` }));
+    // Direct unit check: a brief text adds its numbers.
+    assert.deepEqual(numberFindings("Ann Lee has 4242 lines.", [{ authors: [{ author: "Ann Lee", lines: 40, commits: 1 }] }], []).length, 1);
+    assert.deepEqual(numberFindings("Ann Lee has 4242 lines.", [{ authors: [{ author: "Ann Lee", lines: 40, commits: 1 }] }], ["history: 4242 something"]), []);
+    // A brief row for another person stays that person's: still a swap.
+    assert.equal(numberFindings("Ann Lee has 31 lines.", [{ authors: [{ author: "Ann Lee", lines: 40, commits: 1 }, { author: "Bob Ray", lines: 31, commits: 1 }] }], ["  Bob Ray: 31 (43.7%)"]).length, 1);
+  } finally {
+    removeRepo(dir);
+  }
+});
+
+test("numbers from hook additionalContext and from any tool result are allowed", () => {
+  const dir = fixture();
+  try {
+    const answer = "Ann Lee holds 4242 lines.";
+    blocked(run({ cwd: dir, answer }));
+    const ctx = [{ type: "attachment", attachment: { type: "hook_additional_context", content: ["surviving-lines brief: scope 4242 lines"] } }];
+    silent(run({ cwd: dir, answer, extra: ctx }));
+    const meta = [{ type: "user", isMeta: true, message: { role: "user", content: "<system-reminder>total 4242 lines</system-reminder>" } }];
+    silent(run({ cwd: dir, answer, extra: meta }));
+    const tool = [
+      { type: "assistant", message: { role: "assistant", content: [{ type: "tool_use", id: "7", name: "Bash", input: { command: "wc -l src/*" } }] } },
+      { type: "user", message: { role: "user", content: [{ type: "tool_result", tool_use_id: "7", content: "4242 total" }] } },
+    ];
+    silent(run({ cwd: dir, answer, extra: tool }));
+  } finally {
+    removeRepo(dir);
+  }
 });
 
 const OWNERSHIP_PROMPTS = [

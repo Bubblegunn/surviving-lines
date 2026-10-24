@@ -196,20 +196,27 @@ const hasPct = (v, buckets) => buckets.some((b) => b.pcts.some((p) => Math.abs(p
 const backed = (c, buckets) => (c.unit === "%" ? hasPct(c.value, buckets) : hasCount(c.value, buckets));
 
 /**
- * Numbers printed by the tool in earlier Bash results of this turn.
- * @param {string[]} texts
- * @returns {Bucket}
+ * Add the numbers of free text (the plain-text brief, tool results, hook context) to the reference. Text is read in
+ * segments (a line, cut at ";" and at "), "); a segment that names exactly one known person adds its numbers to that
+ * person, every other segment adds them to the global set. Every number counts as a count and as a percentage.
+ * @param {{ global: Bucket, own: Map<string, Bucket> }} ref @param {string[]} texts
  */
-export function bucketFromOutputs(texts) {
-  const b = newBucket();
+export function addTexts(ref, texts) {
+  const keys = [...ref.own.keys()];
   for (const t of texts) {
-    for (const m of t.matchAll(/(?<![\w.])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?/g)) {
-      const v = Number(m[1].replace(/,/g, "") + (m[2] ?? ""));
-      b.pcts.push(v);
-      if (!m[2]) b.counts.add(v);
+    for (const line of String(t).split("\n")) {
+      for (const seg of line.split(/;|\),\s/)) {
+        const people = namedPeople(seg, keys);
+        const b = people.length === 1 ? /** @type {Bucket} */ (ref.own.get(people[0])) : ref.global;
+        for (const m of seg.matchAll(/(?<![\w.])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?/g)) {
+          const v = Number(m[1].replace(/,/g, "") + (m[2] ?? ""));
+          b.pcts.push(v);
+          if (m[2]) b.pcts.push(Math.round(v));
+          else b.counts.add(v);
+        }
+      }
     }
   }
-  return b;
 }
 
 /**
@@ -245,41 +252,44 @@ function figuresOf(reports, key) {
   return "";
 }
 
+/** Lines that state a derived figure (a sum, an estimate) are not judged. */
+const DERIVED = /\b(total|totals|together|combined|sum|about|roughly|approximately|approx|altogether)\b|~|≈/i;
+
 /**
- * Number findings.
+ * Number findings. Only a line that names exactly one known person is judged, and only for two things: a number
+ * that no figure of the tool matches for that person ("unmatched"), or a number that belongs only to another person
+ * ("swap"). A number is accepted when it is in the global set (the report, the brief, tool results and hook context
+ * without a single owner) or in any figure of that person. Lines with a derived-figure word are skipped.
  * @param {string} answer
  * @param {any[]} reports parsed CLI JSON reports
- * @param {Bucket} fromTranscript numbers the tool printed earlier in this turn
+ * @param {string[]} texts the plain-text brief, tool results and hook context of this turn
  * @returns {string[]}
  */
-export function numberFindings(answer, reports, fromTranscript) {
-  const { global, own, names } = buildReference(reports);
+export function numberFindings(answer, reports, texts = []) {
+  const ref = buildReference(reports);
+  addTexts(ref, texts);
+  const { global, own, names } = ref;
   const keys = [...own.keys()];
   const out = [];
   const seen = new Set();
-  const sample = reports[0]?.sample;
-  const totals = sample ? `the tool prints ${fmt(sample.linesInRef)} non-blank lines and ${fmt(sample.linesWithBlank)} counting blank lines in total` : "";
   for (const c of extractClaims(answer)) {
+    if (DERIVED.test(c.line)) continue;
     const people = namedPeople(c.line, keys);
-    const mine = people.length === 1 ? [/** @type {Bucket} */ (own.get(people[0]))] : [];
-    const base = [global, fromTranscript];
-    if (people.length !== 1) base.push(...own.values());
-    if (backed(c, [...base, ...mine])) continue;
+    if (people.length !== 1) continue;
+    if (backed(c, [global, /** @type {Bucket} */ (own.get(people[0]))])) continue;
     const id = `${c.value}${c.unit}${people.join()}`;
     if (seen.has(id)) continue;
     seen.add(id);
-    const owners = people.length === 1 ? keys.filter((k) => k !== people[0] && backed(c, [/** @type {Bucket} */ (own.get(k))])) : [];
+    const owners = keys.filter((k) => k !== people[0] && backed(c, [/** @type {Bucket} */ (own.get(k))]));
+    const who = names.get(people[0]) ?? people[0];
     if (owners.length > 0) {
       const o = names.get(owners[0]) ?? owners[0];
-      const who = names.get(people[0]) ?? people[0];
       const both = [figuresOf(reports, owners[0]), figuresOf(reports, people[0])].filter(Boolean).join("; ");
       out.push(`${c.raw} belong to ${o}, not ${who}${both ? ` (tool: ${both})` : ""}.`);
       continue;
     }
-    let known = "";
-    if (people.length === 1) known = figuresOf(reports, people[0]);
-    if (!known && c.unit === "lines") known = totals;
-    out.push(`${c.raw}: no number like this in the tool output for this repository${known ? ` (${known})` : ""}. If it is your own computation, say so and name the command.`);
+    const known = figuresOf(reports, people[0]);
+    out.push(`${c.raw}: no number like this in the tool output for ${who}${known ? ` (${known})` : ""}. If it is your own computation, say so and name the command.`);
   }
   return out;
 }
@@ -328,7 +338,7 @@ export function mergeFindings(answer, reports, usedMerge) {
 /**
  * The parts of a transcript the check needs.
  * @param {string} jsonl
- * @returns {{ prompt: string, outputs: string[], usedMerge: boolean }}
+ * @returns {{ prompt: string, outputs: string[], context: string[], usedMerge: boolean }}
  */
 export function readTranscript(jsonl) {
   /** @type {any[]} */
@@ -358,29 +368,40 @@ export function readTranscript(jsonl) {
     if (plain(e)) last = i;
   });
   const prompt = last >= 0 ? plain(entries[last]) : "";
-  /** @type {Map<string, string>} */
-  const commands = new Map();
   const outputs = [];
   let usedMerge = false;
   for (const e of entries.slice(last + 1)) {
     const c = e?.message?.content;
     if (!Array.isArray(c)) continue;
     for (const b of c) {
-      if (b?.type === "tool_use" && typeof b.input?.command === "string" && /surviving-lines/.test(b.input.command)) {
-        commands.set(b.id, b.input.command);
-        if (/--merge-identities/.test(b.input.command)) usedMerge = true;
-      } else if (b?.type === "tool_result" && commands.has(b.tool_use_id)) {
-        const t = typeof b.content === "string" ? b.content : Array.isArray(b.content) ? b.content.map((x) => (typeof x?.text === "string" ? x.text : "")).join("\n") : "";
-        outputs.push(t);
+      if (b?.type === "tool_use" && typeof b.input?.command === "string" && /surviving-lines/.test(b.input.command) && /--merge-identities/.test(b.input.command)) {
+        usedMerge = true;
+      } else if (b?.type === "tool_result") {
+        outputs.push(typeof b.content === "string" ? b.content : Array.isArray(b.content) ? b.content.map((x) => (typeof x?.text === "string" ? x.text : "")).join("\n") : "");
       }
     }
   }
-  return { prompt, outputs, usedMerge };
+  // Text a hook injected (additionalContext): attachment entries, meta user entries and system reminders, anywhere.
+  const context = [];
+  for (const e of entries) {
+    const c = e?.message?.content;
+    const reminder = Array.isArray(c) ? c.some((b) => b?.type === "text" && /^\s*<system-reminder>/.test(String(b.text))) : typeof c === "string" && /^\s*<system-reminder>/.test(c);
+    if (e?.type === "attachment" || e?.isMeta === true || reminder) context.push(...allStrings(e));
+  }
+  return { prompt, outputs, context, usedMerge };
+}
+
+/** Every string below a value. @param {unknown} v @returns {string[]} */
+function allStrings(v) {
+  if (typeof v === "string") return [v];
+  if (Array.isArray(v)) return v.flatMap(allStrings);
+  if (v && typeof v === "object") return Object.values(v).flatMap(allStrings);
+  return [];
 }
 
 /** @param {string[]} findings @returns {string} */
 export function blockReason(findings) {
-  return `Check your answer against surviving-lines before you finish:\n${findings.slice(0, MAX_FINDINGS).map((f) => `- ${f}`).join("\n")}\nFix what is wrong. If a number is your own computation, say that and which command produced it. Do not repeat the whole analysis. Reply with the corrected answer only.`;
+  return `Check your answer against surviving-lines before you finish:\n${findings.slice(0, MAX_FINDINGS).map((f) => `- ${f}`).join("\n")}\nFix what is wrong. If a number is your own computation, say that and which command produced it. Reply with your COMPLETE corrected final answer (the whole answer again, every part, not only the corrections). Do not mention this check.`;
 }
 
 /** @param {string} cwd @param {string[]} args @param {number} timeout */
@@ -425,7 +446,14 @@ export function check(stdin, env, root) {
       if (merged) reports.push(merged);
     }
   }
-  const findings = [...numberFindings(answer, reports, bucketFromOutputs(transcript.outputs)), ...mergeFindings(answer, reports, transcript.usedMerge)];
+  /** @type {string[]} */
+  const texts = [...transcript.outputs, ...transcript.context];
+  const left0 = TOTAL_BUDGET_MS - (Date.now() - started);
+  if (left0 > 3000) {
+    const br = run(process.execPath, [join(root, "bin", "surviving-lines.js"), "--brief"], cwd, Math.min(CLI_BUDGET_MS, left0));
+    if (br.status === 0 && !br.error && br.stdout) texts.push(br.stdout);
+  }
+  const findings = [...numberFindings(answer, reports, texts), ...mergeFindings(answer, reports, transcript.usedMerge)];
   if (findings.length === 0) return "";
   return JSON.stringify({ decision: "block", reason: blockReason(findings) }) + "\n";
 }
