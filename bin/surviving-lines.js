@@ -123,6 +123,10 @@ Measure who wrote the code that is still alive in a git ref.
   --without <author>[,<author>...]  what if these people left: lines they hold, files they own, files nobody remaining would
                        know, bus factor before and after, who inherits most. An author is a name or an address (after .mailmap
                        and --merge-identities). Repeatable; prints its own view, with --json only
+  --for-diff <base>..<head>  who should review a change: the people who wrote the lines it replaces or deletes (blamed at the base
+                       commit, with this run's blame rules), without the change authors, with per-file flags (inactive owners, orphaned,
+                       one owner holds 80%+, new, deleted, renamed). Also <base>...<head> (from the merge base) and <base> alone
+                       (= <base>..HEAD). Files left out as with the table. Prints its own view, with --json only; not with --sample or --ref
   --brief              one compact plain-text view of the whole repository (at most 40 lines, about 3,000 characters): owners with both
                        line counts, bus factor, activity, orphans, what was left out, identity proposals, top directories, single-owner
                        files. Built from the same analysis as the other views; with --json, a small object. Not with the other views
@@ -159,7 +163,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -168,6 +172,7 @@ groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDay
 export function parseArgs(argv) {
   /** @type {Options} */
   const o = { ref: "HEAD", sample: 1, brief: false, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  let refGiven = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -176,7 +181,7 @@ export function parseArgs(argv) {
       return v;
     };
     if (a === "--") { o.paths = argv.slice(i + 1); break; }
-    else if (a === "--ref") o.ref = next();
+    else if (a === "--ref") { o.ref = next(); refGiven = true; }
     else if (a === "--sample") { o.sample = Number(next()); if (!Number.isInteger(o.sample) || o.sample < 1) throw new Error("--sample must be an integer >= 1"); }
     else if (a === "--seed") o.seed = next();
     else if (a === "--include") o.include.push(next());
@@ -195,6 +200,7 @@ export function parseArgs(argv) {
     else if (a === "--brief") o.brief = true;
     else if (a === "--time-budget") { o.timeBudget = Number(next()); if (!Number.isFinite(o.timeBudget) || o.timeBudget <= 0) throw new Error("--time-budget must be a number of seconds above 0"); }
     else if (a === "--without") o.without.push(next());
+    else if (a === "--for-diff") { o.forDiff = next(); if (!o.forDiff.trim()) throw new Error("--for-diff needs a revision range such as main..feature"); }
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
     else if (a === "--suggest-codeowners") o.suggestCodeowners = true;
@@ -243,9 +249,14 @@ export function parseArgs(argv) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
     if (clash) throw new Error(`--without prints its own view; it can be combined with --json only, not with ${clash}`);
   }
+  if (o.forDiff !== undefined) {
+    const set = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", "--sample": o.sample !== 1, "--ref": refGiven });
+    const clash = Object.keys(set).find((k) => set[k]);
+    if (clash) throw new Error(`--for-diff prints its own view; it can be combined with --json only, not with ${clash}`);
+  }
   if (o.timeBudget !== undefined && !o.brief) throw new Error("--time-budget works with --brief only");
   if (o.brief) {
-    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
+    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.forDiff !== undefined ? "--for-diff" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
     if (clash) throw new Error(`--brief prints its own view; it can be combined with --json only, not with ${clash}`);
   }
   if (o.orphans) {
@@ -2346,6 +2357,18 @@ function foldedOwners(counts, includeBots, canonicalOf, nameOf) {
 }
 
 /**
+ * G11b: the orphan rule for one file: its top owner is not active and no active author holds at least 20% of its lines.
+ * --orphans and --for-diff both apply it, so the two cannot disagree.
+ * @param {{ lines: number, owners: { key: string, lines: number }[] }} f the folded owners of the file, most lines first
+ * @param {Map<string, { active: boolean }>} people
+ */
+function isOrphanFile(f, people) {
+  if (f.lines <= 0 || !f.owners.length) return false;
+  if (people.get(f.owners[0].key)?.active) return false;
+  return !f.owners.some((ow) => people.get(ow.key)?.active && ow.lines / f.lines >= ORPHAN_ACTIVE_MIN_SHARE);
+}
+
+/**
  * G11b: files whose top owner is not active and where no active author holds at least 20% of the lines. Lines are
  * the non-blank lines of the run. The idea of an orphan share comes from the same question in other tools; the rule
  * here is this tool's own.
@@ -2364,8 +2387,7 @@ export function orphansOf(perFile, includeBots, canonicalOf, nameOf, people) {
     if (f.lines <= 0 || !f.owners.length) continue;
     scopeLines += f.lines;
     const top = f.owners[0];
-    if (people.get(top.key)?.active) continue;
-    if (f.owners.some((ow) => people.get(ow.key)?.active && ow.lines / f.lines >= ORPHAN_ACTIVE_MIN_SHARE)) continue;
+    if (!isOrphanFile(f, people)) continue;
     found.push({ path, owner: top.name, lines: f.lines, ownerShare: top.lines / f.lines, ownerLastCommit: people.get(top.key)?.lastCommit ?? null });
   }
   found.sort((x, y) => y.lines - x.lines || x.path.localeCompare(y.path));
@@ -2568,6 +2590,404 @@ export function renderWithout(r) {
   out.push("");
   out.push("What this cannot show: who understands the code, review work, or design done in documents.");
   out.push("It removes the leavers' lines from the count; it does not say the remaining authors can maintain what is left.");
+  return out.join("\n");
+}
+
+/** R13 #1: --for-diff blames at most this many changed files, the ones with the most replaced lines. */
+const FOR_DIFF_MAX_FILES = 300;
+/** R13 #1: a single owner holding at least this share of a changed file is flagged. */
+const FOR_DIFF_SINGLE_OWNER_MIN_SHARE = 0.8;
+/** R13 #1: pre-image ranges handed to one blame process. */
+const FOR_DIFF_RANGES_PER_BLAME = 100;
+/** R13 #1: reviewer rows printed when --top is not given, and file lines printed under the table. */
+const FOR_DIFF_REVIEWERS_SHOWN = 5;
+const FOR_DIFF_FLAGGED_SHOWN = 10;
+/** R13 #1: the flags of a changed file, most serious first. */
+const FOR_DIFF_FLAG_ORDER = ["inactiveOwners", "orphaned", "singleOwner", "authorOnly", "newFile", "deleted", "renamed", "notBlamed"];
+
+/**
+ * R13 #1: read the value of --for-diff. `A..B` compares A with B, `A...B` compares the merge base of A and B with B,
+ * and `A` alone is `A..HEAD`. An empty side is HEAD.
+ * @param {string} spec
+ * @returns {{ kind: "range" | "mergeBase" | "single", left: string, right: string }}
+ */
+export function parseDiffRange(spec) {
+  const three = spec.indexOf("...");
+  if (three >= 0) return { kind: "mergeBase", left: spec.slice(0, three) || "HEAD", right: spec.slice(three + 3) || "HEAD" };
+  const two = spec.indexOf("..");
+  if (two >= 0) return { kind: "range", left: spec.slice(0, two) || "HEAD", right: spec.slice(two + 2) || "HEAD" };
+  return { kind: "single", left: spec, right: "HEAD" };
+}
+
+/** @param {string} path a path as a git pathspec that is matched literally, so glob characters in a file name are not special */
+const literalPath = (path) => `:(literal)${path}`;
+
+/**
+ * R13 #1: the changed files between two commits, with their status and line counts, from `git diff --name-status` and
+ * `--numstat` (both with -z and rename detection). A rename has both paths; a binary file has no line counts.
+ * @param {string} nameStatus
+ * @param {string} numstat
+ * @returns {{ status: "A" | "D" | "M" | "R", oldPath: string | null, newPath: string | null, added: number, deleted: number, binary: boolean }[]}
+ */
+export function parseChangedFiles(nameStatus, numstat) {
+  /** @type {Map<string, { added: number, deleted: number, binary: boolean }>} */
+  const counts = new Map();
+  const nrec = numstat.split("\0");
+  for (let i = 0; i < nrec.length; i++) {
+    if (!nrec[i]) continue;
+    const [a, d, p] = nrec[i].split("\t");
+    const binary = a === "-";
+    // A rename is "added\tdeleted\t\0old\0new\0": the path field is empty and the two paths follow.
+    const target = p === "" ? nrec[i + 2] : p;
+    if (p === "") i += 2;
+    counts.set(target, { added: binary ? 0 : Number(a), deleted: binary ? 0 : Number(d), binary });
+  }
+  /** @type {ReturnType<typeof parseChangedFiles>} */
+  const out = [];
+  const srec = nameStatus.split("\0");
+  for (let i = 0; i < srec.length; i++) {
+    const code = srec[i];
+    if (!code) continue;
+    const letter = code[0];
+    if (letter === "R" || letter === "C") {
+      const oldPath = srec[++i];
+      const newPath = srec[++i];
+      out.push({ status: "R", oldPath, newPath, ...(counts.get(newPath) ?? { added: 0, deleted: 0, binary: false }) });
+    } else {
+      const path = srec[++i];
+      const c = counts.get(path) ?? { added: 0, deleted: 0, binary: false };
+      if (letter === "A") out.push({ status: "A", oldPath: null, newPath: path, ...c });
+      else if (letter === "D") out.push({ status: "D", oldPath: path, newPath: null, ...c });
+      else out.push({ status: "M", oldPath: path, newPath: path, ...c });
+    }
+  }
+  return out;
+}
+
+/**
+ * R13 #1: the pre-image ranges a unified diff with no context replaces or deletes. The hunk header `@@ -a,b +c,d @@`
+ * touches the pre-image lines a to a+b-1; b = 0 is a pure insertion and touches none; a missing count means 1.
+ * @param {string} diff
+ * @returns {[number, number][]}
+ */
+export function touchedRanges(diff) {
+  /** @type {[number, number][]} */
+  const ranges = [];
+  for (const m of diff.matchAll(/^@@ -(\d+)(?:,(\d+))? \+\d+(?:,\d+)? @@/gm)) {
+    const start = Number(m[1]);
+    const count = m[2] === undefined ? 1 : Number(m[2]);
+    if (count >= 1) ranges.push([start, start + count - 1]);
+  }
+  return ranges;
+}
+
+/**
+ * R13 #1: everything --for-diff needs before the ownership run: the two commits, the changed files, which of them are
+ * left out (lockfiles, generated files, vendored code, binary files, and what --include and --exclude remove stays
+ * out of every count), and the paths the ownership run at the base commit is narrowed to. The left-out rule is the
+ * run's own (dropGenerated), applied to the base commit for files that existed there and to the head commit for new files.
+ * @param {Options} o
+ */
+async function planDiff(o) {
+  const spec = o.forDiff ?? "";
+  const range = parseDiffRange(spec);
+  const resolve = async (/** @type {string} */ rev) => {
+    try {
+      return (await git(["rev-parse", "--verify", "--quiet", `${rev}^{commit}`], o.cwd)).trim();
+    } catch {
+      throw new Error(`--for-diff: "${rev}" does not resolve to a commit in ${o.cwd}`);
+    }
+  };
+  const head = await resolve(range.right);
+  const left = await resolve(range.left);
+  let base = left;
+  if (range.kind === "mergeBase") {
+    try {
+      base = (await git(["merge-base", left, head], o.cwd)).trim();
+    } catch {
+      throw new Error(`--for-diff: ${range.left} and ${range.right} have no merge base`);
+    }
+  }
+  const label = range.kind === "single" ? `${spec}..HEAD` : spec;
+  // The change authors are everyone who committed in the range, after .mailmap. Merge commits are not authors of lines.
+  /** @type {{ name: string, mail: string }[]} */
+  const authors = [];
+  for (const line of (await git(["log", "--no-merges", "--format=%aN%x00%aE", `${base}..${head}`], o.cwd)).split("\n")) {
+    if (!line) continue;
+    const [name, mail] = line.split("\0");
+    if (mail && !authors.some((a) => a.mail === mail.toLowerCase())) authors.push({ name, mail: mail.toLowerCase() });
+  }
+  const specs = o.paths.length ? ["--", ...o.paths] : [];
+  const changed = parseChangedFiles(
+    await git(["diff", "--name-status", "-z", "-M", base, head, ...specs], o.cwd),
+    await git(["diff", "--numstat", "-z", "-M", base, head, ...specs], o.cwd),
+  );
+  const includeRe = o.include.map(globToRegExp);
+  const excludeRe = o.exclude.map(globToRegExp);
+  const includeBare = o.include.map((g) => !g.includes("/"));
+  const excludeBare = o.exclude.map((g) => !g.includes("/"));
+  const nonRegularBase = await listNonRegularPaths({ ...o, ref: base });
+  const nonRegularHead = await listNonRegularPaths({ ...o, ref: head });
+  const entries = changed
+    .filter((e) => selected(/** @type {string} */ (e.oldPath ?? e.newPath), includeRe, excludeRe, includeBare, excludeBare))
+    .map((e) => ({
+      ...e,
+      /** @type {null | "binary" | "dropped"} */
+      leftOut: e.binary ? /** @type {const} */ ("binary") : null,
+      notBlamed: Boolean((e.oldPath && nonRegularBase.has(e.oldPath)) || (e.newPath && nonRegularHead.has(e.newPath))),
+      skipped: false,
+    }));
+  const classes = Object.fromEntries(DROP_CLASSES.map((k) => [k, 0]));
+  for (const e of entries) if (e.binary) classes.binary++;
+  /** Run the run's own left-out rule over some of the entries at one commit; returns the paths it keeps. */
+  const keptAt = async (/** @type {string} */ ref, /** @type {string[]} */ paths) => {
+    const sc = { ...o, ref, paths: paths.map(literalPath) };
+    const listed = await listTextFiles(sc);
+    const every = o.keepGenerated ? listed : await listTextFiles({ ...o, ref, paths: [] });
+    const { kept, dropped } = await dropGenerated(sc, listed, every);
+    const keptSet = new Set(kept.map((f) => f.path));
+    for (const k of DROP_CLASSES) classes[k] += dropped.classes[k]?.files ?? 0;
+    const seen = new Set(listed.map((f) => f.path));
+    // A path git does not list as text at that commit is a file git probes as binary.
+    classes.binary += paths.filter((p) => !seen.has(p)).length;
+    return keptSet;
+  };
+  const oldEntries = entries.filter((e) => e.oldPath && !e.leftOut && !e.notBlamed);
+  if (oldEntries.length) {
+    const kept = await keptAt(base, oldEntries.map((e) => /** @type {string} */ (e.oldPath)));
+    for (const e of oldEntries) if (!kept.has(/** @type {string} */ (e.oldPath))) e.leftOut = "dropped";
+  }
+  const newEntries = entries.filter((e) => !e.oldPath && !e.leftOut && !e.notBlamed);
+  if (newEntries.length) {
+    const kept = await keptAt(head, newEntries.map((e) => /** @type {string} */ (e.newPath)));
+    for (const e of newEntries) if (!kept.has(/** @type {string} */ (e.newPath))) e.leftOut = "dropped";
+  }
+  // At most FOR_DIFF_MAX_FILES files are blamed: the ones that replace the most lines.
+  const blamable = entries.filter((e) => e.oldPath && !e.leftOut && !e.notBlamed).sort((x, y) => y.deleted - x.deleted || /** @type {string} */ (x.oldPath).localeCompare(/** @type {string} */ (y.oldPath)));
+  for (const e of blamable.slice(FOR_DIFF_MAX_FILES)) e.skipped = true;
+  const scope = blamable.slice(0, FOR_DIFF_MAX_FILES).map((e) => /** @type {string} */ (e.oldPath));
+  return {
+    range: label,
+    kind: range.kind,
+    left,
+    base,
+    head,
+    authors,
+    entries,
+    classes,
+    blamedLimit: blamable.length > FOR_DIFF_MAX_FILES ? { blamed: FOR_DIFF_MAX_FILES, of: blamable.length } : null,
+    scope,
+  };
+}
+
+/**
+ * R13 #1: a path of the base commit that the narrowed run can use when no changed file has a pre-image, so the run
+ * still has one cheap, countable file to read. The first file of the commit that the left-out rule keeps; null when
+ * none of the first 200 is kept (the run then reads the whole commit, as it did before).
+ * @param {Options} o
+ * @param {string} base
+ */
+async function anyKeptPath(o, base) {
+  const sc = { ...o, ref: base, paths: [] };
+  const every = await listTextFiles(sc);
+  const { kept } = await dropGenerated(sc, every.slice(0, 200), every);
+  return kept[0]?.path ?? null;
+}
+
+/**
+ * R13 #1: who owns the lines a change replaces. For each changed file with a pre-image, the lines in the removed or
+ * replaced pre-image ranges are blamed at the base commit with the run's own blame arguments (copy detection,
+ * ignore-revs, set-aside commits, re-applied credit) and counted with the run's own conventions (non-blank lines, bots
+ * out, .mailmap and the identity merge). Nothing here is a second counting rule.
+ * @param {Options} o options with ref = the base commit
+ * @param {Awaited<ReturnType<typeof planDiff>>} plan
+ * @param {{ perFile: Map<string, Map<string, { name: string, lines: number, fullName?: string }>> }} main
+ * @param {{ author: string, mail: string, lines: number }[]} rows
+ * @param {Map<string, { author: string, mail: string }>} ownerMerge
+ * @param {Map<string, string>} nameOf
+ * @param {string[]} mainArgs
+ * @param {Set<string>} leaveOut
+ * @param {ReturnType<typeof createReapplyCredit> | null} credit
+ * @param {Map<string, string[]> | null} membersOf
+ */
+async function forDiffOf(o, plan, main, rows, ownerMerge, nameOf, mainArgs, leaveOut, credit, membersOf) {
+  const postOpts = { ...o, ref: plan.head };
+  const asOf = await refDay(postOpts);
+  // Activity is counted back from the head commit: the people who committed inside the range are active.
+  const lastCommits = await readLastCommits(postOpts, rows, membersOf);
+  const people = peopleActivity(rows, lastCommits, asOf, o.activeDays);
+  const authorKeys = new Set(plan.authors.map((a) => foldIdentity(ownerMerge.get(a.mail)?.author ?? a.name)));
+  const counted = plan.entries.filter((e) => !e.leftOut);
+  const blamed = counted.filter((e) => e.oldPath && !e.skipped && !e.notBlamed && main.perFile.has(e.oldPath));
+  /** @type {Map<string, { touched: Map<string, { name: string, lines: number, fullName?: string }>, ranges: number }>} */
+  const touchedOf = new Map();
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < blamed.length) {
+      const e = blamed[cursor++];
+      const oldPath = /** @type {string} */ (e.oldPath);
+      /** @type {Map<string, { name: string, lines: number, fullName?: string }>} */
+      const touched = new Map();
+      let ranges = 0;
+      if (e.deleted > 0) {
+        const paths = e.status === "R" ? [oldPath, /** @type {string} */ (e.newPath)] : [oldPath];
+        const diff = await git(["diff", "-U0", "-M", "--no-color", "--no-ext-diff", plan.base, plan.head, "--", ...paths.map(literalPath)], o.cwd);
+        const list = touchedRanges(diff);
+        ranges = list.length;
+        for (let i = 0; i < list.length; i += FOR_DIFF_RANGES_PER_BLAME) {
+          const chunk = list.slice(i, i + FOR_DIFF_RANGES_PER_BLAME);
+          let raw = dropBlameLinesOf(await git([...mainArgs, ...chunk.flatMap(([a, b]) => ["-L", `${a},${b}`]), plan.base, "--", oldPath], o.cwd), leaveOut);
+          if (credit) raw = await credit.rewrite(raw);
+          for (const [mail, c] of countBlameLines(dropBlankBlameLines(raw))) {
+            const t = touched.get(mail) ?? { name: c.name, lines: 0, ...(c.fullName !== undefined ? { fullName: c.fullName } : {}) };
+            t.lines += c.lines;
+            touched.set(mail, t);
+          }
+        }
+      }
+      touchedOf.set(oldPath, { touched, ranges });
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(o.jobs, blamed.length || 1) }, worker));
+
+  /** @type {Map<string, { name: string, touched: number, files: number, mostIn: number, whole: number }>} */
+  const reviewers = new Map();
+  /** @type {{ path: string, oldPath: string | null, status: string, touchedLines: number, wholeFileLines: number, flags: { code: string, text: string }[] }[]} */
+  const fileRows = [];
+  let touchedTotal = 0;
+  const wholeOf = new Map();
+  for (const e of blamed) {
+    const oldPath = /** @type {string} */ (e.oldPath);
+    const whole = foldedOwners(/** @type {NonNullable<ReturnType<typeof main.perFile.get>>} */ (main.perFile.get(oldPath)), o.includeBots, ownerMerge, nameOf);
+    wholeOf.set(oldPath, whole);
+    const t = foldedOwners(touchedOf.get(oldPath)?.touched ?? new Map(), o.includeBots, ownerMerge, nameOf);
+    touchedTotal += t.lines;
+    const others = t.owners.filter((ow) => !authorKeys.has(ow.key));
+    for (const ow of others) {
+      const r = reviewers.get(ow.key) ?? { name: ow.name, touched: 0, files: 0, mostIn: 0, whole: 0 };
+      r.touched += ow.lines;
+      r.files++;
+      if (ow === others[0]) r.mostIn++;
+      reviewers.set(ow.key, r);
+    }
+  }
+  // The whole-file lines a reviewer holds across the changed files that were blamed.
+  for (const [key, r] of reviewers) {
+    for (const whole of wholeOf.values()) r.whole += whole.owners.find((ow) => ow.key === key)?.lines ?? 0;
+  }
+  for (const e of counted) {
+    /** @type {{ code: string, text: string }[]} */
+    const flags = [];
+    const oldPath = e.oldPath;
+    const whole = oldPath ? wholeOf.get(oldPath) : undefined;
+    const t = oldPath ? foldedOwners(touchedOf.get(oldPath)?.touched ?? new Map(), o.includeBots, ownerMerge, nameOf) : null;
+    if (whole && t && t.lines > 0 && t.owners.every((ow) => !people.get(ow.key)?.active)) {
+      flags.push({ code: "inactiveOwners", text: `all ${t.lines.toLocaleString("en-US")} touched line${t.lines === 1 ? "" : "s"} belong to ${listNames(t.owners.map((ow) => ow.name))} (inactive)` });
+    }
+    if (whole && isOrphanFile(whole, people)) flags.push({ code: "orphaned", text: `no active author holds ${Math.round(ORPHAN_ACTIVE_MIN_SHARE * 100)}% of the file` });
+    if (whole && whole.lines > 0 && whole.owners[0].lines / whole.lines >= FOR_DIFF_SINGLE_OWNER_MIN_SHARE) {
+      flags.push({ code: "singleOwner", text: `single owner ${whole.owners[0].name} holds ${pct(whole.owners[0].lines / whole.lines)} of the file` });
+    }
+    if (t && t.lines > 0 && t.owners.every((ow) => authorKeys.has(ow.key))) flags.push({ code: "authorOnly", text: "touched lines owned by the change author only" });
+    if (e.status === "A") flags.push({ code: "newFile", text: "new file" });
+    if (e.status === "D") flags.push({ code: "deleted", text: "deleted" });
+    if (e.status === "R") flags.push({ code: "renamed", text: `renamed from ${e.oldPath}` });
+    if (e.notBlamed) flags.push({ code: "notBlamed", text: "not blamed (submodule or symbolic link)" });
+    if (e.skipped) flags.push({ code: "notBlamed", text: `not blamed (beyond the ${FOR_DIFF_MAX_FILES} files with the most replaced lines)` });
+    flags.sort((x, y) => FOR_DIFF_FLAG_ORDER.indexOf(x.code) - FOR_DIFF_FLAG_ORDER.indexOf(y.code));
+    if (!flags.length) continue;
+    fileRows.push({ path: /** @type {string} */ (e.newPath ?? e.oldPath), oldPath: e.status === "R" ? e.oldPath : null, status: e.status, touchedLines: t?.lines ?? 0, wholeFileLines: whole?.lines ?? 0, flags });
+  }
+  const rank = (/** @type {typeof fileRows[number]} */ f) => {
+    const i = FOR_DIFF_FLAG_ORDER.indexOf(f.flags[0].code);
+    return i < 0 ? 99 : i;
+  };
+  fileRows.sort((x, y) => rank(x) - rank(y) || y.touchedLines - x.touchedLines || x.path.localeCompare(y.path));
+  // The headline is the worst file by its first risk flag, never an average.
+  const worst = fileRows.find((f) => rank(f) <= FOR_DIFF_FLAG_ORDER.indexOf("authorOnly")) ?? null;
+  const mailOfKey = (/** @type {string} */ key) => rows.filter((a) => foldIdentity(a.author) === key).map((a) => a.mail).sort()[0] ?? "";
+  const reviewerRows = [...reviewers].map(([key, r]) => {
+    const p = people.get(key);
+    return { author: r.name, mail: mailOfKey(key), touchedLines: r.touched, touchedShare: touchedTotal ? r.touched / touchedTotal : 0, files: r.files, filesMostTouched: r.mostIn, wholeFileLines: r.whole, lastCommit: p?.lastCommit ?? null, active: p?.active ?? false };
+  }).sort((x, y) => y.touchedLines - x.touchedLines || y.wholeFileLines - x.wholeFileLines || x.mail.localeCompare(y.mail));
+  const sum = (/** @type {(e: typeof counted[number]) => number} */ f) => counted.reduce((s, e) => s + f(e), 0);
+  const leftOutFiles = plan.entries.length - counted.length;
+  return {
+    range: plan.range,
+    base: plan.base,
+    head: plan.head,
+    mergeBase: plan.kind === "mergeBase",
+    asOf,
+    activeDays: o.activeDays,
+    files: counted.length,
+    filesBlamed: blamed.length,
+    replacedLines: sum((e) => e.deleted),
+    addedLines: sum((e) => e.added),
+    newFiles: counted.filter((e) => e.status === "A").length,
+    deletedFiles: counted.filter((e) => e.status === "D").length,
+    renamedFiles: counted.filter((e) => e.status === "R").length,
+    leftOut: { files: leftOutFiles, classes: plan.classes },
+    notBlamed: counted.filter((e) => e.notBlamed).length,
+    blamedLimit: plan.blamedLimit,
+    touchedLines: touchedTotal,
+    changeAuthors: plan.authors.map((a) => a.name),
+    reviewers: reviewerRows,
+    flaggedFiles: fileRows,
+    worstFile: worst && { path: worst.path, flags: worst.flags.map((f) => f.text) },
+  };
+}
+
+/**
+ * The --for-diff view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ * @param {number} top reviewer rows
+ */
+export function renderForDiff(r, top) {
+  const d = r.forDiff;
+  if (!d) throw new Error("renderForDiff needs a result from --for-diff");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const noun = (/** @type {number} */ x, /** @type {string} */ w) => `${n(x)} ${w}${x === 1 ? "" : "s"}`;
+  const out = [];
+  if (r.shallow) out.push(SHALLOW_MARK);
+  const parts = [noun(d.files, "file"), `${noun(d.replacedLines, "line")} replaced or deleted`, `${noun(d.addedLines, "line")} added`];
+  if (d.newFiles) parts.push(`${noun(d.newFiles, "new file")}`);
+  if (d.deletedFiles) parts.push(`${noun(d.deletedFiles, "deleted file")}`);
+  if (d.renamedFiles) parts.push(`${noun(d.renamedFiles, "renamed file")}`);
+  const kinds = DROP_CLASSES.filter((k) => d.leftOut.classes[k]).map((k) => `${n(d.leftOut.classes[k])} ${k}`);
+  const left = d.leftOut.files ? `; ${noun(d.leftOut.files, "file")} left out (${kinds.length ? kinds.join(", ") : "lockfile, generated, vendored or binary"}; --keep-generated counts them)` : "";
+  if (d.files === 0 && d.leftOut.files === 0) {
+    out.push(`change ${d.range}: no changed files`);
+    return out.join("\n");
+  }
+  out.push(`change ${d.range}${d.mergeBase ? " (from the merge base)" : ""}: ${parts.join(", ")}${left}`);
+  out.push(`change authors: ${d.changeAuthors.length ? d.changeAuthors.join(", ") : "none (no non-merge commit in the range)"}`);
+  if (d.blamedLimit) out.push(`only ${n(d.blamedLimit.blamed)} of ${n(d.blamedLimit.of)} files with a pre-image were blamed: the ones that replace the most lines`);
+  if (d.notBlamed) out.push(`${noun(d.notBlamed, "file")} not blamed (submodule or symbolic link)`);
+  const rows = d.reviewers.slice(0, top);
+  if (!d.reviewers.length) {
+    out.push(d.touchedLines ? `suggested reviewers: none, every one of the ${noun(d.touchedLines, "line")} this change replaces belongs to the change authors` : "suggested reviewers: none, this change replaces or deletes no counted line (new files and pure insertions have no earlier owner; --reviewers <path> names who owns the surrounding code)");
+  } else {
+    out.push(`suggested reviewers (by lines this change replaces, ${noun(d.touchedLines, "non-blank line")}):`);
+    const nameCount = new Map();
+    for (const a of d.reviewers) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
+    const labels = rows.map((a) => rowLabel(a, nameCount));
+    const nameW = Math.max(...labels.map((l) => displayWidth(l)));
+    rows.forEach((a, i) => {
+      out.push(`  ${padEndDisplay(labels[i], nameW)}  ${n(a.touchedLines).padStart(6)} (${pct(a.touchedShare)})  ${noun(a.files, "file")}  ${a.active ? "active" : "inactive"} (last commit anywhere ${a.lastCommit ?? "unknown"})`);
+    });
+    if (d.reviewers.length > rows.length) out.push(`  … ${d.reviewers.length - rows.length} more`);
+  }
+  if (d.worstFile) out.push(`worst file: ${d.worstFile.path}: ${d.worstFile.flags.join("; ")}`);
+  const shown = d.flaggedFiles.slice(0, FOR_DIFF_FLAGGED_SHOWN);
+  if (shown.length) {
+    out.push("file flags:");
+    for (const f of shown) out.push(`  ${f.path}: ${f.flags.map((x) => x.text).join("; ")}`);
+    if (d.flaggedFiles.length > shown.length) out.push(`  … ${d.flaggedFiles.length - shown.length} more`);
+  }
+  out.push(`as of ${d.asOf} (head commit date; active means a commit in the ${d.activeDays} days before it)`);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("", "These are the lines the change replaces or deletes, not who understands the change.");
   return out.join("\n");
 }
 
@@ -3374,6 +3794,15 @@ export async function analyse(o) {
         "(in GitHub Actions, set fetch-depth: 0 on actions/checkout), or pass --allow-shallow to run anyway.",
     );
   }
+  // --for-diff reads the ownership of the files the change touches, as they were at the base commit. The run is the usual
+  // one, narrowed to those files at that commit; the change itself is read afterwards (forDiffOf).
+  /** @type {Awaited<ReturnType<typeof planDiff>> | null} */
+  let diffPlan = null;
+  if (o.forDiff !== undefined) {
+    diffPlan = await planDiff(o);
+    const fallback = diffPlan.scope.length ? null : await anyKeptPath(o, diffPlan.base);
+    o = { ...o, ref: diffPlan.base, paths: (fallback ? [fallback] : diffPlan.scope).map(literalPath) };
+  }
   const includeRe = o.include.map(globToRegExp);
   const excludeRe = o.exclude.map(globToRegExp);
   const includeBare = o.include.map((g) => !g.includes("/"));
@@ -3699,6 +4128,7 @@ export async function analyse(o) {
   const activity = activityOf(people, asOfDay, o.activeDays);
   const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
   const withoutResult = o.without.length ? withoutOf(main.perFile, o.includeBots, ownerMerge, nameOf, rows, resolveLeavers(o.without, rows, membersOf), o.busFactorThreshold) : null;
+  const forDiffResult = diffPlan ? await forDiffOf(o, diffPlan, main, rows, ownerMerge, nameOf, mainArgs, leaveOut, credit, membersOf) : null;
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
   const reviewers = o.reviewers === undefined ? null : { ...(await reviewersView(o, o.reviewers, rows, applied, membersOf, pathCommits, lastCommits)), movedIn: movedInFor(main.origins, o.reviewers), fileOwners };
@@ -3742,6 +4172,7 @@ export async function analyse(o) {
     activity,
     orphans: orphanScope && { requested: o.orphans, ...orphanScope },
     without: withoutResult,
+    forDiff: forDiffResult,
     committedByOthers: committedElsewhere,
     reappliedCredit: reapplied,
     reviewers,
@@ -5605,6 +6036,8 @@ async function main() {
       const notes = scopeNotes(r, { identityHints: false });
       if (notes.length) output += `\n\n${notes.join("\n")}`;
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
+    } else if (r.forDiff) {
+      output = renderForDiff(r, o.topGiven ? o.top : FOR_DIFF_REVIEWERS_SHOWN);
     } else if (r.without) {
       output = renderWithout(r);
     } else if (r.files) {

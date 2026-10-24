@@ -663,6 +663,99 @@
         }
       }
     },
+    "forDiff": {
+      "type": ["object", "null"],
+      "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",
+      "additionalProperties": false,
+      "required": ["range", "base", "head", "mergeBase", "asOf", "activeDays", "files", "filesBlamed", "replacedLines", "addedLines", "newFiles", "deletedFiles", "renamedFiles", "leftOut", "notBlamed", "blamedLimit", "touchedLines", "changeAuthors", "reviewers", "flaggedFiles", "worstFile"],
+      "properties": {
+        "range": { "type": "string", "description": "The value given, with a lone revision written as <rev>..HEAD." },
+        "base": { "type": "string", "description": "The commit the lines are blamed at: the left side, or the merge base for A...B." },
+        "head": { "type": "string" },
+        "mergeBase": { "type": "boolean", "description": "True for the A...B form." },
+        "asOf": { "type": "string", "description": "The head commit's author date, YYYY-MM-DD; activity is counted back from it." },
+        "activeDays": { "type": "integer", "minimum": 1 },
+        "files": { "type": "integer", "minimum": 0, "description": "Changed files that count (those left out are not in it)." },
+        "filesBlamed": { "type": "integer", "minimum": 0 },
+        "replacedLines": { "type": "integer", "minimum": 0, "description": "Lines the change removes or replaces, blank lines included, as git diff --numstat counts them." },
+        "addedLines": { "type": "integer", "minimum": 0 },
+        "newFiles": { "type": "integer", "minimum": 0 },
+        "deletedFiles": { "type": "integer", "minimum": 0 },
+        "renamedFiles": { "type": "integer", "minimum": 0 },
+        "leftOut": {
+          "type": "object",
+          "description": "Changed files left out as the table leaves them out (lockfiles, generated files, vendored code, binary files).",
+          "additionalProperties": false,
+          "required": ["files", "classes"],
+          "properties": {
+            "files": { "type": "integer", "minimum": 0 },
+            "classes": { "type": "object", "description": "File counts per class: lockfile, generated, vendored, binary.", "additionalProperties": { "type": "integer", "minimum": 0 } }
+          }
+        },
+        "notBlamed": { "type": "integer", "minimum": 0, "description": "Changed files that are a submodule or a symbolic link." },
+        "blamedLimit": {
+          "type": ["object", "null"],
+          "description": "Set when more than 300 changed files have a pre-image: only the 300 that replace the most lines were blamed.",
+          "additionalProperties": false,
+          "required": ["blamed", "of"],
+          "properties": { "blamed": { "type": "integer" }, "of": { "type": "integer" } }
+        },
+        "touchedLines": { "type": "integer", "minimum": 0, "description": "Non-blank lines of the pre-image that the change replaces or deletes, bots left out, change authors included." },
+        "changeAuthors": { "type": "array", "description": "Everyone who committed in the range (after .mailmap); none of them is suggested.", "items": { "type": "string" } },
+        "reviewers": {
+          "type": "array",
+          "description": "People who own touched lines, the change authors left out, most touched lines first, then most whole-file lines, then address.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "mail", "touchedLines", "touchedShare", "files", "filesMostTouched", "wholeFileLines", "lastCommit", "active"],
+            "properties": {
+              "author": { "type": "string" },
+              "mail": { "type": "string" },
+              "touchedLines": { "type": "integer", "minimum": 1 },
+              "touchedShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "Of all touched lines, the change authors' included." },
+              "files": { "type": "integer", "minimum": 1, "description": "Changed files where this person owns a touched line." },
+              "filesMostTouched": { "type": "integer", "minimum": 0, "description": "Changed files where this person owns the most touched lines of those the reviewers own." },
+              "wholeFileLines": { "type": "integer", "minimum": 0, "description": "Lines this person holds in the blamed changed files, at the base commit." },
+              "lastCommit": { "type": ["string", "null"], "description": "Newest commit anywhere in the repository up to the head commit." },
+              "active": { "type": "boolean" }
+            }
+          }
+        },
+        "flaggedFiles": {
+          "type": "array",
+          "description": "Changed files with at least one flag, most serious first flag, then most touched lines.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "oldPath", "status", "touchedLines", "wholeFileLines", "flags"],
+            "properties": {
+              "path": { "type": "string" },
+              "oldPath": { "type": ["string", "null"], "description": "The old path of a rename." },
+              "status": { "type": "string", "enum": ["A", "D", "M", "R"] },
+              "touchedLines": { "type": "integer", "minimum": 0 },
+              "wholeFileLines": { "type": "integer", "minimum": 0 },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["code", "text"],
+                  "properties": { "code": { "type": "string", "enum": ["inactiveOwners", "orphaned", "singleOwner", "authorOnly", "newFile", "deleted", "renamed", "notBlamed"] }, "text": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "worstFile": {
+          "type": ["object", "null"],
+          "description": "The file with the most serious flag (inactiveOwners, orphaned, singleOwner, authorOnly in that order), never an average.",
+          "additionalProperties": false,
+          "required": ["path", "flags"],
+          "properties": { "path": { "type": "string" }, "flags": { "type": "array", "items": { "type": "string" } } }
+        }
+      }
+    },
     "reappliedCredit": {
       "type": "object",
       "description": "Blamed commits that re-apply a reverted change (a revert of a revert) or are `git cherry-pick -x` copies of another author's commit, and still hold surviving lines. Their lines are credited to the author of the original commit. Absent from the counts when --no-reapply-credit is given.",

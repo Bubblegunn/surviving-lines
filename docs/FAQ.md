@@ -50,6 +50,10 @@ The line `as of <date>: k of n authors committed in the last 365 days and hold x
 
 `surviving-lines --without "Ada Quill,Bob Hale"` removes those people's lines from the count and prints what is left: the lines they hold, the files they own, the files that nobody remaining knows (the leavers hold half or more and the best remaining author under 10%), the bus factor before and after, and who would inherit most. Names and addresses are matched after `.mailmap`. It measures lines, not understanding, and a person can know code they never committed.
 
+## Who should review this change or pull request?
+
+`surviving-lines --for-diff main...feature` lists the people who wrote the lines the change replaces or deletes, most lines first, with their last commit and whether they are active. The change authors are not suggested. It flags the files that need care: touched lines that belong to inactive people, files nobody active holds a fifth of, files where one person holds 80% or more. New files and pure insertions have no earlier owner, so they add no reviewer; `--reviewers <path>` names who owns the code around them. It counts lines, not who understands the change.
+
 ## What does bus factor mean here?
 
 The bus factor is the smallest number of authors whose surviving lines together reach 50% of the lines counted, so a bus factor of 1 means one person holds at least half of the code that is left. `--bus-factor-threshold <n>` changes the 50%. It measures how concentrated the surviving code is, not who understands it. It counts lines, not commits, and it counts each address separately until a `.mailmap` joins them.
