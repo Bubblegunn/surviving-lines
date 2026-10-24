@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { schemaErrors } from "../scripts/schema-check.mjs";
 
 const schema = JSON.parse(readFileSync(join(import.meta.dirname, "..", "schema", "surviving-lines.schema.json"), "utf8"));
@@ -176,8 +176,8 @@ test("R7 fix 1: mailmap.file in the git config is named as the source", async ()
   await withRepo((dir) => {
     commit(dir, { name: "Eve Main", mail: "eve@example.com", date: "2024-01-01", files: { "a.js": lines("eve", 30) } });
     commit(dir, { name: "eve laptop", mail: "eve@laptop.local", date: "2024-02-01", files: { "b.js": lines("lap", 20) } });
-    writeFileSync(join(dir, "..", `${dir.split("/").pop()}.map`), "Eve Main <eve@example.com> <eve@laptop.local>\n");
-    git(dir, ["config", "mailmap.file", join(dir, "..", `${dir.split("/").pop()}.map`)]);
+    writeFileSync(join(dir, "..", `${basename(dir)}.map`), "Eve Main <eve@example.com> <eve@laptop.local>\n");
+    git(dir, ["config", "mailmap.file", join(dir, "..", `${basename(dir)}.map`)]);
   }, async (dir) => {
     try {
       const r = await analyse(parseArgs(["--cwd", dir, "-q"]));

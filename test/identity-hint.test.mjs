@@ -6,6 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { PEOPLE, buildFixture, removeRepo } from "../scripts/fixtures.mjs";
 import { schemaErrors } from "../scripts/schema-check.mjs";
 
@@ -237,7 +238,7 @@ test("--identities prints a two-address .mailmap line for one address under two 
     commitAsIdentity(dir, ["alex94puchades", "alex@example.test"], "2026-01-01T10:00:00Z", "a1", { "a.js": "a\n" });
     commitAsIdentity(dir, ["Alejandro Caravaca Puchades", "alex@example.test"], "2026-01-02T10:00:00Z", "a2", { "b.js": "b\n" });
     commitAsIdentity(dir, ["Bob", "bob@example.com"], "2026-01-03T10:00:00Z", "b1", { "c.js": "c\n" });
-    const bin = new URL("../bin/surviving-lines.js", import.meta.url).pathname;
+    const bin = fileURLToPath(new URL("../bin/surviving-lines.js", import.meta.url));
     const out = execFileSync("node", [bin, "--cwd", dir, "--identities"], { encoding: "utf8" });
     const line = "Alejandro Caravaca Puchades <alex@example.test> alex94puchades <alex@example.test>";
     assert.ok(out.split("\n").includes(line), out);

@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRepo, commitAsIdentity, removeRepo } from "../scripts/fixtures.mjs";
+import { createRepo, commitAsIdentity, hookEnv, posixPath, removeRepo } from "../scripts/fixtures.mjs";
 import { schemaErrors } from "../scripts/schema-check.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -251,11 +251,11 @@ test("R9-4: a merged row takes the newest last-commit date of its addresses", as
 
 /** @param {string} prompt @param {string} cwd */
 function hook(prompt, cwd) {
-  return spawnSync("sh", [HOOK], {
-    input: JSON.stringify({ session_id: "t", cwd, hook_event_name: "UserPromptSubmit", prompt }),
+  return spawnSync("sh", [posixPath(HOOK)], {
+    input: JSON.stringify({ session_id: "t", cwd: posixPath(cwd), hook_event_name: "UserPromptSubmit", prompt }),
     encoding: "utf8",
     cwd: ROOT,
-    env: { PATH: process.env.PATH, HOME: process.env.HOME, CLAUDE_PLUGIN_ROOT: ROOT },
+    env: hookEnv(ROOT),
   });
 }
 

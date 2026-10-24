@@ -8,7 +8,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, w
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { commitAsIdentity, createRepo, git, removeRepo } from "../scripts/fixtures.mjs";
+import { commitAsIdentity, createRepo, git, hookEnv, posixPath, removeRepo } from "../scripts/fixtures.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const HOOK = join(ROOT, "hooks", "surviving-lines-hint.sh");
@@ -17,11 +17,11 @@ const LABEL = /Pre-computed ownership brief for this repository at ([0-9a-f]{7})
 
 /** @param {string} cwd @param {string} prompt @param {Record<string, string>} [env] */
 function hook(cwd, prompt, env = {}) {
-  return spawnSync("sh", [HOOK], {
-    input: JSON.stringify({ session_id: "t", cwd, hook_event_name: "UserPromptSubmit", prompt }),
+  return spawnSync("sh", [posixPath(HOOK)], {
+    input: JSON.stringify({ session_id: "t", cwd: posixPath(cwd), hook_event_name: "UserPromptSubmit", prompt }),
     encoding: "utf8",
     cwd: ROOT,
-    env: { PATH: process.env.PATH, HOME: process.env.HOME, CLAUDE_PLUGIN_ROOT: ROOT, ...env },
+    env: hookEnv(ROOT, env),
   });
 }
 
@@ -127,7 +127,7 @@ test("the hook runs the tool in the prompt's directory with the budget and the q
   const root = stubRoot('console.log("argv " + process.argv.slice(2).join(" "));');
   try {
     const ctx = context(hook(dir, PROMPT, { CLAUDE_PLUGIN_ROOT: root }));
-    assert.match(ctx, new RegExp(`: argv --cwd ${dir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} --brief --quiet --time-budget 20`));
+    assert.match(ctx, new RegExp(`: argv --cwd ${posixPath(dir).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} --brief --quiet --time-budget 20`));
   } finally {
     removeRepo(dir);
     rmSync(root, { recursive: true, force: true });

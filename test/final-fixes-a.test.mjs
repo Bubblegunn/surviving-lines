@@ -5,6 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { join } from "node:path";
 import { createRepo, commitAs, lines, removeRepo, buildFixture, PEOPLE } from "../scripts/fixtures.mjs";
 
 const { parseArgs, analyse, renderTable, renderMarkdown, renderReviewers, normaliseForFormat, isFormatOnlyChange, findReformatSuspects, configDirFor } = await import("../bin/surviving-lines.js");
@@ -163,10 +164,10 @@ test("a quote change in a shell script is not a reformat suspect, the same chang
 });
 
 test("a relative XDG_CONFIG_HOME is ignored like an unset one", () => {
-  assert.equal(configDirFor({ XDG_CONFIG_HOME: "/abs/xdg" }, "/home/u"), "/abs/xdg/surviving-lines");
-  assert.equal(configDirFor({ XDG_CONFIG_HOME: "relative/xdg" }, "/home/u"), "/home/u/.config/surviving-lines");
-  assert.equal(configDirFor({ XDG_CONFIG_HOME: "" }, "/home/u"), "/home/u/.config/surviving-lines");
-  assert.equal(configDirFor({}, "/home/u"), "/home/u/.config/surviving-lines");
+  assert.equal(configDirFor({ XDG_CONFIG_HOME: "/abs/xdg" }, "/home/u"), join("/abs/xdg", "surviving-lines"));
+  assert.equal(configDirFor({ XDG_CONFIG_HOME: "relative/xdg" }, "/home/u"), join("/home/u", ".config", "surviving-lines"));
+  assert.equal(configDirFor({ XDG_CONFIG_HOME: "" }, "/home/u"), join("/home/u", ".config", "surviving-lines"));
+  assert.equal(configDirFor({}, "/home/u"), join("/home/u", ".config", "surviving-lines"));
 });
 
 /** Two formatters, so the --reviewers suggestion has two suspects. */

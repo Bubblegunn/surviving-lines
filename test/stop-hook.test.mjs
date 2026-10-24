@@ -8,12 +8,12 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { commitAsIdentity, createRepo, lines, removeRepo } from "../scripts/fixtures.mjs";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { commitAsIdentity, createRepo, hookEnv, lines, removeRepo } from "../scripts/fixtures.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const HOOK = join(ROOT, "hooks", "surviving-lines-check.mjs");
-const { TOPIC_PATTERNS, matchesTopic, extractClaims, namedPeople, readTranscript, numberFindings, mergeFindings, blockReason } = await import(HOOK);
+const { TOPIC_PATTERNS, matchesTopic, extractClaims, namedPeople, readTranscript, numberFindings, mergeFindings, blockReason } = await import(pathToFileURL(HOOK).href);
 
 const D = (d) => `2026-10-${d}T10:00:00Z`;
 const PROMPT = "who owns the parser module in this repo?";
@@ -45,7 +45,7 @@ function run(o) {
 }
 /** @param {string} input @param {Record<string, string>} [env] */
 function runRaw(input, env = {}) {
-  return spawnSync(process.execPath, [HOOK], { input, encoding: "utf8", cwd: tmpdir(), env: { PATH: process.env.PATH, HOME: process.env.HOME, CLAUDE_PLUGIN_ROOT: ROOT, ...env } });
+  return spawnSync(process.execPath, [HOOK], { input, encoding: "utf8", cwd: tmpdir(), env: hookEnv(ROOT, env) });
 }
 /** @param {import("node:child_process").SpawnSyncReturns<string>} r */
 function silent(r) {

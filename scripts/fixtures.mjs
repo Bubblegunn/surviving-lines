@@ -95,6 +95,34 @@ export function commitAsIdentity(dir, identity, date, message, files, committer)
 /** @param {string} dir */
 export const removeRepo = (dir) => rmSync(dir, { recursive: true, force: true });
 
+
+/** True on Windows, where the POSIX shell hooks and shims run only through Git Bash. */
+export const WINDOWS = process.platform === "win32";
+
+/**
+ * A path with forward slashes on Windows, so a POSIX sh (Git Bash) and the hook's JSON-reading patterns accept it.
+ * Other platforms get the path unchanged: a backslash can be part of a name there.
+ * @param {string} p
+ */
+export const posixPath = (p) => (WINDOWS ? p.replace(/\\/g, "/") : p);
+
+/**
+ * The environment for a hook child process: PATH, HOME, the Windows variables a child needs to start, and
+ * CLAUDE_PLUGIN_ROOT (forward slashes on Windows). `extra` overrides any of them.
+ * @param {string} pluginRoot @param {Record<string, string>} [extra]
+ * @returns {Record<string, string>}
+ */
+export function hookEnv(pluginRoot, extra = {}) {
+  /** @type {Record<string, string | undefined>} */
+  const env = { PATH: process.env.PATH, HOME: process.env.HOME, CLAUDE_PLUGIN_ROOT: posixPath(pluginRoot) };
+  if (WINDOWS) for (const k of ["SystemRoot", "USERPROFILE", "TEMP", "TMP", "ComSpec"]) env[k] = process.env[k];
+  for (const [k, v] of Object.entries(extra)) env[k] = k === "CLAUDE_PLUGIN_ROOT" ? posixPath(v) : v;
+  return /** @type {Record<string, string>} */ (Object.fromEntries(Object.entries(env).filter(([, v]) => v !== undefined)));
+}
+
+/** Option for node:test: skip a test that runs a POSIX sh shim as `git` or `node`, which Windows cannot execute by name. */
+export const SKIP_ON_WINDOWS_SHIM = { skip: WINDOWS ? "POSIX sh shim; covered on Linux and macOS" : false };
+
 const D = (m, d) => `2026-${m}-${d}T10:00:00Z`;
 
 /**
