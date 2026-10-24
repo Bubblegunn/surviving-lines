@@ -30,5 +30,5 @@ test("deep round rules: unconfirmed same-person figure, what was left out, moved
   assert.match(skill, /Both are unconfirmed/);
   assert.match(skill, /lockfiles, generated files, vendored code and binary files/);
   assert.match(skill, /Do not recommend the person who only moved the code/);
-  assert.match(skill, /Give both bus factor numbers/);
+  assert.match(skill, /Give every bus factor figure the tool prints, each with its scope[^\n]*`bus factor` and `to reach 80%`/);
 });
