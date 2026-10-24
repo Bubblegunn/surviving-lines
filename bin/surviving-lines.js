@@ -1063,6 +1063,25 @@ async function readNulFiles(o) {
 }
 
 /**
+ * File names that tools write, matched case-insensitively against the base name, for the "generated" class. A name that
+ * holds ".generated." or ".gen." before the extension, the output names of common code generators, an Xcode
+ * project.pbxproj and test snapshots. Plain .json, .csproj and .sln names are not here.
+ */
+const GENERATED_NAME_RULES = [
+  /\.(?:generated|gen)\./i,
+  /\.(?:g|freezed)\.dart$/i,
+  /\.pb\.(?:go|cc|h)$/i,
+  /_pb2(?:_grpc)?\.py$/i,
+  /\.(?:designer|g)\.cs$/i,
+  /_generated\.(?:go|rs)$/i,
+  /^project\.pbxproj$/i,
+  /\.snap$/i,
+];
+
+/** Directory names whose whole content is written by Xcode. */
+const GENERATED_DIR_RULE = /\.(?:xcodeproj|xcworkspace)$/i;
+
+/**
  * The class a path falls in by its name alone, or null. `root` is what the output names: the vendor directory for
  * vendored code, the file itself otherwise.
  * @param {string} path
@@ -1075,6 +1094,7 @@ export function classifyPath(path) {
   if (dir >= 0) return { kind: "vendored", root: parts.slice(0, dir + 1).join("/") };
   if (LOCKFILE_NAMES.has(base.toLowerCase())) return { kind: "lockfile", root: path };
   if (/\.min\.[^./]+$/i.test(base) || /\.map$/i.test(base)) return { kind: "generated", root: path };
+  if (GENERATED_NAME_RULES.some((re) => re.test(base)) || parts.slice(0, -1).some((p) => GENERATED_DIR_RULE.test(p))) return { kind: "generated", root: path };
   return null;
 }
 
