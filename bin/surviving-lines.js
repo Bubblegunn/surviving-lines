@@ -160,6 +160,10 @@ Measure who wrote the code that is still alive in a git ref.
                        commit count of the two), jaccard, and the top owner of the five best, then the people with the most lines across these
                        files. Window as --attention (--since); --min-shared <n> (3) and --max-files-per-commit <n> (30) apply; --top caps the
                        partners (default 10). A file only (not a directory), with at least 3 commits. Own view, --json only
+  --written-since <date>  ownership of recent code: per person the surviving lines whose author date is on or after the date (00:00 UTC, or an ISO
+                       timestamp), the lines inserted in the same window and kept = written / inserted, and the share of all lines. --written-until <date>
+                       ends the window (exclusive); --churn adds all-time inserted and deleted lines and the survival ratio. Works with --sample; not with
+                       --co-authors share. Own view, --json only
   --for-diff <base>..<head>  who should review a change: the people who wrote the lines it replaces or deletes (blamed at the base
                        commit, with this run's blame rules), without the change authors, with per-file flags (inactive owners, orphaned,
                        one owner holds 80%+, new, deleted, renamed). Also <base>...<head> (from the merge base) and <base> alone
@@ -200,7 +204,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, coupled?: string, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, copyLineWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, writtenSince?: string, writtenUntil?: string, writtenFrom?: number, writtenTo?: number, churn: boolean, coupled?: string, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, copyLineWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -208,7 +212,7 @@ groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDay
  */
 export function parseArgs(argv) {
   /** @type {Options} */
-  const o = { ref: "HEAD", sample: 1, brief: false, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], ownedBy: [], attention: false, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
+  const o = { ref: "HEAD", sample: 1, brief: false, activeDays: ACTIVE_DAYS_DEFAULT, orphans: false, without: [], ownedBy: [], attention: false, churn: false, seed: "", include: [], exclude: [], coAuthors: "none", aiBreakdown: false, suggestCodeowners: false, includeBots: false, noIgnoreRevs: false, ignoreRevs: [], detectReformat: true, keepReformat: false, reapplyCredit: true, busFactorThreshold: 50, copies: false, noCopies: false, keepGenerated: false, jobs: 4, top: 10, topGiven: false, sort: "lines", quiet: false, json: false, csv: false, markdown: false, identities: false, mergeIdentities: false, allowShallow: false, cwd: process.cwd(), paths: [] };
   let refGiven = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -240,6 +244,9 @@ export function parseArgs(argv) {
     else if (a === "--owned-by") o.ownedBy.push(next());
     else if (a === "--tree") { o.tree = TREE_DEPTH_DEFAULT; if (/^\d+$/.test(argv[i + 1] ?? "")) o.tree = Number(argv[++i]); }
     else if (a === "--attention") o.attention = true;
+    else if (a === "--written-since") { o.writtenSince = next(); o.writtenFrom = parseWrittenDate(o.writtenSince, "--written-since"); }
+    else if (a === "--written-until") { const v = next(); o.writtenUntil = v; o.writtenTo = parseWrittenDate(v, "--written-until"); }
+    else if (a === "--churn") o.churn = true;
     else if (a === "--coupled") { o.coupled = next(); if (!o.coupled.trim()) throw new Error("--coupled needs a file path"); }
     else if (a === "--min-commits") { o.minCommits = Number(next()); if (!Number.isInteger(o.minCommits) || o.minCommits < 1) throw new Error("--min-commits must be an integer >= 1"); }
     else if (a === "--min-shared") { o.minShared = Number(next()); if (!Number.isInteger(o.minShared) || o.minShared < 1) throw new Error("--min-shared must be an integer >= 1"); }
@@ -301,13 +308,16 @@ export function parseArgs(argv) {
   }
   // The views added in round 13 (--for-diff, --owned-by, --why-not, --check-codeowners) print their own output. Each one is refused with every other view
   // and every output format; only --json may be combined with them.
-  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--attention": o.attention, "--coupled": o.coupled !== undefined, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
+  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--attention": o.attention, "--written-since": o.writtenSince !== undefined, "--coupled": o.coupled !== undefined, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
   const optionsSet = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", ...newViews });
   for (const view of Object.keys(newViews).filter((k) => newViews[k])) {
-    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--attention" ? { ...optionsSet, "--attention": false, "--sample": o.sample !== 1 } : view === "--coupled" ? { ...optionsSet, "--coupled": false, "--sample": o.sample !== 1 } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
+    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--attention" ? { ...optionsSet, "--attention": false, "--sample": o.sample !== 1 } : view === "--coupled" ? { ...optionsSet, "--coupled": false, "--sample": o.sample !== 1 } : view === "--written-since" ? { ...optionsSet, "--written-since": false } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
     const clash = Object.keys(own).find((k) => own[k]);
     if (clash) throw new Error(`${view} prints its own view; it can be combined with --json only, not with ${clash}`);
   }
+  if (o.writtenUntil !== undefined && o.writtenSince === undefined) throw new Error("--written-until works with --written-since only");
+  if (o.churn && o.writtenSince === undefined) throw new Error("--churn works with --written-since only");
+  if (o.writtenFrom !== undefined && o.writtenTo !== undefined && o.writtenTo <= o.writtenFrom) throw new Error("--written-until must be later than --written-since");
   if (o.coupled !== undefined && o.paths.length) throw new Error("--coupled takes its path as its own value; it cannot be combined with pathspecs after --");
   if (o.minCommits !== undefined && !o.attention) throw new Error("--min-commits works with --attention only");
   if ((o.minShared !== undefined || o.maxFilesPerCommit !== undefined) && !o.attention && o.coupled === undefined) throw new Error("--min-shared and --max-files-per-commit work with --attention or --coupled");
@@ -653,6 +663,43 @@ export function countBlameLines(porcelain) {
     }
   }
   return counts;
+}
+
+/**
+ * R13 #10: the lines of `git blame --line-porcelain` text per author address whose author time is at or after `from` and
+ * before `to` (epoch seconds; `to` null for no upper limit). It is the author time, not the committer time that
+ * `git log --since` reads: a rebased commit keeps the date its author gave it.
+ * @param {string} porcelain
+ * @param {number} from
+ * @param {number | null} to
+ * @returns {Map<string, number>}
+ */
+export function countBlameWritten(porcelain, from, to) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  let mail = "";
+  let time = 0;
+  for (const line of porcelain.split("\n")) {
+    if (line.startsWith("author-mail ")) mail = line.slice(12).replace(/^<|>$/g, "").toLowerCase();
+    else if (line.startsWith("author-time ")) time = Number(line.slice(12));
+    else if (line.startsWith("\t") && time >= from && (to === null || time < to)) counts.set(mail, (counts.get(mail) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * R13 #10: a --written-since or --written-until value as epoch seconds: a date (YYYY-MM-DD, taken as 00:00 UTC) or a full
+ * ISO timestamp with a zone. The window is since <= author time < until.
+ * @param {string} value
+ * @param {string} flag
+ * @returns {number}
+ */
+export function parseWrittenDate(value, flag) {
+  const v = value.trim();
+  const ok = /^\d{4}-\d{2}-\d{2}$/.test(v) || /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/.test(v);
+  const ms = ok ? Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v}T00:00:00Z` : v.replace(" ", "T")) : NaN;
+  if (Number.isNaN(ms)) throw new Error(`${flag} needs a date like 2026-04-24 (UTC) or an ISO timestamp with a zone, not "${value}"`);
+  return Math.floor(ms / 1000);
 }
 
 /**
@@ -1427,6 +1474,9 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
   const perFile = new Map();
   /** @type {Map<string, Map<string, { name: string, lines: number, fullName?: string }>>} */
   const perFileRaw = new Map();
+  /** R13 #10: the surviving lines per address whose author time is inside the --written-since window. */
+  /** @type {Map<string, number>} */
+  const written = new Map();
   /** The index of the file that gave each address its name: blames finish in any order, so the name is the first file's. */
   /** @type {Map<string, { idx: number, rank: number }>} */
   const nameFrom = new Map();
@@ -1456,6 +1506,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
         }
       }
       if (wantOrigins) origins.set(file.path, countBlameOrigins(out, file.path));
+      if (o.writtenFrom !== undefined) for (const [mail, n] of countBlameWritten(out, o.writtenFrom, o.writtenTo ?? null)) written.set(mail, (written.get(mail) ?? 0) + n);
       for (const [mail, { name, lines, fullName }] of counts) {
         const a = authors.get(mail) ?? { name, lines: 0, commits: 0 };
         // R9-14: an address that committed under a handle and under a personal name is shown by the personal name.
@@ -1508,7 +1559,7 @@ async function blamePass(o, sampled, blameArgs, grouping, progress, leaveOut = n
     }
   }
   for (const [mail, a] of authors) a.withBlank = withBlankOf.get(mail) ?? a.lines;
-  return { authors, attributed, groupAcc, blamedByCommit, origins, copiedFiles, fileCounts, perFile, perFileRaw };
+  return { authors, attributed, groupAcc, blamedByCommit, origins, copiedFiles, fileCounts, perFile, perFileRaw, written };
 }
 
 /**
@@ -3950,6 +4001,165 @@ export function renderCoupled(r) {
   return out.join("\n");
 }
 
+/**
+ * R13 #10, #12: the files each commit changed, with their line counts, renames followed. `log` is the output of
+ * `git log --no-merges --topo-order --raw --numstat -M --format=%x01%H%x1f%aE%x1f%aN%x1f%at%x1f%as`, newest first. The
+ * raw lines give the status and the paths and the numstat lines give the counts; both list the files in the same order.
+ * The replay is the one of changeSetsOf: a rename makes the old name stand for the current file in older commits, and an
+ * add ends the history of a name. Only paths in `present` are kept. Commits in `skip` and bot commits (unless
+ * `includeBots`) change nothing here, but their renames are still replayed. Binary files count 0 lines.
+ * @param {string} log
+ * @param {Set<string>} present
+ * @param {Set<string>} skip full commit ids
+ * @param {boolean} includeBots
+ * @returns {{ sha: string, mail: string, name: string, time: number, day: string, files: { path: string, add: number, del: number }[] }[]}
+ */
+export function fileChangesOf(log, present, skip, includeBots) {
+  /** @type {Map<string, string | null>} */
+  const current = new Map();
+  /** @param {string} name */
+  const resolve = (name) => (current.has(name) ? /** @type {string | null} */ (current.get(name)) : name);
+  /** @type {ReturnType<typeof fileChangesOf>} */
+  const out = [];
+  for (const chunk of log.split("\x01")) {
+    if (!chunk) continue;
+    const eol = chunk.indexOf("\n");
+    const [sha, mail, name, at, day] = (eol < 0 ? chunk : chunk.slice(0, eol)).split("\x1f");
+    if (!sha) continue;
+    /** @type {string[][]} */
+    const raw = [];
+    /** @type {string[][]} */
+    const stat = [];
+    for (const line of eol < 0 ? [] : chunk.slice(eol + 1).split("\n")) {
+      if (line.startsWith(":")) raw.push(line.split("\t"));
+      else if (/^(\d+|-)\t(\d+|-)\t/.test(line)) stat.push(line.split("\t"));
+    }
+    /** @type {Map<string, { path: string, add: number, del: number }>} */
+    const files = new Map();
+    raw.forEach((parts, i) => {
+      const status = parts[0].slice(parts[0].lastIndexOf(" ") + 1)[0];
+      const add = stat[i] && stat[i][0] !== "-" ? Number(stat[i][0]) : 0;
+      const del = stat[i] && stat[i][1] !== "-" ? Number(stat[i][1]) : 0;
+      /** @param {string} now */
+      const note = (now) => {
+        const e = files.get(now) ?? { path: now, add: 0, del: 0 };
+        e.add += add;
+        e.del += del;
+        files.set(now, e);
+      };
+      if (status === "R" || status === "C") {
+        const from = unquoteGitPath(parts[1]);
+        const to = unquoteGitPath(parts[2]);
+        const now = resolve(to);
+        if (now !== null) note(now);
+        current.set(to, null);
+        if (status === "R") current.set(from, now);
+      } else {
+        const path = unquoteGitPath(parts[1]);
+        const now = resolve(path);
+        if (now !== null) note(now);
+        if (status === "A") current.set(path, null);
+      }
+    });
+    const lower = (mail ?? "").toLowerCase();
+    if (skip.has(sha) || (!includeBots && isBotIdentity(name ?? "", lower))) continue;
+    out.push({ sha, mail: lower, name: name ?? "", time: Number(at), day: day ?? "", files: [...files.values()].filter((f) => present.has(f.path)) });
+  }
+  return out;
+}
+
+/** R13 #10: the log --written-since reads. */
+const FILE_CHANGES_ARGS = ["log", "--no-merges", "--topo-order", "--raw", "--numstat", "-M", "--format=%x01%H%x1f%aE%x1f%aN%x1f%at%x1f%as"];
+
+/**
+ * R13 #10: ownership of recent code. For each person: the surviving lines whose author time is in the window (`written`,
+ * from the blame the run already did), the lines they inserted in the same window (`inserted`, numstat of the same files,
+ * same drops, bots and set-aside commits out) and `kept` = written / inserted, null when nothing was inserted. `kept` is not
+ * capped here; `checkFilters` is true when it is above 1, which means the numstat was filtered more than the blame. With
+ * `churn` each person also gets all-time inserted and deleted lines and the share of the inserted lines that survive.
+ * A person who inserted lines in the window and holds none now still gets a row, with 0 written.
+ * @param {{
+ *   rows: { author: string, mail: string, lines: number }[], written: Map<string, number>, attributed: number,
+ *   changes: ReturnType<typeof fileChangesOf>, from: number, to: number | null, canonicalOf: Map<string, { author: string, mail: string }>,
+ *   nameOf: Map<string, string>, churn: boolean,
+ * }} a
+ */
+export function writtenSinceOf(a) {
+  /** @param {string} mail */
+  const keyOf = (mail) => a.canonicalOf.get(mail)?.mail ?? mail;
+  /** @type {Map<string, { author: string, mail: string, lines: number, written: number, inserted: number, insertedAll: number, deletedAll: number }>} */
+  const people = new Map();
+  for (const r of a.rows) people.set(keyOf(r.mail), { author: r.author, mail: keyOf(r.mail), lines: r.lines, written: 0, inserted: 0, insertedAll: 0, deletedAll: 0 });
+  for (const [mail, n] of a.written) {
+    const p = people.get(keyOf(mail));
+    if (p) p.written += n;
+  }
+  for (const c of a.changes) {
+    const key = keyOf(c.mail);
+    let p = people.get(key);
+    if (!p) {
+      p = { author: a.canonicalOf.get(c.mail)?.author ?? a.nameOf.get(c.mail) ?? c.name, mail: key, lines: 0, written: 0, inserted: 0, insertedAll: 0, deletedAll: 0 };
+      people.set(key, p);
+    }
+    const inWindow = c.time >= a.from && (a.to === null || c.time < a.to);
+    for (const f of c.files) {
+      p.insertedAll += f.add;
+      p.deletedAll += f.del;
+      if (inWindow) p.inserted += f.add;
+    }
+  }
+  const authors = [...people.values()]
+    .filter((p) => p.written > 0 || p.inserted > 0)
+    .sort((x, y) => y.written - x.written || y.inserted - x.inserted || x.mail.localeCompare(y.mail))
+    .map((p) => {
+      const kept = p.inserted > 0 ? p.written / p.inserted : null;
+      return {
+        author: p.author,
+        mail: p.mail,
+        lines: p.lines,
+        written: p.written,
+        inserted: p.inserted,
+        kept,
+        checkFilters: kept !== null && kept > 1,
+        churn: a.churn ? { inserted: p.insertedAll, deleted: p.deletedAll, survival: p.insertedAll > 0 ? p.lines / p.insertedAll : null } : null,
+      };
+    });
+  const lines = [...people.values()].reduce((sum, p) => sum + p.written, 0);
+  return { lines, linesTotal: a.attributed, share: a.attributed ? lines / a.attributed : 0, insertedTotal: authors.reduce((sum, p) => sum + p.inserted, 0), authors };
+}
+
+/**
+ * The --written-since view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderWrittenSince(r) {
+  const v = r.writtenSince;
+  if (!v) throw new Error("renderWrittenSince needs a result from --written-since");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const pct = (/** @type {number} */ x) => `${(x * 100).toFixed(1)}%`;
+  const out = [headerLine(r), `lines last changed between ${v.since} and ${v.until}: ${n(v.lines)} of ${n(v.linesTotal)} (${pct(v.share)})`];
+  if (!v.authors.length) {
+    out.push(v.beforeHistory ? `no rows: the history starts ${v.firstCommit}, after this window` : "no rows: no surviving line was written and no line was inserted in this window");
+  } else {
+    const nameW = Math.max(6, ...v.authors.map((p) => displayWidth(p.author)));
+    const head = [padEndDisplay("author", nameW), "lines".padStart(8), "written-since".padStart(13), "inserted".padStart(9), "kept".padStart(7)];
+    if (v.churn) head.push("all inserted".padStart(12), "all deleted".padStart(11), "survival".padStart(9));
+    out.push("", head.join("  "));
+    for (const p of v.authors) {
+      const kept = p.kept === null ? "-" : p.checkFilters ? "100%*" : pct(p.kept);
+      const cols = [padEndDisplay(p.author, nameW), n(p.lines).padStart(8), n(p.written).padStart(13), (p.inserted ? n(p.inserted) : "-").padStart(9), kept.padStart(7)];
+      if (v.churn) cols.push(n(p.churn?.inserted ?? 0).padStart(12), n(p.churn?.deleted ?? 0).padStart(11), (p.churn?.survival == null ? "-" : pct(p.churn.survival)).padStart(9));
+      out.push(cols.join("  "));
+    }
+    if (v.authors.some((p) => p.checkFilters)) out.push("", "* kept would be above 100%: check filters (the line counts were filtered differently from the blame)");
+  }
+  out.push("", `written-since = surviving lines whose author date is at or after ${v.since} and before ${v.until} (UTC; the author date, not the committer date that git --since reads). inserted = lines added in that window by \`git log --numstat -M\` over the same files (files no longer in the tree are not counted), without bots and set-aside commits. kept = written-since / inserted.`);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("", "These are surviving lines and inserted lines, not who understands the code.");
+  return out.join("\n");
+}
+
 /** R13 #4: where GitHub looks for the file, in its order; the first one that exists is used. */
 export const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 /** R13 #4: a file of this size or more gets a warning; GitHub does not read a file above its limit. */
@@ -4512,7 +4722,7 @@ export function cherryPickSourceOf(body) {
   return m ? m[1].toLowerCase() : null;
 }
 
-/** @typedef {{ sha: string, name: string, mail: string, body: string }} CommitInfo */
+/** @typedef {{ sha: string, name: string, mail: string, time: string, body: string }} CommitInfo */
 
 /**
  * G14: the author (after .mailmap) and message of each given commit id, or null for an id that is not a commit in the
@@ -4543,11 +4753,11 @@ async function readCommitInfos(cwd, refs) {
   /** @type {Map<string, CommitInfo>} */
   const byOid = new Map();
   try {
-    const log = await git(["log", "--no-walk=unsorted", "--stdin", "--format=%x01%H%x1f%aN%x1f%aE%x1f%B"], cwd, { input: [...new Set(existing.map(([, oid]) => oid))].join("\n") + "\n" });
+    const log = await git(["log", "--no-walk=unsorted", "--stdin", "--format=%x01%H%x1f%aN%x1f%aE%x1f%at%x1f%B"], cwd, { input: [...new Set(existing.map(([, oid]) => oid))].join("\n") + "\n" });
     for (const rec of log.split("\x01")) {
       const parts = rec.split("\x1f");
-      if (parts.length < 4) continue;
-      byOid.set(parts[0], { sha: parts[0], name: parts[1], mail: parts[2].toLowerCase(), body: parts.slice(3).join("\x1f") });
+      if (parts.length < 5) continue;
+      byOid.set(parts[0], { sha: parts[0], name: parts[1], mail: parts[2].toLowerCase(), time: parts[3], body: parts.slice(4).join("\x1f") });
     }
   } catch {
     // The log failed: the ids stay unresolved.
@@ -4578,6 +4788,9 @@ export function createReapplyCredit(cwd) {
   const infos = new Map();
   /** @type {Map<string, Reapplied | null>} */
   const known = new Map();
+  /** R13 #10: the author time of the commit each re-applied commit is credited to, so a time window agrees with the credit. */
+  /** @type {Map<string, string>} */
+  const originTime = new Map();
   /** @param {string[]} refs */
   const load = async (refs) => {
     const need = [...new Set(refs)].filter((r) => !infos.has(r));
@@ -4619,6 +4832,7 @@ export function createReapplyCredit(cwd) {
       }
     }
     if (!origin || origin.mail === info.mail || foldIdentity(origin.name) === foldIdentity(info.name)) return null;
+    originTime.set(sha, origin.time);
     return { name: origin.name, mail: origin.mail, via, reappliedBy: info.name, reappliedByMail: info.mail, subject: info.body.split("\n")[0] };
   };
   return {
@@ -4644,6 +4858,7 @@ export function createReapplyCredit(cwd) {
           if (!credited) return line;
           if (line.startsWith("author ")) return `author ${credited.name}`;
           if (line.startsWith("author-mail ")) return `author-mail <${credited.mail}>`;
+          if (line.startsWith("author-time ") && originTime.has(sha)) return `author-time ${originTime.get(sha)}`;
           return line;
         })
         .join("\n");
@@ -5674,6 +5889,23 @@ export async function analyse(o) {
       coupledResult = { window, minShared, maxFilesPerCommit: maxFiles, commitsRead: sets.length, ...coupledOf({ path: o.coupled, index: changeIndexOf(sets, minShared, maxFiles), perFile: main.perFile, includeBots: o.includeBots, canonicalOf: ownerMerge, nameOf, people, shown: o.topGiven ? o.top : COUPLED_SHOWN }) };
     }
   }
+  /** @type {(ReturnType<typeof writtenSinceOf> & { since: string, until: string, sinceEpoch: number, untilEpoch: number | null, churn: boolean, firstCommit: string | null, beforeHistory: boolean }) | null} */
+  let writtenResult = null;
+  if (o.writtenSince !== undefined && o.writtenFrom !== undefined) {
+    const changes = fileChangesOf(await git([...FILE_CHANGES_ARGS, o.ref], o.cwd), new Set(sampled.map((f) => f.path)), skipShas, o.includeBots);
+    const firstCommit = [...(await readCommitDays(o)).values()].map((d) => d.first).sort()[0] ?? null;
+    const untilDay = o.writtenTo === undefined ? null : new Date(o.writtenTo * 1000).toISOString().slice(0, 10);
+    writtenResult = {
+      since: o.writtenSince,
+      until: o.writtenUntil ?? asOfDay,
+      sinceEpoch: o.writtenFrom,
+      untilEpoch: o.writtenTo ?? null,
+      churn: o.churn,
+      firstCommit,
+      beforeHistory: firstCommit !== null && untilDay !== null && firstCommit >= untilDay,
+      ...writtenSinceOf({ rows, written: main.written, attributed, changes, from: o.writtenFrom, to: o.writtenTo ?? null, canonicalOf: ownerMerge, nameOf, churn: o.churn }),
+    };
+  }
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
   // G12: the strong identity groups count as one person here whether or not --merge-identities merged them.
@@ -5718,6 +5950,7 @@ export async function analyse(o) {
     tree: treeResult,
     attention: attentionResult,
     coupled: coupledResult,
+    writtenSince: writtenResult,
     whyNot: whyNotResult,
     codeownersCheck: codeownersResult,
     committedByOthers: committedElsewhere,
@@ -7629,6 +7862,8 @@ async function main() {
       output = renderAttention(r);
     } else if (r.coupled) {
       output = renderCoupled(r);
+    } else if (r.writtenSince) {
+      output = renderWrittenSince(r);
     } else if (r.forDiff) {
       output = renderForDiff(r, o.topGiven ? o.top : FOR_DIFF_REVIEWERS_SHOWN);
     } else if (r.without) {

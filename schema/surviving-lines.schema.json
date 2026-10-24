@@ -1329,6 +1329,44 @@
         }
       }
     },
+    "writtenSince": {
+      "type": ["object", "null"],
+      "description": "The --written-since view: ownership of recent code. Null unless --written-since was given. written counts the surviving lines whose author date is at or after the start and before the end (UTC); inserted counts the lines added in the same window by git log --numstat -M over the same files, without bots and set-aside commits.",
+      "additionalProperties": false,
+      "required": ["since", "until", "sinceEpoch", "untilEpoch", "churn", "firstCommit", "beforeHistory", "lines", "linesTotal", "share", "insertedTotal", "authors"],
+      "properties": {
+        "since": { "type": "string", "description": "The start as given." },
+        "until": { "type": "string", "description": "The end as given by --written-until, else the day of the ref's commit." },
+        "sinceEpoch": { "type": "integer", "description": "Epoch seconds, inclusive." },
+        "untilEpoch": { "type": ["integer", "null"], "description": "Epoch seconds, exclusive; null without --written-until." },
+        "churn": { "type": "boolean" },
+        "firstCommit": { "type": ["string", "null"] },
+        "beforeHistory": { "type": "boolean", "description": "True when the window ends before the first commit." },
+        "lines": { "type": "integer", "minimum": 0, "description": "Surviving lines written in the window, on the table's basis (bots out unless included)." },
+        "linesTotal": { "type": "integer", "minimum": 0, "description": "The table's attributed lines." },
+        "share": { "type": "number", "minimum": 0, "maximum": 1 },
+        "insertedTotal": { "type": "integer", "minimum": 0 },
+        "authors": {
+          "type": "array",
+          "description": "People with a written or inserted line in the window, most written first.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "mail", "lines", "written", "inserted", "kept", "checkFilters", "churn"],
+            "properties": {
+              "author": { "type": "string" },
+              "mail": { "type": "string" },
+              "lines": { "type": "integer", "minimum": 0, "description": "All surviving lines of the person." },
+              "written": { "type": "integer", "minimum": 0 },
+              "inserted": { "type": "integer", "minimum": 0 },
+              "kept": { "type": ["number", "null"], "minimum": 0, "description": "written over inserted, not capped; null when nothing was inserted." },
+              "checkFilters": { "type": "boolean", "description": "True when kept is above 1: the numstat was filtered more than the blame." },
+              "churn": { "type": ["object", "null"], "additionalProperties": false, "required": ["inserted", "deleted", "survival"], "properties": { "inserted": { "type": "integer", "minimum": 0 }, "deleted": { "type": "integer", "minimum": 0 }, "survival": { "type": ["number", "null"], "minimum": 0, "description": "All surviving lines over all inserted lines; null when nothing was inserted." } } }
+            }
+          }
+        }
+      }
+    },
     "forDiff": {
       "type": ["object", "null"],
       "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",
