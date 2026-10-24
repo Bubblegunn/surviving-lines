@@ -1250,3 +1250,43 @@ Same rules as gate 1 (the section above) except what is stated here. Not a claim
 **Decision rule.** Unchanged from R13-5 and gate 1 (`analyse.py`, seed 20261023): clear lead = DEV lower bound against the best other arm above zero AND ours not behind the best other arm in total on E and F. Additionally reported: the share of `ours` cells in which the Stop hook blocked the first answer (gate 1: 30 of 66) and the mean score of blocked and unblocked cells. If more than 25% of the `ours` cells are blocked again, the hook is treated as a defect and is fixed before any further decision.
 
 **Stop rule.** As gate 1. No protocol change after the first run.
+
+### Round 13 development gate 2: result (2026-10-24)
+
+Protocol above, product `8af57f4`; 66 new `ours` cells, 330 rival cells reused from gate 1, all 66 units graded again (five-vote reason-first, 0 cells needed the reverse pass). Rule R13-5 gives **CLEAR LEAD** (a decision to start a final measurement, not a claim).
+
+| Group | ours | pp | ppi | hist | bf | base | ours minus best other (95% interval) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| DEV (12 fresh-writer tasks, max 60) | 36.67 | 32.00 | 29.67 | 20.00 | 25.00 | 28.33 | +4.67 (+1.00 to +8.33) vs pp |
+| E, seen (5 tasks, max 25) | 19.67 | 13.00 | 11.67 | 5.67 | 11.00 | 13.00 | +6.67 (+4.67 to +8.67) vs pp |
+| F, seen (5 tasks, max 25) | 22.00 | 12.67 | 14.00 | 10.33 | 5.67 | 14.33 | +7.67 (+5.67 to +10.00) vs base |
+
+Against the per-task better of pp and ppi the intervals are DEV -2.00 to +4.00 (includes zero), E +4.33 to +7.33, F +2.00 to +7.67. The Stop hook blocked the first answer in 13 of 66 `ours` cells (20%, below the 25% bound of the gate 2 protocol); blocked cells averaged 3.46 of 5 and unblocked cells 3.58. Tasks where ours still trails the best other arm in DEV: DA1, DA2, DB1, DC4 (and DA4, DB4 by 0.67 or less). Per-task means are in the gate 2 analysis, kept with the evidence of the final round.
+
+## Round 13 final measurement protocol (frozen before any run, 2026-10-24)
+
+Written and committed before the first scored run of the final measurement. This section is not changed after results exist. The product, the grader and the analysis do not change in the final round.
+
+**Product.** `git archive` of `8af57f4` (the gate 2 product; `bin/`, `hooks/`, `agents/`, `skills/`, `schema/` are byte-identical to `HEAD` at the time of this commit: `git diff --stat 8af57f4 HEAD -- bin hooks agents skills schema` is empty). Model `claude-sonnet-5-5`. Hooks run as shipped.
+
+**Sets.**
+- SEALED z (`HZ1` to `HZ5`, 25 outcome criteria): written for this round by a fresh Sonnet agent given only a plain description of the user's job and the file layout (writer prompt kept as `tasks/sealed-z/writer.prompt.md`); it did not read this repository, its documents or any task. Branch `heldout-2026-10-z` (`93fb942`, local, never pushed before the round is published); a read-only copy is outside `/private/tmp`. The controller read no task prompt, criterion or ground-truth script; setup was validated by script only (all five fixtures build, the ground truth equals the committed `truth.txt`). **Disclosure:** the writer's closing summary, which lists the five repositories, pinned commits and one line of hazards per task, was shown to the controller before this section was written. The product was already frozen at `8af57f4` and is not changed. Invoked prompt of `ppi` = "Use the /project-pilot:bus-factor command for this. " plus the natural prompt.
+- PUBLIC: the 11 tasks of `tasks.json` (SHA-256 `96dbeadbcebf21272265d4fdaff93bb284d79c07daf40a2594b88f51ea276d8e`), fixtures of round 7's `pubfix`. **The public set is development material since ruling R13-1** (it was read during round 13 diagnosis); it is reported but the launch claim rests on SEALED z.
+
+**Arms.** `ours`, `pp`, `ppi`, `hist`, `bf`, `base` as in round 11 (`results/round11-claude-sonnet-5-5/arms.json`; rival copies from `git archive`); `ppi` only on tasks with an invoked prompt. **All cells new, none reused**, 3 runs per arm and task, parallelism 3: SEALED z 5 x 6 x 3 = 90 runs; PUBLIC 189 runs.
+
+**Path and isolation.** The owner's subscription login through `~/claude-kredi-runs/sub-shim/claude` (fresh HOME per call; a working directory below `/Users/efe` is refused). All work directories under `/private/tmp/r13/final`. Plugins are passed with `--plugin-dir`.
+
+**Grading.** `gate-grade5.py` as in the gate: five calls per cell, reason before verdict, strict majority of valid votes, `err` below three valid votes, re-ask passes, reverse-order pass for `err` criteria; all arms of a task and run graded together in a shuffled order (`random.Random("<task>-<n>-gate")`), `claude-sonnet-5-5`.
+
+**Claims.**
+- **I1 (launch claim, Sonnet only).** In SEALED z, the 95% bootstrap interval of the paired difference between ours and the single best other arm (highest observed total; ties pp, ppi, hist, bf, base) lies entirely above zero. Bootstrap exactly as in rounds 11 and 12 (seed `20261023`, 10,000 resamples over runs, the same draw for every arm of a task, percentile interval). The same I1 statement is reported for PUBLIC (seen set). Reported too: ours minus the per-task better of pp and ppi, and minus every other arm. An incomplete set makes no claim.
+- **I2 (descriptive).** Rule A, Rule B and Rule B-prime per set, as in round 11.
+
+**F6 (two parts, as in the round 12 protocol, same sample rule).** `random.Random(20261023).sample(sorted cell names, ceil(0.10 x N))`, N = all graded cells. **F6-grader (pass or fail):** the sampled cells' original answers graded again in their original units by fresh grader sessions (five calls, same majority rule and `err` threshold, re-ask passes, no reverse pass); pass = no sampled cell differs by more than one point and criterion agreement is at least 90% (a criterion that is `err` in either grading counts as a disagreement). **F6-runs (descriptive):** one fresh re-run of each sampled cell graded alone, reported against the min and max of the cell's three original runs.
+
+**F9 (descriptive).** After F6: `claude-haiku-5-5`, then `claude-opus-5-5`; run 1 of ours, base and the best rival (highest Sonnet mean in the set for that task among pp, ppi, hist, bf; ties in that order; fixed from the Sonnet grades before any F9 call) on the 16 tasks of both sets; graded per task with the same method (grader model Sonnet). Reported: totals per model and set, and whether ours is ahead in total. No interval, no claim.
+
+**Order and stop rule.** (1) SEALED z runs, then PUBLIC runs; (2) grading (z grading starts when its runs are complete); (3) F6; (4) F9. A cell that fails (usage limit, authentication, no result) is set aside, run again and never graded. A usage-limit or authentication error stops the driver; the state is written and the driver resumed after the reset. A guard change of the hooks/mcpServers hash stops the round; a change that the host itself made (hashes back to baseline) is recorded as a departure. No dollar cap; each call's list-price `total_cost_usd` is logged.
+
+**Result wording.** One sentence naming, for I1 and I2 and each set, the number of tasks, the rivals, the model, the date, the path (Claude Code CLI 2.1.308, owner subscription login), and stating that no cell was reused and that PUBLIC is a development-seen set.
