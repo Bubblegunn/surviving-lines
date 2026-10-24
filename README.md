@@ -236,7 +236,7 @@ line of the table prints.
                      cannot be combined with --group-by
 --ai-breakdown       also print surviving lines and commits whose message trailers name an AI assistant
 --group-by <key>     one block per group of files: dir (top-level directories), dir:<n> (n levels deep), or ext
---suggest-codeowners print CODEOWNERS lines for the groups, from the surviving lines (needs --group-by dir; never written)
+--suggest-codeowners print CODEOWNERS lines for the groups, from the surviving lines (needs --group-by dir; never written); names only people active in the --active-days window, up to 3 per rule
 --include-bots       count bot identities as authors (default: leave them out of both shares)
 --ignore-revs-file <f>  skip the revisions listed in <f> when blaming (git 2.23 or newer);
                        default: .git-blame-ignore-revs at the repository root, when it exists
@@ -351,9 +351,14 @@ have had help.
 extension. Every block names the files it was sampled from, because a directory that rests on one file is a
 weak statement about a team. Commit share stays a whole-repository number and is not repeated per block.
 
-`--group-by dir --suggest-codeowners` also prints a `CODEOWNERS` line for each directory where one author holds
-at least half of the sampled surviving lines, and a comment for the others. Nothing is written. Who wrote the
-code that is left is not the same as who should review changes to it; treat the lines as a starting point.
+`--group-by dir --suggest-codeowners` also prints a `CODEOWNERS` line for each directory where the top author is
+active and holds at least half of the sampled surviving lines, and a comment for the others. Nothing is written.
+Only people with a commit in the `--active-days` window (365 days by default, counted back from the ref's own commit
+date) are named. A rule lists up to three owners: the top author and every other active author who holds at least
+a fifth of the directory. When the top author has no commit in the window, the active owners are named and a comment
+above the rule says so (`# /lib/: Gus Roth wrote 71% of the lines but has no commit since 2024-03-01`). When nobody
+active holds a fifth, the directory gets `# orphaned: nobody active holds 20% of /old/` and no owner line. Who wrote
+the code that is left is not the same as who should review changes to it; treat the lines as a starting point.
 
 ## Who should review a file
 

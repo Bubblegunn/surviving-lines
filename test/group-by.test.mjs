@@ -97,7 +97,9 @@ test("--suggest-codeowners prints lines, never writes, and says why a directory 
     const r = await analyse(parseArgs(["--cwd", dir, "--group-by", "dir:2"]));
     const text = renderCodeowners(r);
     assert.match(text, /^# CODEOWNERS suggestions .* nothing was written\.$/m);
-    assert.match(text, /^\/src\/a\/ ada@example\.com {2}# Ada holds 71\.4% of 14 lines in 2 sampled files$/m);
+    // Round 13 (#11): Bob holds 28.6% of src/a/ and is active, so he is named beside Ada (a second owner needs 20%).
+    assert.match(text, /^\/src\/a\/ ada@example\.com bob@example\.com {2}# Ada 71\.4%, Bob 28\.6% of 14 lines in 2 sampled files$/m);
+    assert.match(text, /^# Only people with a commit in the 365 days before 2026-01-11 are named as owners\.$/m);
     assert.match(text, /^\/src\/b\/ bob@example\.com {2}# Bob holds 100\.0% of 10 lines in 1 sampled file$/m);
     assert.match(text, /^# \(files at the repository root\) skipped/m);
     assert.equal(OWNER_THRESHOLD, 0.5);
@@ -109,6 +111,8 @@ test("--suggest-codeowners prints lines, never writes, and says why a directory 
 test("renderCodeowners orders parents before children, uses GitHub logins, and comments a split directory", () => {
   const author = (/** @type {string} */ name, /** @type {string} */ mail, /** @type {number} */ lines, /** @type {number} */ share) => ({ author: name, mail, lines, lineShare: share });
   const fake = /** @type {any} */ ({
+    activity: { asOf: "2026-02-01", activeDays: 365 },
+    lastCommits: { "1+ada-l@users.noreply.github.com": "2026-01-01", "bob@example.com": "2026-01-01", "cy@example.com": "2026-01-01" },
     grouping: {
       by: "dir:2",
       groups: [
@@ -119,7 +123,8 @@ test("renderCodeowners orders parents before children, uses GitHub logins, and c
       ],
     },
   });
-  const lines = renderCodeowners(fake).split("\n").slice(2);
+  // Round 13 (#11): the header has a third line (who is named) and src/ names both of its 50% authors.
+  const lines = renderCodeowners(fake).split("\n").slice(3);
   assert.deepEqual(lines.map((l) => l.split(" ")[0] + " " + l.split(" ")[1]), ["# /empty/", "# /split/", "/src/ bob@example.com", "/src/a/ @ada-l"]);
   assert.match(lines[0], /no surviving lines in 1 sampled file/);
   assert.match(lines[1], /no author holds half of 10 lines in 1 sampled file; top is Bob at 40\.0%/);

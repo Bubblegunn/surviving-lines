@@ -80,7 +80,7 @@ No. `--ai-breakdown` counts the surviving lines and the commits whose message tr
 
 ## How do I see who owns which directory?
 
-`npx surviving-lines --group-by dir` prints one table per top-level directory, `dir:2` goes two levels deep, and `ext` groups by file extension. Each table names the number of files it rests on. `--suggest-codeowners` prints `CODEOWNERS` lines for directories where one author holds at least half of the sampled surviving lines. It never writes a file.
+`npx surviving-lines --group-by dir` prints one table per top-level directory, `dir:2` goes two levels deep, and `ext` groups by file extension. Each table names the number of files it rests on. `--suggest-codeowners` prints `CODEOWNERS` lines for directories where the top author is active and holds at least half of the sampled surviving lines, with up to three owners per rule (each active author who holds a fifth). It never names someone with no commit in the `--active-days` window: when the top author has left, it names the active owners and says so in a comment above the rule, and when nobody active holds a fifth it writes an `orphaned` comment and no owner line. It never writes a file.
 
 ## Why does it refuse a shallow clone?
 

@@ -96,7 +96,9 @@ Measure who wrote the code that is still alive in a git ref.
                        cannot be combined with --group-by
   --ai-breakdown       also print surviving lines and commits whose message trailers name an AI assistant
   --group-by <key>     one block per group of files: dir (top-level directories), dir:<n> (n levels deep), or ext
-  --suggest-codeowners print CODEOWNERS lines for the groups, from the surviving lines (needs --group-by dir; never written)
+  --suggest-codeowners print CODEOWNERS lines for the groups, from the surviving lines (needs --group-by dir; never written).
+                       Only people with a commit in the --active-days window are named, up to 3 per rule (each with 20% of the
+                       directory); a directory nobody active holds 20% of gets an orphaned comment and no owner line
   --include-bots       count bot identities as authors (default: leave them out of both shares)
   --ignore-revs-file <f>  skip the revisions listed in <f> when blaming (git 2.23 or newer);
                        default: .git-blame-ignore-revs at the repository root, when it exists
@@ -5936,15 +5938,35 @@ export function renderGroups(r, top) {
 /** A top author must hold at least this share of a directory's surviving lines to be suggested as its owner. */
 export const OWNER_THRESHOLD = 0.5;
 
+/** R13 #11: a second or third owner of a path must hold at least this share of its surviving lines, and a path whose top author is gone needs an active author with this share. */
+export const CODEOWNERS_CO_OWNER_MIN_SHARE = 0.2;
+/** R13 #11: a CODEOWNERS rule names at most this many owners. */
+export const CODEOWNERS_MAX_OWNERS = 3;
+
 /**
- * CODEOWNERS lines for a `--group-by dir` result. Printed, never written. A directory gets an owner
- * only when one author holds at least OWNER_THRESHOLD of its sampled surviving lines; otherwise the
- * line is a comment that says so. Files at the root are skipped: the pattern that matches only them
- * does not exist, and `/*` would also match every directory.
+ * CODEOWNERS lines for a `--group-by dir` result. Printed, never written. Only people with a commit in the
+ * `--active-days` window before the ref date are named. A directory gets an owner line when its top author is active and
+ * holds at least OWNER_THRESHOLD of its sampled surviving lines, or when its top author is gone and an active author
+ * holds at least CODEOWNERS_CO_OWNER_MIN_SHARE; the line names up to CODEOWNERS_MAX_OWNERS active authors who each hold that share. When
+ * the top author is gone, a comment above the rule says how much they wrote and when they last committed. When nobody
+ * active holds that share, the directory is an `orphaned` comment and has no owner line. Files at the root are skipped:
+ * the pattern that matches only them does not exist, and `/*` would also match every directory.
  * @param {Awaited<ReturnType<typeof analyse>>} r
  */
 export function renderCodeowners(r) {
-  const out = ["# CODEOWNERS suggestions from sampled surviving lines. Printed only; nothing was written.", "# Surviving lines say who wrote the code that is left, not who should review changes to it."];
+  const asOf = r.activity?.asOf ?? null;
+  const activeDays = r.activity?.activeDays ?? ACTIVE_DAYS_DEFAULT;
+  const out = [
+    "# CODEOWNERS suggestions from sampled surviving lines. Printed only; nothing was written.",
+    "# Surviving lines say who wrote the code that is left, not who should review changes to it.",
+    `# Only people with a commit in the ${activeDays} days before ${asOf ?? "the ref date"} are named as owners.`,
+  ];
+  const lastOf = (/** @type {{ mail: string }} */ a) => r.lastCommits?.[a.mail] ?? null;
+  const isActive = (/** @type {{ mail: string }} */ a) => {
+    const day = lastOf(a);
+    return asOf !== null && day !== null && (Date.parse(asOf) - Date.parse(day)) / 86400000 <= activeDays;
+  };
+  const whole = (/** @type {number} */ x) => `${Math.round(x * 100)}%`;
   // A later CODEOWNERS pattern overrides an earlier one, so a directory is listed before the directories inside it.
   const ordered = [...(r.grouping?.groups ?? [])].sort((x, y) => x.key.localeCompare(y.key));
   for (const g of ordered) {
@@ -5956,12 +5978,28 @@ export function renderCodeowners(r) {
     const basis = `${g.filesSampled} sampled file${g.filesSampled === 1 ? "" : "s"}`;
     if (!top) {
       out.push(`# /${g.key}/ no surviving lines in ${basis}`);
-    } else if (top.lineShare >= OWNER_THRESHOLD) {
-      const login = githubLogin(top.mail);
-      out.push(`/${g.key}/ ${login ? `@${login}` : top.mail}  # ${top.author} holds ${pct(top.lineShare)} of ${g.lines.toLocaleString("en-US")} lines in ${basis}`);
-    } else {
-      out.push(`# /${g.key}/ no author holds half of ${g.lines.toLocaleString("en-US")} lines in ${basis}; top is ${top.author} at ${pct(top.lineShare)}`);
+      continue;
     }
+    const topActive = isActive(top);
+    if (topActive && top.lineShare < OWNER_THRESHOLD) {
+      out.push(`# /${g.key}/ no author holds half of ${g.lines.toLocaleString("en-US")} lines in ${basis}; top is ${top.author} at ${pct(top.lineShare)}`);
+      continue;
+    }
+    const owners = g.authors.filter((a) => a.lines > 0 && isActive(a) && a.lineShare >= CODEOWNERS_CO_OWNER_MIN_SHARE).slice(0, CODEOWNERS_MAX_OWNERS);
+    if (!owners.length) {
+      out.push(`# orphaned: nobody active holds ${whole(CODEOWNERS_CO_OWNER_MIN_SHARE)} of /${g.key}/`);
+      continue;
+    }
+    if (!topActive) {
+      const day = lastOf(top);
+      out.push(`# /${g.key}/: ${top.author} wrote ${whole(top.lineShare)} of the lines but has ${day ? `no commit since ${day}` : "no known commit"}`);
+    }
+    const tokens = owners.map((a) => {
+      const login = githubLogin(a.mail);
+      return login ? `@${login}` : a.mail;
+    });
+    const shares = owners.length === 1 ? `${owners[0].author} holds ${pct(owners[0].lineShare)}` : `${owners.map((a) => `${a.author} ${pct(a.lineShare)}`).join(", ")}`;
+    out.push(`/${g.key}/ ${tokens.join(" ")}  # ${shares} of ${g.lines.toLocaleString("en-US")} lines in ${basis}`);
   }
   return out.join("\n");
 }
