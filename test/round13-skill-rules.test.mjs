@@ -29,10 +29,13 @@ test("a single point of failure and orphaned code are two verdicts, never one ri
   assert.match(b, /Never fold them into one risk rank/);
 });
 
-test("only active people are named as someone to ask, and an empty case is said", () => {
-  const b = bullet("- Name only active people as someone to ask");
-  assert.match(b, /inactive person may be listed as a writer, with the inactive marker, but is not the person to ask/);
-  assert.match(b, /nobody active holds a share of the scope, say so and name no one/);
+test("the top owner by surviving lines is named first with the share, the most active owner is the contact", () => {
+  const b = bullet("- Who to ask:");
+  assert.match(b, /name the top owner \(most surviving lines in the scope\) first, as the main source of knowledge, with the share/);
+  assert.match(b, /Say plainly if that person has no commit in the activity window/);
+  assert.match(b, /Then name the most active owner as the practical contact/);
+  assert.match(b, /Never call an inactive person reachable; never omit the top owner/);
+  assert.doesNotMatch(skill, /Name only active people as someone to ask/);
 });
 
 test("a young or imported history is said to limit the table, and the workflow line is quoted", () => {
