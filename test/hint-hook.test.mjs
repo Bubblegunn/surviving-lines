@@ -452,7 +452,10 @@ test("hooks.json registers the script on UserPromptSubmit through the plugin roo
   const command = config.hooks.UserPromptSubmit[0].hooks[0].command;
   assert.equal(command, '"${CLAUDE_PLUGIN_ROOT}/hooks/surviving-lines-hint.sh"');
   assert.equal(config.hooks.UserPromptSubmit[0].hooks[0].timeout, 30, "the brief may run for 20 seconds, so the hook needs room");
-  assert.equal(Object.keys(config.hooks).join(), "UserPromptSubmit");
+  assert.equal(Object.keys(config.hooks).join(), "UserPromptSubmit,Stop");
+  const stop = config.hooks.Stop[0].hooks[0];
+  assert.equal(stop.command, 'node "${CLAUDE_PLUGIN_ROOT}/hooks/surviving-lines-check.mjs"');
+  assert.equal(stop.timeout, 40, "two CLI runs may take 30 seconds, so the hook needs room");
 });
 
 test("long names and addresses: the budget keeps six suspected groups under 1,200 characters, with the count given", () => {
