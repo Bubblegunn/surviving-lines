@@ -148,6 +148,10 @@ Measure who wrote the code that is still alive in a git ref.
                        person holds 80%+, weight 1) or coupled (change together with another file at degree 0.5 or more, weight 1), ranked by
                        score, commits and path, each with the numbers behind it; --top caps the list (default 10). --min-commits <n> (default 3),
                        --min-shared <n> (default 3) and --max-files-per-commit <n> (default 30) set the thresholds. Own view, --json only
+  --coupled <path>     the files that change together with one file: for each partner the shared commits, the degree (shared over the smaller
+                       commit count of the two), jaccard, and the top owner of the five best, then the people with the most lines across these
+                       files. Window as --attention (--since); --min-shared <n> (3) and --max-files-per-commit <n> (30) apply; --top caps the
+                       partners (default 10). A file only (not a directory), with at least 3 commits. Own view, --json only
   --for-diff <base>..<head>  who should review a change: the people who wrote the lines it replaces or deletes (blamed at the base
                        commit, with this run's blame rules), without the change authors, with per-file flags (inactive owners, orphaned,
                        one owner holds 80%+, new, deleted, renamed). Also <base>...<head> (from the merge base) and <base> alone
@@ -188,7 +192,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, coupled?: string, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -228,6 +232,7 @@ export function parseArgs(argv) {
     else if (a === "--owned-by") o.ownedBy.push(next());
     else if (a === "--tree") { o.tree = TREE_DEPTH_DEFAULT; if (/^\d+$/.test(argv[i + 1] ?? "")) o.tree = Number(argv[++i]); }
     else if (a === "--attention") o.attention = true;
+    else if (a === "--coupled") { o.coupled = next(); if (!o.coupled.trim()) throw new Error("--coupled needs a file path"); }
     else if (a === "--min-commits") { o.minCommits = Number(next()); if (!Number.isInteger(o.minCommits) || o.minCommits < 1) throw new Error("--min-commits must be an integer >= 1"); }
     else if (a === "--min-shared") { o.minShared = Number(next()); if (!Number.isInteger(o.minShared) || o.minShared < 1) throw new Error("--min-shared must be an integer >= 1"); }
     else if (a === "--max-files-per-commit") { o.maxFilesPerCommit = Number(next()); if (!Number.isInteger(o.maxFilesPerCommit) || o.maxFilesPerCommit < 1) throw new Error("--max-files-per-commit must be an integer >= 1"); }
@@ -288,15 +293,16 @@ export function parseArgs(argv) {
   }
   // The views added in round 13 (--for-diff, --owned-by, --why-not, --check-codeowners) print their own output. Each one is refused with every other view
   // and every output format; only --json may be combined with them.
-  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--attention": o.attention, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
+  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--tree": o.tree !== undefined, "--attention": o.attention, "--coupled": o.coupled !== undefined, "--why-not": o.whyNot !== undefined, "--check-codeowners": o.checkCodeowners !== undefined });
   const optionsSet = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", ...newViews });
   for (const view of Object.keys(newViews).filter((k) => newViews[k])) {
-    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--attention" ? { ...optionsSet, "--attention": false, "--sample": o.sample !== 1 } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
+    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--tree" ? { ...optionsSet, "--tree": false } : view === "--attention" ? { ...optionsSet, "--attention": false, "--sample": o.sample !== 1 } : view === "--coupled" ? { ...optionsSet, "--coupled": false, "--sample": o.sample !== 1 } : view === "--check-codeowners" ? { ...optionsSet, "--check-codeowners": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
     const clash = Object.keys(own).find((k) => own[k]);
     if (clash) throw new Error(`${view} prints its own view; it can be combined with --json only, not with ${clash}`);
   }
+  if (o.coupled !== undefined && o.paths.length) throw new Error("--coupled takes its path as its own value; it cannot be combined with pathspecs after --");
   if (o.minCommits !== undefined && !o.attention) throw new Error("--min-commits works with --attention only");
-  if ((o.minShared !== undefined || o.maxFilesPerCommit !== undefined) && !o.attention) throw new Error("--min-shared and --max-files-per-commit work with --attention");
+  if ((o.minShared !== undefined || o.maxFilesPerCommit !== undefined) && !o.attention && o.coupled === undefined) throw new Error("--min-shared and --max-files-per-commit work with --attention or --coupled");
   if (o.timeBudget !== undefined && !o.brief) throw new Error("--time-budget works with --brief only");
   if (o.brief) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.forDiff !== undefined ? "--for-diff" : o.ownedBy.length ? "--owned-by" : o.whyNot !== undefined ? "--why-not" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
@@ -3845,6 +3851,97 @@ export function renderAttention(r) {
   return out.join("\n");
 }
 
+/** R13 #9: a file needs this many commits in the window before coupling is reported for it. */
+const COUPLED_MIN_COMMITS = 3;
+/** R13 #9: partners listed unless --top is given, how many of them get a top owner, and how many reviewers are named. */
+const COUPLED_SHOWN = 10;
+const COUPLED_OWNERS_SHOWN = 5;
+const COUPLED_REVIEWERS_SHOWN = 3;
+
+/**
+ * R13 #9: the files that change together with one file. Partners come from changeIndexOf (degree, jaccard, share of the
+ * target's commits); the five best get their top owner, and the reviewers are the people with the most lines across the
+ * target and those five files, with the owners, the active mark and the lines of the run's own blame counts.
+ * @param {{
+ *   path: string, index: ReturnType<typeof changeIndexOf>,
+ *   perFile: Map<string, Map<string, { name: string, lines: number, fullName?: string }>>,
+ *   includeBots: boolean, canonicalOf: Map<string, { author: string, mail: string }>, nameOf: Map<string, string>,
+ *   people: Map<string, { author: string, lines: number, lastCommit: string | null, active: boolean }>, shown: number,
+ * }} a
+ */
+export function coupledOf(a) {
+  const commits = a.index.commits.get(a.path) ?? 0;
+  const enough = commits >= COUPLED_MIN_COMMITS;
+  const all = enough ? a.index.partners(a.path) : [];
+  const ownerOf = (/** @type {string} */ path) => {
+    const counts = a.perFile.get(path);
+    const f = counts ? foldedOwners(counts, a.includeBots, a.canonicalOf, a.nameOf) : null;
+    return f && f.lines > 0 && f.owners.length ? { f, top: f.owners[0] } : null;
+  };
+  const partners = all.slice(0, a.shown).map((p, i) => {
+    const o = i < COUPLED_OWNERS_SHOWN ? ownerOf(p.path) : null;
+    return { ...p, topOwner: o ? { author: o.top.name, share: o.top.lines / o.f.lines, lines: o.top.lines, active: a.people.get(o.top.key)?.active === true } : null };
+  });
+  /** @type {Map<string, { author: string, lines: number }>} */
+  const held = new Map();
+  for (const path of [a.path, ...all.slice(0, COUPLED_OWNERS_SHOWN).map((p) => p.path)]) {
+    const o = ownerOf(path);
+    for (const ow of o?.f.owners ?? []) {
+      const e = held.get(ow.key) ?? { author: ow.name, lines: 0 };
+      e.lines += ow.lines;
+      held.set(ow.key, e);
+    }
+  }
+  const reviewers = [...held].map(([key, e]) => ({ author: e.author, lines: e.lines, active: a.people.get(key)?.active === true })).sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author)).slice(0, COUPLED_REVIEWERS_SHOWN);
+  const own = ownerOf(a.path);
+  return {
+    path: a.path,
+    commits,
+    revisions: a.index.revisions.get(a.path) ?? 0,
+    skippedCommits: a.index.skipped.get(a.path) ?? 0,
+    enough,
+    owner: own ? { author: own.top.name, share: own.top.lines / own.f.lines, active: a.people.get(own.top.key)?.active === true } : null,
+    partnersTotal: all.length,
+    partners,
+    more: Math.max(0, all.length - partners.length),
+    reviewers,
+  };
+}
+
+/**
+ * The --coupled view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderCoupled(r) {
+  const v = r.coupled;
+  if (!v) throw new Error("renderCoupled needs a result from --coupled");
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const since = v.window.since;
+  const out = [headerLine(r)];
+  if (!v.enough) {
+    out.push(`${v.path}: ${n(v.commits)} commit${v.commits === 1 ? "" : "s"} since ${since}; not enough history for coupling (at least ${COUPLED_MIN_COMMITS} commits: a file added together with others looks coupled to all of them)`);
+  } else if (!v.partners.length) {
+    out.push(`${v.path}: ${n(v.commits)} commits since ${since}; no other file shares at least ${v.minShared} of them (commits touching more than ${v.maxFilesPerCommit} files are skipped)`);
+  } else {
+    out.push(`${v.path}: ${n(v.commits)} commits since ${since}; changes together with:`);
+    const pathW = Math.max(...v.partners.map((p) => displayWidth(p.path)));
+    for (const p of v.partners) {
+      const owner = p.topOwner ? `  top owner ${p.topOwner.author} ${Math.round(p.topOwner.share * 100)}% (${p.topOwner.active ? "active" : "inactive"})` : "";
+      out.push(`  ${padEndDisplay(p.path, pathW)}  ${String(p.shared).padStart(3)} shared  degree ${p.degree.toFixed(2)}  jaccard ${p.jaccard.toFixed(2)}${owner}`);
+    }
+    if (v.more) out.push(`  ... ${n(v.more)} more`);
+  }
+  if (v.skippedCommits) out.push(`commits skipped for touching more than ${v.maxFilesPerCommit} files: ${n(v.skippedCommits)}`);
+  if (v.partners.length) out.push(`reviewers across these files: ${v.reviewers.map((p) => `${p.author} ${n(p.lines)} lines (${p.active ? "active" : "inactive"})`).join(", ")}`);
+  out.push("");
+  if (v.window.youngerThanWindow) out.push(`The history starts ${v.window.firstCommit}, inside the window, so all of it is used.`);
+  out.push(`degree = commits that touched both files / the smaller commit count of the two (code-maat divides by the average and prints a percent, so its numbers differ); jaccard = those commits / commits that touched either; at least ${v.minShared} shared commits are needed. Merges, bots and set-aside commits are left out and renames are followed.`);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  out.push("", "These are commit counts and surviving lines, not who understands the code.");
+  return out.join("\n");
+}
+
 /** R13 #4: where GitHub looks for the file, in its order; the first one that exists is used. */
 export const CODEOWNERS_LOCATIONS = [".github/CODEOWNERS", "CODEOWNERS", "docs/CODEOWNERS"];
 /** R13 #4: a file of this size or more gets a warning; GitHub does not read a file above its limit. */
@@ -5199,6 +5296,17 @@ export async function analyse(o) {
     throw new Error(`no files found in ${o.cwd} at ref "${o.ref}"`);
   }
 
+  if (o.coupled !== undefined) {
+    const wanted = o.coupled.trim().replace(/^\.\//, "");
+    const dirName = wanted.replace(/\/+$/, "");
+    if (wanted.endsWith("/") || (!all.some((f) => f.path === wanted) && all.some((f) => f.path.startsWith(`${dirName}/`)))) {
+      throw new Error(`--coupled takes one file; "${o.coupled}" is a directory, which is not supported yet`);
+    }
+    if (!all.some((f) => f.path === wanted)) {
+      throw new Error(`--coupled: "${o.coupled}" is not a counted file at ref "${o.ref}" (it does not exist there, or it is a lockfile, generated or vendored file, or binary, or is left out by --include or --exclude)`);
+    }
+    o = { ...o, coupled: wanted };
+  }
   const sampled = all.filter((f) => inSample(f.path, o.sample, o.seed));
   if (sampled.length === 0) {
     throw new Error(`no files sampled from ${all.length} files with --sample ${o.sample}${o.seed ? ` and --seed "${o.seed}"` : ""}`);
@@ -5538,13 +5646,21 @@ export async function analyse(o) {
   const whitespace = await findWhitespaceOnlyCommits(o, new Set(all.map((f) => f.path)), skipShas, { blameArgs: mainArgs, credit, perFile: main.perFileRaw, nameOf, canonicalOf: ownerMerge });
   /** @type {(Awaited<ReturnType<typeof attentionOf>> & { window: ReturnType<typeof changeWindowOf> & { firstCommit: string | null, until: string | null } }) | null} */
   let attentionResult = null;
-  if (o.attention) {
+  /** @type {(ReturnType<typeof coupledOf> & { window: ReturnType<typeof changeWindowOf> & { firstCommit: string | null, until: string | null }, minShared: number, maxFilesPerCommit: number, commitsRead: number }) | null} */
+  let coupledResult = null;
+  if (o.attention || o.coupled !== undefined) {
     const firstDays = [...(await readCommitDays(o)).values()].map((d) => d.first).sort();
     const firstCommit = firstDays[0] ?? null;
-    const window = changeWindowOf(o.since, asOfDay, firstCommit);
+    const window = { ...changeWindowOf(o.since, asOfDay, firstCommit), firstCommit, until: o.until ?? null };
     const log = await git(["log", "--no-merges", "--topo-order", "--name-status", "-M", "--format=%x01%H%x1f%aE%x1f%aN", `--since=${window.since}`, ...(o.until ? [`--until=${o.until}`] : []), o.ref], o.cwd);
     const sets = changeSetsOf(log, new Set(all.map((f) => f.path)), skipShas, o.includeBots);
-    attentionResult = { window: { ...window, firstCommit, until: o.until ?? null }, ...attentionOf({ sets, perFile: main.perFile, includeBots: o.includeBots, canonicalOf: ownerMerge, nameOf, people, minCommits: o.minCommits ?? ATTENTION_MIN_COMMITS, minShared: o.minShared ?? COUPLING_MIN_SHARED, maxFiles: o.maxFilesPerCommit ?? COUPLING_MAX_FILES, shown: o.topGiven ? o.top : ATTENTION_SHOWN }) };
+    const minShared = o.minShared ?? COUPLING_MIN_SHARED;
+    const maxFiles = o.maxFilesPerCommit ?? COUPLING_MAX_FILES;
+    if (o.attention) {
+      attentionResult = { window, ...attentionOf({ sets, perFile: main.perFile, includeBots: o.includeBots, canonicalOf: ownerMerge, nameOf, people, minCommits: o.minCommits ?? ATTENTION_MIN_COMMITS, minShared, maxFiles, shown: o.topGiven ? o.top : ATTENTION_SHOWN }) };
+    } else if (o.coupled !== undefined) {
+      coupledResult = { window, minShared, maxFilesPerCommit: maxFiles, commitsRead: sets.length, ...coupledOf({ path: o.coupled, index: changeIndexOf(sets, minShared, maxFiles), perFile: main.perFile, includeBots: o.includeBots, canonicalOf: ownerMerge, nameOf, people, shown: o.topGiven ? o.top : COUPLED_SHOWN }) };
+    }
   }
   const filesResult = o.files === undefined ? null : filesView(o.files, main.perFile, o.includeBots, ownerMerge, nameOf, main.perFileRaw);
   const mailmap = await readMailmapMerges(o, blamedByCommit, rows);
@@ -5589,6 +5705,7 @@ export async function analyse(o) {
     ownedBy: ownedByResult,
     tree: treeResult,
     attention: attentionResult,
+    coupled: coupledResult,
     whyNot: whyNotResult,
     codeownersCheck: codeownersResult,
     committedByOthers: committedElsewhere,
@@ -7498,6 +7615,8 @@ async function main() {
       output = renderTree(r);
     } else if (r.attention) {
       output = renderAttention(r);
+    } else if (r.coupled) {
+      output = renderCoupled(r);
     } else if (r.forDiff) {
       output = renderForDiff(r, o.topGiven ? o.top : FOR_DIFF_REVIEWERS_SHOWN);
     } else if (r.without) {

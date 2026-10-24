@@ -1286,6 +1286,49 @@
         "more": { "type": "integer", "minimum": 0 }
       }
     },
+    "coupled": {
+      "type": ["object", "null"],
+      "description": "The --coupled view: the files that change together with one file. Null unless --coupled was given. degree = shared commits over the smaller commit count of the two files, both counted over commits that touched at most maxFilesPerCommit paths.",
+      "additionalProperties": false,
+      "required": ["window", "minShared", "maxFilesPerCommit", "commitsRead", "path", "commits", "revisions", "skippedCommits", "enough", "owner", "partnersTotal", "partners", "more", "reviewers"],
+      "properties": {
+        "window": { "type": "object", "description": "As in attention.window." },
+        "minShared": { "type": "integer", "minimum": 1 },
+        "maxFilesPerCommit": { "type": "integer", "minimum": 1 },
+        "commitsRead": { "type": "integer", "minimum": 0 },
+        "path": { "type": "string" },
+        "commits": { "type": "integer", "minimum": 0, "description": "Commits that touched the file in the window, merges, bots and set-aside commits left out, renames followed." },
+        "revisions": { "type": "integer", "minimum": 0, "description": "Those commits that touched at most maxFilesPerCommit paths: the basis of the degree." },
+        "skippedCommits": { "type": "integer", "minimum": 0, "description": "Commits that touched the file and more than maxFilesPerCommit paths." },
+        "enough": { "type": "boolean", "description": "False when the file has fewer than 3 commits: no partners are computed." },
+        "owner": { "type": ["object", "null"], "additionalProperties": false, "required": ["author", "share", "active"], "properties": { "author": { "type": "string" }, "share": { "type": "number", "minimum": 0, "maximum": 1 }, "active": { "type": "boolean" } } },
+        "partnersTotal": { "type": "integer", "minimum": 0 },
+        "partners": {
+          "type": "array",
+          "description": "Sorted by degree, shared commits, jaccard, path; up to --top (default 10). topOwner is set for the first five.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "shared", "degree", "jaccard", "share", "commits", "topOwner"],
+            "properties": {
+              "path": { "type": "string" },
+              "shared": { "type": "integer", "minimum": 1 },
+              "degree": { "type": "number", "minimum": 0, "maximum": 1 },
+              "jaccard": { "type": "number", "minimum": 0, "maximum": 1 },
+              "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "Shared commits over the target's revisions." },
+              "commits": { "type": "integer", "minimum": 0, "description": "Commits of the partner in the window." },
+              "topOwner": { "type": ["object", "null"], "additionalProperties": false, "required": ["author", "share", "lines", "active"], "properties": { "author": { "type": "string" }, "share": { "type": "number", "minimum": 0, "maximum": 1 }, "lines": { "type": "integer", "minimum": 0 }, "active": { "type": "boolean" } } }
+            }
+          }
+        },
+        "more": { "type": "integer", "minimum": 0 },
+        "reviewers": {
+          "type": "array",
+          "description": "Up to three people with the most lines across the file and its five best partners.",
+          "items": { "type": "object", "additionalProperties": false, "required": ["author", "lines", "active"], "properties": { "author": { "type": "string" }, "lines": { "type": "integer", "minimum": 0 }, "active": { "type": "boolean" } } }
+        }
+      }
+    },
     "forDiff": {
       "type": ["object", "null"],
       "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",
