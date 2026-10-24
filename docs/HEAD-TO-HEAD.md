@@ -1224,3 +1224,29 @@ This is a development gate, not a measurement for a claim: it decides whether a 
 **Analysis and decision (R13-5, restated).** Bootstrap exactly as in round 11 (seed 20261023, 10,000 resamples over runs, the same draw for every arm of a task). Groups: DEV (the 12 fresh-writer tasks), E (seen), F (seen). Ours minus the single best other arm in total, with 95% interval, is reported per group, together with ours minus the per-task better of `pp` and `ppi`. **Clear lead** = the lower bound of the DEV interval against the best other arm of DEV is above zero AND ours is not behind the best other arm in total on E and on F. Otherwise no final measurement is started and the round returns to diagnosis. The analysis script is `analyse.py` in the gate folder (copied to the evidence of any later round).
 
 **Stop rule.** A usage-limit or authentication error stops the driver, the failed cells are set aside and re-run, never graded. No protocol change after the first run.
+
+### Round 13 development gate 1: result and the defects it found (2026-10-24)
+
+Protocol above, product `6fa5c6d`, all 396 cells run and graded (five-vote reason-first grading, 0 cells needed the reverse pass). Not a claim; the decision rule R13-5 gives **NO CLEAR LEAD**.
+
+| Group | ours | pp | ppi | hist | bf | base | ours minus best other (95% interval) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| DEV (12 fresh-writer tasks, max 60) | 20.00 | 33.33 | 28.67 | 20.67 | 24.67 | 28.67 | -13.33 (-17.67 to -9.00) vs pp |
+| E, seen (5 tasks, max 25) | 17.33 | 14.00 | 11.67 | 6.67 | 11.33 | 13.67 | +3.33 (-0.33 to +6.00) vs pp |
+| F, seen (5 tasks, max 25) | 12.33 | 13.67 | 14.33 | 10.67 | 5.67 | 14.00 | -2.00 (-7.00 to +4.00) vs ppi |
+
+**Diagnosis (before any change).** (1) In 30 of the 66 `ours` cells the new Stop hook blocked the first answer. Those cells scored 0.80 of 5 on average, the 36 unblocked cells 3.47. On the repair turn the model replied with a list of corrections only, and that became the final answer the graders saw; many findings were also false positives (numbers that the injected brief or other tool output contained). (2) Machine-written files without a banner (an Xcode project file, a `*.generated.json` fixture) were counted as human code (DA3, DA4). (3) The skill rule "name only active people to ask" contradicted what independent writers treat as correct (the top owner by surviving lines is the person to ask, with a note when they are inactive). These are product defects of commit `6fa5c6d`, not a property of the grader. DA3 scored 0 for every arm, which the same diagnosis explains for ours; for the rivals it reflects criteria none of them met.
+
+**Consequence.** The `ours` cells of gate 1 do not measure the product as it will ship. They are kept as recorded. Gate 2 (protocol below) re-runs `ours` with the fixed product; the rival cells of gate 1 are reused (same path, same day, same fixtures), and every unit is graded again, so the pairing by grading cell holds.
+
+## Round 13 development gate 2 protocol (frozen before any gate 2 run, 2026-10-24)
+
+Same rules as gate 1 (the section above) except what is stated here. Not a claim.
+
+**Product under test.** `git archive` of `8af57f4`: gate 1 product plus `--tree`, `--attention`, `--coupled`, `--written-since`, `--timeline`, the copy-detection line term, and the three fixes for the defects above (Stop hook precision and a complete-answer repair request; name-based generated files; skill rule naming the top owner first). 790 of 790 tests pass.
+
+**Cells.** `ours`: 22 tasks x 3 runs, all new (66 runs, same path, parallelism 3, work directories under `/private/tmp/r13/gate2`). `pp`, `ppi`, `hist`, `bf`, `base`: the 330 cells of gate 1 are reused (same day, same fixtures, same path, same rival copies); they are marked as reused in any table. Every one of the 66 task-run units is graded again with `gate-grade5.py` (new grader replies; the labels and shuffled order are those of gate 1, so only the `ours` answer changed), so the gate 1 grades of the rivals are not carried over.
+
+**Decision rule.** Unchanged from R13-5 and gate 1 (`analyse.py`, seed 20261023): clear lead = DEV lower bound against the best other arm above zero AND ours not behind the best other arm in total on E and F. Additionally reported: the share of `ours` cells in which the Stop hook blocked the first answer (gate 1: 30 of 66) and the mean score of blocked and unblocked cells. If more than 25% of the `ours` cells are blocked again, the hook is treated as a defect and is fixed before any further decision.
+
+**Stop rule.** As gate 1. No protocol change after the first run.
