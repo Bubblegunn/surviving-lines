@@ -432,7 +432,14 @@ adresi olmayan bir `Assisted-by:` satırında durmaz ve AI asistanı satırları
 listesinden bir şeye ihtiyacınız varsa onu kullanın; yeniden üretilebilir örnek, kimlik ve bot yönetimi
 gerekiyorsa bunu.
 
-[`docs/HEAD-TO-HEAD.md`](docs/HEAD-TO-HEAD.md) ikinci bir karşılaştırmayı anlatır: bu araç, başka bir Claude Code eklentisi ve düz Claude aynı on bir sabit görevde (altı çekirdek, beş ek). Round 0 ve round 1 sonuçları orada kayıtlı ve `bench/head-to-head/results/` altında yayımlı. Round 1 kapısı geçilmedi: toplamımız project-pilot'unkinden %7,8 yüksek, kural %20 istiyor; 11 görevin 5'inde kesin öndeyiz. Bağımsız yeniden notlandırma yapılmadı, bu yüzden bunlar lansman iddiası değildir.
+[`docs/HEAD-TO-HEAD.md`](docs/HEAD-TO-HEAD.md) ikinci bir karşılaştırmayı anlatır: bu araç, Claude Code eklentileri project-pilot (komutuyla ve komutsuz), mcp-git-historian ve k41n/busfactor ile düz Claude, aynı örnek depolar hakkındaki aynı sahiplik sorularını yanıtlıyor.
+
+Round 13 sonucu, 24 Ekim 2026'da Claude Sonnet 5.5 (Claude Code 2.1.308) ile, kol ve görev başına üç koşu, her hücre yeni, ölçüt başına beş bağımsız model oyuyla notlandı:
+
+- **z seti, 5 görev (25 ölçüt)**, bu kodu hiç görmemiş bir yazar tarafından yazıldı: bu araç 9,67; en iyi diğer kol (komutuyla project-pilot) 7,33; farkın %95 aralığı +0,33 ile +4,33.
+- **Herkese açık set, 11 görev (55 ölçüt)**, geliştirmede kullanıldı: bu araç 47,67; en iyi diğer kol (düz Claude) 41,00; farkın %95 aralığı +5,00 ile +8,33.
+
+Görev bazında kural (her görevde diğer her koldan önde olmak) z setinde sağlanmadı. Her hücre, plandan sapmalar ve yeniden hesaplama adımı (`python3 -I score.py --check`) [`bench/head-to-head/results/round13-claude-sonnet-5-5/`](bench/head-to-head/results/round13-claude-sonnet-5-5/) içindedir. Sonuç bu görevleri, bu modeli ve bu tarihi kapsar; başka görevler hakkında iddia değildir.
 
 ## Neyi gösteremez
 

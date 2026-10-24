@@ -651,7 +651,14 @@ on an `Assisted-by:` trailer that has no address, and breaks out AI-assistant tr
 need something from its list above; use this one when you need a reproducible sample, or the identity
 and bot handling.
 
-[`docs/HEAD-TO-HEAD.md`](docs/HEAD-TO-HEAD.md) describes a second comparison: this tool, another Claude Code plugin and plain Claude on the same eleven public tasks (six core and five extra), with the tasks fixed before the runs. Round 0 and round 1 results are recorded there and published in `bench/head-to-head/results/`. The round 1 gate failed: our total was 7.8% above project-pilot's and the rule needs 20%, and we were strictly ahead on 5 of 11 tasks. The independent re-grade has not been done, so these are not launch claims.
+[`docs/HEAD-TO-HEAD.md`](docs/HEAD-TO-HEAD.md) describes a second comparison: this tool, the Claude Code plugins project-pilot (with and without its command), mcp-git-historian and k41n/busfactor, and plain Claude, answering the same ownership questions about the same fixture repositories.
+
+Round 13 result, measured on 2026-10-24 with Claude Sonnet 5.5 (Claude Code 2.1.308), three runs per arm and task, every cell new, graded by five independent model votes per criterion:
+
+- **Sealed set z, 5 tasks (25 criteria)**, written by an author who never saw this code: this tool 9.67, best other arm (project-pilot with its command) 7.33; 95% interval of the difference +0.33 to +4.33.
+- **Public set, 11 tasks (55 criteria)**, which the development used: this tool 47.67, best other arm (plain Claude) 41.00; 95% interval of the difference +5.00 to +8.33.
+
+The per-task rule (ahead of every other arm on every task) is not met on set z. Every cell, the departures from the plan and a recompute step (`python3 -I score.py --check`) are in [`bench/head-to-head/results/round13-claude-sonnet-5-5/`](bench/head-to-head/results/round13-claude-sonnet-5-5/). The result covers these tasks, this model and this date; it is not a claim about other tasks.
 
 ## What it cannot show
 
