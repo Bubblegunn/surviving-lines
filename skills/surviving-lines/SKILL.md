@@ -112,3 +112,5 @@ The tool prints this under every table. Pass it on:
 - The reformat check is a heuristic: it lists suspects, it does not prove them.
 
 Use it to answer "whose code is still here?", never "who is the best engineer?". It counts AI-assistant trailers but does not detect AI-written code.
+
+- For a long ownership report with many named claims, ask the `claim-checker` agent (it ships with the plugin) to check the draft against `<sl> --brief` before you finish. A Stop hook also checks the numbers, names and merges of the final answer once, with no model call.
