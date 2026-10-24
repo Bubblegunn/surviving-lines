@@ -663,6 +663,70 @@
         }
       }
     },
+    "ownedBy": {
+      "type": ["object", "null"],
+      "description": "The --owned-by view: what the named people own, from the run's per-file blame counts. Null unless --owned-by was given. It counts surviving lines, not understanding.",
+      "additionalProperties": false,
+      "required": ["asOf", "activeDays", "scopeLines", "scopeLinesWithBlank", "scopeFiles", "directoryDepth", "owned"],
+      "properties": {
+        "asOf": { "type": "string", "description": "The ref commit's author date, YYYY-MM-DD." },
+        "activeDays": { "type": "integer", "minimum": 1 },
+        "scopeLines": { "type": "integer", "minimum": 0, "description": "Non-blank surviving lines in the scope, bots left out." },
+        "scopeLinesWithBlank": { "type": "integer", "minimum": 0 },
+        "scopeFiles": { "type": "integer", "minimum": 0, "description": "Files with at least one counted line." },
+        "directoryDepth": { "type": "integer", "minimum": 1, "description": "Directory levels used by byDirectory (--group-by dir:<n>, default 1)." },
+        "owned": {
+          "type": "array",
+          "description": "One entry per person matched by the values, in the order asked.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["author", "mail", "addresses", "status", "lines", "linesWithBlank", "share", "shareWithBlank", "files", "topOfFiles", "halfOrMoreFiles", "soleAuthorFiles", "byDirectory", "commits", "commitShare", "firstCommit", "lastCommit", "active"],
+            "properties": {
+              "author": { "type": "string" },
+              "mail": { "type": "string", "description": "The address with the most lines." },
+              "addresses": { "type": "integer", "minimum": 1, "description": "Rows (addresses) under this name." },
+              "status": { "type": "string", "enum": ["owner", "noSurvivingLines", "bot"], "description": "noSurvivingLines: commits but no counted line. bot: not counted unless --include-bots." },
+              "lines": { "type": "integer", "minimum": 0 },
+              "linesWithBlank": { "type": "integer", "minimum": 0 },
+              "share": { "type": "number", "minimum": 0, "maximum": 1 },
+              "shareWithBlank": { "type": "number", "minimum": 0, "maximum": 1 },
+              "files": { "type": "integer", "minimum": 0, "description": "Files where the person holds at least one counted line." },
+              "topOfFiles": { "type": "integer", "minimum": 0, "description": "Files where the person is the top owner (equal lines go by name)." },
+              "halfOrMoreFiles": { "type": "integer", "minimum": 0 },
+              "soleAuthorFiles": {
+                "type": "object",
+                "description": "Files where nobody else has a counted line.",
+                "additionalProperties": false,
+                "required": ["files", "items"],
+                "properties": {
+                  "files": { "type": "integer", "minimum": 0 },
+                  "items": { "type": "array", "description": "The largest, up to --top (default 10).", "items": { "type": "object", "additionalProperties": false, "required": ["path", "lines"], "properties": { "path": { "type": "string" }, "lines": { "type": "integer" } } } }
+                }
+              },
+              "byDirectory": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["total", "items"],
+                "properties": {
+                  "total": { "type": "integer", "minimum": 0 },
+                  "items": {
+                    "type": "array",
+                    "description": "The directories where the person holds most lines, up to --top (default 10); \".\" is the top level.",
+                    "items": { "type": "object", "additionalProperties": false, "required": ["directory", "lines", "share", "rank", "topOwner"], "properties": { "directory": { "type": "string" }, "lines": { "type": "integer" }, "share": { "type": "number", "minimum": 0, "maximum": 1, "description": "Of the directory's counted lines." }, "rank": { "type": "integer", "minimum": 1 }, "topOwner": { "type": "boolean" } } }
+                  }
+                }
+              },
+              "commits": { "type": "integer", "minimum": 0 },
+              "commitShare": { "type": "number", "minimum": 0, "maximum": 1 },
+              "firstCommit": { "type": ["string", "null"], "description": "Over the whole history of the ref, whatever --since and --until say." },
+              "lastCommit": { "type": ["string", "null"] },
+              "active": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
     "forDiff": {
       "type": ["object", "null"],
       "description": "The --for-diff view: who should review a change, from the lines it replaces or deletes, blamed at the base commit. Null unless --for-diff was given. It counts lines, not who understands the change.",

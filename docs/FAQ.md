@@ -50,6 +50,10 @@ The line `as of <date>: k of n authors committed in the last 365 days and hold x
 
 `surviving-lines --without "Ada Quill,Bob Hale"` removes those people's lines from the count and prints what is left: the lines they hold, the files they own, the files that nobody remaining knows (the leavers hold half or more and the best remaining author under 10%), the bus factor before and after, and who would inherit most. Names and addresses are matched after `.mailmap`. It measures lines, not understanding, and a person can know code they never committed.
 
+## What does one person own?
+
+`surviving-lines --owned-by "Ada Quill"` prints what that person holds: their non-blank lines and share, the files they own most of or half of, the files nobody else has written, their lines per directory, their commits and their last commit with the active mark. Use a name or an address; `.mailmap` and `--merge-identities` apply. It counts surviving lines, so a person who wrote code that was later replaced owns nothing here; the answer then says so and gives their commit dates.
+
 ## Who should review this change or pull request?
 
 `surviving-lines --for-diff main...feature` lists the people who wrote the lines the change replaces or deletes, most lines first, with their last commit and whether they are active. The change authors are not suggested. It flags the files that need care: touched lines that belong to inactive people, files nobody active holds a fifth of, files where one person holds 80% or more. New files and pure insertions have no earlier owner, so they add no reviewer; `--reviewers <path>` names who owns the code around them. It counts lines, not who understands the change.
