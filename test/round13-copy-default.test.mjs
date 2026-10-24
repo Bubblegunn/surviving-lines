@@ -99,3 +99,46 @@ test("copy detection default: when it switches itself off the header says so; --
     },
   );
 });
+
+test("copy detection default: lines x commits above the line limit turns -C off, at the limit it stays on", async () => {
+  const { copyDetectionDefault, COPY_DETECTION_MAX_LINE_WORK } = await import("../bin/surviving-lines.js");
+  assert.equal(COPY_DETECTION_MAX_LINE_WORK, 400_000_000);
+  // The sweep case: 526 files x 1,684 commits is under the file limit, 347,000 lines x 1,684 commits is not.
+  assert.equal(copyDetectionDefault(526, 1684, undefined, 347_000), false);
+  assert.equal(copyDetectionDefault(526, 1684, undefined, 237_000), true);
+  assert.equal(copyDetectionDefault(10, 1000, undefined, 400_000), true, "at the line limit");
+  assert.equal(copyDetectionDefault(10, 1000, undefined, 400_001), false, "one line above");
+  assert.equal(copyDetectionDefault(10, 1000, undefined, 0), true, "unknown lines add no term");
+  assert.equal(copyDetectionDefault(10, 1000, undefined, 21, 20_000), false, "explicit line limit, above");
+  assert.equal(copyDetectionDefault(10, 1000, undefined, 20, 20_000), true, "explicit line limit, at");
+});
+
+test("copy detection default: the note names lines x commits when only the line term is exceeded", async () => {
+  await withRepo(
+    (dir) => {
+      for (let i = 0; i < 3; i++) commitAsIdentity(dir, ANN, `2026-01-0${i + 1}T00:00:00Z`, `c${i}`, { "a.js": lines("a", 10 + i) });
+    },
+    async (dir) => {
+      const run = async (lineLimit) => {
+        const o = parseArgs(["--cwd", dir]);
+        o.copyLineWorkLimit = lineLimit;
+        return analyse(o);
+      };
+      // 12 lines at the end x 3 commits = 36.
+      assert.equal((await run(36)).blame.copyDetection.on, true);
+      const off = await run(35);
+      assert.equal(off.blame.copyDetection.on, false);
+      assert.equal(off.blame.copyDetection.reason, "12 lines times 3 commits is more than 35");
+      assert.match(renderTable(off, null), /copy detection off \(12 lines times 3 commits is more than 35\)/);
+      // The files term still wins the wording when it is exceeded too.
+      const both = parseArgs(["--cwd", dir]);
+      both.copyWorkLimit = 1;
+      both.copyLineWorkLimit = 1;
+      assert.match((await analyse(both)).blame.copyDetection.reason ?? "", /^1 files times 3 commits is more than 1$/);
+      // --copies forces it on regardless.
+      const forced = parseArgs(["--cwd", dir, "--copies"]);
+      forced.copyLineWorkLimit = 1;
+      assert.equal((await analyse(forced)).blame.copyDetection.on, true);
+    },
+  );
+});

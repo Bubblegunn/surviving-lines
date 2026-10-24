@@ -48,15 +48,23 @@ const COPY_DETECTION_MAX_FILES = 2000;
 export const COPY_DETECTION_MAX_WORK = 2_000_000;
 
 /**
+ * Above this many non-binary lines to blame times commits, copy detection (-C) is off by default too. Files times
+ * commits misses a repository with few but large files: its blame time grows with the lines as well.
+ */
+export const COPY_DETECTION_MAX_LINE_WORK = 400_000_000;
+
+/**
  * Whether copy detection is on when --copies and --no-copies were not given: the file count is at most
- * COPY_DETECTION_MAX_FILES and files times commits is at most `limit`.
+ * COPY_DETECTION_MAX_FILES, files times commits is at most `limit`, and lines times commits is at most `lineLimit`.
  * @param {number} files files to blame
  * @param {number} commits commits reachable from the ref
  * @param {number} [limit]
+ * @param {number} [lines] non-binary lines in the files to blame (0 when not known)
+ * @param {number} [lineLimit]
  * @returns {boolean}
  */
-export function copyDetectionDefault(files, commits, limit = COPY_DETECTION_MAX_WORK) {
-  return files <= COPY_DETECTION_MAX_FILES && files * commits <= limit;
+export function copyDetectionDefault(files, commits, limit = COPY_DETECTION_MAX_WORK, lines = 0, lineLimit = COPY_DETECTION_MAX_LINE_WORK) {
+  return files <= COPY_DETECTION_MAX_FILES && files * commits <= limit && lines * commits <= lineLimit;
 }
 
 /** The package version, read from the package.json this file ships with. */
@@ -83,7 +91,7 @@ Measure who wrote the code that is still alive in a git ref.
   --exclude <glob>     skip files matching the glob (repeatable)
   --since <date>       commit-share window start (passed to git log)
   --until <date>       commit-share window end
-  --copies [deep]      follow copies even above 2000 files, or files times commits above 2,000,000 (default: git blame -w -M -C, which follows code
+  --copies [deep]      follow copies even above 2000 files, or files x commits above 2,000,000 or lines x commits above 400,000,000 (default: git blame -w -M -C, which follows code
                        moved out of a file changed in the same commit; copy detection is off above those limits).
                        "deep" uses -C -C, which also looks in files of the commit that created the file.
                        The word right after --copies is read as this value, so never put a path named "deep" there
@@ -192,7 +200,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, coupled?: string, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], tree?: number, attention: boolean, coupled?: string, minCommits?: number, minShared?: number, maxFilesPerCommit?: number, whyNot?: string, checkCodeowners?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, copyLineWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -5324,8 +5332,10 @@ export async function analyse(o) {
   // it is set. The history is measured only when the file count alone does not decide it.
   const forced = o.noCopies || o.copies;
   const commitCount = !forced && sampled.length <= COPY_DETECTION_MAX_FILES ? Number((await git(["rev-list", "--count", ...(o.since ? ["--since", o.since] : []), o.ref, "--", ...o.paths], o.cwd)).trim()) : 0;
-  const copyOn = !o.noCopies && (o.copies || copyDetectionDefault(sampled.length, commitCount, o.copyWorkLimit));
+  const blamedLines = sampled.reduce((sum, f) => sum + f.lines, 0);
+  const copyOn = !o.noCopies && (o.copies || copyDetectionDefault(sampled.length, commitCount, o.copyWorkLimit, blamedLines, o.copyLineWorkLimit));
   const workLimit = o.copyWorkLimit ?? COPY_DETECTION_MAX_WORK;
+  const lineWorkLimit = o.copyLineWorkLimit ?? COPY_DETECTION_MAX_LINE_WORK;
   const copyDetection = {
     on: copyOn,
     reason: copyOn
@@ -5334,7 +5344,9 @@ export async function analyse(o) {
         ? "--no-copies"
         : sampled.length > COPY_DETECTION_MAX_FILES
           ? `${sampled.length.toLocaleString("en-US")} files to blame, more than ${COPY_DETECTION_MAX_FILES}`
-          : `${sampled.length.toLocaleString("en-US")} files times ${commitCount.toLocaleString("en-US")} commits is more than ${workLimit.toLocaleString("en-US")}`,
+          : sampled.length * commitCount > workLimit
+            ? `${sampled.length.toLocaleString("en-US")} files times ${commitCount.toLocaleString("en-US")} commits is more than ${workLimit.toLocaleString("en-US")}`
+            : `${blamedLines.toLocaleString("en-US")} lines times ${commitCount.toLocaleString("en-US")} commits is more than ${lineWorkLimit.toLocaleString("en-US")}`,
     flags: copyOn ? (o.copiesDeep ? "-C -C" : "-C") : null,
   };
   const blameArgs = ["blame", "--line-porcelain", "-w", "-M"];
