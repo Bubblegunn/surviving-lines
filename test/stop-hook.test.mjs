@@ -286,3 +286,74 @@ test("the script does not write, and prints nothing to stderr on a normal run", 
 test("numberFindings is quiet when the answer has no claims", () => {
   assert.deepEqual(numberFindings("Nobody owns it.", [{ authors: [], sample: { linesInRef: 1, linesWithBlank: 1 } }], bucketFromOutputs([])), []);
 });
+
+const OWNERSHIP_PROMPTS = [
+  "Who should I ask about the sources and who about the tests?",
+  "I just inherited this library and want to know who is really behind it. How much of the code that is in the repo today is theirs?",
+  "For each top-level directory, who should be the default reviewer?",
+  "We depend on this library and I'm worried it is a one-person project. How concentrated is the ownership?",
+  "I'm about to change how tables get printed and want a reviewer. Who should I ask, and how much of that code is really theirs?",
+  "The log makes X look like the author of everything. Is he who we should ask?",
+];
+const UNRELATED_PROMPTS = [
+  "fix the failing test in parser.py",
+  "add a button to the settings page",
+  "review this pull request for bugs",
+  "explain git rebase",
+  "who is the president of france",
+  "write a commit message",
+  "what does this regex do",
+  "rename the variable foo to bar",
+  "why is the build slow on CI",
+  "convert this function to async",
+  "update the README with install steps",
+  "what is the difference between a map and a set",
+  "how do I undo my last commit",
+  "the power went out and the downloaded file is broken",
+];
+/** One prompt per generic pattern added for ordinary ownership questions; each is matched by that pattern alone. */
+const SINGLE_PATTERN_PROMPTS = new Map([
+  ["(^|[^a-z])owner(s|ship)?([^a-z]|$)", "the owner of this module"],
+  ["(^|[^a-z])reviewers?([^a-z]|$)", "pick a reviewer for this change"],
+  ["who (should|can|do|would) (i|we) (ask|talk|contact|go|turn)", "who can we contact about this"],
+  ["one[- ]person (project|library|package)", "this is a one person library"],
+  ["(inherited|took over|taking over|taken over|became (the )?maintainer)", "she took over last year"],
+  ["who is (really )?behind", "who is behind this"],
+  ["how much of (the|that|this) (code|library|package|crate|repo)", "how much of this crate is old"],
+  ["really (theirs|his|hers|written by)", "is it really hers"],
+  ["who (really )?(wrote|built)", "who really built it"],
+  ["authorship", "authorship of the parser"],
+  ["truck factor", "what is the truck factor"],
+  ["(look|looks|seem|seems) like the (author|owner|maintainer)", "he seems like the maintainer"],
+]);
+
+test("generic ownership questions match the JS gate and the shell gate", () => {
+  for (const p of OWNERSHIP_PROMPTS) {
+    assert.ok(matchesTopic(p), `JS: ${p}`);
+    const lc = p.toLowerCase();
+    const sh = readFileSync(join(ROOT, "hooks", "surviving-lines-hint.sh"), "utf8");
+    const pats = [...sh.matchAll(/^\s*-e '(.*)'(?: \\| \|\| exit 0)?\s*$/gm)].map((m) => m[1]);
+    const g = spawnSync("grep", ["-Eq", ...pats.flatMap((x) => ["-e", x])], { input: lc });
+    assert.equal(g.status, 0, `shell: ${p}`);
+  }
+});
+
+test("unrelated prompts match neither gate", () => {
+  const sh = readFileSync(join(ROOT, "hooks", "surviving-lines-hint.sh"), "utf8");
+  const pats = [...sh.matchAll(/^\s*-e '(.*)'(?: \\| \|\| exit 0)?\s*$/gm)].map((m) => m[1]);
+  assert.ok(UNRELATED_PROMPTS.length >= 12);
+  for (const p of UNRELATED_PROMPTS) {
+    assert.ok(!matchesTopic(p), `JS: ${p}`);
+    const g = spawnSync("grep", ["-Eq", ...pats.flatMap((x) => ["-e", x])], { input: p.toLowerCase() });
+    assert.equal(g.status, 1, `shell: ${p}`);
+  }
+});
+
+test("each generic pattern is needed: its prompt matches it and no other pattern", () => {
+  for (const [pat, prompt] of SINGLE_PATTERN_PROMPTS) {
+    assert.ok(TOPIC_PATTERNS.includes(pat), pat);
+    const others = TOPIC_PATTERNS.filter((x) => x !== pat).map((x) => new RegExp(x));
+    assert.ok(new RegExp(pat).test(prompt), `own: ${prompt}`);
+    assert.ok(!others.some((r) => r.test(prompt)), `only this pattern should match: ${prompt}`);
+  }
+});

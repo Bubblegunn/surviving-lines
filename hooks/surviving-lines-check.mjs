@@ -42,6 +42,18 @@ export const TOPIC_PATTERNS = [
   "which (people|persons|authors|developers|engineers|contributors) (wrote|own|maintain|know|are|is|still|should)",
   "still (alive )?in (this|the) (repo|repository|code|codebase)",
   "losing (one|two|a few|a couple of)( or (one|two|three|a few))? (people|persons|developers|engineers|contributors)",
+  "(^|[^a-z])owner(s|ship)?([^a-z]|$)",
+  "(^|[^a-z])reviewers?([^a-z]|$)",
+  "who (should|can|do|would) (i|we) (ask|talk|contact|go|turn)",
+  "one[- ]person (project|library|package)",
+  "(inherited|took over|taking over|taken over|became (the )?maintainer)",
+  "who is (really )?behind",
+  "how much of (the|that|this) (code|library|package|crate|repo)",
+  "really (theirs|his|hers|written by)",
+  "who (really )?(wrote|built)",
+  "authorship",
+  "truck factor",
+  "(look|looks|seem|seems) like the (author|owner|maintainer)",
   "concentrated (in|among|with|on)",
 ];
 const TOPIC_REGEXES = TOPIC_PATTERNS.map((p) => new RegExp(p));

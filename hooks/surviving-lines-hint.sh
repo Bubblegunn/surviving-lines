@@ -41,6 +41,18 @@ printf '%s\n' "$lc" | grep -Eq \
   -e 'which (people|persons|authors|developers|engineers|contributors) (wrote|own|maintain|know|are|is|still|should)' \
   -e 'still (alive )?in (this|the) (repo|repository|code|codebase)' \
   -e 'losing (one|two|a few|a couple of)( or (one|two|three|a few))? (people|persons|developers|engineers|contributors)' \
+  -e '(^|[^a-z])owner(s|ship)?([^a-z]|$)' \
+  -e '(^|[^a-z])reviewers?([^a-z]|$)' \
+  -e 'who (should|can|do|would) (i|we) (ask|talk|contact|go|turn)' \
+  -e 'one[- ]person (project|library|package)' \
+  -e '(inherited|took over|taking over|taken over|became (the )?maintainer)' \
+  -e 'who is (really )?behind' \
+  -e 'how much of (the|that|this) (code|library|package|crate|repo)' \
+  -e 'really (theirs|his|hers|written by)' \
+  -e 'who (really )?(wrote|built)' \
+  -e 'authorship' \
+  -e 'truck factor' \
+  -e '(look|looks|seem|seems) like the (author|owner|maintainer)' \
   -e 'concentrated (in|among|with|on)' || exit 0
 
 # Everything below is silent when git is missing, the directory is not a work tree, or the history is larger

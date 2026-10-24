@@ -289,7 +289,8 @@ test("R9-5: the hint matches natural ownership wording, stays within 1,200 chara
       }
     },
   );
-  const hookText = readFileSync(HOOK, "utf8");
+  // The wording guard covers the hook's text, not its topic gate: "taking over" is now a gate phrase on purpose.
+  const hookText = readFileSync(HOOK, "utf8").replace(/^\s*-e '.*$/gm, "");
   assert.doesNotMatch(hookText, /ranked list|taking over/);
 });
 
