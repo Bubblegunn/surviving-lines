@@ -663,6 +663,41 @@
         }
       }
     },
+    "whyNot": {
+      "type": ["object", "null"],
+      "description": "The --why-not answer: why a person is not among the suggested reviewers of a path (the three people with the most surviving lines, as --reviewers lists them), with the numbers that decided it. Null unless --why-not was given.",
+      "additionalProperties": false,
+      "required": ["query", "path", "classification", "message", "asOf", "inactiveAfterDays", "sampleEvery", "author", "mail", "lines", "share", "rank", "of", "cutLines", "commitsAtPath", "firstCommitAtPath", "lastCommitAtPath", "lastCommitAnywhere", "active", "alsoAppearsAs", "combinedLines", "combinedRank", "closest"],
+      "properties": {
+        "query": { "type": "string", "description": "The value given." },
+        "path": { "type": "string" },
+        "classification": { "type": "string", "enum": ["unknownIdentity", "bot", "neverTouched", "noSurvivingLines", "belowCut", "listedInactive", "listed", "splitIdentity"], "description": "The first branch that fits, in this order except that splitIdentity replaces noSurvivingLines or belowCut when counting another address of the same person would put them inside the cut." },
+        "message": { "type": "string", "description": "The sentence the text view prints, with the numbers." },
+        "asOf": { "type": "string" },
+        "inactiveAfterDays": { "type": "integer", "description": "The reviewers view's window: a commit at the path in this many days before asOf makes a person active." },
+        "sampleEvery": { "type": "integer", "minimum": 1 },
+        "author": { "type": ["string", "null"] },
+        "mail": { "type": ["string", "null"] },
+        "lines": { "type": "integer", "minimum": 0 },
+        "share": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "rank": { "type": ["integer", "null"], "minimum": 1, "description": "Among the people with a surviving line at the path." },
+        "of": { "type": ["integer", "null"], "minimum": 0 },
+        "cutLines": { "type": ["integer", "null"], "minimum": 0, "description": "The lines of the third place." },
+        "commitsAtPath": { "type": "integer", "minimum": 0 },
+        "firstCommitAtPath": { "type": ["string", "null"] },
+        "lastCommitAtPath": { "type": ["string", "null"] },
+        "lastCommitAnywhere": { "type": ["string", "null"] },
+        "active": { "type": ["boolean", "null"] },
+        "alsoAppearsAs": {
+          "type": "array",
+          "description": "Other addresses of the same person that the identity suggestions link and that hold lines.",
+          "items": { "type": "object", "additionalProperties": false, "required": ["author", "mail", "lines"], "properties": { "author": { "type": "string" }, "mail": { "type": "string" }, "lines": { "type": "integer" } } }
+        },
+        "combinedLines": { "type": ["integer", "null"] },
+        "combinedRank": { "type": ["integer", "null"], "minimum": 1 },
+        "closest": { "type": "array", "description": "For an unknown identity: the five closest names.", "items": { "type": "string" } }
+      }
+    },
     "ownedBy": {
       "type": ["object", "null"],
       "description": "The --owned-by view: what the named people own, from the run's per-file blame counts. Null unless --owned-by was given. It counts surviving lines, not understanding.",

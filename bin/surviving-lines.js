@@ -123,6 +123,10 @@ Measure who wrote the code that is still alive in a git ref.
   --without <author>[,<author>...]  what if these people left: lines they hold, files they own, files nobody remaining would
                        know, bus factor before and after, who inherits most. An author is a name or an address (after .mailmap
                        and --merge-identities). Repeatable; prints its own view, with --json only
+  --why-not <author> -- <path>  why this person is not among the suggested reviewers of the path (the three people with the most
+                       lines, as --reviewers lists them): unknown name, no commit at the path, no surviving line, below the cut,
+                       listed but inactive, or the same person under two addresses; always with the numbers that decided it.
+                       Prints its own view, with --json only; the path goes after -- (one path)
   --owned-by <author>[,<author>...]  what these people own: lines on both bases, files, files they own most of or half of, files only
                        they wrote, lines per directory (--group-by dir:<n> sets the depth), commits, last commit and activity.
                        An author is a name or an address (after .mailmap and --merge-identities). Repeatable; prints its own
@@ -167,7 +171,7 @@ Exit status:
 SURVIVING_LINES_NO_STAR_HINT=1 hides the one-time star hint`;
 
 /** @typedef {{ ref: string, sample: number, seed: string, include: string[], exclude: string[], since?: string, until?: string, coAuthors: "none" | "share", aiBreakdown: boolean,
-groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
+groupBy?: string, files?: number, brief: boolean, timeBudget?: number, activeDays: number, orphans: boolean, without: string[], forDiff?: string, ownedBy: string[], whyNot?: string, reviewers?: string, history?: string, topGiven: boolean, suggestCodeowners: boolean, includeBots: boolean, ignoreRevsFile?: string, noIgnoreRevs: boolean, ignoreRevs: string[], detectReformat: boolean, keepReformat: boolean, reapplyCredit: boolean, busFactorThreshold: number, copies: boolean, copiesDeep?: boolean, copyWorkLimit?: number, noCopies: boolean, keepGenerated: boolean, jobs: number, top: number, sort: "lines" | "commits" | "gap", quiet: boolean, json: boolean, csv: boolean, markdown: boolean, identities: boolean, mergeIdentities: boolean, allowShallow: boolean, cwd: string, paths: string[], stderr?: import("node:stream").Writable & { isTTY?: boolean } }} Options */
 
 /**
  * @param {string[]} argv
@@ -205,6 +209,7 @@ export function parseArgs(argv) {
     else if (a === "--time-budget") { o.timeBudget = Number(next()); if (!Number.isFinite(o.timeBudget) || o.timeBudget <= 0) throw new Error("--time-budget must be a number of seconds above 0"); }
     else if (a === "--without") o.without.push(next());
     else if (a === "--owned-by") o.ownedBy.push(next());
+    else if (a === "--why-not") o.whyNot = next();
     else if (a === "--for-diff") { o.forDiff = next(); if (!o.forDiff.trim()) throw new Error("--for-diff needs a revision range such as main..feature"); }
     else if (a === "--reviewers") o.reviewers = next();
     else if (a === "--history") o.history = next();
@@ -254,18 +259,22 @@ export function parseArgs(argv) {
     const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : null;
     if (clash) throw new Error(`--without prints its own view; it can be combined with --json only, not with ${clash}`);
   }
-  // The views added in round 13 (--for-diff, --owned-by) print their own output. Each one is refused with every other view
+  if (o.whyNot !== undefined) {
+    if (!o.paths.length) throw new Error("--why-not needs the path after --: --why-not <author> -- <path>");
+    if (o.paths.length > 1) throw new Error("--why-not takes one path after --");
+  }
+  // The views added in round 13 (--for-diff, --owned-by, --why-not) print their own output. Each one is refused with every other view
   // and every output format; only --json may be combined with them.
-  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0 });
+  const newViews = /** @type {Record<string, boolean>} */ ({ "--for-diff": o.forDiff !== undefined, "--owned-by": o.ownedBy.length > 0, "--why-not": o.whyNot !== undefined });
   const optionsSet = /** @type {Record<string, boolean>} */ ({ "--group-by": Boolean(grouping), "--csv": o.csv, "--markdown": o.markdown, "--identities": o.identities, "--files": o.files !== undefined, "--reviewers": o.reviewers !== undefined, "--history": o.history !== undefined, "--orphans": o.orphans, "--without": o.without.length > 0, "--brief": o.brief, "--suggest-codeowners": o.suggestCodeowners, "--co-authors share": o.coAuthors === "share", ...newViews });
   for (const view of Object.keys(newViews).filter((k) => newViews[k])) {
-    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
+    const own = view === "--owned-by" ? { ...optionsSet, "--group-by": grouping?.kind === "ext", "--owned-by": false } : view === "--why-not" ? { ...optionsSet, "--group-by": Boolean(grouping), "--why-not": false } : view === "--for-diff" ? { ...optionsSet, "--for-diff": false, "--sample": o.sample !== 1, "--ref": refGiven } : optionsSet;
     const clash = Object.keys(own).find((k) => own[k]);
     if (clash) throw new Error(`${view} prints its own view; it can be combined with --json only, not with ${clash}`);
   }
   if (o.timeBudget !== undefined && !o.brief) throw new Error("--time-budget works with --brief only");
   if (o.brief) {
-    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.forDiff !== undefined ? "--for-diff" : o.ownedBy.length ? "--owned-by" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
+    const clash = grouping ? "--group-by" : o.csv ? "--csv" : o.markdown ? "--markdown" : o.identities ? "--identities" : o.reviewers !== undefined ? "--reviewers" : o.history !== undefined ? "--history" : o.files !== undefined ? "--files" : o.orphans ? "--orphans" : o.without.length ? "--without" : o.forDiff !== undefined ? "--for-diff" : o.ownedBy.length ? "--owned-by" : o.whyNot !== undefined ? "--why-not" : o.suggestCodeowners ? "--suggest-codeowners" : o.coAuthors === "share" ? "--co-authors share" : o.aiBreakdown ? "--ai-breakdown" : null;
     if (clash) throw new Error(`--brief prints its own view; it can be combined with --json only, not with ${clash}`);
   }
   if (o.orphans) {
@@ -3207,6 +3216,111 @@ export function renderOwnedBy(r) {
   return out.join("\n");
 }
 
+/** R13 #3: --why-not suggests the three people with the most lines, as the reviewers view does. */
+const WHY_NOT_CUT = 3;
+
+/** @param {number} k */
+const ordinalOf = (k) => `${k}${k % 100 >= 11 && k % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[k % 10] ?? "th")}`;
+
+/**
+ * R13 #3: why one person is not among the suggested reviewers of a path, with the numbers that decided it. The numbers
+ * are the ones the reviewers view uses (its three people with the most lines), so the answer cannot disagree with it.
+ * The first branch that fits wins: unknown identity, a bot, never touched, no surviving lines, below the cut, listed but
+ * inactive; a person who is listed and active is said to be listed. When another address of the same person has
+ * lines and counting them together would put the person inside the cut, the branch is "split identity".
+ * @param {{
+ *   selector: string, path: string, ref: string,
+ *   repoPeople: { name: string, mail: string, commits: number }[],
+ *   rows: { author: string, mail: string, lines: number, commits: number }[],
+ *   membersOf: Map<string, string[]> | null,
+ *   view: { asOf: string, inactiveAfterDays: number },
+ *   ranked: { author: string, lines: number, lineShare: number, lastCommit: string | null, active: boolean }[],
+ *   pathCommits: { mail: string, day: string }[],
+ *   days: Map<string, { first: string, last: string }>,
+ *   groups: { members: { author: string, mail: string, lines: number }[], weakAdditions: { member: { author: string, mail: string, lines: number } }[] }[],
+ *   sampleEvery: number,
+ * }} a
+ */
+export function whyNotOf(a) {
+  const q = a.selector.trim();
+  const qName = foldIdentity(q);
+  const qMail = q.toLowerCase();
+  const addressesOf = (/** @type {{ mail: string }} */ r) => (a.membersOf?.get(r.mail) ?? [r.mail]).map((m) => m.toLowerCase());
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const noun = (/** @type {number} */ x, /** @type {string} */ w) => `${n(x)} ${w}${x === 1 ? "" : "s"}`;
+  const sampled = a.sampleEvery > 1 ? ` (sample 1 in ${a.sampleEvery}: only a sample of the files was read)` : "";
+  const seen = a.repoPeople.filter((p) => foldIdentity(p.name) === qName || p.mail === qMail);
+  const seenRows = a.rows.filter((r) => foldIdentity(r.author) === qName || addressesOf(r).includes(qMail));
+  const none = { author: null, mail: null, lines: 0, share: null, rank: null, of: null, cutLines: null, commitsAtPath: 0, firstCommitAtPath: null, lastCommitAtPath: null, lastCommitAnywhere: null, active: null, alsoAppearsAs: /** @type {{ author: string, mail: string, lines: number }[]} */ ([]), combinedLines: null, combinedRank: null, closest: /** @type {string[]} */ ([]) };
+  const result = (/** @type {string} */ classification, /** @type {string} */ message, /** @type {Partial<typeof none>} */ extra = {}) => ({ query: a.selector, path: a.path, classification, message: `${message}${sampled}`, asOf: a.view.asOf, inactiveAfterDays: a.view.inactiveAfterDays, sampleEvery: a.sampleEvery, ...none, ...extra });
+  if (!seen.length && !seenRows.length) {
+    const closest = closestAuthors(q, a.repoPeople.map((p) => ({ author: p.name, mail: p.mail })));
+    return result("unknownIdentity", `"${a.selector}" is not a known author: no name or address in the history matches after .mailmap${a.membersOf ? " and the identity merge" : ""}. Closest: ${closest.join("; ") || "none"}.`, { closest });
+  }
+  const key = foldIdentity([...seen].sort((x, y) => y.commits - x.commits || x.mail.localeCompare(y.mail))[0]?.name ?? seenRows[0].author);
+  const mails = new Set([...a.repoPeople.filter((p) => foldIdentity(p.name) === key).map((p) => p.mail), ...a.rows.filter((r) => foldIdentity(r.author) === key).flatMap(addressesOf), ...seen.filter((p) => p.mail === qMail).map((p) => p.mail)]);
+  const person = a.ranked.find((p) => foldIdentity(p.author) === key) ?? null;
+  const name = person?.author ?? a.rows.find((r) => foldIdentity(r.author) === key)?.author ?? seen.find((p) => foldIdentity(p.name) === key)?.name ?? a.selector;
+  const mail = [...mails].sort()[0] ?? "";
+  const span = (/** @type {string[]} */ ms) => {
+    const list = ms.map((m) => a.days.get(m)).filter((x) => x !== undefined);
+    return list.length ? list.reduce((b, x) => (x.last > b ? x.last : b), list[0].last) : null;
+  };
+  const lastAnywhere = span([...mails]);
+  const mine = a.pathCommits.filter((c) => mails.has(c.mail));
+  const firstAtPath = mine.length ? mine.reduce((b, c) => (c.day < b ? c.day : b), mine[0].day) : null;
+  const lastAtPath = mine.length ? mine.reduce((b, c) => (c.day > b ? c.day : b), mine[0].day) : null;
+  const base = { author: name, mail, commitsAtPath: mine.length, firstCommitAtPath: firstAtPath, lastCommitAtPath: lastAtPath, lastCommitAnywhere: lastAnywhere };
+  if (!person && !a.rows.some((r) => foldIdentity(r.author) === key) && isBotIdentity(name, mail)) {
+    return result("bot", `${name} is a bot identity, not counted as an author, so it is never suggested as a reviewer; --include-bots counts bots.`, base);
+  }
+  if (!person && mine.length === 0) return result("neverTouched", `${name} is not a suggested reviewer of ${a.path}: no commit by ${name} touches ${a.path} in the history up to ${a.ref}.`, base);
+  const cutDay = new Date(Date.parse(a.view.asOf) - a.view.inactiveAfterDays * 86400000).toISOString().slice(0, 10);
+  const tail = `Last commit at the path ${lastAtPath ?? "none"}, anywhere ${lastAnywhere ?? "none"}; ${person?.active ? "active" : "inactive"} under the ${a.view.inactiveAfterDays}-day window (a commit at the path from ${cutDay} to ${a.view.asOf}).`;
+  // Another address of the same person, when the identity suggestions link one that holds lines.
+  const group = a.groups.find((g) => g.members.some((m) => foldIdentity(m.author) === key));
+  const others = group ? [...group.members, ...group.weakAdditions.map((w) => w.member)].filter((m) => foldIdentity(m.author) !== key && m.lines > 0) : [];
+  const lines = person?.lines ?? 0;
+  const otherKeys = new Set(others.map((m) => foldIdentity(m.author)));
+  const combined = lines + others.reduce((s, m) => s + m.lines, 0);
+  const combinedRank = others.length ? 1 + a.ranked.filter((p) => foldIdentity(p.author) !== key && !otherKeys.has(foldIdentity(p.author)) && p.lines > combined).length : null;
+  const also = others.length ? ` Also appears as ${others.map((m) => `${m.author} <${m.mail}> with ${noun(m.lines, "line")}`).join(", ")}; counted together (${noun(combined, "line")}) they would rank ${ordinalOf(/** @type {number} */ (combinedRank))}. Only you can confirm it is one person.` : "";
+  const alsoFields = { alsoAppearsAs: others.map((m) => ({ author: m.author, mail: m.mail, lines: m.lines })), combinedLines: others.length ? combined : null, combinedRank };
+  const rank = person ? a.ranked.indexOf(person) + 1 : null;
+  const of = a.ranked.length;
+  const cut = a.ranked[WHY_NOT_CUT - 1]?.lines ?? 0;
+  const numbers = { ...base, lines, share: person?.lineShare ?? 0, rank, of, cutLines: cut, active: person?.active ?? false, ...alsoFields };
+  const splitHelps = others.length > 0 && combinedRank !== null && combinedRank <= WHY_NOT_CUT;
+  if (lines === 0) {
+    const top = a.ranked[0];
+    const owner = top ? ` The largest current owner is ${top.author} (${noun(top.lines, "line")}, ${pct(top.lineShare)}).` : "";
+    if (splitHelps) return result("splitIdentity", `${name} is not a suggested reviewer of ${a.path} under this address: no line survives (${noun(mine.length, "commit")}, first ${firstAtPath}, last ${lastAtPath}).${also}`, numbers);
+    return result("noSurvivingLines", `${name} is not a suggested reviewer of ${a.path}: ${noun(mine.length, "commit")} ${mine.length === 1 ? "touches" : "touch"} it (first ${firstAtPath}, last ${lastAtPath}), but all lines of theirs here were replaced or removed.${owner}${also}`, numbers);
+  }
+  const where = `${noun(lines, "line")} (${pct(person?.lineShare ?? 0)}), ranked ${ordinalOf(/** @type {number} */ (rank))} of ${n(of)}`;
+  if (/** @type {number} */ (rank) > WHY_NOT_CUT) {
+    if (splitHelps) return result("splitIdentity", `${name} is not a suggested reviewer of ${a.path} under this address: ${where}; the third place holds ${noun(cut, "line")}, so the cut is ${noun(cut, "line")}.${also}`, numbers);
+    return result("belowCut", `${name} is not a suggested reviewer of ${a.path}: ${where}; the third place holds ${noun(cut, "line")}, so the cut is ${noun(cut, "line")} (the three people with the most lines are suggested). ${tail}${also}`, numbers);
+  }
+  if (!person?.active) return result("listedInactive", `${name} is a suggested reviewer of ${a.path} (${where}) but is marked inactive. ${tail}${also}`, numbers);
+  return result("listed", `${name} is a suggested reviewer of ${a.path}: ${where}. ${tail}${also}`, numbers);
+}
+
+/**
+ * The --why-not view.
+ * @param {Awaited<ReturnType<typeof analyse>>} r
+ */
+export function renderWhyNot(r) {
+  const w = r.whyNot;
+  if (!w) throw new Error("renderWhyNot needs a result from --why-not");
+  const out = [];
+  if (r.shallow) out.push(SHALLOW_MARK);
+  out.push(w.message);
+  const notes = scopeNotes(r);
+  if (notes.length) out.push("", ...notes);
+  return out.join("\n");
+}
+
 /** G12: a commit is named when at least this many of its lines survive in the scope and its committer is someone else than its author. */
 const COMMITTED_BY_OTHERS_MIN_LINES = 5;
 /** G12: this many such commits are named; the rest are counted. */
@@ -3433,6 +3547,35 @@ export function reappliedCreditOf(credit, blamedByCommit) {
 }
 
 /**
+ * The people of the reviewers view, most surviving lines first (ties by name): rows with the same folded name are one
+ * person, placeholder identities are left out, and a person is active when any of their addresses is. --reviewers
+ * suggests the first three; --why-not explains a person's place in this list.
+ * @param {{ mail: string, lastCommit: string | null, active: boolean }[]} authors the view's rows with their last commit and activity
+ * @param {{ author: string, mail: string, lines: number, lineShare: number, linesWithBlank?: number, shareWithBlank?: number }[]} rows
+ * @param {(mail: string) => string[]} memberMails
+ */
+function rankReviewers(authors, rows, memberMails) {
+  const lastOf = new Map(authors.map((a) => [a.mail, a]));
+  /** @type {Map<string, { author: string, mails: string[], lines: number, lineShare: number, linesWithBlank: number, shareWithBlank: number, lastCommit: string | null, active: boolean }>} */
+  const people = new Map();
+  for (const b of rows) {
+    if (b.lines <= 0 || isPlaceholderIdentity(b.author, b.mail)) continue;
+    const a = lastOf.get(b.mail);
+    const key = foldIdentity(b.author);
+    const p = people.get(key) ?? { author: b.author, mails: [], lines: 0, lineShare: 0, linesWithBlank: 0, shareWithBlank: 0, lastCommit: null, active: false };
+    p.mails.push(...memberMails(b.mail));
+    p.lines += b.lines;
+    p.lineShare += b.lineShare;
+    p.linesWithBlank += b.linesWithBlank ?? b.lines;
+    p.shareWithBlank += b.shareWithBlank ?? b.lineShare;
+    if (a?.lastCommit && (p.lastCommit === null || a.lastCommit > p.lastCommit)) p.lastCommit = a.lastCommit;
+    p.active = p.active || Boolean(a?.active);
+    people.set(key, p);
+  }
+  return [...people.values()].sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+}
+
+/**
  * The --reviewers view: the authors of one path, most surviving lines first, each with the newest non-merge commit
  * that touched the path and whether it is recent. The as-of date is the author date of the ref commit, so the same
  * repository answers the same way on any day; the clock is never read. Bots are already out of `rows`.
@@ -3470,24 +3613,7 @@ async function reviewersView(o, path, rows, applied, membersOf, pathCommits, las
       // after asOf only appears with clock skew or a hand-set date. It is counted as active, not rejected.
       return { author: a.author, mail: a.mail, lines: a.lines, lineShare: a.lineShare, linesWithBlank: a.linesWithBlank ?? a.lines, shareWithBlank: a.shareWithBlank ?? a.lineShare, commits: a.commits, lastCommit, lastAnywhere: lastCommits[a.mail] ?? null, active: daysSince <= INACTIVE_AFTER_DAYS, ...(a.addresses ? { addresses: a.addresses } : {}) };
     });
-  const lastOf = new Map(authors.map((a) => [a.mail, a]));
-  /** @type {Map<string, { author: string, mails: string[], lines: number, lineShare: number, linesWithBlank: number, shareWithBlank: number, lastCommit: string | null, active: boolean }>} */
-  const people = new Map();
-  for (const b of rows) {
-    if (b.lines <= 0 || isPlaceholderIdentity(b.author, b.mail)) continue;
-    const a = lastOf.get(b.mail);
-    const key = foldIdentity(b.author);
-    const p = people.get(key) ?? { author: b.author, mails: [], lines: 0, lineShare: 0, linesWithBlank: 0, shareWithBlank: 0, lastCommit: null, active: false };
-    p.mails.push(...memberMails(b.mail));
-    p.lines += b.lines;
-    p.lineShare += b.lineShare;
-    p.linesWithBlank += b.linesWithBlank ?? b.lines;
-    p.shareWithBlank += b.shareWithBlank ?? b.lineShare;
-    if (a?.lastCommit && (p.lastCommit === null || a.lastCommit > p.lastCommit)) p.lastCommit = a.lastCommit;
-    p.active = p.active || Boolean(a?.active);
-    people.set(key, p);
-  }
-  const ranked = [...people.values()].sort((x, y) => y.lines - x.lines || x.author.localeCompare(y.author));
+  const ranked = rankReviewers(authors, rows, memberMails);
   // Activity never reorders or removes a person: the suggestion is the three people with the most lines. The active-only
   // cut is a second list, given only when it differs.
   const cut = (/** @type {typeof ranked} */ list) => list.slice(0, 3).map((p) => ({ ...p, mails: [...p.mails].sort() }));
@@ -4144,7 +4270,7 @@ export async function analyse(o) {
 
   const logArgs = ["log", "--no-merges", "--format=%aE%x09%aN", o.ref];
   // G13: the commit counts of a single-file path view follow the file across renames, as the dates of the view do.
-  const pathViewTarget = o.reviewers ?? o.history;
+  const pathViewTarget = o.reviewers ?? o.history ?? (o.whyNot !== undefined ? o.paths[0] : undefined);
   if (pathViewTarget !== undefined && (await isFileAtRef(o, pathViewTarget))) logArgs.splice(2, 0, "--follow");
   if (o.since) logArgs.push(`--since=${o.since}`);
   if (o.until) logArgs.push(`--until=${o.until}`);
@@ -4332,7 +4458,7 @@ export async function analyse(o) {
   if (groups && o.mergeIdentities) groups = groups.map((g) => ({ ...g, ...mergedLines(g.authors, g.lines, canonicalOf, o.busFactorThreshold, g.linesWithBlank) }));
   if (uncorrected && o.mergeIdentities) uncorrected = { ...uncorrected, ...mergedLines(uncorrected.authors, uncorrected.linesAttributed, canonicalOf, o.busFactorThreshold) };
   // One log call at the path serves both path views; --reviewers and --history cannot be asked for together.
-  const pathView = o.reviewers ?? o.history;
+  const pathView = o.reviewers ?? o.history ?? (o.whyNot !== undefined ? o.paths[0] : undefined);
   const pathCommits = pathView === undefined ? [] : await readPathCommits(o, pathView);
   // R10-3 and R10-2 read the run's own blame counts, with the names and merges the table uses.
   const nameOf = new Map([...authors].map(([mail, a]) => [mail, a.name]));
@@ -4345,6 +4471,13 @@ export async function analyse(o) {
   const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
   const withoutResult = o.without.length ? withoutOf(main.perFile, o.includeBots, ownerMerge, nameOf, rows, resolveLeavers(o.without, rows, membersOf), o.busFactorThreshold) : null;
   const ownedByResult = o.ownedBy.length ? ownedByOf(main.perFile, main.perFileRaw, o.includeBots, ownerMerge, nameOf, rows, botRows, o.ownedBy, membersOf, await readCommitDays(o), asOfDay, o.activeDays, grouping?.kind === "dir" ? grouping.depth : 1, o.topGiven ? o.top : OWNED_BY_SHOWN) : null;
+  /** @type {ReturnType<typeof whyNotOf> | null} */
+  let whyNotResult = null;
+  if (o.whyNot !== undefined) {
+    const wnPath = o.paths[0];
+    const view = await reviewersView(o, wnPath, rows, applied, membersOf, pathCommits, lastCommits);
+    whyNotResult = whyNotOf({ selector: o.whyNot, path: wnPath, ref: o.ref, repoPeople: await readAddressNames(o), rows, membersOf, view, ranked: rankReviewers(view.authors, rows, (mail) => membersOf?.get(mail) ?? [mail]), pathCommits, days: await readCommitDays(o), groups: suggested, sampleEvery: o.sample });
+  }
   const forDiffResult = diffPlan ? await forDiffOf(o, diffPlan, main, rows, ownerMerge, nameOf, mainArgs, leaveOut, credit, membersOf) : null;
   // G7: the per-file owners of the path views, from the blame counts of the run.
   const fileOwners = pathView === undefined ? null : fileOwnersOf(main.perFile, o.includeBots, ownerMerge, nameOf);
@@ -4391,6 +4524,7 @@ export async function analyse(o) {
     without: withoutResult,
     forDiff: forDiffResult,
     ownedBy: ownedByResult,
+    whyNot: whyNotResult,
     committedByOthers: committedElsewhere,
     reappliedCredit: reapplied,
     reviewers,
@@ -6245,6 +6379,8 @@ async function main() {
       const notes = scopeNotes(r, { identityHints: false });
       if (notes.length) output += `\n\n${notes.join("\n")}`;
       if (r.shallow) output = `${SHALLOW_MARK}\n\n${output}`;
+    } else if (r.whyNot) {
+      output = renderWhyNot(r);
     } else if (r.ownedBy) {
       output = renderOwnedBy(r);
     } else if (r.forDiff) {
