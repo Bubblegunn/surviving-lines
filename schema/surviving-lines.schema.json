@@ -538,6 +538,44 @@
         }
       }
     },
+    "historyQuality": {
+      "type": ["object", "null"],
+      "description": "How the history starts and how work was merged, which limits what the table can say. Null for a repository with no root commit. The key is historyQuality because history already holds the --history view.",
+      "additionalProperties": false,
+      "required": ["oldestRoot", "youngHistory", "ageDays", "commits", "workflow"],
+      "properties": {
+        "oldestRoot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["date", "roots", "filesAdded", "filesAtRef", "ratio", "importLikely"],
+          "properties": {
+            "date": { "type": "string", "description": "YYYY-MM-DD, author date of the oldest root commit." },
+            "roots": { "type": "integer", "minimum": 1, "description": "How many root commits the ref reaches; the oldest by author date is read." },
+            "filesAdded": { "type": "integer", "minimum": 0, "description": "Files the oldest root commit adds." },
+            "filesAtRef": { "type": "integer", "minimum": 0, "description": "Files at the ref." },
+            "ratio": { "type": ["number", "null"], "minimum": 0, "description": "filesAdded over filesAtRef; null when the ref has no file." },
+            "importLikely": { "type": "boolean", "description": "True when the root commit adds more than 25% of the files at the ref." }
+          }
+        },
+        "youngHistory": { "type": "boolean", "description": "True when the history is under 550 days old and not an import. A separate cause from importLikely." },
+        "ageDays": { "type": "integer", "minimum": 0, "description": "Days from the oldest root commit to the ref commit (author dates)." },
+        "commits": { "type": "integer", "minimum": 0, "description": "Non-merge commits reachable from the ref." },
+        "workflow": {
+          "type": ["object", "null"],
+          "description": "Null when the window holds no commit. merge: at least 5% of the commits are merges. squash: otherwise at least half of the non-merge subjects end in (#N). rebase: neither. --since and --until limit the commits read.",
+          "additionalProperties": false,
+          "required": ["strategy", "commits", "merges", "mergeShare", "squashSubjects", "squashShare"],
+          "properties": {
+            "strategy": { "type": "string", "enum": ["merge", "squash", "rebase"] },
+            "commits": { "type": "integer", "minimum": 1 },
+            "merges": { "type": "integer", "minimum": 0 },
+            "mergeShare": { "type": "number", "minimum": 0, "maximum": 1 },
+            "squashSubjects": { "type": "integer", "minimum": 0 },
+            "squashShare": { "type": "number", "minimum": 0, "maximum": 1, "description": "Over the non-merge commits." }
+          }
+        }
+      }
+    },
     "orphans": {
       "type": ["object", "null"],
       "description": "Files whose top owner is inactive (see activity) and where no active author holds at least minActiveShare of the file's non-blank lines. Null under --co-authors share. The scope is the files of the run (the path under --reviewers).",
@@ -1658,6 +1696,7 @@
         "schemaVersion": { "type": "integer", "const": 1 },
         "tool": { "type": "object", "additionalProperties": false, "required": ["name", "version"], "properties": { "name": { "type": "string", "const": "surviving-lines" }, "version": { "type": "string" } } },
         "view": { "type": "string", "const": "brief" },
+        "history": { "type": ["string", "null"], "description": "One short phrase on how the history starts and how work was merged: the oldest root commit as an import (it adds more than 25% of the files at the ref), a young history (under 550 days, not an import) or an ordinary start, then merge commits, squash merges or rebase or direct commits." },
         "ref": { "type": "string" },
         "sha": { "type": "string", "description": "The first seven characters of the commit id of the ref." },
         "asOf": { "type": ["string", "null"], "description": "YYYY-MM-DD, the author date of the ref's commit; null when no author holds a line." },

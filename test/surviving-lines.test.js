@@ -151,6 +151,8 @@ test("the table of a small repository with no reformat suspect is exactly the he
     const expected = [
       "ref HEAD  ·  files 3/3 sampled (1 in 1)  ·  21 of 21 lines attributed",
       "git blame -w -M -C  ·  commits 3, merges excluded",
+      "history: begins 2026-01-10 with a commit that adds 3 of 4 files (75%); lines older than that are credited to whoever imported them, so the table describes work since the import",
+      'workflow: rebase or direct commits (0 merge commits, 0% of subjects end in "(#NNN)"); lines are credited to the commit authors',
       "",
       "author      lines   share  commits   share",
       "------------------------------------------",

@@ -134,6 +134,8 @@ test("--no-detect-reformat prints no block and leaves the suspects empty, and de
 const SNAPSHOT_BOTS_TABLE = [
   `ref HEAD  ·  files 8/8 sampled (1 in 1)  ·  23 of 43 lines attributed`,
   `git blame -w -M -C  ·  commits 5, merges excluded`,
+  `history: 25 days old (8 commits); a short window, not an import`,
+  `workflow: rebase or direct commits (0 merge commits, 0% of subjects end in "(#NNN)"); lines are credited to the commit authors`,
   ``,
   `author           lines   share  commits   share`,
   `-----------------------------------------------`,

@@ -2279,6 +2279,127 @@ export function fileOwnersOf(perFile, includeBots, canonicalOf, nameOf) {
   };
 }
 
+/** R13 #5: the oldest commit is an import when it adds more than this share of the files at the ref. */
+const HISTORY_IMPORT_MIN_PERCENT = 25;
+/** R13 #5: a history shorter than this many days (from the oldest commit to the ref) is young. */
+const HISTORY_YOUNG_DAYS = 550;
+/** R13 #5: this share of merge commits among all commits makes the workflow `merge`. */
+const HISTORY_MERGE_MIN_PERCENT = 5;
+/** R13 #5: this share of non-merge subjects ending in `(#<digits>)` makes the workflow `squash`. */
+const HISTORY_SQUASH_MIN_PERCENT = 50;
+
+/**
+ * R13 #5: what the shape of the history says about how far the table can be trusted. Pure: the git reads are in
+ * readHistoryQuality. Young and import are separate causes: a young repository is never called imported.
+ * @param {{ rootDate: string, rootEpoch: number, roots: number, rootFiles: number, tracked: number, refEpoch: number, commits: number, workflow: { all: number, merges: number, squashSubjects: number } }} x
+ */
+export function historyQualityOf(x) {
+  const importRatio = x.tracked > 0 ? x.rootFiles / x.tracked : null;
+  const importLikely = x.tracked > 0 && x.rootFiles * 100 > x.tracked * HISTORY_IMPORT_MIN_PERCENT;
+  const days = Math.max(0, Math.floor((x.refEpoch - x.rootEpoch) / 86400));
+  const youngHistory = days < HISTORY_YOUNG_DAYS && !importLikely;
+  const w = x.workflow;
+  const nonMerge = w.all - w.merges;
+  /** @type {"merge" | "squash" | "rebase" | null} */
+  let strategy = null;
+  if (w.all > 0) strategy = w.merges * 100 >= w.all * HISTORY_MERGE_MIN_PERCENT ? "merge" : nonMerge > 0 && w.squashSubjects * 100 >= nonMerge * HISTORY_SQUASH_MIN_PERCENT ? "squash" : "rebase";
+  return {
+    oldestRoot: { date: x.rootDate, roots: x.roots, filesAdded: x.rootFiles, filesAtRef: x.tracked, ratio: importRatio, importLikely },
+    youngHistory,
+    ageDays: days,
+    commits: x.commits,
+    workflow: strategy && { strategy, commits: w.all, merges: w.merges, mergeShare: w.merges / w.all, squashSubjects: w.squashSubjects, squashShare: nonMerge > 0 ? w.squashSubjects / nonMerge : 0 },
+  };
+}
+
+/**
+ * R13 #5: read the oldest root, the files it added, the files at the ref and the commits of the window. Several roots
+ * (joined histories) are counted and the oldest by author date is used. Returns null for a repository with no root.
+ * @param {Options} o
+ */
+async function readHistoryQuality(o) {
+  const roots = (await git(["rev-list", "--max-parents=0", o.ref], o.cwd)).split("\n").filter(Boolean);
+  if (!roots.length) return null;
+  const dated = (await git(["log", "--no-walk=unsorted", "--format=%H%x09%at%x09%aI", ...roots], o.cwd))
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, epoch, iso] = l.split("\t");
+      return { sha, epoch: Number(epoch), date: iso.slice(0, 10) };
+    })
+    .sort((a, b) => a.epoch - b.epoch || a.sha.localeCompare(b.sha));
+  const root = dated[0];
+  const rootFiles = (await git(["diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", root.sha], o.cwd)).split("\0").filter(Boolean).length;
+  const tracked = (await git(["ls-tree", "-r", "--name-only", "-z", o.ref], o.cwd)).split("\0").filter(Boolean).length;
+  const refEpoch = Number((await git(["log", "-1", "--format=%at", o.ref], o.cwd)).trim());
+  const commits = Number((await git(["rev-list", "--no-merges", "--count", o.ref], o.cwd)).trim());
+  const logArgs = ["log", "--format=%P%x09%s", o.ref];
+  if (o.since) logArgs.push(`--since=${o.since}`);
+  if (o.until) logArgs.push(`--until=${o.until}`);
+  let all = 0;
+  let merges = 0;
+  let squashSubjects = 0;
+  for (const line of (await git(logArgs, o.cwd)).split("\n")) {
+    if (!line) continue;
+    const tab = line.indexOf("\t");
+    const parents = line.slice(0, tab).split(" ").filter(Boolean).length;
+    all++;
+    if (parents >= 2) merges++;
+    else if (/\(#\d+\)\s*$/.test(line.slice(tab + 1))) squashSubjects++;
+  }
+  return historyQualityOf({ rootDate: root.date, rootEpoch: root.epoch, roots: roots.length, rootFiles, tracked, refEpoch, commits, workflow: { all, merges, squashSubjects } });
+}
+
+/**
+ * R13 #5: the lines under the header that say how far the table can be trusted: one for the start of the history and
+ * one for the merge workflow. Empty when the result carries none (a result from another source).
+ * @param {{ historyQuality?: ReturnType<typeof historyQualityOf> | null, commitWindow?: { since: string | null, until: string | null } }} r
+ * @returns {string[]}
+ */
+export function historyLines(r) {
+  const h = r.historyQuality;
+  if (!h) return [];
+  const n = (/** @type {number} */ x) => x.toLocaleString("en-US");
+  const root = h.oldestRoot;
+  const several = root.roots > 1 ? `; ${root.roots} root commits (joined histories), the oldest by author date is read` : "";
+  const share = (/** @type {number} */ x) => (x > 0 && x < 0.005 ? "<1%" : `${Math.round(x * 100)}%`);
+  /** @type {string[]} */
+  const out = [];
+  if (root.importLikely) out.push(`history: begins ${root.date} with a commit that adds ${n(root.filesAdded)} of ${n(root.filesAtRef)} files (${share(root.ratio ?? 0)}); lines older than that are credited to whoever imported them, so the table describes work since the import${several}`);
+  else if (h.youngHistory) out.push(`history: ${n(h.ageDays)} days old (${n(h.commits)} commits); a short window, not an import${several}`);
+  else out.push(`history: begins ${root.date}; its first commit adds ${n(root.filesAdded)} of ${n(root.filesAtRef)} files (${share(root.ratio ?? 0)}), which is not an import${several}`);
+  const w = h.workflow;
+  if (w) {
+    const win = r.commitWindow?.since || r.commitWindow?.until ? " in the --since/--until window" : "";
+    if (w.strategy === "squash") out.push(`workflow${win}: squash merges (${share(w.squashShare)} of subjects end in "(#NNN)"); the table names the squasher or PR author; only Co-authored-by trailers name anyone else`);
+    else if (w.strategy === "merge") out.push(`workflow${win}: merge commits (${share(w.mergeShare)} of the commits are merges); lines are credited to the authors of the commits on the merged branches, not to whoever merged`);
+    else out.push(`workflow${win}: rebase or direct commits (${n(w.merges)} merge commit${w.merges === 1 ? "" : "s"}, ${share(w.squashShare)} of subjects end in "(#NNN)"); lines are credited to the commit authors`);
+  }
+  return out;
+}
+
+/**
+ * R13 #5: the history facts the brief carries, as one short phrase (the JSON value and the text line share it).
+ * @param {ReturnType<typeof historyQualityOf> | null | undefined} h
+ * @returns {string | null}
+ */
+export function briefHistoryOf(h) {
+  if (!h) return null;
+  const root = h.oldestRoot;
+  const start = root.importLikely ? `begins ${root.date} with an import (${Math.round((root.ratio ?? 0) * 100)}% of the files)` : h.youngHistory ? `${h.ageDays} days old, a short window, not an import` : `begins ${root.date}, not an import`;
+  const flow = h.workflow ? `; ${h.workflow.strategy === "merge" ? "merge commits" : h.workflow.strategy === "squash" ? "squash merges" : "rebase or direct commits"}` : "";
+  return `${start}${root.roots > 1 ? `; ${root.roots} roots` : ""}${flow}`;
+}
+
+/**
+ * R13 #5: the one short line the brief carries.
+ * @param {string | null | undefined} phrase briefHistoryOf
+ */
+export function historyBriefLine(phrase) {
+  if (!phrase) return null;
+  return `history: ${phrase}${phrase.includes("with an import") ? "; the table describes work since then" : ""}`;
+}
+
 /** G11: the default activity window, in days before the ref's commit date (--active-days). */
 const ACTIVE_DAYS_DEFAULT = 365;
 /** G11b: a file is orphaned only when no active author holds at least this share of its non-blank lines. */
@@ -4874,6 +4995,7 @@ export async function analyse(o) {
   const asOfDay = await refDay(o);
   const people = peopleActivity(rows, lastCommits, asOfDay, o.activeDays);
   const activity = activityOf(people, asOfDay, o.activeDays);
+  const historyQuality = await readHistoryQuality(o);
   const orphanScope = o.coAuthors === "share" ? null : orphansOf(main.perFile, o.includeBots, ownerMerge, nameOf, people);
   const withoutResult = o.without.length ? withoutOf(main.perFile, o.includeBots, ownerMerge, nameOf, rows, resolveLeavers(o.without, rows, membersOf), o.busFactorThreshold) : null;
   const ownedByResult = o.ownedBy.length ? ownedByOf(main.perFile, main.perFileRaw, o.includeBots, ownerMerge, nameOf, rows, botRows, o.ownedBy, membersOf, await readCommitDays(o), asOfDay, o.activeDays, grouping?.kind === "dir" ? grouping.depth : 1, o.topGiven ? o.top : OWNED_BY_SHOWN) : null;
@@ -4946,6 +5068,7 @@ export async function analyse(o) {
     sameAddress,
     lastCommits,
     activity,
+    historyQuality,
     orphans: orphanScope && { requested: o.orphans, ...orphanScope },
     without: withoutResult,
     forDiff: forDiffResult,
@@ -5033,6 +5156,7 @@ export function briefOf(r, x) {
     files: r.sample.filesSampled,
     filesTotal: r.sample.filesTotal,
     commits: r.commitWindow.commits,
+    history: briefHistoryOf(r.historyQuality),
     lines: r.sample.linesAttributed,
     linesWithBlank: live.reduce((s, a) => s + a.linesWithBlank, 0),
     owners: {
@@ -5119,6 +5243,8 @@ function briefLines(b, lim) {
     b.scope.until ? `until ${b.scope.until}` : "",
   ].filter(Boolean);
   out.push(cut(`scope: ${scope.length ? scope.join("; ") : "whole repository"}; ${n(b.lines)} non-blank lines, ${n(b.linesWithBlank)} counting blank lines`, 230));
+  const historyBrief = historyBriefLine(b.history);
+  if (historyBrief) out.push(cut(historyBrief, 160));
   if (!b.owners.shown.length) {
     out.push("owners: nobody holds a counted line");
   } else {
@@ -5660,6 +5786,7 @@ export function renderTable(r, top) {
   lines.push(headerLine(r));
   const w = r.commitWindow;
   lines.push(`git blame ${r.blame.flags.join(" ")}  ·  commits ${w.commits.toLocaleString("en-US")}${w.since || w.until ? ` in window ${w.since ?? "…"} to ${w.until ?? "…"}` : ""}, merges excluded${coAuthorsNote(r)}`);
+  lines.push(...historyLines(r));
   lines.push("");
   const nameCount = new Map();
   for (const a of r.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
@@ -5709,7 +5836,7 @@ export function renderTable(r, top) {
 export function renderReviewers(r, top) {
   const v = r.reviewers;
   if (!v) throw new Error("renderReviewers needs a result from --reviewers");
-  const lines = [headerLine(r)];
+  const lines = [headerLine(r), ...historyLines(r)];
   lines.push("", `who should review ${v.path}  (surviving lines in ${v.path}, as of ${v.asOf})`);
   const nameCount = new Map();
   for (const a of v.authors) nameCount.set(a.author, (nameCount.get(a.author) ?? 0) + 1);
@@ -5833,7 +5960,7 @@ function movedInLine(v) {
 export function renderHistory(r, top) {
   const h = r.history;
   if (!h) throw new Error("renderHistory needs a result from --history");
-  const lines = [headerLine(r)];
+  const lines = [headerLine(r), ...historyLines(r)];
   const people = h.authors.length;
   lines.push("", `history of ${h.path} (${people} ${people === 1 ? "person" : "people"} changed it, oldest first; surviving lines as of ${h.asOf})`);
   const nameCount = new Map();
