@@ -188,10 +188,10 @@ def main():
                         if all(cr["votes"][k] is None for cr in rec["criteria"]):
                             unparsed_calls += 1
             logs = []
-            for lf in sorted(glob.glob(os.path.join(HERE, "grades", it["key"], s["key"], "logs", "*.log"))):
+            for lf in sorted(glob.glob(os.path.join(HERE, "grades", it["key"], s["key"], "logs", "*.log.txt"))):
                 lines = open(lf, encoding="utf-8").read().splitlines()
                 cells_bad = [l.split(":")[0] for l in lines if "did not parse" in l]
-                logs.append("`%s`: %d cell(s) with an unparsed call (%s)" % (os.path.basename(lf), len(cells_bad), ", ".join(cells_bad) if cells_bad else "none"))
+                logs.append("`%s`: %d cell(s) with an unparsed call (%s)" % (os.path.basename(lf)[:-4], len(cells_bad), ", ".join(cells_bad) if cells_bad else "none"))
             reliab.append((it["n"], s["key"], ncells, ncrit, same, nerr, unparsed_calls, logs))
             # cost
             for t in tasks[s["key"]]:
