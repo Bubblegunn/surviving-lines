@@ -181,7 +181,7 @@ test("R10-3: the check stops at its time limit and says so, and changes no numbe
   // on a fast Linux container a small `git log` can finish first).
   const bin = mkdtempSync(join(tmpdir(), "sl-r10-slow-"));
   const real = execFileSync("which", ["git"], { encoding: "utf8" }).trim();
-  writeFileSync(join(bin, "git"), `#!/bin/sh\nif [ "$1" = log ]; then sleep 1; fi\nexec "${real}" "$@"\n`);
+  writeFileSync(join(bin, "git"), `#!/bin/sh\ncase " $* " in *" log "*) sleep 1;; esac\nexec "${real}" "$@"\n`);
   chmodSync(join(bin, "git"), 0o755);
   const oldPath = process.env.PATH;
   try {
