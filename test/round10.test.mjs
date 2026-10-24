@@ -177,13 +177,27 @@ test("R10-3: a history with no such commit adds no line, and a bot's commit is n
 });
 
 test("R10-3: the check stops at its time limit and says so, and changes no number", async () => {
-  await withRepo(lineEndingFixture, async (dir) => {
-    const o = parseArgs(["--cwd", dir]);
-    const res = await findWhitespaceOnlyCommits(o, new Set(["src/e.js"]), new Set(), { blameArgs: ["blame", "--line-porcelain"], perFile: new Map(), nameOf: new Map(), canonicalOf: new Map() }, { timeoutMs: 1 });
-    assert.equal(res.skipped, true);
-    assert.deepEqual(res.commits, []);
-    assert.equal(whitespaceOnlyLine({ whitespaceOnlySkipped: true }), "whitespace-only check skipped (history too large)");
-  });
+  // A git that takes a second on `log`, so the 50 ms limit is reached on any machine (a 1 ms limit is not reliable:
+  // on a fast Linux container a small `git log` can finish first).
+  const bin = mkdtempSync(join(tmpdir(), "sl-r10-slow-"));
+  const real = execFileSync("which", ["git"], { encoding: "utf8" }).trim();
+  writeFileSync(join(bin, "git"), `#!/bin/sh\nif [ "$1" = log ]; then sleep 1; fi\nexec "${real}" "$@"\n`);
+  chmodSync(join(bin, "git"), 0o755);
+  const oldPath = process.env.PATH;
+  try {
+    await withRepo(lineEndingFixture, async (dir) => {
+      const o = parseArgs(["--cwd", dir]);
+      process.env.PATH = `${bin}:${oldPath}`;
+      const res = await findWhitespaceOnlyCommits(o, new Set(["src/e.js"]), new Set(), { blameArgs: ["blame", "--line-porcelain"], perFile: new Map(), nameOf: new Map(), canonicalOf: new Map() }, { timeoutMs: 50 });
+      process.env.PATH = oldPath;
+      assert.equal(res.skipped, true);
+      assert.deepEqual(res.commits, []);
+      assert.equal(whitespaceOnlyLine({ whitespaceOnlySkipped: true }), "whitespace-only check skipped (history too large)");
+    });
+  } finally {
+    process.env.PATH = oldPath;
+    rmSync(bin, { recursive: true, force: true });
+  }
 });
 
 test("R10-5: every git call passes core.quotepath=off, log.showSignature=false and color.ui=never", async () => {

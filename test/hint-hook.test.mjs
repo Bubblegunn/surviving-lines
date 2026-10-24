@@ -163,7 +163,7 @@ test("R1: one name on two addresses is a suspected group, labelled with its rule
 test("R2: one address under two names is a suspected group, labelled with its rule", () => {
   const dir = repoWith([
     [["Eli Park", "eli@same.example"], "a.js"],
-    [["Eli P.", "eli@same.example"], "b.js"],
+    [["E. Park", "eli@same.example"], "b.js"],
   ]);
   try {
     const ctx = context(hook(PROMPT, dir));
@@ -243,12 +243,12 @@ test("counts read 1 commit or N commits", () => {
   const dir = repoWith([
     [["Eli Park", "eli@same.example"], "a.js"],
     [["Eli Park", "eli@same.example"], "b.js"],
-    [["Eli P.", "eli@same.example"], "c.js"],
+    [["E. Park", "eli@same.example"], "c.js"],
   ]);
   try {
     const ctx = context(hook(PROMPT, dir));
     assert.match(ctx, /Eli Park \(eli@same\.example\) 2 commits/);
-    assert.match(ctx, /Eli P\. \(eli@same\.example\) 1 commit(;|\.|$)/m);
+    assert.match(ctx, /E\. Park \(eli@same\.example\) 1 commit(;|\.|$)/m);
   } finally {
     removeRepo(dir);
   }

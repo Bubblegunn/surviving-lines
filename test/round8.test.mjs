@@ -212,7 +212,7 @@ async function withPeople(people, check, args = []) {
 test("R8-5: a strongly linked pair is one strong suggestion; a member linked only weakly is a weak addition with its own lines", async () => {
   // The first two names are equal once punctuation is ignored (strong). The third is the initial form of the first
   // only (weak), and shares no other evidence with the second.
-  await withPeople([["John Smith", "john@one.example", 30], ["JOHN SMITH.", "js@two.example", 20], ["J. Smith", "jay@three.example", 7], ["Other Person", "other@four.example", 40]], async (r) => {
+  await withPeople([["John Smith", "john@one.example", 30], ["JOHN. SMITH", "js@two.example", 20], ["J. Smith", "jay@three.example", 7], ["Other Person", "other@four.example", 40]], async (r) => {
     assert.equal(r.possibleSamePerson.suggestions.length, 1);
     const s = r.possibleSamePerson.suggestions[0];
     assert.equal(s.strength, "strong");
@@ -283,7 +283,7 @@ test("R8-4: the identity hint line states the strength and the figure to lead wi
 });
 
 test("R8-4: the hint line is in the table, --reviewers and --history, and the history headline leads with the merged figure for a strong suggestion", async () => {
-  await withPeople([["John Smith", "john@one.example", 30], ["JOHN SMITH.", "js@two.example", 25], ["Other Person", "other@four.example", 40]], async (r, dir) => {
+  await withPeople([["John Smith", "john@one.example", 30], ["JOHN. SMITH", "js@two.example", 25], ["Other Person", "other@four.example", 40]], async (r, dir) => {
     assert.match(renderTable(r, 10), /strong suggestion: lead with 55 lines/);
     const rev = await run(dir, ["--reviewers", "src"]);
     assert.match(renderReviewers(rev, 10), /strong suggestion: lead with 55 lines/);

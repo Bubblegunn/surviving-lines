@@ -238,8 +238,8 @@ test("the target's own top owner is in the result; a --since that is not a date 
   await withRepo(pay, async (dir) => {
     const v = (await run(dir, ["--coupled", "pay/rules.js"])).coupled;
     assert.deepEqual(v?.owner, { author: "Cal Dune", share: 0.8, active: false });
-    const text = renderCoupled(await run(dir, ["--coupled", "pay/ledger.js", "--since", "2025-04-02 12:00"]));
-    assert.match(text, /^pay\/ledger\.js: 6 commits since 2025-04-02 12:00; changes together with:$/m);
+    const text = renderCoupled(await run(dir, ["--coupled", "pay/ledger.js", "--since", "2025-04-02 12:00 +0300"]));
+    assert.match(text, /^pay\/ledger\.js: 6 commits since 2025-04-02 12:00 \+0300; changes together with:$/m);
     await assert.rejects(run(dir, ["--coupled", "nope/"]), /is a directory/);
   });
 });
